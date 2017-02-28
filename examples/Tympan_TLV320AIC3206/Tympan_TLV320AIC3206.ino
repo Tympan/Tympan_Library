@@ -14,7 +14,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <SerialFlash.h>
-#include <OpenAudio_ArduinoLibrary.h>  //AudioControlTLV320AIC3206 lives here
+#include <Tympan_Library.h>  //AudioControlTLV320AIC3206 lives here
 
 // define audio classes and connections
 AudioControlTLV320AIC3206       tlv320aic3206_1;

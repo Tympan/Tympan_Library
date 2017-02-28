@@ -5,9 +5,9 @@
    Purpose: Process audio by applying a single-band compressor
             Demonstrates audio processing using floating point data type.
 
-   Uses Teensy Audio Adapter.
-   Assumes microphones (or whatever) are attached to the LINE IN (stereo)
-
+   Uses Tympan Audio Adapter.
+   Blue potentiometer adjusts the gain.
+   
    MIT License.  use at your own risk.
 */
 
@@ -18,55 +18,42 @@
 #include <SD.h>
 #include <SerialFlash.h>
 
-#include <OpenAudio_ArduinoLibrary.h> //for AudioConvert_I16toF32, AudioConvert_F32toI16, and AudioEffectGain_F32
+#include <Tympan_Library.h> 
 
 //create audio library objects for handling the audio
-AudioControlSGTL5000_Extended    sgtl5000;    //controller for the Teensy Audio Board
-AudioInputI2S             i2s_in;             //Digital audio *from* the Teensy Audio Board ADC.  Sends Int16.  Stereo.
-AudioOutputI2S            i2s_out;            //Digital audio *to* the Teensy Audio Board DAC.  Expects Int16.  Stereo
-AudioConvert_I16toF32     int2Float1, int2Float2;    //Converts Int16 to Float.  See class in AudioStream_F32.h
-AudioConvert_F32toI16     float2Int1, float2Int2;    //Converts Float to Int16.  See class in AudioStream_F32.h
+AudioControlTLV320AIC3206 tlv320aic3206_1;
+AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Teensy Audio Board ADC.
+AudioOutputI2S_F32        i2s_out;       //Digital audio *to* the Teensy Audio Board DAC.
 AudioEffectCompressor_F32 comp1, comp2;
 
 //Make all of the audio connections, with the option of USB audio in and out
-//note that you ALWAYS have to have an I2S connection (either in or out) to have a clock
-//that drives the system.
-#define DO_USB  0    //set to 1 to enable USB audio.  Be sure to go under the "Tools" menu and do "USB Type" -> "Audio"
-#if DO_USB
-  AudioInputUSB           usb_in;
-  AudioConnection         patchCord1(usb_in, 0, int2Float1, 0);
-  AudioConnection         patchCord2(usb_in, 1, int2Float2, 0);
-#else
-  AudioConnection         patchCord1(i2s_in, 0, int2Float1, 0);   //connect the Left input to the Left Int->Float converter
-  AudioConnection         patchCord2(i2s_in, 1, int2Float2, 0);   //connect the Right input to the Right Int->Float converter
-#endif
-AudioConnection_F32     patchCord10(int2Float1, 0, comp1, 0); //Left.  makes Float connections between objects
-AudioConnection_F32     patchCord11(int2Float2, 0, comp2, 0); //Right.  makes Float connections between objects
-AudioConnection_F32     patchCord12(comp1, 0, float2Int1, 0); //Left.  makes Float connections between objects
-AudioConnection_F32     patchCord13(comp2, 0, float2Int2, 0); //Right.  makes Float connections between objects
-AudioConnection         patchCord20(float2Int1, 0, i2s_out, 0);  //connect the Left float processor to the Left output
-AudioConnection         patchCord21(float2Int2, 0, i2s_out, 1);  //connect the Right float processor to the Right output
-#if DO_USB
-  AudioOutputUSB          usb_out;
-  AudioConnection         patchCord30(float2Int1, 0, usb_out, 0);  //connect the Left float processor to the Left output
-  AudioConnection         patchCord31(float2Int2, 0, usb_out, 1);  //connect the Right float processor to the Right output
-#endif
+AudioConnection_F32       patchCord1(i2s_in, 0, comp1, 0);   //Left.
+AudioConnection_F32       patchCord2(i2s_in, 1, comp2, 0);   //Right.
+AudioConnection_F32       patchCord20(comp1, 0, i2s_out, 0);  //Left.
+AudioConnection_F32       patchCord21(comp2, 0, i2s_out, 1);  //Right.
 
-// which input on the audio shield will be used?
-const int myInput = AUDIO_INPUT_LINEIN;
-//const int myInput = AUDIO_INPUT_MIC;
 
 //I have a potentiometer on the Teensy Audio Board
 #define POT_PIN A1  //potentiometer is tied to this pin
 
 //define a function to setup the Teensy Audio Board how I like it
 void setupMyAudioBoard(void) {
-  sgtl5000.enable();                   //start the audio board
-  sgtl5000.inputSelect(myInput);       //choose line-in or mic-in
-  sgtl5000.volume(0.8);                //volume can be 0.0 to 1.0.  0.5 seems to be the usual default.
-  sgtl5000.lineInLevel(10, 10);        //level can be 0 to 15.  5 is the Teensy Audio Library's default
-  sgtl5000.adcHighPassFilterDisable(); //reduces noise.  https://forum.pjrc.com/threads/27215-24-bit-audio-boards?p=78831&viewfull=1#post78831
-  sgtl5000.micBiasEnable(3.0);         //enable the mic bias voltage...only in AudioControlSGTL5000_Extended
+  // Setup the TLV320
+  tlv320aic3206_1.enable(); // activate AIC
+
+  // Choose the desired input
+  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones // default
+  //  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  //  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
+  //  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_LINE_IN); // use the line in pads on the TYMPAN board - defaults to mic bias OFF
+
+  //Adjust the MIC bias, if using TYMPAN_INPUT_JACK_AS_MIC
+  //  tlv320aic3206_1.setMicBias(TYMPAN_MIC_BIAS_OFF); // Turn mic bias off
+  tlv320aic3206_1.setMicBias(TYMPAN_MIC_BIAS_2_5); // set mic bias to 2.5 // default
+
+  // VOLUMES
+  tlv320aic3206_1.volume_dB(10);  // -63.6 to +24 dB in 0.5dB steps.  uses float
+  tlv320aic3206_1.setInputGain_dB(10); // set MICPGA volume, 0-47.5dB in 0.5dB setps
 }
 
 //define a function to configure the left and right compressors
@@ -84,11 +71,11 @@ void setupMyCompressors(boolean use_HP_filter, float knee_dBFS, float comp_ratio
 void setup() {
   Serial.begin(115200);   //open the USB serial link to enable debugging messages
   delay(500);             //give the computer's USB serial system a moment to catch up.
-  Serial.println("Teensy Hearing Aid: BasicCompressor_Float..."); //identify myself over the USB serial
+  Serial.println("Tympan_Library: BasicCompressor_Float..."); //identify myself over the USB serial
 
   // Audio connections require memory, and the record queue uses this memory to buffer incoming audio.
-  AudioMemory(14);  //allocate Int16 audio data blocks
-  AudioMemory_F32(16); //allocate Float32 audio data blocks
+  AudioMemory(10);  //allocate Int16 audio data blocks
+  AudioMemory_F32(10); //allocate Float32 audio data blocks
 
   // Enable the audio shield, select input, and enable output
   setupMyAudioBoard();
@@ -131,6 +118,7 @@ void loop() {
     //read potentiometer
     float32_t val = float(analogRead(POT_PIN)) / 1024.0f; //0.0 to 1.0
     val = 0.1 * (float)((int)(10.0 * val + 0.5)); //quantize so that it doesn't chatter
+    val = 1.0 - val;  //correct for the pot being wired backwards on the Tympan Audio Board.  Sorry!
 
     //compute desired digital gain
     const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
@@ -181,4 +169,3 @@ void printCPUandMemoryUsage(Stream *s) {
   s->print("Float Mem = "); s->print(AudioMemoryUsage_F32()); s->print("/"); s->print(AudioMemoryUsageMax_F32()); s->print(", ");
   s->println();
 };
-
