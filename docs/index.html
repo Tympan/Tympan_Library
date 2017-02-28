@@ -349,6 +349,7 @@ span.mainfunction {color: #993300; font-weight: bolder}
 		{"type":"AudioOutputI2S_F32","data":{"defaults":{"name":{"value":"new"}},"shortName":"i2sAudioOut","inputs":"2","outputs":"0","category":"output-function","color":"#E6E0F8","icon":"arrow-in.png"}},
 		{"type":"AudioCalcEnvelope_F32","data":{"defaults":{"name":{"value":"new"}},"shortName":"calcEnvelope","inputs":"1","outputs":"1","category":"calc-function","color":"#E6E0F8","icon":"arrow-in.png"}},
 		{"type":"AudioCalcGainWDRC_F32","data":{"defaults":{"name":{"value":"new"}},"shortName":"calcGainWDRC","inputs":"1","outputs":"1","category":"calc-function","color":"#E6E0F8","icon":"arrow-in.png"}},
+		{"type":"AudioConfigFIRFilterBank_F32","data":{"defaults":{"name":{"value":"new"}},"shortName":"configFIRFilterBank","inputs":"0","outputs":"0","category":"config-function","color":"#E6E0F8","icon":"arrow-in.png"}},
 		{"type":"AudioConvert_I16toF32","data":{"defaults":{"name":{"value":"new"}},"shortName":"I16toF32","inputs":"1","outputs":"1","category":"convert-function","color":"#E6E0F8","icon":"arrow-in.png"}},
 		{"type":"AudioConvert_F32toI16","data":{"defaults":{"name":{"value":"new"}},"shortName":"F32toI16","inputs":"1","outputs":"1","category":"convert-function","color":"#E6E0F8","icon":"arrow-in.png"}},
 		{"type":"AudioEffectCompWDRC_F32","data":{"defaults":{"name":{"value":"new"}},"shortName":"compWDRC","inputs":"1","outputs":"1","category":"effect-function","color":"#E6E0F8","icon":"arrow-in.png"}},
@@ -563,6 +564,12 @@ span.mainfunction {color: #993300; font-weight: bolder}
 	</div>
 </script>
 <script type="text/x-red" data-template-name="AudioCalcGainWDRC_F32 ">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
+</script>
+<script type="text/x-red" data-template-name="AudioConfigFIRFilterBank_F32 ">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
 		<input type="text" id="node-input-name" placeholder="Name">
