@@ -5,7 +5,7 @@ Tympan Library for Arduino/Teensy
 
 **Approach**: I am attempting to follow the structure and approach of the Teensy Audio Library so that coding techniques, style, and structure that works for the Teensy Audio Library will also work with my library.  
 
-**Send Help!**:  If you see ways to make my code better aligned with the Teensy Audio Library, send a pull request!
+**Send Help!**:  If you see ways to make this code better, go ahead and fork the repo, mod the code, and send a pull request!
 
 
 Installation
