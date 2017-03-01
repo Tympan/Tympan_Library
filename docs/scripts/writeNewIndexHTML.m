@@ -38,6 +38,7 @@ all_lines(end+[1:length(foo_lines)]) = foo_lines; %accumulate the lines
 for Inode = 1:length(nodes)
     dir_f32 = '..\audio_f32_html\';
     dir_orig = '..\audio_html\';
+    %nodes(Inode).type
     foo_lines = findAndLoadMatchingDoc(nodes(Inode).type,dir_f32,dir_orig);
     
     if isempty(foo_lines)
