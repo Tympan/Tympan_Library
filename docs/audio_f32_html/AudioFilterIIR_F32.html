@@ -13,46 +13,35 @@
 		<tr class=odd><td align=center>Out 0</td><td>Filtered Signal Output</td></tr>
 	</table>
 	<h3>Functions</h3>
-	<p class=func><span class=keyword>begin</span>(filter_coeff, filter_length, block_size);</p>
-	<p class=desc>Initialize the filter.  The filter_coeff must be an array of 32-bit floats (the
-		filter's impulse response), the filter_length indicates the number of points in the array,
-		and block_size is the length of the audio block that will be passed to this filtering
-		object during operation.  The filter_coeff array may also be set as
-		IIR_PASSTHRU (with filter_length = 0), to directly pass the input to output without
-		filtering.
-	</p>
+	<p>This class has two different functions for setting the filter coefficients:</p>
+	<p class=func><span class=keyword>begin</span>(filter_coeff, n_stages);</p>
+	<p class=desc>Define the filter coefficients using the format expected by the ARM CMSIS DSP
+		function arm_biquad_cascade_df1_init_f32.  Using this function, you can define a
+		single biquad IIR filter or you can define multiple biquad IIR filters that will be
+		applied in series.  Google the CMSIS DSP library for more information on how to
+		format your filter coefficients to utilize this function call.</p>
+	<p class=func><span class=keyword>setFilterCoeff_Matlab</span>(b,a);</p>
+	<p class=desc>Define the filter coefficients using the format produced by Matlab from
+	    IIR filter design functions such as butter().  You can only define a single 2nd order
+		filter using this method.  Example: [b,a]=butter(2,[200 2000]/(fs_Hz/2));</p>
+	<p>Other functions included in this class are:</p>
 	<p class=func><span class=keyword>end</span>();</p>
-	<p class=desc>Turn the filter off.
+	<p class=desc>Turn the filter off.</p>
+	<p class=func><span class=keyword>setBlockDC</span>();</p>
+	<p class=desc>A convenience function to automatically configure this filter as a highpass fiter with
+	a very low cutoff frequency.  Specifically, it defines this filter: [b,a]=butter(2,40/(44100/2),'high'),
+	which produces a 40 Hz cutoff if the system is running at a sample rate of 44.1 kHz (or a cutoff of
+	22 Hz, if running at a sample rate of 24 kHz).
 	</p>
 	<!--
 	<h3>Examples</h3>
 	<p class=exam>File &gt; Examples &gt; Audio &gt; Effects &gt; Filter_FIR
 	</p>
 	-->
-	<h3>Known Issues</h3>
-	<p>Your filter's impulse response array must have an even length.  If you have
-		add odd number of taps, you must add an extra zero to increase the length
-		to an even number.
-	</p>
-	<p>The minimum number of taps is 4.  If you use less, add extra zeros to increase
-		the length to 4.
-	</p>
-	<p>The impulse response must be given in reverse order.  Many filters have
-		symetrical impluse response, making this a non-issue.  If your filter has
-		a non-symetrical response, make sure the data is in reverse time order.
-	</p>
-	<h3>Notes</h3>
-	<p>FIR filters requires more CPU time than Biquad (IIR), but they can
-		implement filters with better phase response.
-	</p>
-	<p>The free
-		<a href="http://t-filter.engineerjs.com/" target="_blank"> TFilter Design Tool</a>
-		can be used to create the impulse response array.  Be sure to choose the desired sampling
-		frequency (the tool defaults to only 2000 Hz whereas Tympan defaults to 44117) and
-		the output type to "float" (32 bit).
-	</p>
+
+
 </script>
-<script type="text/x-red" data-template-name="AudioFilterIIR">
+<script type="text/x-red" data-template-name="AudioFilterIIR_F32">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
 		<input type="text" id="node-input-name" placeholder="Name">

@@ -1,0 +1,53 @@
+<script type="text/x-red" data-help-name="AudioMixer8_F32">
+	<h3>Summary</h3>
+	<div class=tooltipinfo>
+	<p>Combine up to 8 audio signals together, each with adjustable gain.
+		All channels support signal attenuation or amplification.</p>
+	</div>
+	<h3>Audio Connections</h3>
+	<table class=doc align=center cellpadding=3>
+		<tr class=top><th>Port</th><th>Purpose</th></tr>
+		<tr class=odd><td align=center>In 0</td><td>Input signal #1</td></tr>
+		<tr class=odd><td align=center>In 1</td><td>Input signal #2</td></tr>
+		<tr class=odd><td align=center>In 2</td><td>Input signal #3</td></tr>
+		<tr class=odd><td align=center>In 3</td><td>Input signal #4</td></tr>
+		<tr class=odd><td align=center>In 4</td><td>Input signal #5</td></tr>
+		<tr class=odd><td align=center>In 5</td><td>Input signal #6</td></tr>
+		<tr class=odd><td align=center>In 6</td><td>Input signal #7</td></tr>
+		<tr class=odd><td align=center>In 7</td><td>Input signal #8</td></tr>
+		<tr class=odd><td align=center>Out 0</td><td>Sum of all inputs</td></tr>
+	</table>
+	<h3>Functions</h3>
+	<p class=func><span class=keyword>gain</span>(channel, level);</p>
+	<p class=desc>Adjust the amplification or attenuation.  "channel" must
+		be 0 to 7.  "level" may be any floating point number.  A level value of
+		1.0 passes the signal through directly.  Between 0 to 1.0 attenuates the signal, and above
+		1.0 amplifies it.  A level value of 0 shuts the channel
+		off completely.  All 4 channels have separate settings.
+	</p>
+	<!--
+	<h3>Examples</h3>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; SamplePlayer
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; Synthesis &gt; PlaySynthMusic
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; Analysis &gt; SpectrumAnalyzerBasic
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; Analysis &gt; DialTone_Serial
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; MemoryAndCpuUsage
+	</p>
+	-->
+	<h3>Notes</h3>
+	<p>More than 8 channels may be combined by connecting multiple mixers
+		in tandem.  For example, a 16 channel mixer may be built using three
+		mixers, where the third mixer combines the outputs of the first two.
+	</p>
+</script>
+<script type="text/x-red" data-template-name="AudioMixer8_F32">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
+</script>
+
