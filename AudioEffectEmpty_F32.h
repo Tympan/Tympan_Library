@@ -19,7 +19,7 @@
 class AudioEffectEmpty_F32 : public AudioStream_F32
 {
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
-  //GUI: shortName:passthru
+  //GUI: shortName:empty
   public:
     //constructor
     AudioEffectEmpty_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
