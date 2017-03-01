@@ -426,7 +426,7 @@ span.mainfunction {color: #993300; font-weight: bolder}
 	<h3>Examples</h3>
 	<p>This example demonstrates the basic features of this module:
 	</p>
-	<p class=exam>File &gt; Examples &gt; OpenAudio_ArduinoLibrary &gt; Tympan_TLV320AIC3206
+	<p class=exam>File &gt; Examples &gt; Tympan_Library &gt; Tympan_TLV320AIC3206
 	</p>
 	<h3>Notes</h3>
 	<p>TODO: Add more examples, following example above.
@@ -435,10 +435,9 @@ span.mainfunction {color: #993300; font-weight: bolder}
 <script type="text/x-red" data-help-name="AudioInputI2S_F32">
 	<h3>Summary</h3>
 	<div class=tooltipinfo>
-	<p>Receive 16 bit stereo audio from the
-	<a href="http://www.pjrc.com/store/teensy3_audio.html" target="_blank">audio shield</a>
+	<p>Receive float32 stereo audio from the <a href="https://www.tympan.org/">Tympan Audio Board</a>, the
+	<a href="http://www.pjrc.com/store/teensy3_audio.html" target="_blank">Teensy Audio Board</a>
 		or another I2S device, using I2S master mode.</p>
-	<p align=center><img src="img/audioshield_inputs.jpg"></p>
 	</div>
 	<h3>Audio Connections</h3>
 	<table class=doc align=center cellpadding=3>
@@ -446,23 +445,27 @@ span.mainfunction {color: #993300; font-weight: bolder}
 		<tr class=odd><td align=center>Out 0</td><td>Left Channel</td></tr>
 		<tr class=odd><td align=center>Out 1</td><td>Right Channel</td></tr>
 	</table>
+	<h3>Constructor</h3>
+	<p>Objects of this class can be created using the typical, minimal constructor using no arguments.
+	Or, to control the sample rate and block size, the constructor can be passed an AudioSettings_F32
+	object that has been configured with your desired settings.</p>
 	<h3>Functions</h3>
 	<p>This object has no functions to call from the Arduino sketch.  It
 		simply streams data from the I2S hardware to its 2 output ports.</p>
 	<h3>Hardware</h3>
-	<p align=center><img src="img/audioshield_backside.jpg"></p>
-	<p>The I2S signals are used in "master" mode, where Teensy creates
+	<p>The I2S signals are used in "master" mode, where the Teensy creates
 		all 3 clock signals and controls all data timing.</p>
 	<table class=doc align=center cellpadding=3>
 		<tr class=top><th>Pin</th><th>Signal</th><th>Direction</th></tr>
 		<tr class=odd><td align=center>9</td><td>BCLK</td><td>Output</td></tr>
 		<tr class=odd><td align=center>11</td><td>MCLK</td><td>Output</td></tr>
-		<tr class=odd><td align=center>13</td><td>RX</td><td>Input</td></tr>
+		<tr class=odd><td align=center>22</td><td>TX</td><td>Output</td></tr>
 		<tr class=odd><td align=center>23</td><td>LRCLK</td><td>Output</td></tr>
 	</table>
 	<p>Audio from
 		master mode I2S may be used in the same project as ADC, DAC and
 		PWM signals, because all remain in sync to Teensy's timing</p>
+	<!--
 	<h3>Examples</h3>
 	<p class=exam>File &gt; Examples &gt; Audio &gt; HardwareTesting &gt; PassThroughStereo
 	</p>
@@ -482,14 +485,16 @@ span.mainfunction {color: #993300; font-weight: bolder}
 	</p>
 	<p class=exam>File &gt; Examples &gt; Audio &gt; Effects &gt; Filter_FIR
 	</p>
+	-->
 	<h3>Notes</h3>
-	<p>Normally, this object is used with the Audio Shield, which
-		is controlled separately by the "sgtl5000" object.</p>
 	<p>Only one I2S input and one I2S output object may be used.  Master
 		and slave modes may not be mixed (both must be of the same type).
 	</p>
-	<p>I2S master objects can be used together with non-I2S input and output
-		objects, for simultaneous audio streaming on different hardware.</p>
+	<p>Being an "_F32" object, audio is passed into this class using F32 memory
+	that was allocated using an AudioMemory_F32() call in your sketch's setup()
+	routine.  But, internally, this	class still uses some Int16 data handling,
+	so be sure to also include an AudioMemory() call in addition to AudioMemory_F32()
+	to allocate the Int16 memory.</p>
 </script>
 <script type="text/x-red" data-template-name="AudioInputI2S_F32">
 	<div class="form-row">
@@ -501,10 +506,9 @@ span.mainfunction {color: #993300; font-weight: bolder}
 <script type="text/x-red" data-help-name="AudioOutputI2S_F32">
 	<h3>Summary</h3>
 	<div class=tooltipinfo>
-	<p>Transmit 16 bit stereo audio to the
-	<a href="http://www.pjrc.com/store/teensy3_audio.html" target="_blank">audio shield</a>
+	<p>Transmit float32 stereo audio to the <a href="https://www.tympan.org/">Tympan Audio Board</a>, the
+	<a href="http://www.pjrc.com/store/teensy3_audio.html" target="_blank">Teensy Audio Board</a>
 		or another I2S device, using I2S master mode.</p>
-	<p align=center><img src="img/audioshield_outputs.jpg"></p>
 	</div>
 	<h3>Audio Connections</h3>
 	<table class=doc align=center cellpadding=3>
@@ -512,12 +516,15 @@ span.mainfunction {color: #993300; font-weight: bolder}
 		<tr class=odd><td align=center>In 0</td><td>Left Channel</td></tr>
 		<tr class=odd><td align=center>In 1</td><td>Right Channel</td></tr>
 	</table>
+	<h3>Constructor</h3>
+	<p>Objects of this class can be created using the typical, minimal constructor using no arguments.
+	Or, to control the sample rate and block size, the constructor can be passed an AudioSettings_F32
+	object that has been configured with your desired settings.</p>
 	<h3>Functions</h3>
 	<p>This object has no functions to call from the Arduino sketch.  It
 		simply streams data from its 2 input ports to the I2S hardware.</p>
 	<h3>Hardware</h3>
-	<p align=center><img src="img/audioshield_backside.jpg"></p>
-	<p>The I2S signals are used in "master" mode, where Teensy creates
+	<p>The I2S signals are used in "master" mode, where the Teensy creates
 		all 3 clock signals and controls all data timing.</p>
 	<table class=doc align=center cellpadding=3>
 		<tr class=top><th>Pin</th><th>Signal</th><th>Direction</th></tr>
@@ -529,6 +536,7 @@ span.mainfunction {color: #993300; font-weight: bolder}
 	<p>Audio from
 		master mode I2S may be used in the same project as ADC, DAC and
 		PWM signals, because all remain in sync to Teensy's timing</p>
+	<!--
 	<h3>Examples</h3>
 	<p>Nearly all the examples use this object.  Here are some of the highlights:</p>
 	<p class=exam>File &gt; Examples &gt; Audio &gt; HardwareTesting &gt; PassThroughStereo
@@ -543,12 +551,15 @@ span.mainfunction {color: #993300; font-weight: bolder}
 	</p>
 	<p class=exam>File &gt; Examples &gt; Audio &gt; Synthesis &gt; PlaySynthMusic
 	</p>
+	-->
 	<h3>Notes</h3>
-	<p>Normally, this object is used with the Audio Shield, which
-		is controlled separately by the "sgtl5000" object.</p>
 	<p>Only one I2S input and one I2S output object may be used.  Master
-		and slave modes may not be mixed (both must be of the same type).
-	</p>
+		and slave modes may not be mixed (both must be of the same type).</p>
+	<p>Being an "_F32" object, audio is passed into this class using F32 memory
+	that was allocated using an AudioMemory_F32() call in your sketch's setup()
+	routine.  But, internally, this	class still uses some Int16 data handling,
+	so be sure to also include an AudioMemory() call in addition to AudioMemory_F32()
+	to allocate the Int16 memory.</p>
 </script>
 <script type="text/x-red" data-template-name="AudioOutputI2S_F32">
 	<div class="form-row">
@@ -625,19 +636,22 @@ span.mainfunction {color: #993300; font-weight: bolder}
 		<tr class=odd><td align=center>Out 0</td><td>Filtered Signal Output</td></tr>
 	</table>
 	<h3>Functions</h3>
-	<p class=func><span class=keyword>begin</span>(array, length);</p>
-	<p class=desc>Initialize the filter.  The array must be 16 bit integers (the
-		filter's impulse response), and
-		length indicates the number of points in the array.  Array may also be
-		FIR_PASSTHRU (length = 0), to directly pass the input to output without
+	<p class=func><span class=keyword>begin</span>(filter_coeff, filter_length, block_size);</p>
+	<p class=desc>Initialize the filter.  The filter_coeff must be an array of 32-bit floats (the
+		filter's impulse response), the filter_length indicates the number of points in the array,
+		and block_size is the length of the audio block that will be passed to this filtering
+		object during operation.  The filter_coeff array may also be set as
+		FIR_PASSTHRU (with filter_length = 0), to directly pass the input to output without
 		filtering.
 	</p>
 	<p class=func><span class=keyword>end</span>();</p>
 	<p class=desc>Turn the filter off.
 	</p>
+	<!--
 	<h3>Examples</h3>
 	<p class=exam>File &gt; Examples &gt; Audio &gt; Effects &gt; Filter_FIR
 	</p>
+	-->
 	<h3>Known Issues</h3>
 	<p>Your filter's impulse response array must have an even length.  If you have
 		add odd number of taps, you must add an extra zero to increase the length
@@ -654,21 +668,14 @@ span.mainfunction {color: #993300; font-weight: bolder}
 	<p>FIR filters requires more CPU time than Biquad (IIR), but they can
 		implement filters with better phase response.
 	</p>
-	<p>A 100 point filter requires 9% CPU time on Teensy 3.1.  The maximum
-		supported filter length is 200 points.
-	</p>
 	<p>The free
 		<a href="http://t-filter.engineerjs.com/" target="_blank"> TFilter Design Tool</a>
-		can be used to create the impulse response array.  Be sure to set the sampling
-		frequency to 44117 HZ (it defaults to only 2000 Hz) and the output type to "int" (16 bit).
-	</p>
-	<p>
-		If you use TFilter Design's "C/C++ array" option, it's output has "int" definition, which
-		is 32 bits on Teensy 3.1.  Edit "int" to "short" for an array of 16 bit numbers,
-		and add "const" to avoid consuming extra RAM.
+		can be used to create the impulse response array.  Be sure to choose the desired sampling
+		frequency (the tool defaults to only 2000 Hz whereas Tympan defaults to 44117) and
+		the output type to "float" (32 bit).
 	</p>
 </script>
-<script type="text/x-red" data-template-name="AudioFilterFIR_F32">
+<script type="text/x-red" data-template-name="AudioFilterFIR">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
 		<input type="text" id="node-input-name" placeholder="Name">

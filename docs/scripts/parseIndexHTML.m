@@ -88,7 +88,7 @@ outfname = 'ParsedInputs\node_docs.txt';
 writeText(outfname,textToWrite);
 
 %% parse the docs and write the invidiual docs
-all_docs = parseAudioObjectHTML(outfname,'..\audio_html\');
+all_docs = parseAudioObjectHTML(outfname,'..\audio_html\orig\');
 
 %% extract the end of the file
 outfname = 'ParsedInputs\end_of_file.txt';

@@ -58,7 +58,6 @@ void setup() {
   //  tlv320aic3206_1.setMicBias(TYMPAN_MIC_BIAS_OFF); // Turn mic bias off
   tlv320aic3206_1.setMicBias(TYMPAN_MIC_BIAS_2_5); // set mic bias to 2.5 // default
 
-
   // VOLUMES
   tlv320aic3206_1.volume_dB(10);  // -63.6 to +24 dB in 0.5dB steps.  uses float
   tlv320aic3206_1.setInputGain_dB(10); // set MICPGA volume, 0-47.5dB in 0.5dB setps

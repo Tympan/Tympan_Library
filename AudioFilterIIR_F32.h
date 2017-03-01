@@ -1,8 +1,9 @@
 /*
- * AudioFilterFIR_F32
+ * AudioFilterIIR_F32
  * 
  * Created: Chip Audette (OpenAudio) Feb 2017
- *    - Building from AudioFilterFIR from Teensy Audio Library (AudioFilterFIR credited to Pete (El Supremo))
+ *
+ * License: MIT License.  Use at your own risk.
  * 
  */
 

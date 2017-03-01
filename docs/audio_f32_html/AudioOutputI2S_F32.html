@@ -1,0 +1,65 @@
+<script type="text/x-red" data-help-name="AudioOutputI2S_F32">
+	<h3>Summary</h3>
+	<div class=tooltipinfo>
+	<p>Transmit float32 stereo audio to the <a href="https://www.tympan.org/">Tympan Audio Board</a>, the
+	<a href="http://www.pjrc.com/store/teensy3_audio.html" target="_blank">Teensy Audio Board</a>
+		or another I2S device, using I2S master mode.</p>
+	</div>
+	<h3>Audio Connections</h3>
+	<table class=doc align=center cellpadding=3>
+		<tr class=top><th>Port</th><th>Purpose</th></tr>
+		<tr class=odd><td align=center>In 0</td><td>Left Channel</td></tr>
+		<tr class=odd><td align=center>In 1</td><td>Right Channel</td></tr>
+	</table>
+	<h3>Constructor</h3>
+	<p>Objects of this class can be created using the typical, minimal constructor using no arguments.
+	Or, to control the sample rate and block size, the constructor can be passed an AudioSettings_F32
+	object that has been configured with your desired settings.</p>
+	<h3>Functions</h3>
+	<p>This object has no functions to call from the Arduino sketch.  It
+		simply streams data from its 2 input ports to the I2S hardware.</p>
+	<h3>Hardware</h3>
+	<p>The I2S signals are used in "master" mode, where the Teensy creates
+		all 3 clock signals and controls all data timing.</p>
+	<table class=doc align=center cellpadding=3>
+		<tr class=top><th>Pin</th><th>Signal</th><th>Direction</th></tr>
+		<tr class=odd><td align=center>9</td><td>BCLK</td><td>Output</td></tr>
+		<tr class=odd><td align=center>11</td><td>MCLK</td><td>Output</td></tr>
+		<tr class=odd><td align=center>22</td><td>TX</td><td>Output</td></tr>
+		<tr class=odd><td align=center>23</td><td>LRCLK</td><td>Output</td></tr>
+	</table>
+	<p>Audio from
+		master mode I2S may be used in the same project as ADC, DAC and
+		PWM signals, because all remain in sync to Teensy's timing</p>
+	<!--
+	<h3>Examples</h3>
+	<p>Nearly all the examples use this object.  Here are some of the highlights:</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; HardwareTesting &gt; PassThroughStereo
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; SamplePlayer
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; Recorder
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; WavFilePlayer
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; Effects &gt; Chorus
+	</p>
+	<p class=exam>File &gt; Examples &gt; Audio &gt; Synthesis &gt; PlaySynthMusic
+	</p>
+	-->
+	<h3>Notes</h3>
+	<p>Only one I2S input and one I2S output object may be used.  Master
+		and slave modes may not be mixed (both must be of the same type).</p>
+	<p>Being an "_F32" object, audio is passed into this class using F32 memory
+	that was allocated using an AudioMemory_F32() call in your sketch's setup()
+	routine.  But, internally, this	class still uses some Int16 data handling,
+	so be sure to also include an AudioMemory() call in addition to AudioMemory_F32()
+	to allocate the Int16 memory.</p>
+</script>
+<script type="text/x-red" data-template-name="AudioOutputI2S_F32">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
+</script>
+
