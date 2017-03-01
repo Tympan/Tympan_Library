@@ -3,7 +3,8 @@ function [headings,new_node_data]=buildNewNodes(source_pname)
 %Look into directory of objects and build node info from the contents
 
 if nargin < 1
-    source_pname = 'C:\Users\wea\Documents\Arduino\libraries\OpenAudio_ArduinoLibrary\';
+    %source_pname = 'C:\Users\wea\Documents\Arduino\libraries\OpenAudio_ArduinoLibrary\';
+    source_pname = 'C:\Users\wea\Documents\Arduino\libraries\Tympan_Library\';
 end
 
 %get all header files
@@ -257,13 +258,19 @@ for Iname=1:length(class_names)
         name = 'sgtl5000ext';
     end
     if strcmpi(name,'inputI2S')
-        name = 'i2sAudioIn';
+        name = 'audioInI2S';
     end
     if strcmpi(name,'outputI2S')
-        name = 'i2sAudioOut';
+        name = 'audioOutI2S';
     end
     if strcmpi(name,'computeEnvelope')
         name = 'envelope';
+    end
+    if strcmpi(name,'inputUSB');
+        name = 'audioInUSB';
+    end
+    if strcmpi(name,'outputUSB');
+        name = 'audioOutUSB';
     end
     
     %strop off leading space or underscore

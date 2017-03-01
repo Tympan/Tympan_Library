@@ -20,7 +20,8 @@ all_lines(end+[1:length(foo_lines)]) = foo_lines; %accumulate the lines
 
 % create new nodes
 origNode_fname = 'ParsedInputs\nodes.txt';
-newNode_pname = 'C:\Users\wea\Documents\Arduino\libraries\OpenAudio_ArduinoLibrary\';
+%newNode_pname = 'C:\Users\wea\Documents\Arduino\libraries\OpenAudio_ArduinoLibrary\';
+newNode_pname = 'C:\Users\wea\Documents\Arduino\libraries\Tympan_Library\';
 [nodes] = generateNodes(origNode_fname,newNode_pname);
 outfname = 'NewOutputs\new_nodes.txt';
 writeNodeText(nodes,outfname);  %write to text file

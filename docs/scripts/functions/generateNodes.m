@@ -5,7 +5,8 @@ if nargin < 3
     outfname = [];
     if nargin < 2
         %source location for header files for all of the new nodes
-        newNode_pname = 'C:\Users\wea\Documents\Arduino\libraries\OpenAudio_ArduinoLibrary\';
+        %newNode_pname = 'C:\Users\wea\Documents\Arduino\libraries\OpenAudio_ArduinoLibrary\';
+        newNode_pname = 'C:\Users\wea\Documents\Arduino\libraries\Tympan_Library\';
         if nargin < 2
             %location of original node text from original index.html
             origNode_fname = 'ParsedInputs\nodes.txt';
@@ -37,8 +38,8 @@ orig_nodes = parseNodeFile(origNode_fname);
 
 nodes_keep = {
     'AudioControlSGTL5000',...
-    'AudioInputUSB',...
-    'AudioOutputUSB',...
+    %'AudioInputUSB',...
+    %'AudioOutputUSB',...
     };
 
 %adjust node shortnames
@@ -128,6 +129,8 @@ first_second(end+1,:) ={'inputI2S' 'usbAudioIn'};
 first_second(end+1,:) ={'outputI2S' 'usbAudioOut'};
 first_second(end+1,:) ={'i2sAudioIn' 'usbAudioIn'};
 first_second(end+1,:) ={'i2sAudioOut' 'usbAudioOut'};
+first_second(end+1,:) ={'audioInI2S' 'audioInUSB'};
+first_second(end+1,:) ={'audioOutI2S' 'audioOutUSB'};
 
 for Iswap = 1:length(first_second);
     all_names = {nodes(:).shortName};
