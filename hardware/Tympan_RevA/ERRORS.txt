@@ -1,0 +1,27 @@
+2017-03-04
+Chip Audette
+
+The Tympan Rev A board was built using the schematic and BOM in this directory.  In using the hardware, though, we have discovered errors.  We have either rewired the hardware to overcome the error, or modified the software to accomodate the error.  In a future revision of the board, these issues should be fixed:
+
+*** ISSUE (1) ***
+
+Swap DIN and DOUT.  The I2S data transfer lines between the Teensy and the AIC3206 codec need to be swapped.  The Rev A schematic does not work.  The correct connections should be:
+
+Teensy 3.6 pin 22 should connect to AIC3206 Pin 8.
+Teensy 3.6 pin 14 should connect to AIC3206 Pin 9
+
+
+*** ISSUE (2) ***
+
+The potentiometer is wired backwards.  The potentiometer on Tympan Rev A does function, but turning it "up" results in lower values being read by the Teensy.  The hardware design should be revised to swap the high and low pins on the pot. In other words, looking at the Typan Rev A schematic, the "CCW" end should be connected to "GND" while the "CW" end should be connected to 3.3V.
+
+
+*** ISSUE (3) ***
+
+The microphone input jack (J5) was inteneded to enable either a microphone input (with Tympan supplying the desired mic bias) or a line-level input.  Because of the way that we brought the single "MICBIAS" line to the two inputs on the J5 jack, this design does not work well as a line-in.  The problem is that the left and right channels of the line in become mixed via the connection through R10 and R15.  So, for mono operation, the jack is acceptable as a line-in connection, but not for stereo operation.  This portion of the circuit needs to be redesigned.  A new design has not yet been decided.
+
+
+*** ISSUE (4) ***
+
+The Teensy cannot be reprogrammed reliably unless there is a battery attached.  I assume that this is an issue with the power supply.  I would have assumed that the power supplied over USB would have been more than sufficient to program the Teensy, but apparently there is some sort of transient that the system cannot support without the battery attached.  The specific design flaw has not yet been identified, so a specific fix has not yet been recommended.  Options include adding more capacitance or taking steps to reduce power draw (such as cutting off the Bluetooth module until needed).
+ 
