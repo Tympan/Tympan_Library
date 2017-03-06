@@ -10,6 +10,8 @@ Swap DIN and DOUT.  The I2S data transfer lines between the Teensy and the AIC32
 Teensy 3.6 pin 22 should connect to AIC3206 Pin 8.
 Teensy 3.6 pin 14 should connect to AIC3206 Pin 9
 
+This has been corrected on the Rev B schematic.
+
 
 *** ISSUE (2) ***
 
