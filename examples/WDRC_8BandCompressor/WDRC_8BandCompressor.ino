@@ -32,7 +32,7 @@
 #include <SPI.h>
 //include <SD.h>
 //include <SerialFlash.h>
-#include <OpenAudio_ArduinoLibrary.h>
+#include <Tympan_Library.h>
 
 
 const float sample_rate_Hz = 24000.0f ; //24000 or 44117.64706f (or other frequencies in the table in AudioOutputI2S_F32
@@ -148,7 +148,7 @@ void setupTympanHardware(void) {
   audioHardware.enable(); // activate AIC
   
   //choose input
-  switch (3) {
+  switch (1) {
     case 1: 
       //choose on-board mics
       audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones

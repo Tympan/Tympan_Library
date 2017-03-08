@@ -22,11 +22,12 @@
 
 
 // from CHAPRO cha_ff.h
-//define DSL_MXCH 32              
-class CHA_DSL {
-	public:
-		CHA_DSL(void) {};  
-		static const int DSL_MXCH = 32;    // maximum number of channels
+#define DSL_MXCH 32              
+//class CHA_DSL {
+typedef struct {
+	//public:
+		//CHA_DSL(void) {};  
+		//static const int DSL_MXCH = 32;    // maximum number of channels
 		float attack;               // attack time (ms)
 		float release;              // release time (ms)
 		float maxdB;                // maximum signal (dB SPL)
@@ -37,9 +38,8 @@ class CHA_DSL {
 		float cr[DSL_MXCH];         // compression ratio
 		float tk[DSL_MXCH];         // compression-start kneepoint
 		float bolt[DSL_MXCH];       // broadband output limiting threshold
-		
-		int parseStringIntoDSL(String &text_buffer) {
-		  int current_state = 0;
+} CHA_DSL;
+/* 		int parseStringIntoDSL(String &text_buffer) {
 		  int position = 0;
 		  float foo_val;
 		  const bool print_debug = false;
@@ -138,7 +138,7 @@ class CHA_DSL {
 			s->print("    : bolt = ");
 				for (int i=0; i<nchannel;i++) { s->print(bolt[i]); s->print(", ");}; s->println();
 		}
-} ;
+} ; */
 
 typedef struct {
     float alfa;                 // attack constant (not time)
