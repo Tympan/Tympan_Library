@@ -361,7 +361,7 @@ void printCompressorState(unsigned long curTime_millis, Stream *s) {
 //
 
 
-static void configureBroadbandWDRCs(int ncompressors, float fs_Hz, CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRCs) {
+static void configureBroadbandWDRCs(int ncompressors, float fs_Hz, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRCs) {
   //assume all broadband compressors are the same
   for (int i=0; i< ncompressors; i++) {
     //logic and values are extracted from from CHAPRO repo agc_prepare.c...the part setting CHA_DVAR
@@ -383,7 +383,7 @@ static void configureBroadbandWDRCs(int ncompressors, float fs_Hz, CHA_WDRC *gha
   }
 }
     
-static void configurePerBandWDRCs(int nchan, float fs_Hz, CHA_DSL *dsl, CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRCs) {
+static void configurePerBandWDRCs(int nchan, float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRCs) {
   if (nchan > dsl->nchannel) {
     Serial.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
     Serial.print(F("    : nchan = ")); Serial.println(nchan);
@@ -415,7 +415,7 @@ static void configurePerBandWDRCs(int nchan, float fs_Hz, CHA_DSL *dsl, CHA_WDRC
   }  
 }
 
-//static void configureMultiBandWDRCasGHA(float fs_Hz, CHA_DSL *dsl, CHA_WDRC *gha, 
+//static void configureMultiBandWDRCasGHA(float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, 
 //    int nBB, AudioEffectCompWDRC_F32 *broadbandWDRCs,
 //    int nchan, AudioEffectCompWDRC_F32 *perBandWDRCs) {
 //    

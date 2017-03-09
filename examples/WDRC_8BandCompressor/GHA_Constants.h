@@ -3,7 +3,7 @@
 
 //from GHA_Demo.c
 // DSL prescription - (first subject, left ear) from LD_RX.mat
-static CHA_DSL dsl = {5,  //attack (ms)
+static BTNRH_WDRC::CHA_DSL dsl = {5,  //attack (ms)
   50,  //release (ms)
   119, //max dB
   0, // 0=left, 1=right
@@ -16,7 +16,7 @@ static CHA_DSL dsl = {5,  //attack (ms)
 };
 
 //from GHA_Demo.c  from "amplify()"
-CHA_WDRC gha = {1.f, // attack time (ms)
+BTNRH_WDRC::CHA_WDRC gha = {1.f, // attack time (ms)
   50.f,     // release time (ms)
   24000.f,  // sampling rate (Hz)
   119.f,    // maximum signal (dB SPL)
