@@ -1,8 +1,8 @@
 /* 
 	control_tlv320aic3206
 	
-	Created: Brendan Flynn (http://www.flexvoltbiosensor.com/)  Jan-Feb 2017
-	Purpose: Control module for TLV320AIC3206 compatible with Teensy Audio Library
+	Created: Brendan Flynn (http://www.flexvoltbiosensor.com/) for Tympan, Jan-Feb 2017
+	Purpose: Control module for Texas Instruments TLV320AIC3206 compatible with Teensy Audio Library
  
 	License: MIT License.  Use at your own risk.
  */
