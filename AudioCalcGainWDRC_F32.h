@@ -123,6 +123,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       bolt = _bolt;
     }
 
+    //dB functions.  Feed it the envelope amplitude (not squared) and it computes 20*log10(x) or it does 10.^(x/20)
     static float undb2(const float &x)  { return expf(0.11512925464970228420089957273422f*x); } //faster:  exp(log(10.0f)*x/20);  this is exact
     static float db2(const float &x)  { return 6.020599913279623f*log2f_approx(x); } //faster: 20*log2_approx(x)/log2(10);  this is approximate
 

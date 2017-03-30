@@ -61,7 +61,7 @@ var RED = (function() {
 			//console.log(JSON.stringify(nns));
 
 			//add the include files first
-			var cpp = "#include <OpenAudio_ArduinoLibrary.h>\n#include <Audio.h>\n"
+			var cpp = "#include <Tympan_Library.h>\n#include <Audio.h>\n"
 				+ "#include <Wire.h>\n"
 				+ "#include <SPI.h>\n#include <SD.h>\n#include <SerialFlash.h>\n\n"
 				+ "// GUItool: begin automatically generated code\n";

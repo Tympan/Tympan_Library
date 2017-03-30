@@ -53,7 +53,9 @@ class AudioFilterIIR_F32 : public AudioStream_F32
       hp_coeff[0] = b[0];   hp_coeff[1] = b[1];  hp_coeff[2] = b[2]; //here are the matlab "b" coefficients
       hp_coeff[3] = -a[1];  hp_coeff[4] = -a[2];  //the DSP needs the "a" terms to have opposite sign vs Matlab 
       uint8_t n_stages = 1;
-      arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, hp_coeff,  &StateF32[0]);     
+      //arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, hp_coeff,  &StateF32[0]);
+      begin(hp_coeff, n_stages);
+ 
     }
     
     virtual void update(void);

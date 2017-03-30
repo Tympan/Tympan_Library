@@ -5,6 +5,12 @@ Tympan_Library		KEYWORD1
 float32_t		KEYWORD1
 audio_block_f32_t	KEYWORD1
 AudioStream_F32		KEYWORD1
+AudioMemory_F32		KEYWORD1
+AudioMemory_F32_wSettings	KEYWORD1
+AudioMemoryUsage_F32	KEYWORD1
+AudioMemoryUsageMax_F32	KEYWORD1
+AudioMemoryUsageMaxReset_F32	KEYWORD1
+
 AudioConnection_F32	KEYWORD1
 
 AudioCalcGainWDRC_F32	KEYWORD1
@@ -35,10 +41,6 @@ AudioFilterFIR_F32	KEYWORD1
 AudioFilterIIR_F32	KEYWORD1
 AudioEffectCompressor_F32	KEYWORD1
 AudioInputI2S_F32	KEYWORD1
-AudioMemory_F32		KEYWORD1
-AudioMemoryUsage_F32	KEYWORD1
-AudioMemoryUsageMax_F32	KEYWORD1
-AudioMemoryUsageMaxReset_F32	KEYWORD1
 AudioMixer4_F32		KEYWORD1
 AudioMixer8_F32		KEYWORD1
 AudioMultiply_F32	KEYWORD1
