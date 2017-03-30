@@ -49,7 +49,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
       if (!out_block) return;
       
-      // //////////////////////add your processing here!
+      // ////////////////////// do the processing here!
       calcGainFromEnvelope(in_block->data, out_block->data, in_block->length);
       out_block->length = in_block->length; out_block->fs_Hz = in_block->fs_Hz;
       
@@ -69,7 +69,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       audio_block_f32_t *env_dB_block = AudioStream_F32::allocate_f32();
       if (!env_dB_block) return;
   
-      //convert to dB
+      //convert to dB and calibrate (via maxdB)
       for (int k=0; k < n; k++) env_dB_block->data[k] = maxdB + db2(env[k]); //maxdb in the private section 
       
       // apply wide-dynamic range compression
@@ -80,28 +80,48 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     //original call to WDRC_circuit
     //void WDRC_circuit(float *x, float *y, float *pdb, int n, float tkgn, float tk, float cr, float bolt)
     //void WDRC_circuit(float *orig_signal, float *signal_out, float *env_dB, int n, float tkgn, float tk, float cr, float bolt)
-    //modified to output the gain instead of the fully processed signal
+    //modified to output just the gain instead of the fully processed signal
     void WDRC_circuit_gain(float *env_dB, float *gain_out, const int n, 
-        const float tkgn, const float tk, const float cr, const float bolt) {
+        const float tkgn, const float tk, const float cr, const float bolt) 
+    	//tkgn = gain (dB?) at start of compression (ie, gain for linear behavior?)
+    	//tk = compression start kneepoint (pre-compression, dB SPL?)
+    	//cr = compression ratio
+    	//bolt = broadband output limiting threshold (post-compression, dB SPL?)
+    {
+    	
+    	//tkgain = 30; tk = 50;  bolt = 100; cr = 3;
       
       float gdb, tkgo, pblt;
       int k;
-      float *pdb = env_dB; //just rename it to keep the code below unchanged
-      float tk_tmp = tk;
+      float *pdb = env_dB; //just rename it to keep the code below unchanged (input SPL dB)
+      float tk_tmp = tk;   //temporary, threshold for start of compression (input SPL dB)
       
-      if ((tk_tmp + tkgn) > bolt) {
-          tk_tmp = bolt - tkgn;
+      // (50 + 30) = 80;  80 ?> 100.  No.  tk_tmp stays at 50
+      if ((tk_tmp + tkgn) > bolt) { //after gain, would the compression threshold be above the output-limitting threshold ("bolt")
+          tk_tmp = bolt - tkgn;  //if so, lower the compression threshold to be the pre-gain value resulting in "bolt"
       }
-      tkgo = tkgn + tk_tmp * (1.0f - 1.0f / cr);
-      pblt = cr * (bolt - tkgo);
-      const float cr_const = ((1.0f / cr) - 1.0f);
-      for (k = 0; k < n; k++) {
-        if ((pdb[k] < tk_tmp) && (cr >= 1.0f)) {
-            gdb = tkgn;
-        } else if (pdb[k] > pblt) {
-            gdb = bolt + ((pdb[k] - pblt) / 10.0f) - pdb[k];
+      //tkgo = 30 + 50*(1-1/3) = 30 + 50*0.666 = 30+33.3 = 63.333;
+      tkgo = tkgn + tk_tmp * (1.0f - 1.0f / cr);  //intermediate calc
+      //pblt = 2 * (100 - 63.3333) = 2*(36.666) = 73.3333;
+      pblt = cr * (bolt - tkgo); //calc input level (dB) where we need to start limiting, no just compression
+      //cr_cosnt = ((1/3)-1) = -0.6666
+      const float cr_const = ((1.0f / cr) - 1.0f); //pre-calc a constant that we'll need later
+      
+      for (k = 0; k < n; k++) {  //loop over each sample
+        if ((pdb[k] < tk_tmp) && (cr >= 1.0f)) {  //if below threshold and we're compressing
+            gdb = tkgn;  //we're in the linear region.  Apply linear gain.
+        } else if (pdb[k] > pblt) { //we're beyond the compression region into the limitting region
+        	//assume pdb is 73.3333; gdb = 100 + ((73.333-73.333)/10) - 73.333 = 26.6667.  So, output would be 100 dB
+        	//assume pdb is 80 dB SPL input: gdb = 100 + ((80-73.33)/10)-80 = 100+((6.666/10)-80 = 20 + 0.666 = 20.6666;  So, output would be 100.666
+            gdb = bolt + ((pdb[k] - pblt) / 10.0f) - pdb[k]; //10:1 limiting!
         } else {
-            gdb = cr_const * pdb[k] + tkgo;
+        	//assume pdb = 50; gdb = -0.6666*60+63.333 = -40+63.333 = 23.333.  So, output would be 73.333 (should be 80?)
+        	//assume pdb = 73.3333; gcb = -0.6666*73.333 + 63.3333 = -48.8888+63.333 = 14.44444 gain.  So, output would be 87.7778 (shoud be 100)
+            gdb = cr_const * pdb[k] + tkgo; 
+            
+            //assume pdb = 50; gdb = 30 - (50-50)/3 = 30
+            //assume pdb = 73.333; gdb = 30 - (73.333-50)/3 = 30 - 7.777 = 22.333
+            gdb = tkgn - (pdb[k]-tk)/cr; //WEA thinks it should be this??
         }
         gain_out[k] = undb2(gdb);
         //y[k] = x[k] * undb2(gdb); //apply the gain
