@@ -133,7 +133,7 @@ class AudioEffectCompressor_F32 : public AudioStream_F32
            inst_targ_gain_dB_block->data,           //this is the output
            above_thresh_dB_block->length); 
 
-      // compute the instantaneous gai...which is the difference between the target level and the original level
+      // compute the instantaneous gain...which is the difference between the target level and the original level
       arm_sub_f32(inst_targ_gain_dB_block->data,  //CMSIS DSP for "subtract two vectors element-by-element"
            above_thresh_dB_block->data,           //this is the vector to be subtracted
            inst_targ_gain_dB_block->data,         //this is the output
