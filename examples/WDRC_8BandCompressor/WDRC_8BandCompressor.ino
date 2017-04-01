@@ -167,7 +167,7 @@ void setupTympanHardware(void) {
   
   //set volumes
   audioHardware.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
-  audioHardware.setInputGain_dB(10.f); // set MICPGA volume, 0-47.5dB in 0.5dB setps
+  audioHardware.setInputGain_dB(15.f); // set MICPGA volume, 0-47.5dB in 0.5dB setps
 }
 
 //define functions to setup the audio processing parameters
@@ -268,8 +268,8 @@ void servicePotentiometer(unsigned long curTime_millis) {
               //Serial.print("Changing output volume to = "); Serial.print(vol_dB); Serial.println(" dB");
               //audioHardware.volume_dB(vol_dB);
 
-              float min_mic_dB = +10.0f;
-              float vol_dB = min_mic_dB + 25.0f * ((val - 0.5) * 2.0); //set volume as 10dB +/- 25 dB
+              float min_mic_dB = +15.0f;
+              float vol_dB = min_mic_dB + 25.0f * ((val - 0.5) * 2.0); //set volume as 15dB +/- 25 dB
               //vol_dB = 1.5*vol_dB + 10.0f; //(+/15*1.75 = +/-
               Serial.print("Changing input gain = "); Serial.print(vol_dB); Serial.println(" dB");
               if (vol_dB  < min_mic_dB) {

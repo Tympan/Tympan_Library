@@ -36,8 +36,8 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 			if (coeff_p && (coeff_p != FIR_F32_PASSTHRU) && n_coeffs <= FIR_MAX_COEFFS) {
 				arm_fir_init_f32(&fir_inst, n_coeffs, (float32_t *)coeff_p,  &StateF32[0], block_size);
 				configured_block_size = block_size;
-				Serial.print("AudioFilterFIR_F32: FIR is initialized. N_FIR = "); Serial.print(n_coeffs);
-				Serial.print(", Block Size = "); Serial.println(block_size);
+				//Serial.print("AudioFilterFIR_F32: FIR is initialized. N_FIR = "); Serial.print(n_coeffs);
+				//Serial.print(", Block Size = "); Serial.println(block_size);
 			//} else {
 			//	Serial.print("AudioFilterFIR_F32: *** ERROR ***: Cound not initialize. N_FIR = "); Serial.print(n_coeffs);
 			//	Serial.print(", Block Size = "); Serial.println(block_size);
