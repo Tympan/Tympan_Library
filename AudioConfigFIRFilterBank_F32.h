@@ -12,7 +12,7 @@
 #ifndef AudioConfigFIRFilterBank_F32_h
 #define AudioConfigFIRFilterBank_F32_h
 
-#include "utility/rfft.c"
+#include "utility/BTNRH_rfft.h"  //has BTNRH_FFT namespace functions
 
 #define fmove(x,y,n)    memmove(x,y,(n)*sizeof(float))
 #define fcopy(x,y,n)    memcpy(x,y,(n)*sizeof(float))
@@ -126,12 +126,12 @@ class AudioConfigFIRFilterBank_F32 {
         // channel tranfer functions
         fzero(xx, ns);
         xx[nw_orig / 2] = 1; //make a single-sample impulse centered on our eventual window
-        cha_fft_rc(xx, nt);
+        BTNRH_FFT::cha_fft_rc(xx, nt);
         for (k = 0; k < nc; k++) {
             fzero(yy, ns); //zero the temporary output
             //int nbins = (be[k + 1] - be[k]) * 2;  Serial.print("fir_filterbank: chan ");Serial.print(k); Serial.print(", nbins = ");Serial.println(nbins);
             fcopy(yy + be[k] * 2, xx + be[k] * 2, (be[k + 1] - be[k]) * 2); //copy just our passband
-            cha_fft_cr(yy, nt); //IFFT back into the time domain
+            BTNRH_FFT::cha_fft_cr(yy, nt); //IFFT back into the time domain
             
             // apply window to iFFT of bandpass
             for (j = 0; j < nw; j++) {

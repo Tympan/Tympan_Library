@@ -17,17 +17,8 @@
 
 #include <arm_math.h> //ARM DSP extensions.  for speed!
 #include <AudioStream_F32.h>
+#include "BTNRH_WDRC_Types.h"
 
-typedef struct {
-    float attack;               // attack time (ms), unused in this class
-    float release;              // release time (ms), unused in this class
-    float fs;                   // sampling rate (Hz), set through other means in this class
-    float maxdB;                // maximum signal (dB SPL)...I think this is the SPL corresponding to signal with rms of 1.0
-    float tkgain;               // compression-start gain
-    float tk;                   // compression-start kneepoint
-    float cr;                   // compression ratio
-    float bolt;                 // broadband output limiting threshold
-} CHA_WDRC;
 
 
 class AudioCalcGainWDRC_F32 : public AudioStream_F32
@@ -129,7 +120,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     }
     
     void setDefaultValues(void) {
-      CHA_WDRC gha = {1.0f, // attack time (ms), IGNORED HERE
+      BTNRH_WDRC::CHA_WDRC gha = {1.0f, // attack time (ms), IGNORED HERE
         50.0f,     // release time (ms), IGNORED HERE
         24000.0f,  // fs, sampling rate (Hz), IGNORED HERE
         119.0f,    // maxdB, maximum signal (dB SPL)
@@ -141,7 +132,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       //setParams(gha.maxdB, gha.tkgain, gha.cr, gha.tk, gha.bolt); //also sets calcEnvelope
       setParams_from_CHA_WDRC(&gha);
     }
-    void setParams_from_CHA_WDRC(CHA_WDRC *gha) {
+    void setParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {
       setParams(gha->maxdB, gha->tkgain, gha->cr, gha->tk, gha->bolt); //also sets calcEnvelope
     }
     void setParams(float _maxdB, float _tkgain, float _cr, float _tk, float _bolt) {
