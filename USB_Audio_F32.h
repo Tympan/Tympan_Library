@@ -81,7 +81,7 @@ public:
 		patchCord100_L = new AudioConnection_F32(queue_L, 0, f32_to_i16_L, 0);  //noise is an Int16 audio object.  So, convert it!
     	patchCord100_R = new AudioConnection_F32(queue_R, 0, f32_to_i16_R, 0);  //noise is an Int16 audio object.  So, convert it!
     	patchCord101_L = new AudioConnection(f32_to_i16_L, 0, usb_out, 0); //Int16 audio connection
-		patchCord101_R = new AudioConnection(f32_to_i16_L, 0, usb_out, 1); //Int16 audio connection
+		patchCord101_R = new AudioConnection(f32_to_i16_R, 0, usb_out, 1); //Int16 audio connection
 	}
 	
 	//define audio processing blocks.

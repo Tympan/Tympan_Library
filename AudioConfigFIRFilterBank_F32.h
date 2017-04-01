@@ -91,8 +91,8 @@ class AudioConfigFIRFilterBank_F32 {
         int      j, k, kk, nt, nf, ns, *be;
 
         int nw = nextPowerOfTwo(nw_orig);
-        Serial.print("fir_filterbank: nw_orig = "); Serial.print(nw_orig);
-        Serial.print(", nw = "); Serial.println(nw);
+        //Serial.print("AudioConfigFIRFilterBank: fir_filterbank: nw_orig = "); Serial.print(nw_orig);
+        //Serial.print(", nw = "); Serial.println(nw);
     
         nt = nw * 2;
         nf = nw + 1;
