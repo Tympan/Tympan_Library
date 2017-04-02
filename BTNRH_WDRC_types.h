@@ -22,6 +22,25 @@ namespace BTNRH_WDRC {
 			float tk[DSL_MXCH];         // compression-start kneepoint
 			float bolt[DSL_MXCH];       // broadband output limiting threshold
 	} CHA_DSL;
+	
+	typedef struct {
+	//public:
+		//CHA_DSL(void) {};  
+		//static const int DSL_MXCH = 32;    // maximum number of channels
+		float attack;               // attack time (ms)
+		float release;              // release time (ms)
+		float maxdB;                // maximum signal (dB SPL)
+		int ear;                     // 0=left, 1=right
+		int nchannel;                // number of channels
+		float cross_freq[DSL_MXCH]; // cross frequencies (Hz)
+		float exp_cr[DSL_MXCH];		// compression ratio for low-SPL region (ie, the expander)
+		float exp_end_knee[DSL_MXCH];	// expansion-end kneepoint
+		float tkgain[DSL_MXCH];     // compression-start gain
+		float cr[DSL_MXCH];         // compression ratio
+		float tk[DSL_MXCH];         // compression-start kneepoint
+		float bolt[DSL_MXCH];       // broadband output limiting threshold
+	} CHA_DSL2;
+	
 	/* 		int parseStringIntoDSL(String &text_buffer) {
 			  int position = 0;
 			  float foo_val;
@@ -144,6 +163,19 @@ namespace BTNRH_WDRC {
 		float cr;                   // compression ratio
 		float bolt;                 // broadband output limiting threshold
 	} CHA_WDRC;
+	
+	typedef struct {
+		float attack;               // attack time (ms), unused in this class
+		float release;              // release time (ms), unused in this class
+		float fs;                   // sampling rate (Hz), set through other means in this class
+		float maxdB;                // maximum signal (dB SPL)...I think this is the SPL corresponding to signal with rms of 1.0
+		float exp_cr;				// compression ratio for low-SPL region (ie, the expander)
+		float exp_end_knee;			// expansion-end kneepoint
+		float tkgain;               // compression-start gain
+		float tk;                   // compression-start kneepoint
+		float cr;                   // compression ratio
+		float bolt;                 // broadband output limiting threshold
+	} CHA_WDRC2;
 };
 
 #endif
