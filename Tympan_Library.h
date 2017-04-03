@@ -5,6 +5,7 @@
 #include "AudioCalcEnvelope_F32.h"
 #include "AudioCalcGainWDRC_F32.h"
 #include "AudioConfigFIRFilterBank_F32.h"
+#include "AudioControlTester.h"
 #include <AudioConvert_F32.h>
 #include "AudioEffectCompWDRC_F32.h"
 #include "AudioEffectEmpty_F32.h"
