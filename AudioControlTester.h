@@ -9,6 +9,7 @@ class AudioTestSignalGenerator_F32;
 class AudioTestSignalMeasurement_F32;
 class AudioControlSignalTester_F32;
 class AudioControlTestAmpSweep_F32;
+class AudioControlTestFreqSweep_F32;
 
 // class definitions
 class AudioTestSignalGenerator_F32 : public AudioStream_F32
@@ -61,6 +62,14 @@ class AudioTestSignalGenerator_F32 : public AudioStream_F32
     void frequency(float val) {
       sine_gen.frequency(val);
     }
+	
+	virtual void setSignalAmplitude_dBFS(float val_dBFS) {
+		amplitude(sqrtf(2.0)*sqrtf(powf(10.0f,0.1*val_dBFS)));
+	};
+	virtual void setSignalFrequency_Hz(float val_Hz) {
+		frequency(val_Hz);
+	}
+	
   private:
     bool is_testing = false;
     audio_block_f32_t *inputQueueArray[1];
@@ -207,17 +216,43 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
       //add this number
       sum_sig_pow_baseline[counter_step] += (baseline_rms*baseline_rms);
       sum_sig_pow_test[counter_step] += (test_rms*test_rms);
+	  freq_at_each_step_Hz[counter_step] = signal_frequency_Hz;
       counter_sum[counter_step]++;
       if (counter_sum[counter_step] >= target_counts_per_step) {
         gotoNextStep();
       }
     }
+	
+	virtual void setSignalFrequency_Hz(float freq_Hz) {
+      signal_frequency_Hz = freq_Hz;
+      sig_gen.setSignalFrequency_Hz(signal_frequency_Hz);
+    }
+    virtual void setSignalAmplitude_dBFS(float amp_dBFS) {
+      signal_amplitude_dBFS = amp_dBFS;
+      sig_gen.setSignalAmplitude_dBFS(amp_dBFS);
+    }
+	virtual void printTableOfResults(Stream *s) {
+      float ave1_dBFS, ave2_dBFS, gain_dB;
+      s->println("  : Freq (Hz), Input (dBFS), Output (dBFS), Gain (dB)");
+      for (int i=0; i < target_n_steps; i++) {
+        ave1_dBFS = 10.f*log10f(sum_sig_pow_baseline[i]/counter_sum[i]);
+        ave2_dBFS = 10.f*log10f(sum_sig_pow_test[i]/counter_sum[i]);
+        gain_dB = ave2_dBFS - ave1_dBFS;
+		s->print("     ");  s->print(freq_at_each_step_Hz[i],0);
+        s->print(",       ");  s->print(ave1_dBFS,1);
+        s->print(",       ");  s->print(ave2_dBFS,1);
+        s->print(",       ");  s->println(gain_dB,2);
+      }
+	}
+	
     bool isDataAvailable = false;
     bool available(void) { return isDataAvailable; }
     
   protected:
     AudioTestSignalGenerator_F32 &sig_gen;
     AudioTestSignalMeasurement_F32 &sig_meas;
+	float signal_frequency_Hz = 1000.f;
+    float signal_amplitude_dBFS = -50.0f;
     int counter_ignore = 0;
     //bool is_testing = 0;
     
@@ -232,6 +267,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
 
     float sum_sig_pow_baseline[max_steps];
     float sum_sig_pow_test[max_steps];
+	float freq_at_each_step_Hz[max_steps];
     int counter_sum[max_steps], counter_step=-1;
 
     int recomputeTargetCountsPerStep(void) {
@@ -245,7 +281,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
 //      }
       return target_counts_per_step; 
     }
-    int recomputeTargetNumberOfSteps(void) {
+    virtual int recomputeTargetNumberOfSteps(void) {
       return target_n_steps = (int)((end_val - start_val)/step_val + 0.5)+1;  //round
     }
 
@@ -271,9 +307,8 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
         sum_sig_pow_baseline[counter_step]=0.0f;
         sum_sig_pow_test[counter_step]=0.0f;
         updateSignalGenerator();
-        //Serial.print("AudioControlSignalTester_F32: gotoNextStep: looking for ");
-        //Serial.print(target_counts_per_step);
-        //Serial.println(" packets per step.");
+		freq_at_each_step_Hz[counter_step]=0.0f;
+		
       }
     }
     virtual void updateSignalGenerator(void) 
@@ -317,44 +352,98 @@ class AudioControlTestAmpSweep_F32 : public AudioControlSignalTester_F32
     }
 
     //use this to cancel the test
-    void end(void) {
-      finishTest();
-    }
+    //void end(void) {
+    //  finishTest();
+    //}
     
     void printTableOfResults(Stream *s) {
-      float ave1_dBFS, ave2_dBFS, gain_dB;
       s->println("AudioControlTestAmpSweep_F32: Start Table of Results...");
-      s->print("  : Tone Frequency (Hz) = "); s->println(signal_frequency_Hz);
-      s->println("  : Input (dBFS), Output (dBFS), Gain (dB)");
-      for (int i=0; i < target_n_steps; i++) {
-        ave1_dBFS = 10.f*log10f(sum_sig_pow_baseline[i]/counter_sum[i]);
-        ave2_dBFS = 10.f*log10f(sum_sig_pow_test[i]/counter_sum[i]);
-        gain_dB = ave2_dBFS - ave1_dBFS;
-        s->print("    "); s->print(ave1_dBFS);
-        s->print(",   ");  s->print(ave2_dBFS);
-        s->print(",   ");  s->println(gain_dB);
-      }
+	  AudioControlSignalTester_F32::printTableOfResults(s);
       s->println("AudioControlTestAmpSweep_F32: End Table of Results...");
     }
-    void setSignalFrequency(float freq_Hz) {
-      signal_frequency_Hz = freq_Hz;
-      sig_gen.frequency(signal_frequency_Hz);
-    }
+
   protected:
-    float signal_frequency_Hz = 1000.f;
+  
     virtual void updateSignalGenerator(void) {
       float new_amp_dB = start_val + ((float)counter_step)*step_val; //start_val and step_val are in parent class
-      float new_amp = sqrtf(powf(10.f,0.1f*new_amp_dB)); //convert dB to rms
-      new_amp = new_amp * sqrtf(2.0);  //convert rms to amplitude
-      //Serial.print("AudioControlTestAmpSweep_F32: updateSignalGenerator(): setting amplitude to (dB) ");
-      //Serial.println(new_amp_dB);
-      sig_gen.amplitude(new_amp);
+      Serial.print("AudioControlTestAmpSweep_F32: updateSignalGenerator(): setting amplitude to (dBFS) ");
+      Serial.println(new_amp_dB);
+      setSignalAmplitude_dBFS(new_amp_dB);
+    }
+    void finishTest(void) {     
+      //disable the test instrumentation
+      setSignalAmplitude_dBFS(-1000.0f); //some very quiet value
+ 
+      //do all of the common actions
+      AudioControlSignalTester_F32::finishTest();
+
+      //print results
+      printTableOfResults(&Serial);
+    }
+
+    //void resetState(void) {
+    //  AudioControlSignalTester_F32::resetState();
+    //}
+};
+
+
+// //////////////////////////////////////////////////////////////////////////
+class AudioControlTestFreqSweep_F32 : public AudioControlSignalTester_F32
+{
+  //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
+  //GUI: shortName: freqSweepTester
+  public:
+    AudioControlTestFreqSweep_F32(AudioSettings_F32 &settings, AudioTestSignalGenerator_F32 &_sig_gen, AudioTestSignalMeasurement_F32 &_sig_meas) 
+      : AudioControlSignalTester_F32(settings, _sig_gen,_sig_meas)
+    {
+      float start_freq_Hz = 125.f, end_freq_Hz = 16000.f, step_freq_octave = sqrtf(2.0);
+      setStepPattern(start_freq_Hz, end_freq_Hz, step_freq_octave);
+      setTargetDurPerStep_sec(0.25);
+      resetState();
+    }
+    void begin(void) {
+      //activate the instrumentation
+      sig_gen.begin();
+      sig_meas.begin(this);
+
+      //start the test
+      resetState();
+	  recomputeTargetNumberOfSteps();
+      gotoNextStep();
+    }
+
+    //use this to cancel the test
+    //void end(void) {
+    //  finishTest();
+    //}
+    
+    void printTableOfResults(Stream *s) {
+      s->println("AudioControlTestFreqSweep_F32: Start Table of Results...");
+	  AudioControlSignalTester_F32::printTableOfResults(s);
+      s->println("AudioControlTestFreqSweep_F32: End Table of Results...");
+    }
+
+	
+  protected:
+	float signal_frequency_Hz = 1000.f;
+    float signal_amplitude_dBFS = -50.0f;
+	
+	virtual int recomputeTargetNumberOfSteps(void) {
+      return target_n_steps = (int)(log10f(end_val/start_val)/log10f(step_val)+0.5) + 1;  //round
+    }  
+	
+    virtual void updateSignalGenerator(void) {
+	  //logarithmically step the frequency
+	  float new_freq_Hz = start_val * powf(step_val,counter_step);
+	  Serial.print("AudioControlTestFreqSweep_F32: updateSignalGenerator(): setting freq to ");
+      Serial.println(new_freq_Hz);
+      setSignalFrequency_Hz(new_freq_Hz);
     }
     void finishTest(void) {
-      //Serial.println("AudioControlTestAmpSweep_F32: finishTest()...");
       
       //disable the test instrumentation
-      sig_gen.amplitude(0.0);
+      setSignalAmplitude_dBFS(-1000.0f);  //some very quiet value
+	  setSignalFrequency_Hz(1000.f);
 
       //do all of the common actions
       AudioControlSignalTester_F32::finishTest();
@@ -363,12 +452,11 @@ class AudioControlTestAmpSweep_F32 : public AudioControlSignalTester_F32
       printTableOfResults(&Serial);
     }
 
-    void resetState(void) {
-      //if (Serial) Serial.println("AudioControlTestAmpSweep_F32: resetState(): ...");
-      //setSignalFrequency(1000.f);
-      AudioControlSignalTester_F32::resetState();
-    }
+    //void resetState(void) {
+    //  AudioControlSignalTester_F32::resetState();
+    //}
 };
+
 
 
 #endif
