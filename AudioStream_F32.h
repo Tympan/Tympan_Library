@@ -17,11 +17,13 @@
 #include <Audio.h> //Teensy Audio Library
 
 
+// /////////////// class prototypes
 class AudioStream_F32;
 class AudioConnection_F32;
 class AudioSettings_F32;
 
 
+// ///////////// class definitions
 class AudioSettings_F32 {
 	public:
 		AudioSettings_F32(float fs_Hz, int block_size) :
