@@ -51,7 +51,7 @@ class AudioConfigFIRFilterBank_F32 {
         flag__free_cf = 1;
         computeLogSpacedCornerFreqs(n_chan, sample_rate_Hz, cf);
       }
-      const int window_type = 0;  //0 = Hamming
+      const int window_type = 0;  //0 = Hamming, 1=Blackmann, 2 = Hanning
       fir_filterbank(filter_coeff, cf, n_chan, n_fir, window_type, sample_rate_Hz);
       if (flag__free_cf) free(cf); 
     }
