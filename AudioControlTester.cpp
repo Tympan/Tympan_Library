@@ -65,3 +65,37 @@ void AudioTestSignalMeasurement_F32::update(void) {
   //notify controller
   if (testController != NULL) testController->transferRMSValues(baseline_rms, test_rms);
 }
+
+void AudioTestSignalMeasurementMulti_F32::update(void) {
+  
+  //if we're not testing, just return
+  if (!is_testing) {
+    return;
+  }
+
+  //receive the input audio data...the baseline and the test
+  audio_block_f32_t *in_block_baseline = AudioStream_F32::receiveReadOnly_f32(0);
+  if (in_block_baseline==NULL) return;
+  float baseline_rms = computeRMS(in_block_baseline->data, in_block_baseline->length);
+  AudioStream_F32::release(in_block_baseline);
+  
+  //loop over each of the test data connections
+  float test_rms[num_test_values];
+  int n_with_data = 0;
+  for (int Ichan=0; Ichan < num_test_values; Ichan++) {
+	audio_block_f32_t *in_block_test = AudioStream_F32::receiveReadOnly_f32(1+Ichan);
+	if (in_block_test==NULL) {
+		//no data
+		test_rms[Ichan]=0.0f;
+	} else {
+		//process data
+		n_with_data = Ichan+1;
+		test_rms[Ichan]=computeRMS(in_block_test->data, in_block_test->length);
+		AudioStream_F32::release(in_block_test);
+	}
+  }
+ 
+  
+  //notify controller
+  if (testController != NULL) testController->transferRMSValues(baseline_rms, test_rms, n_with_data);
+}

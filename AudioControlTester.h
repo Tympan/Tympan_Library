@@ -4,9 +4,15 @@
 
 #include <Tympan_Library.h>
 
+#define max_steps 64
+#define max_num_chan 9   //max number of test signal inputs to the AudioTestSignalMeasurementMulti_F32
+
 //prototypes
 class AudioTestSignalGenerator_F32;
+class AudioTestSignalMeasurementInterface_F32;
 class AudioTestSignalMeasurement_F32;
+class AudioTestSignalMeasurementMulti_F32;
+class AudioControlSignalTesterInterface_F32;
 class AudioControlSignalTester_F32;
 class AudioControlTestAmpSweep_F32;
 class AudioControlTestFreqSweep_F32;
@@ -85,56 +91,85 @@ class AudioTestSignalGenerator_F32 : public AudioStream_F32
 
 
 // //////////////////////////////////////////////////////////////////////////
-class AudioTestSignalMeasurement_F32 : public AudioStream_F32
-{
-  //GUI: inputs:1, outputs:0  //this line used for automatic generation of GUI node
-  //GUI: shortName: testSigMeas
-  public:
-    AudioTestSignalMeasurement_F32(void): AudioStream_F32(2,inputQueueArray) {
-      setSampleRate_Hz(AUDIO_SAMPLE_RATE);
-      setDefaultValues();
-    }
-    AudioTestSignalMeasurement_F32(const AudioSettings_F32 &settings): AudioStream_F32(2,inputQueueArray) {
-      setAudioSettings(settings);
-      setDefaultValues();
-    }
-    void setAudioSettings(const AudioSettings_F32 &settings) {
-      setSampleRate_Hz(settings.sample_rate_Hz);
-    }
-    void setSampleRate_Hz(const float _fs_Hz) {
-      //pass this data on to its components that care
-      //sine_gen.setSampleRate_Hz(_fs_Hz);
-    }
-    virtual void update(void);
+class AudioTestSignalMeasurementInterface_F32 {
+	public:
+		AudioTestSignalMeasurementInterface_F32 (void) {};
+		
+		void setAudioSettings(const AudioSettings_F32 &settings) {
+		  setSampleRate_Hz(settings.sample_rate_Hz);
+		}
+		void setSampleRate_Hz(const float _fs_Hz) {
+		  //pass this data on to its components that care.  None care right now.
+		}
+		virtual void update(void);
+	    virtual float computeRMS(float data[], int n) {
+			float rms_value;
+			arm_rms_f32 (data, n, &rms_value);
+			return rms_value;
+		}
+		virtual void begin(AudioControlSignalTester_F32 *p_controller) {
+		  //if (Serial) Serial.println("AudioTestSignalMeasurement_F32: begin(): ...");
+		  testController = p_controller;
+		  is_testing = true;
+		}
+		virtual void end(void) {
+		  //if (Serial) Serial.println("AudioTestSignalMeasurement_F32: end(): ...");
+		  testController = NULL;
+		  is_testing = false;
+		}
+	protected:
+		bool is_testing = false;
+		//audio_block_f32_t *inputQueueArray[2];
+		AudioControlSignalTester_F32 *testController = NULL;
 
-    float computeRMS(float data[], int n) {
-      float rms_value;
-      arm_rms_f32 (data, n, &rms_value);
-      return rms_value;
-    }
-    void begin(AudioControlSignalTester_F32 *p_controller) {
-      //if (Serial) Serial.println("AudioTestSignalMeasurement_F32: begin(): ...");
-      testController = p_controller;
-      is_testing = true;
-    }
-    void end(void) {
-      //if (Serial) Serial.println("AudioTestSignalMeasurement_F32: end(): ...");
-      testController = NULL;
-      is_testing = false;
-    }
-
-  private:
-    bool is_testing = false;
-    audio_block_f32_t *inputQueueArray[2];
-    AudioControlSignalTester_F32 *testController = NULL;
-
-    void setDefaultValues(void) {
-      is_testing = false;
-    }
+		virtual void setDefaultValues(void) {
+			is_testing = false;
+		}
 };
 
+class AudioTestSignalMeasurement_F32 : public AudioStream_F32, public AudioTestSignalMeasurementInterface_F32
+{
+	//GUI: inputs:2, outputs:0  //this line used for automatic generation of GUI node
+	//GUI: shortName: testSigMeas
+	public:
+		AudioTestSignalMeasurement_F32(void): AudioStream_F32(2,inputQueueArray) {
+		  setSampleRate_Hz(AUDIO_SAMPLE_RATE);
+		  setDefaultValues();
+		}
+		AudioTestSignalMeasurement_F32(const AudioSettings_F32 &settings): AudioStream_F32(2,inputQueueArray) {
+		  setAudioSettings(settings);
+		  setDefaultValues();
+		}
+		void update(void);
+ 
+	private:
+		audio_block_f32_t *inputQueueArray[2];
+
+};
+
+class AudioTestSignalMeasurementMulti_F32 : public AudioStream_F32, public AudioTestSignalMeasurementInterface_F32
+{
+	//GUI: inputs:10, outputs:0  //this line used for automatic generation of GUI node
+	//GUI: shortName: testSigMeas
+	public:
+		AudioTestSignalMeasurementMulti_F32(void): AudioStream_F32(max_num_chan+1,inputQueueArray) {
+		  setSampleRate_Hz(AUDIO_SAMPLE_RATE);
+		  setDefaultValues();
+		}
+		AudioTestSignalMeasurementMulti_F32(const AudioSettings_F32 &settings): AudioStream_F32(max_num_chan+1,inputQueueArray) {
+		  setAudioSettings(settings);
+		  setDefaultValues();
+		}
+		void update(void);
+ 
+	private:
+		//int num_input_connections = max_num_chan+1;
+		int num_test_values = max_num_chan;
+		audio_block_f32_t *inputQueueArray[max_num_chan+1];
+};
+
+
 // ///////////////////////////////////////////////////////////////////////////////////
-#define max_steps 128
 class AudioControlSignalTesterInterface_F32 {
   public:
     AudioControlSignalTesterInterface_F32(void) {};
@@ -144,16 +179,17 @@ class AudioControlSignalTesterInterface_F32 {
     virtual void end(void) = 0;
     virtual void setStepPattern(float, float, float) = 0;
     virtual void transferRMSValues(float, float) = 0;
+	virtual void transferRMSValues(float, float *, int) = 0;
     virtual bool available(void) = 0;
 };
 
-// ////////////////////////////////////////////////
+
 class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F32
 {
   //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
   //GUI: shortName: sigTest(Abstract)
   public: 
-    AudioControlSignalTester_F32(AudioSettings_F32 &settings, AudioTestSignalGenerator_F32 &_sig_gen, AudioTestSignalMeasurement_F32 &_sig_meas) 
+    AudioControlSignalTester_F32(AudioSettings_F32 &settings, AudioTestSignalGenerator_F32 &_sig_gen, AudioTestSignalMeasurementInterface_F32 &_sig_meas) 
         : AudioControlSignalTesterInterface_F32(), sig_gen(_sig_gen), sig_meas(_sig_meas) {
 
       setAudioBlockSamples(settings.audio_block_samples);
@@ -182,18 +218,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
       setAudioBlockSamples(audio_settings.audio_block_samples);
       setSampleRate_Hz(audio_settings.sample_rate_Hz);
     }
-    void setTargetDurPerStep_sec(float sec) {
-      if (sec > 0.001) {
-        target_dur_per_step_sec = sec;
-        recomputeTargetCountsPerStep();
-      } else {
-        Serial.print("AudioControlSignalTester_F32: setTargetDurPerStep_sec: given duration too short: ");
-        Serial.print(target_dur_per_step_sec);
-        Serial.print(". Ignoring...");
-        return;
-      }
-    }
-    void setAudioBlockSamples(int block_samples) {
+	void setAudioBlockSamples(int block_samples) {
       audio_block_samples = block_samples;
       recomputeTargetCountsPerStep();
     }
@@ -201,23 +226,51 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
       sample_rate_Hz = fs_Hz;
       recomputeTargetCountsPerStep();
     }
+	
+	//define how long (seconds) to spend at each step of the test
+    void setTargetDurPerStep_sec(float sec) {
+      if (sec > 0.001) {
+        target_dur_per_step_sec = sec;
+        recomputeTargetCountsPerStep();
+      } else {
+        Serial.print(F("AudioControlSignalTester_F32: setTargetDurPerStep_sec: given duration too short: "));
+        Serial.print(target_dur_per_step_sec);
+        Serial.print(F(". Ignoring..."));
+        return;
+      }
+    }
     virtual void setStepPattern(float _start_val, float _end_val, float _step_val) {
       start_val = _start_val; end_val = _end_val; step_val = _step_val;
       recomputeTargetNumberOfSteps();
     }
     
     virtual void transferRMSValues(float baseline_rms, float test_rms) {
+		transferRMSValues(baseline_rms, &test_rms, 0);
+	}
+	virtual void transferRMSValues(float baseline_rms, float *test_rms, int num_chan) {
       if (counter_ignore > 0) {
         //ignore this reading
         counter_ignore--;
         return;
       }
-
+	  given_num_chan = num_chan;
+	  if (given_num_chan > max_num_chan) {
+		Serial.println(F("AudioControlSignalTester_F32: transferRMSValues: *** ERROR ***"));
+		Serial.print(F("    : num_chan (")); Serial.print(num_chan); Serial.print(")");
+		Serial.print(F(" is bigger max_num_chan (")); Serial.println(max_num_chan);
+		Serial.println(F("    : Skipping..."));
+		return;
+	  }
+	  
       //add this number
       sum_sig_pow_baseline[counter_step] += (baseline_rms*baseline_rms);
-      sum_sig_pow_test[counter_step] += (test_rms*test_rms);
+	  for (int Ichan=0; Ichan < num_chan; Ichan++) {
+		sum_sig_pow_test[counter_step][Ichan] += (test_rms[Ichan]*test_rms[Ichan]);
+	  }
 	  freq_at_each_step_Hz[counter_step] = signal_frequency_Hz;
       counter_sum[counter_step]++;
+	  
+	  //have all the channels checked in?
       if (counter_sum[counter_step] >= target_counts_per_step) {
         gotoNextStep();
       }
@@ -232,15 +285,29 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
       sig_gen.setSignalAmplitude_dBFS(amp_dBFS);
     }
 	virtual void printTableOfResults(Stream *s) {
-      float ave1_dBFS, ave2_dBFS, gain_dB;
-      s->println("  : Freq (Hz), Input (dBFS), Output (dBFS), Gain (dB)");
+      float ave1_dBFS, ave2_dBFS, gain_dB, total_pow, foo_pow;
+      s->println("  : Freq (Hz), Input (dBFS), Per-Chan Output (dBFS), Total Gain (dB)");
+	  //s->print("  : given_num_chan = ");s->println(given_num_chan);
       for (int i=0; i < target_n_steps; i++) {
         ave1_dBFS = 10.f*log10f(sum_sig_pow_baseline[i]/counter_sum[i]);
-        ave2_dBFS = 10.f*log10f(sum_sig_pow_test[i]/counter_sum[i]);
-        gain_dB = ave2_dBFS - ave1_dBFS;
 		s->print("     ");  s->print(freq_at_each_step_Hz[i],0);
         s->print(",       ");  s->print(ave1_dBFS,1);
-        s->print(",       ");  s->print(ave2_dBFS,1);
+		
+		total_pow = 0.0f;
+        for (int Ichan=0; Ichan < given_num_chan; Ichan++) {
+			if (Ichan==0) {
+				s->print(",       ");
+			} else {
+				s->print(", ");
+			}
+			foo_pow = sum_sig_pow_test[i][Ichan]/counter_sum[i];
+			ave2_dBFS = 10.f*log10f(foo_pow);
+			s->print(ave2_dBFS,1);
+
+			total_pow += foo_pow;
+		}
+		ave2_dBFS = 10.f*log10f(total_pow);
+        gain_dB = ave2_dBFS - ave1_dBFS;
         s->print(",       ");  s->println(gain_dB,2);
       }
 	}
@@ -250,7 +317,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
     
   protected:
     AudioTestSignalGenerator_F32 &sig_gen;
-    AudioTestSignalMeasurement_F32 &sig_meas;
+    AudioTestSignalMeasurementInterface_F32 &sig_meas;
 	float signal_frequency_Hz = 1000.f;
     float signal_amplitude_dBFS = -50.0f;
     int counter_ignore = 0;
@@ -264,9 +331,10 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
     //const int max_steps = 64;
     float start_val = 0, end_val = 1.f, step_val = 1.f;
     int target_n_steps = 1;
+	int given_num_chan = max_num_chan;
 
     float sum_sig_pow_baseline[max_steps];
-    float sum_sig_pow_test[max_steps];
+    float sum_sig_pow_test[max_steps][max_num_chan];
 	float freq_at_each_step_Hz[max_steps];
     int counter_sum[max_steps], counter_step=-1;
 
@@ -289,7 +357,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
       isDataAvailable = false;
       for (int i=0; i<max_steps; i++) {
         sum_sig_pow_baseline[i]=0.0f;
-        sum_sig_pow_test[i]=0.0f;
+		for (int Ichan=0; Ichan<max_num_chan; Ichan++) sum_sig_pow_test[i][Ichan]=0.0f;
         counter_sum[i] = 0;
       }
       counter_step = -1;
@@ -305,7 +373,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
         counter_ignore = 10; //ignore first 10 packets
         counter_sum[counter_step]=0;
         sum_sig_pow_baseline[counter_step]=0.0f;
-        sum_sig_pow_test[counter_step]=0.0f;
+		for (int Ichan=0; Ichan < max_num_chan; Ichan++) sum_sig_pow_test[counter_step][Ichan]=0.0f;
         updateSignalGenerator();
 		freq_at_each_step_Hz[counter_step]=0.0f;
 		
@@ -333,7 +401,7 @@ class AudioControlTestAmpSweep_F32 : public AudioControlSignalTester_F32
   //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
   //GUI: shortName: ampSweepTester
   public:
-    AudioControlTestAmpSweep_F32(AudioSettings_F32 &settings, AudioTestSignalGenerator_F32 &_sig_gen, AudioTestSignalMeasurement_F32 &_sig_meas) 
+    AudioControlTestAmpSweep_F32(AudioSettings_F32 &settings, AudioTestSignalGenerator_F32 &_sig_gen, AudioTestSignalMeasurementInterface_F32 &_sig_meas) 
       : AudioControlSignalTester_F32(settings, _sig_gen,_sig_meas)
     {
       float start_amp_dB = -100.0f, end_amp_dB = 0.0f, step_amp_dB = 2.5f;
@@ -393,7 +461,7 @@ class AudioControlTestFreqSweep_F32 : public AudioControlSignalTester_F32
   //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
   //GUI: shortName: freqSweepTester
   public:
-    AudioControlTestFreqSweep_F32(AudioSettings_F32 &settings, AudioTestSignalGenerator_F32 &_sig_gen, AudioTestSignalMeasurement_F32 &_sig_meas) 
+    AudioControlTestFreqSweep_F32(AudioSettings_F32 &settings, AudioTestSignalGenerator_F32 &_sig_gen, AudioTestSignalMeasurementInterface_F32 &_sig_meas) 
       : AudioControlSignalTester_F32(settings, _sig_gen,_sig_meas)
     {
       float start_freq_Hz = 125.f, end_freq_Hz = 16000.f, step_freq_octave = sqrtf(2.0);
