@@ -16,7 +16,7 @@
 #include <SD.h>
 #include <SerialFlash.h>
 
-#include <OpenAudio_ArduinoLibrary.h> 
+#include <Tympan_Library.h> 
 #include "AudioEffectMine_F32.h"
 
 //create audio library objects for handling the audio
