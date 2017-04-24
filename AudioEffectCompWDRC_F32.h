@@ -49,7 +49,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       if (!out_block) return;
       
       //do the algorithm
-      cha_agc_channel(block->data, out_block->data, block->length);
+      compress(block->data, out_block->data, block->length);
       
       // transmit the block and release memory
       AudioStream_F32::transmit(out_block); // send the FIR output
@@ -59,11 +59,11 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
 
     //here is the function that does all the work
-    void cha_agc_channel(float *input, float *output, int cs) {  
-      //compress(input, output, cs, &prev_env,
-      //  CHA_DVAR.alfa, CHA_DVAR.beta, CHA_DVAR.tkgain, CHA_DVAR.tk, CHA_DVAR.cr, CHA_DVAR.bolt, CHA_DVAR.maxdB);
-      compress(input, output, cs);
-    }
+    //void cha_agc_channel(float *input, float *output, int cs) {  
+    //  //compress(input, output, cs, &prev_env,
+    //  //  CHA_DVAR.alfa, CHA_DVAR.beta, CHA_DVAR.tkgain, CHA_DVAR.tk, CHA_DVAR.cr, CHA_DVAR.bolt, CHA_DVAR.maxdB);
+    //  compress(input, output, cs);
+    //}
 
     //void compress(float *x, float *y, int n, float *prev_env,
     //    float &alfa, float &beta, float &tkgn, float &tk, float &cr, float &bolt, float &mxdB)
@@ -93,16 +93,16 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
 
     void setDefaultValues(void) {
-      //set default values...taken from CHAPRO, GHA_Demo.c  from "amplify()"...ignores given sample rate
-      //assumes that the sample rate has already been set!!!!
-      BTNRH_WDRC::CHA_WDRC gha = {1.0f, // attack time (ms)
+      //set default values...configure as limitter
+      BTNRH_WDRC::CHA_WDRC gha = {
+		5.0f, // attack time (ms)
         50.0f,     // release time (ms)
         24000.0f,  // fs, sampling rate (Hz), THIS IS IGNORED!
-        119.0f,    // maxdB, maximum signal (dB SPL)
-        0.0f,      // tkgain, compression-start gain
-        105.0f,    // tk, compression-start kneepoint
-        10.0f,     // cr, compression ratio
-        105.0f     // bolt, broadband output limiting threshold
+        115.0f,    // maxdB, maximum signal (dB SPL)...assumed SPL for full-scale input signal
+        0.0f,      // tkgain, compression-start gain (dB)
+        55.0f,    // tk, compression-start kneepoint (dB SPL)
+        1.0f,     // cr, compression ratio  (set to 1.0 to defeat)
+        100.0f     // bolt, broadband output limiting threshold (ie, the limiter. SPL. 10:1 comp ratio)
       };
       setParams_from_CHA_WDRC(&gha);
     }
@@ -133,9 +133,25 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       given_sample_rate_Hz = _fs_Hz;
       calcEnvelope.setSampleRate_Hz(_fs_Hz);
     }
+	
+	void setAttackRelease_msec(const float atk_msec, const float rel_msec) {
+		calcEnvelope.setAttackRelease_msec(atk_msec, rel_msec);
+	}
+	
+	void setKneeLimiter_dBSPL(float _bolt) { calcGain.setKneeLimiter_dBSPL(_bolt); }
+	void setKneeLimiter_dBFS(float _bolt_dBFS) {  calcGain.setKneeLimiter_dBFS(_bolt_dBFS); }
+	void setGain_dB(float _gain_dB) { calcGain.setGain_dB(_gain_dB); } //gain at start of compression
+	void setKneeCompressor_dBSPL(float _tk) { calcGain.setKneeCompressor_dBSPL(_tk); }
+	void setKneeCompressor_dBFS(float _tk_dBFS) { calcGain.setKneeCompressor_dBFS(_tk_dBFS); }
+	void setCompRatio(float _cr) { calcGain.setCompRatio(_cr); }
+	void setMaxdB(float _maxdB) { calcGain.setMaxdB(_maxdB); };
 
     float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 
+    float getGain_dB(void) { return calcGain.getGain_dB(); }	//returns the linear gain of the system
+	float getCurrentGain(void) { return calcGain.getCurrentGain(); }
+	float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
+	
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
     
