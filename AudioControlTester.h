@@ -5,7 +5,7 @@
 #include <Tympan_Library.h>
 
 #define max_steps 64
-#define max_num_chan 9   //max number of test signal inputs to the AudioTestSignalMeasurementMulti_F32
+#define max_num_chan 16   //max number of test signal inputs to the AudioTestSignalMeasurementMulti_F32
 
 //prototypes
 class AudioTestSignalGenerator_F32;
@@ -245,7 +245,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
     }
     
     virtual void transferRMSValues(float baseline_rms, float test_rms) {
-		transferRMSValues(baseline_rms, &test_rms, 0);
+		transferRMSValues(baseline_rms, &test_rms, 1);
 	}
 	virtual void transferRMSValues(float baseline_rms, float *test_rms, int num_chan) {
       if (counter_ignore > 0) {
@@ -285,8 +285,8 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
       sig_gen.setSignalAmplitude_dBFS(amp_dBFS);
     }
 	virtual void printTableOfResults(Stream *s) {
-      float ave1_dBFS, ave2_dBFS, gain_dB, total_pow, foo_pow;
-      s->println("  : Freq (Hz), Input (dBFS), Per-Chan Output (dBFS), Total Gain (dB)");
+      float ave1_dBFS, ave2_dBFS, ave3_dBFS, gain_dB, total_pow, total_wav, foo_pow;
+      s->println("  : Freq (Hz), Input (dBFS), Per-Chan Output (dBFS), Total Gain (inc) (dB), Total Gain (coh) (dB)");
 	  //s->print("  : given_num_chan = ");s->println(given_num_chan);
       for (int i=0; i < target_n_steps; i++) {
         ave1_dBFS = 10.f*log10f(sum_sig_pow_baseline[i]/counter_sum[i]);
@@ -294,6 +294,7 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
         s->print(",       ");  s->print(ave1_dBFS,1);
 		
 		total_pow = 0.0f;
+		total_wav = 0.0f;
         for (int Ichan=0; Ichan < given_num_chan; Ichan++) {
 			if (Ichan==0) {
 				s->print(",       ");
@@ -304,11 +305,16 @@ class AudioControlSignalTester_F32 : public AudioControlSignalTesterInterface_F3
 			ave2_dBFS = 10.f*log10f(foo_pow);
 			s->print(ave2_dBFS,1);
 
-			total_pow += foo_pow;
+			total_pow += foo_pow;  //sum as if it's noise being recombined incoherently
+			total_wav += sqrtf(foo_pow);  //sum as it it's a in-phase tone being combined coherently
 		}
 		ave2_dBFS = 10.f*log10f(total_pow);
         gain_dB = ave2_dBFS - ave1_dBFS;
-        s->print(",       ");  s->println(gain_dB,2);
+        s->print(",       ");  s->print(gain_dB,2);
+		
+		ave3_dBFS = 20.f*log10f(total_wav);
+		gain_dB = ave3_dBFS - ave1_dBFS;
+		s->print(",       ");  s->println(gain_dB,2);
       }
 	}
 	
