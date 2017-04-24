@@ -11,8 +11,8 @@
 #include "AudioEffectEmpty_F32.h"
 #include <AudioEffectGain_F32.h>
 #include <AudioEffectCompressor_F32.h>
+#include <AudioFilterBiquad_F32.h>
 #include <AudioFilterFIR_F32.h>
-#include <AudioFilterIIR_F32.h>
 #include <AudioMixer_F32.h>
 #include <AudioMultiply_F32.h>
 #include "input_i2s_f32.h"

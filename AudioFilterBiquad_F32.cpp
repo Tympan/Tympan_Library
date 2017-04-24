@@ -1,6 +1,6 @@
 
 /*
- * AudioFilterIIR_F32.cpp
+ * AudioFilterBiquad_F32.cpp
  *
  * Chip Audette, OpenAudio, Apr 2017
  *
@@ -9,9 +9,9 @@
 */
 
 
-#include "AudioFilterIIR_F32.h"
+#include "AudioFilterBiquad_F32.h"
 
-void AudioFilterIIR_F32::update(void)
+void AudioFilterBiquad_F32::update(void)
 {
   audio_block_f32_t *block;
 
