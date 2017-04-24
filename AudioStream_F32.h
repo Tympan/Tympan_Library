@@ -93,20 +93,6 @@ class AudioConnection_F32
     AudioConnection_F32 *next_dest;
 };
 
-#define AudioMemory_F32(num) ({ \
-  static audio_block_f32_t data_f32[num]; \
-  AudioStream_F32::initialize_f32_memory(data_f32, num); \
-})
-
-#define AudioMemory_F32_wSettings(num,settings) ({ \
-  static audio_block_f32_t data_f32[num]; \
-  AudioStream_F32::initialize_f32_memory(data_f32, num, settings); \
-})
-
-
-#define AudioMemoryUsage_F32() (AudioStream_F32::f32_memory_used)
-#define AudioMemoryUsageMax_F32() (AudioStream_F32::f32_memory_used_max)
-#define AudioMemoryUsageMaxReset_F32() (AudioStream_F32::f32_memory_used_max = AudioStream_F32::f32_memory_used)
 
 class AudioStream_F32 : public AudioStream {
   public:
@@ -143,6 +129,21 @@ class AudioStream_F32 : public AudioStream {
     static uint32_t f32_memory_pool_available_mask[6];
 };
 
+/*
+#define AudioMemory_F32(num) ({ \
+  static audio_block_f32_t data_f32[num]; \
+  AudioStream_F32::initialize_f32_memory(data_f32, num); \
+})
+*/
+
+void AudioMemory_F32(const int num);
+void AudioMemory_F32(const int num, const AudioSettings_F32 &settings);
+#define AudioMemory_F32_wSettings(num,settings) (AudioMemory_F32(num,settings))   //for historical compatibility
+
+
+#define AudioMemoryUsage_F32() (AudioStream_F32::f32_memory_used)
+#define AudioMemoryUsageMax_F32() (AudioStream_F32::f32_memory_used_max)
+#define AudioMemoryUsageMaxReset_F32() (AudioStream_F32::f32_memory_used_max = AudioStream_F32::f32_memory_used)
 
 
 #endif
