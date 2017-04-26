@@ -39,14 +39,11 @@ void setup() {
 
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
-  Serial.println("BasicGain: starting...");
+  Serial.println("BasicGain: starting setup()...");
   
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10); //allocate both kinds of memory
-  
-  //Enable the Tympan audio hardware
-  audioHardware.enable(); // activate AIC
-
+ 
   //Choose the desired input
   audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
   //  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
@@ -55,13 +52,17 @@ void setup() {
   //Set the desired volume levels
   audioHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   audioHardware.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
-
+ 
   // setup any other other features
   pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
 
+  //Enable the Tympan to start the audio flowing!
+  audioHardware.enable(); // activate AIC
+  
+  Serial.println("Setup complete.");
 } //end setup()
 
 

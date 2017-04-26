@@ -46,13 +46,10 @@ float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void setup() {
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
-  Serial.println("TrebleBoost: Starting...");
+  Serial.println("TrebleBoost: Starting setup()...");
   
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
-
-  //Enable the Tympan audio hardware
-  audioHardware.enable(); // activate AIC
   
   //Choose the desired input
   audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
@@ -74,7 +71,11 @@ void setup() {
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
-
+  
+  //Enable the Tympan to start the audio flowing!
+  audioHardware.enable(); // activate AIC
+  
+  Serial.println("Setup complete.");
 } //end setup()
 
 

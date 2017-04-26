@@ -39,17 +39,13 @@ AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Righ
 const float input_gain_dB = 20.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void setup() {
-
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
-  Serial.println("BasicGain: starting...");
+  Serial.println("BasicGain: starting setup()...");
   
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
   
-  //Enable the Tympan audio hardware
-  audioHardware.enable(); // activate AIC
-
   //Choose the desired input
   audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
   //  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
@@ -65,6 +61,10 @@ void setup() {
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
 
+  //Enable the Tympan to start the audio flowing!
+  audioHardware.enable(); // activate AIC
+  
+  Serial.println("Setup complete.");
 } //end setup()
 
 
