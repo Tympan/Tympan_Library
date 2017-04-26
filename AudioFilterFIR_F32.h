@@ -24,7 +24,9 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 	public:
 		AudioFilterFIR_F32(void): AudioStream_F32(1,inputQueueArray), 
 			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) {	}
-
+		AudioFilterFIR_F32(const AudioSettings_F32 &settings): AudioStream_F32(1,inputQueueArray), 
+			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) {	}
+			
 		//initialize the FIR filter by giving it the filter coefficients
 		void begin(const float32_t *cp, const int _n_coeffs) { begin(cp, _n_coeffs, AUDIO_BLOCK_SAMPLES); } //assume that the block size is the maximum
 		void begin(const float32_t *cp, const int _n_coeffs, const int block_size) {  //or, you can provide it with the block size

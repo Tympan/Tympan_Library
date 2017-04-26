@@ -22,9 +22,10 @@ class AudioConfigFIRFilterBank_F32 {
   //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node  
   //GUI: shortName:config_FIRbank
   public:
-    AudioConfigFIRFilterBank_F32(void) {
-    }
-    AudioConfigFIRFilterBank_F32(const int n_chan, const int n_fir, const float sample_rate_Hz, float *corner_freq, float *filter_coeff) {
+    AudioConfigFIRFilterBank_F32(void) {}
+	AudioConfigFIRFilterBank_F32(const AudioSettings_F32 &settings) {}
+    AudioConfigFIRFilterBank_F32(const int n_chan, const int n_fir, const float sample_rate_Hz, float *corner_freq, float *filter_coeff)
+	{
       createFilterCoeff(n_chan, n_fir, sample_rate_Hz, corner_freq, filter_coeff);
     }
 

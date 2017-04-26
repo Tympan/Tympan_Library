@@ -26,9 +26,10 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
   //GUI: shortName:calc_WDRCGain
   public:
-    //default constructor
+    //constructors
     AudioCalcGainWDRC_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
-
+	AudioCalcGainWDRC_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
+	
     //here's the method that does all the work
     void update(void) {
       

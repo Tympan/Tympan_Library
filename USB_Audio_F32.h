@@ -22,6 +22,16 @@ public:
 		//i16_to_f32.disconnectFromUpdateAll(); //requires modification to AudioStream.h
 		//output_queue.disconnectFromUpdateAll(); //requires modification to AudioStream.h
 		
+		makeConnections();
+	}
+	AudioInputUSB_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) {
+		//i16_to_f32.disconnectFromUpdateAll(); //requires modification to AudioStream.h
+		//output_queue.disconnectFromUpdateAll(); //requires modification to AudioStream.h
+		
+		makeConnections();
+	}
+	
+	void makeConnections(void) {
 		//make the audio connections
 		patchCord100_L = new AudioConnection(usb_in, 0, i16_to_f32_L, 0);  //usb_in is an Int16 audio object.  So, convert it!
     	patchCord100_R = new AudioConnection(usb_in, 1, i16_to_f32_R, 0);  //usb_in is an Int16 audio object.  So, convert it!
@@ -75,7 +85,14 @@ class AudioOutputUSB_F32 : public AudioStream_F32
 //GUI: shortName:usbAudioOut  //this line used for automatic generation of GUI node
 public:
 	AudioOutputUSB_F32() : AudioStream_F32(2, inputQueueArray_f32) {
-		
+		makeConnections();
+	}
+	
+	AudioOutputUSB_F32(const AudioSettings_F32 &settings) : AudioStream_F32(2, inputQueueArray_f32) {
+		makeConnections();
+	}
+	
+	void makeConnections(void) {
 		//make the audio connections
 		patchCord100_L = new AudioConnection_F32(queue_L, 0, f32_to_i16_L, 0);  //noise is an Int16 audio object.  So, convert it!
     	patchCord100_R = new AudioConnection_F32(queue_R, 0, f32_to_i16_R, 0);  //noise is an Int16 audio object.  So, convert it!

@@ -22,13 +22,20 @@ class AudioEffectCompressor_F32 : public AudioStream_F32
   public:
     //constructor
     AudioEffectCompressor_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {
+	  setDefaultValues(AUDIO_SAMPLE_RATE);   resetStates();
+    };
+	
+    AudioEffectCompressor_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) {
+	  setDefaultValues(settings.sample_rate_Hz);   resetStates();
+    };
+	
+	void setDefaultValues(const float sample_rate_Hz) {
       setThresh_dBFS(-20.0f);     //set the default value for the threshold for compression
       setCompressionRatio(5.0f);  //set the default copression ratio
-      setAttack_sec(0.005f, AUDIO_SAMPLE_RATE);  //default to this value
-      setRelease_sec(0.200f, AUDIO_SAMPLE_RATE); //default to this value
-      setHPFilterCoeff();  enableHPFilter(true);  //enable the HP filter to remove any DC offset from the audio
-      resetStates();
-    };
+      setAttack_sec(0.005f, sample_rate_Hz);  //default to this value
+      setRelease_sec(0.200f, sample_rate_Hz); //default to this value
+      setHPFilterCoeff();  enableHPFilter(true);  //enable the HP filter to remove any DC offset from the audio		
+	}
 
     //here's the method that does all the work
     void update(void) {
