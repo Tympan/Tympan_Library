@@ -19,3 +19,12 @@ Installing the Tympan Library
 
 **Don't Know GitHub?**: If you don't know GitHub, no problem!  You can download this library as a ZIP file.  Go back to the root of the Tympan library ([here](https://github.com/Tympan/Tympan_Library)) and click on the green button that says "Clone or Download".  You can then select "Download Zip".  Once the download is complete, I'd unzip the files and put them where the Arduino IDE looks for libraries.  On my computer, I put them here: `C:\Users\chipaudette\Documents\Arduino\libraries\Tympan_Library`
 
+Try Some Examples
+-------------
+
+Once you've downloaded the Tympan library, start (or restart) the Arduino IDE.  Under the "File" menu, select "Examples".  Then, scroll way to the bottom of the list.  You should see an entry that says "Tympan_Library".  Those are all the example files for trying out different audio alorithms or features of the system.  I recommend starting with:
+
+
+* **Audio Pass-Thru:**  You should start with this blog post: [Teensy Audio Board - First Audio](http://openaudio.blogspot.com/2016/10/teensy-audio-board-first-audio.html). It walks you through the process of configuring your device to pass the input audio to the output.  No processing, just an audio pass-thru.  Always start simple.  It doesn't get simpler than this.  If you don't want to walk through the whole process of using the Teensy Audio GUI, you can use my code directly.  Get it at the OpenAudio GitHub [here](https://github.com/chipaudette/OpenAudio_blog/tree/master/2016-10-23%20First%20Teensy%20Audio/Arduino/BasicLineInPassThrough).
+
+* **Basic Gain:** As your second trial, you should try adding gain to the signal.  Go to this blog post: [A Teensy Hearing Aid](http://openaudio.blogspot.com/2016/11/a-teensy-hearing-aid.html).  In addition to introducing the hardware of the hearing aid breadboad, it points to code that adds gain to the audio signal based on the setting of the potentiometer.  It helps illustrate how the data flows through the system so that you can manipulate it.  If you don't want to read through the whole thing, the example code can be found directly at my OpenAudio GitHub [here](https://github.com/chipaudette/OpenAudio_blog/tree/master/2016-11-20%20Basic%20Hearing%20Aid/BasicGain).
