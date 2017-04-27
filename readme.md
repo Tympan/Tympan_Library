@@ -15,7 +15,7 @@ Requirements
 Installing the Tympan Library
 ------------
 
-If you know Git and GitHub, go ahead and fork this repo and clone it to your local computer.  I strongly recommend that you clone it directly to the place on your computer where the Arduino IDE looks for libraries.  On my computer, I put them here: `C:\Users\chipaudette\Documents\Arduino\libraries\Tympan_Library`
+**Know GitHub?***:  If you know GitHub, go ahead and fork this repo and clone it to your local computer.  I strongly recommend that you clone it directly to the place on your computer where the Arduino IDE looks for libraries.  On my computer, I put them here: `C:\Users\chipaudette\Documents\Arduino\libraries\Tympan_Library`
 
-If you don't know Git or GitHub, you can download this library as a ZIP file.  Go back to the root of the Tympan library ([here](https://github.com/Tympan/Tympan_Library)) and click on the green button that says "Clone or Download".  You can then select "Download Zip".  Once the download is complete, I'd unzip the files and put them where the Arduino IDE looks for libraries.  On my computer, I put them here: `C:\Users\chipaudette\Documents\Arduino\libraries\Tympan_Library`
+**Don't Know GitHub?**: If you don't know GitHub, no problem!  You can download this library as a ZIP file.  Go back to the root of the Tympan library ([here](https://github.com/Tympan/Tympan_Library)) and click on the green button that says "Clone or Download".  You can then select "Download Zip".  Once the download is complete, I'd unzip the files and put them where the Arduino IDE looks for libraries.  On my computer, I put them here: `C:\Users\chipaudette\Documents\Arduino\libraries\Tympan_Library`
 
