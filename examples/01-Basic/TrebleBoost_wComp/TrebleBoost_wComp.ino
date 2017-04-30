@@ -79,6 +79,9 @@ void setup() {
   
   //allocate the audio memory first
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
+
+  //Enable the Tympan to start the audio flowing!
+  audioHardware.enable(); // activate AIC
   
   //Choose the desired input
   audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
@@ -104,9 +107,6 @@ void setup() {
   // check the setting on the potentiometer
   servicePotentiometer(millis(),0);
 
-  //Enable the Tympan to start the audio flowing!
-  audioHardware.enable(); // activate AIC
-  
   Serial.println("Setup complete.");
 } //end setup()
 
