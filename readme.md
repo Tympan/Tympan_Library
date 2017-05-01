@@ -8,7 +8,7 @@ Requirements
 
 **Hardware**: This library is intended to be used to program a Teensy 3.6 that is connected to a Tympan Audio Board.  If you have a Typman in its nice black case, you have all the hardware that you need!
 
-**Arduino IDE**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the acutal Arduino IDE, don't use the online web-based editor.  
+**Arduino IDE**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the acutal Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, run it once so that it fully initializes.  Then, you can close it down and move to the next step, which is...
 
 **Teensyduino Add-On**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program the Teensy using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to just a few (like Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash).  It's your choice.
 
