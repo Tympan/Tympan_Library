@@ -1,8 +1,8 @@
 
 /*
-   AudioEffectMine
+   MyAudioAlgorithm
 
-   Created: Chip Audette, December 2016
+   Created: Chip Audette, OpenAudio April 2017
    Purpose; Here is the skeleton of a audio processing algorithm that will
        (hopefully) make it easier for people to start making their own 
        algorithm.
@@ -15,12 +15,16 @@
 #include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
 #include <AudioStream_F32.h>
 
-class AudioEffectMine_F32 : public AudioStream_F32
+class MyAudioAlgorithm_F32 : public AudioStream_F32
 {
    public:
     //constructor
-    AudioEffectMine_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {
+    MyAudioAlgorithm_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) {
       //do any setup activities here
+
+      //if you need the sample rate, it is: fs_Hz = settings.sample_rate_Hz;
+      //if you need the block size, it is: n = settings.audio_block_samples;
+      
     };
 
     //here's the method that is called automatically by the Teensy Audio Library
