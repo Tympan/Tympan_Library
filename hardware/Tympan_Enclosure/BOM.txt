@@ -1,0 +1,14 @@
+
+Bill of Materials:
+
+1	Tympan Rev A
+1	Teensy 3.6 with 0.1" header pins soldered to each row
+		- Modify Teensy by cutting trace to seperate VIN from VUSB
+		- Modify Teensy by adding single 0.1" pin to VUSB through hole
+1	Enclosure Top (10000200_r2)
+1	Enclosure Bottom (10000167 rev3)
+4	Brass Screw-to-Expand Inserts for Plastics (McMaster-Carr P/N: 92395A111)
+4	5/16" Threshed Phillips Rounded Head Screws (McMaster-Carr P/N: 91735A013)
+1	Lithium Ion Polymer Battery, 3.7v 500mAh (Adafruit: Product ID 1578)
+
+Also, add Kapton tape to bottom of Tympan PCB to electrically isolate it from the battery.
