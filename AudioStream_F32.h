@@ -85,12 +85,12 @@ class AudioStream_F32 : public AudioStream {
     //virtual void update(audio_block_f32_t *) = 0; 
     static uint8_t f32_memory_used;
     static uint8_t f32_memory_used_max;
+    static audio_block_f32_t * allocate_f32(void);
+    static void release(audio_block_f32_t * block);
     
   protected:
     //bool active_f32;
     unsigned char num_inputs_f32;
-    static audio_block_f32_t * allocate_f32(void);
-    static void release(audio_block_f32_t * block);
     void transmit(audio_block_f32_t *block, unsigned char index = 0);
     audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
     audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
