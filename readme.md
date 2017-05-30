@@ -34,7 +34,7 @@ Try Some Examples
 
 In the Arduino IDE, under the "File" menu, select "Examples".  Then, scroll way to the bottom of the list.  You should see an entry that says "Tympan_Library".  Those are all the example files for trying out different audio algorithms or features of the system.  I recommend starting with the basic examples:
 
-* **Audio Pass-Thru:**  You should start with this example.  No processing, just an audio pass-thru from input (mircrophone) to output (headset or earbuds).  You should always start as simple as possible.  It doesn't get simpler than this.  Since it doesn't apply any gain, it'll be quiet.
+* **Audio Pass-Thru:**  You should start with this example.  No processing, just an audio pass-thru from input (microphone) to output (headset or earbuds).  You should always start as simple as possible.  It doesn't get simpler than this.  Since it doesn't apply any gain, it'll be quiet.
 
 Once the example has been selected it needs to be compiled or uploaded. The Arduino IDE's compile button is the one with the Arrow facing to the right.
 
