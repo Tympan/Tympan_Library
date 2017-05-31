@@ -148,7 +148,7 @@ void setupTympanHardware(void) {
   audioHardware.enable(); // activate AIC
   
   //choose input
-  switch (1) {
+  switch (3) {
     case 1: 
       //choose on-board mics
       audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
