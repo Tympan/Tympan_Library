@@ -7,7 +7,7 @@
 
 // GUItool: begin automatically generated code
 AudioInputI2S_F32        i2sAudioIn1;    //xy=136,112
-AudioFilterIIR_F32       iir1;           //xy=233,172
+AudioFilterBiquad_F32       iir1;           //xy=233,172
 AudioEffectCompWDRC_F32  compWDRC1;      //xy=427,172
 AudioOutputI2S_F32       i2sAudioOut1;   //xy=630,174
 AudioConnection_F32         patchCord1(i2sAudioIn1, 0, iir1, 0);
