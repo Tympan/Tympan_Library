@@ -9,8 +9,8 @@
  * MIT License.  use at your own risk.
 */
 
-#ifndef _AudioEffectGain_h
-#define _AudioEffectGain_h
+#ifndef _AudioEffectGain_F32_h
+#define _AudioEffectGain_F32_h
 
 #include <arm_math.h> //ARM DSP extensions.  for speed!
 #include <AudioStream_F32.h>
