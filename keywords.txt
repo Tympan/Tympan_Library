@@ -64,4 +64,16 @@ frequency		KEYWORD2
 phase			KEYWORD2
 amplitude		KEYWORD2
 
+FFT_F32			KEYWORD1
+useHanningWindow	KEYWORD2
+useRectangularWindow	KEYWORD2
+rebuildNegativeFrequencySpace	KEYWORD2
+execute			KEYWORD2
+getNFFT			KEYWORD2
+IFFT_F32		KEYWORD1
+FFT_Overlapped_F32	KEYWORD1
+getNBuffBlocks		KEYWORD2
+getFFTObject		KEYWORD2
+IFFT_Overlapped_F32	KEYWORD1
+
 

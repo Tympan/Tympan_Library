@@ -16,6 +16,8 @@
 #include <AudioMixer_F32.h>
 #include <AudioMultiply_F32.h>
 #include "AudioSettings_F32.h"
+#include "FFT_F32.h"
+#include "FFT_Overlapped_F32.h"
 #include "input_i2s_f32.h"
 #include "play_queue_f32.h"
 #include "record_queue_f32.h"
