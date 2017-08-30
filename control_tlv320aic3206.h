@@ -1,9 +1,9 @@
-/* 
+/*
 	control_tlv320aic3206
-	
+
 	Created: Brendan Flynn (http://www.flexvoltbiosensor.com/) for Tympan, Jan-Feb 2017
 	Purpose: Control module for Texas Instruments TLV320AIC3206 compatible with Teensy Audio Library
- 
+
 	License: MIT License.  Use at your own risk.
  */
 
@@ -16,7 +16,7 @@ class AudioControlTLV320AIC3206: public AudioControl
 {
 public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
-	AudioControlTLV320AIC3206(void) { debugToSerial = false; };
+	AudioControlTLV320AIC3206(void) { debugToSerial = true; };
 	AudioControlTLV320AIC3206(bool _debugToSerial) { debugToSerial = _debugToSerial; };
 	bool enable(void);
 	bool disable(void);
