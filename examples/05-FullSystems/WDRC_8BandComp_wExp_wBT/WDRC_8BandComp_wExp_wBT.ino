@@ -2,9 +2,9 @@
   WDRC_8BandComp_wExp_wBT
 
   Created: Chip Audette (OpenAudio), Feb 2017
-    Primarly built upon CHAPRO "Generic Hearing Aid" from 
+    Primarly built upon CHAPRO "Generic Hearing Aid" from
     Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
-    
+
   Purpose: Implements 8-band compressor.  The BTNRH version was implemented the
     filters in the frequency-domain, whereas I implemented them in the time-domain.
     I've also added an expansion stage to manage noise at very low SPL.
@@ -58,7 +58,7 @@ AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to
 //create audio objects for the algorithm
 AudioFilterFIR_F32          firFilt[N_CHAN];        //here are the filters to break up the audio into multipel bands
 AudioEffectCompWDRC2_F32    expCompLim[N_CHAN];     //here are the per-band compressors
-AudioMixer8_F32             mixer1;                 //mixer to reconstruct the broadband audio 
+AudioMixer8_F32             mixer1;                 //mixer to reconstruct the broadband audio
 AudioEffectCompWDRC2_F32    compBroadband;          //broad band compressor
 AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio *to* the Tympan over the I2S bus.  I moved it here to be last.
 
@@ -81,18 +81,18 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   //make the connection for the audio test measurements
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_FIR, 0);
-  
+
   //make per-channel connections
   for (int i = 0; i < N_CHAN; i++) {
     //audio connections
     patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, firFilt[i], 0); //connect to FIR filter
-    patchCord[count++] = new AudioConnection_F32(firFilt[i], 0, expCompLim[i], 0); //connect filter to compressor   
-    patchCord[count++] = new AudioConnection_F32(expCompLim[i], 0, mixer1, i); //connect to mixer 
+    patchCord[count++] = new AudioConnection_F32(firFilt[i], 0, expCompLim[i], 0); //connect filter to compressor
+    patchCord[count++] = new AudioConnection_F32(expCompLim[i], 0, mixer1, i); //connect to mixer
 
     //make the connection for the audio test measurements
     patchCord[count++] = new AudioConnection_F32(firFilt[i], 0, audioTestMeasurement_FIR, 1+i);
   }
-  
+
   //connect the output of the mixers to the final broadband compressor
   patchCord[count++] = new AudioConnection_F32(mixer1, 0, compBroadband, 0);  //connect to final limiter
 
@@ -115,7 +115,7 @@ void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPU
 bool enable_printAveSignalLevels = false, printAveSignalLevels_as_dBSPL = false;
 void togglePrintAveSignalLevels(bool as_dBSPL) { enable_printAveSignalLevels = !enable_printAveSignalLevels; printAveSignalLevels_as_dBSPL = as_dBSPL;};
 SerialManager serialManager_USB(&Serial,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
-#if (USE_BT_SERIAL) 
+#if (USE_BT_SERIAL)
   SerialManager serialManager_BT(&BT_SERIAL,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR); //this instance will handle the Bluetooth Serial link
 #endif
 
@@ -123,14 +123,14 @@ SerialManager serialManager_USB(&Serial,N_CHAN,expCompLim,ampSweepTester,freqSwe
 #define POT_PIN A1  //potentiometer is tied to this pin
 void setupTympanHardware(void) {
   Serial.println("Setting up Tympan Audio Board...");
-  #if (USE_BT_SERIAL) 
-    BT_SERIAL.println("Setting up Tympan Audio Board..."); 
+  #if (USE_BT_SERIAL)
+    BT_SERIAL.println("Setting up Tympan Audio Board...");
   #endif
   audioHardware.enable(); // activate AIC
-  
+
   //choose input
-  switch (3) {
-    case 1: 
+  switch (1) {
+    case 1:
       //choose on-board mics
       audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
       break;
@@ -145,7 +145,7 @@ void setupTympanHardware(void) {
       audioHardware.setMicBias(myBiasLevel); // set mic bias to 2.5 // default
       break;
   }
-  
+
   //set volumes
   audioHardware.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
   audioHardware.setInputGain_dB(input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
@@ -184,7 +184,7 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::
      const int n_chan_max, const int n_fir, const AudioSettings_F32 &settings)
 {
   int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
-  
+
   //compute the per-channel filter coefficients
   AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
 
@@ -192,7 +192,7 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::
   for (int i=0; i< n_chan; i++) firFilt[i].begin(firCoeff[i], n_fir, settings.audio_block_samples);
 
   //setup all of the per-channel compressors
-  configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);  
+  configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
 
   //setup the broad band compressor (limiter)
   configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, vol_knob_gain_dB, compBroadband);
@@ -215,47 +215,47 @@ void incrementDSLConfiguration(Stream *s) {
   }
 }
 
-void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC2 &this_gha, 
-      float vol_knob_gain_dB, AudioEffectCompWDRC2_F32 &WDRC) 
-{  
+void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
+      float vol_knob_gain_dB, AudioEffectCompWDRC2_F32 &WDRC)
+{
   //assume all broadband compressors are the same
   //for (int i=0; i< ncompressors; i++) {
     //logic and values are extracted from from CHAPRO repo agc_prepare.c...the part setting CHA_DVAR
-    
+
     //extract the parameters
     float atk = (float)this_gha.attack;  //milliseconds!
     float rel = (float)this_gha.release; //milliseconds!
     //float fs = this_gha.fs;
     float fs = (float)fs_Hz; // WEA override...not taken from gha
     float maxdB = (float) this_gha.maxdB;
-    float exp_cr = (float) this_gha.exp_cr;   
+    float exp_cr = (float) this_gha.exp_cr;
     float exp_end_knee = (float) this_gha.exp_end_knee;
     float tk = (float) this_gha.tk;
     float comp_ratio = (float) this_gha.cr;
     float tkgain = (float) this_gha.tkgain;
     float bolt = (float) this_gha.bolt;
-    
+
     //set the compressor's parameters
     //WDRCs[i].setSampleRate_Hz(fs);
     //WDRCs[i].setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
     WDRC.setSampleRate_Hz(fs);
-    WDRC.setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain + vol_knob_gain_dB, comp_ratio, tk, bolt);    
+    WDRC.setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain + vol_knob_gain_dB, comp_ratio, tk, bolt);
  // }
 }
-    
-void configurePerBandWDRCs(int nchan, float fs_Hz, 
+
+void configurePerBandWDRCs(int nchan, float fs_Hz,
     const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
     AudioEffectCompWDRC2_F32 *WDRCs)
 {
-  if (nchan > this_dsl.nchannel) {  
+  if (nchan > this_dsl.nchannel) {
     Serial.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
     Serial.print(F("    : nchan = ")); Serial.println(nchan);
     Serial.print(F("    : dsl.nchannel = ")); Serial.println(dsl.nchannel);
   }
-  
+
   //now, loop over each channel
   for (int i=0; i < nchan; i++) {
-    
+
     //logic and values are extracted from from CHAPRO repo agc_prepare.c
     float atk = (float)this_dsl.attack;   //milliseconds!
     float rel = (float)this_dsl.release;  //milliseconds!
@@ -277,7 +277,7 @@ void configurePerBandWDRCs(int nchan, float fs_Hz,
     //set the compressor's parameters
     WDRCs[i].setSampleRate_Hz(fs);
     WDRCs[i].setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
-  }  
+  }
 }
 
 // ///////////////// Main setup() and loop() as required for all Arduino programs
@@ -285,15 +285,15 @@ void configurePerBandWDRCs(int nchan, float fs_Hz,
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
   Serial.begin(115200);   //Open USB Serial link...for debugging
-  #if (USE_BT_SERIAL) 
+  #if (USE_BT_SERIAL)
     BT_SERIAL.begin(115200); //Open BT serial link
   #endif
-  delay(500); 
-  
+  delay(500);
+
   Serial.print(overall_name);Serial.println(": setup():...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
-  #if (USE_BT_SERIAL) 
+  #if (USE_BT_SERIAL)
     BT_SERIAL.print(overall_name);BT_SERIAL.println(": setup():...");
     BT_SERIAL.print("Sample Rate (Hz): "); BT_SERIAL.println(audio_settings.sample_rate_Hz);
     BT_SERIAL.print("Audio Block Size (samples): "); BT_SERIAL.println(audio_settings.audio_block_samples);
@@ -314,7 +314,7 @@ void setup() {
   #if (USE_BT_SERIAL)
     printGainSettings(&BT_SERIAL); BT_SERIAL.println("Setup complete.");  serialManager_BT.printHelp();
   #endif
-  
+
 } //end setup()
 
 
@@ -363,7 +363,6 @@ void servicePotentiometer(unsigned long curTime_millis) {
     //float scaled_val = val / 3.0; scaled_val = scaled_val * scaled_val;
     if (abs(val - prev_val) > 0.05) { //is it different than befor?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
 
       setVolKnobGain_dB(val*45.0f - 10.0f - input_gain_dB);
     }
@@ -371,7 +370,7 @@ void servicePotentiometer(unsigned long curTime_millis) {
   } // end if
 } //end servicePotentiometer();
 
-      
+
 void printGainSettings() {
   printGainSettings(&Serial);
   #if (USE_BT_SERIAL)
@@ -401,11 +400,11 @@ void setVolKnobGain_dB(float gain_dB) {
     for (int i=0; i<N_CHAN; i++) {
       linear_gain_dB = vol_knob_gain_dB + (expCompLim[i].getGain_dB()-prev_vol_knob_gain_dB);
       expCompLim[i].setGain_dB(linear_gain_dB);
-    }   
-    printGainSettings();  
+    }
+    printGainSettings();
 }
 
-      
+
 
 void printCPUandMemory(unsigned long curTime_millis) {
   static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
@@ -462,7 +461,7 @@ void printAveSignalLevels(unsigned long curTime_millis, bool as_dBSPL) {
 
   //is it time to print to the screen
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?   
+  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
     printAveSignalLevelsMessage(&Serial,as_dBSPL);
     #if (USE_BT_SERIAL)
       printAveSignalLevelsMessage(&BT_SERIAL,as_dBSPL);
@@ -481,4 +480,3 @@ void printAveSignalLevelsMessage(Stream *s, bool as_dBSPL) {
   for (int i=0; i<N_CHAN; i++) { s->print(aveSignalLevels_dBFS[i]+offset_dB,1);  s->print(", ");  }
   s->println();
 }
-

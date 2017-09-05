@@ -7,7 +7,7 @@
 *
 *   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
-*   
+*
 *   MIT License.  use at your own risk.
 */
 
@@ -22,17 +22,17 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206 audioHardware;
-AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC. 
+AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
 AudioFilterBiquad_F32     hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
 AudioEffectCompWDRC_F32   comp1(audio_settings);      //Compresses the dynamic range of the audio.  Left.
 AudioEffectCompWDRC_F32   comp2(audio_settings);      //Compresses the dynamic range of the audio.  Right.
-AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC. 
+AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, hp_filt1, 0);   //connect the Left input to the left highpass filter
 AudioConnection_F32       patchCord2(i2s_in, 1, hp_filt2, 0);   //connect the Right input to the right highpass filter
-AudioConnection_F32       patchCord3(hp_filt1, 0, comp1, 0);    //connect to the left gain/compressor/limiter 
+AudioConnection_F32       patchCord3(hp_filt1, 0, comp1, 0);    //connect to the left gain/compressor/limiter
 AudioConnection_F32       patchCord4(hp_filt2, 0, comp2, 0);    //connect to the right gain/compressor/limiter
 AudioConnection_F32       patchCord5(comp1, 0, i2s_out, 0);     //connectto the Left output
 AudioConnection_F32       patchCord6(comp2, 0, i2s_out, 1);     //connect to the Right output
@@ -46,7 +46,7 @@ void setupMyCompressors(void) {
   comp2.setAttackRelease_msec(attack_msec, release_msec); //right channel
 
   //Single point system calibration.  what is the SPL of a full scale input (including effect of input_gain_dB)?
-  float SPL_of_full_scale_input = 115.0;  
+  float SPL_of_full_scale_input = 115.0;
   comp1.setMaxdB(SPL_of_full_scale_input);  //left channel
   comp2.setMaxdB(SPL_of_full_scale_input);  //right channel
 
@@ -63,7 +63,7 @@ void setupMyCompressors(void) {
   //note: the WDRC limiter is hard-wired to a compression ratio of 10:1
   comp1.setKneeLimiter_dBSPL(knee_limiter_dBSPL);  //left channel
   comp2.setKneeLimiter_dBSPL(knee_limiter_dBSPL);  //right channel
-  
+
 }
 
 //I have a potentiometer on the Teensy Audio Board
@@ -76,16 +76,16 @@ void setup() {
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
   Serial.println("TrebleBoost_wComp: Starting setup()...");
-  
+
   //allocate the audio memory first
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
 
   //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
-  
+
   //Choose the desired input
-  //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
+  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
@@ -118,8 +118,8 @@ void loop() {
   servicePotentiometer(millis(),100); //update every 100 msec
 
   //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),6000); //print every 3000 msec 
-  
+  printCPUandMemory(millis(),6000); //print every 3000 msec
+
   //periodically print the gain status
   printGainStatus(millis(),2000); //update every 4000 msec
 
@@ -146,8 +146,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     //send the potentiometer value to your algorithm as a control parameter
     if (abs(val - prev_val) > 0.05) { //is it different than before?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
-      
+
       //choose the desired gain value based on the knob setting
       const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
       vol_knob_gain_dB = min_gain_dB + (max_gain_dB - min_gain_dB)*val; //computed desired gain value in dB
@@ -204,19 +203,19 @@ void printGainStatus(unsigned long curTime_millis, unsigned long updatePeriod_mi
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
     Serial.print("printGainStatus: ");
-    
+
     Serial.print("Input PGA = ");
     Serial.print(input_gain_dB,1);
     Serial.print(" dB.");
-    
-    Serial.print(" Compressor Gain (L/R) = "); 
+
+    Serial.print(" Compressor Gain (L/R) = ");
     Serial.print(comp1.getCurrentGain_dB(),1);
     Serial.print(", ");
     Serial.print(comp2.getCurrentGain_dB(),1);
     Serial.print(" dB.");
-  
+
     Serial.println();
-   
+
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();

@@ -11,7 +11,7 @@
 
 //These are the includes from the Teensy Audio Library
 #include <Audio.h>      //Teensy Audio Library
-#include <Tympan_Library.h> 
+#include <Tympan_Library.h>
 #include "MyAudioAlgorithm_F32.h"  //include the file holding your new audio algorithm
 
 //set the sample rate and block size
@@ -21,7 +21,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206   audioHardware;
-AudioInputI2S_F32           i2s_in(audio_settings);   //Digital audio *from* the Tympan AIC. 
+AudioInputI2S_F32           i2s_in(audio_settings);   //Digital audio *from* the Tympan AIC.
 MyAudioAlgorithm_F32        effect1(audio_settings);  //This is your own algorithm form MyAudioAlgorithm_F32.h
 AudioEffectGain_F32         gain1(audio_settings);    //This is for the volume knob
 AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
@@ -43,16 +43,16 @@ void setup() {
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
   Serial.println("MyAudioAlgorithm: starting setup()...");
-  
+
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
 
   //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
-  
+
   //Choose the desired input
-  //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
+  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   //  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
@@ -66,19 +66,19 @@ void setup() {
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
 
   Serial.println("Setup complete.");
-  
+
 } //end setup()
 
 
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
- 
+
   //check the potentiometer
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
   //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),3000); //print every 3000 msec 
-  
+  printCPUandMemory(millis(),3000); //print every 3000 msec
+
 } //end loop()
 
 // ///////////////// Servicing routines
@@ -101,8 +101,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     //send the potentiometer value to your algorithm as a control parameter
     if (abs(val - prev_val) > 0.05) { //is it different than before?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
-      
+
       //choose the desired gain value based on the knob setting
       const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
       vol_knob_gain_dB = min_gain_dB + (max_gain_dB - min_gain_dB)*val; //computed desired gain value in dB
@@ -146,4 +145,3 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
 }
-

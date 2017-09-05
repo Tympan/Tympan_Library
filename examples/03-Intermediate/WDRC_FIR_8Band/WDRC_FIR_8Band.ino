@@ -2,9 +2,9 @@
   MultiBandCompressor_Float
 
   Created: Chip Audette (OpenAudio), Feb 2017
-    Primarly built upon CHAPRO "Generic Hearing Aid" from 
+    Primarly built upon CHAPRO "Generic Hearing Aid" from
     Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
-    
+
   Purpose: Implements 8-band compressor.  The BTNRH version was implemented the
     filters in the frequency-domain, whereas I implemented them in the time-domain.
 
@@ -58,7 +58,7 @@ AudioEffectCompWDRC_F32  compBroadband[N_BBCOMP]; //here are the broad band comp
 #define N_CHAN 8        //number of channels to use for multi-band compression
 AudioFilterFIR_F32      firFilt[N_CHAN];  //here are the filters to break up the audio into multipel bands
 AudioEffectCompWDRC_F32  compPerBand[N_CHAN]; //here are the per-band compressors
-AudioMixer8_F32         mixer1; //mixer to reconstruct the broadband audio 
+AudioMixer8_F32         mixer1; //mixer to reconstruct the broadband audio
 
 //choose the input audio source
 #if (USE_TEST_TONE_INPUT == 1)
@@ -146,10 +146,10 @@ void setupAudioHardware(void) {
 void setupTympanHardware(void) {
   Serial.println("Setting up Tympan Audio Board...");
   audioHardware.enable(); // activate AIC
-  
+
   //choose input
-  switch (3) {
-    case 1: 
+  switch (1) {
+    case 1:
       //choose on-board mics
       audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
       break;
@@ -164,7 +164,7 @@ void setupTympanHardware(void) {
       audioHardware.setMicBias(myBiasLevel); // set mic bias to 2.5 // default
       break;
   }
-  
+
   //set volumes
   audioHardware.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
   audioHardware.setInputGain_dB(15.f); // set MICPGA volume, 0-47.5dB in 0.5dB setps
@@ -184,15 +184,15 @@ void setupAudioProcessing(void) {
 
   //setup all of the the compressors
   configureBroadbandWDRCs(N_BBCOMP, audio_settings.sample_rate_Hz, &gha, compBroadband);
-  configurePerBandWDRCs(N_CHAN, audio_settings.sample_rate_Hz, &dsl, &gha, compPerBand);  
+  configurePerBandWDRCs(N_CHAN, audio_settings.sample_rate_Hz, &dsl, &gha, compPerBand);
 }
 
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
   Serial.begin(115200);   //Open USB Serial link...for debugging
   if (USE_BT_SERIAL) BT_SERIAL.begin(115200);  //Open BT link
-  delay(500); 
-  
+  delay(500);
+
   Serial.println("WDRC_Compressor_Float: setup()...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
@@ -230,7 +230,7 @@ void loop() {
   printCompressorState(millis(),&Serial);
 
   //print compressor status to bluetooth
-  #if USE_BT_SERIAL 
+  #if USE_BT_SERIAL
     printStatusToBluetooth(millis(), &BT_SERIAL);
   #endif
 
@@ -256,7 +256,6 @@ void servicePotentiometer(unsigned long curTime_millis) {
     //float scaled_val = val / 3.0; scaled_val = scaled_val * scaled_val;
     if (abs(val - prev_val) > 0.05) { //is it different than befor?
       prev_val = val;  //save the value for comparison for the next time around
-      if (USE_TYMPAN == 1) val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
 
       #if USE_TEST_TONE_INPUT==1
             float freq = 700.f + 200.f * ((val - 0.5) * 2.0); //change tone 700Hz +/- 200 Hz
@@ -354,7 +353,7 @@ void printCompressorState(unsigned long curTime_millis, Stream *s) {
 //      s->print(", ");
 //      s->print(AudioEffectCompWDR_F32::fast_dB(rms_output.read())); //use a faster dB function
 //      s->println();
-//      
+//
 //      lastUpdate_millis = curTime_millis; //we will use this value the next time around.
 //    }
 //};
@@ -365,7 +364,7 @@ static void configureBroadbandWDRCs(int ncompressors, float fs_Hz, BTNRH_WDRC::C
   //assume all broadband compressors are the same
   for (int i=0; i< ncompressors; i++) {
     //logic and values are extracted from from CHAPRO repo agc_prepare.c...the part setting CHA_DVAR
-    
+
     //extract the parameters
     float atk = (float)gha->attack;  //milliseconds!
     float rel = (float)gha->release; //milliseconds!
@@ -376,23 +375,23 @@ static void configureBroadbandWDRCs(int ncompressors, float fs_Hz, BTNRH_WDRC::C
     float comp_ratio = (float) gha->cr;
     float tkgain = (float) gha->tkgain;
     float bolt = (float) gha->bolt;
-    
+
     //set the compressor's parameters
     WDRCs[i].setSampleRate_Hz(fs);
-    WDRCs[i].setParams(atk,rel,maxdB,tkgain,comp_ratio,tk,bolt);    
+    WDRCs[i].setParams(atk,rel,maxdB,tkgain,comp_ratio,tk,bolt);
   }
 }
-    
+
 static void configurePerBandWDRCs(int nchan, float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRCs) {
   if (nchan > dsl->nchannel) {
     Serial.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
     Serial.print(F("    : nchan = ")); Serial.println(nchan);
     Serial.print(F("    : dsl.nchannel = ")); Serial.println(dsl->nchannel);
   }
-  
+
   //now, loop over each channel
   for (int i=0; i < nchan; i++) {
-    
+
     //logic and values are extracted from from CHAPRO repo agc_prepare.c
     float atk = (float)dsl->attack;   //milliseconds!
     float rel = (float)dsl->release;  //milliseconds!
@@ -412,14 +411,13 @@ static void configurePerBandWDRCs(int nchan, float fs_Hz, BTNRH_WDRC::CHA_DSL *d
     //set the compressor's parameters
     WDRCs[i].setSampleRate_Hz(fs);
     WDRCs[i].setParams(atk,rel,maxdB,tkgain,comp_ratio,tk,bolt);
-  }  
+  }
 }
 
-//static void configureMultiBandWDRCasGHA(float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, 
+//static void configureMultiBandWDRCasGHA(float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha,
 //    int nBB, AudioEffectCompWDRC_F32 *broadbandWDRCs,
 //    int nchan, AudioEffectCompWDRC_F32 *perBandWDRCs) {
-//    
+//
 //  configureBroadbandWDRCs(nBB, fs_Hz, gha, broadbandWDRCs);
 //  configurePerBandWDRCs(nchan, fs_Hz, dsl, gha, perBandWDRCs);
 //}
-

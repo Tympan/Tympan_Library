@@ -6,13 +6,13 @@
 *      from the Arduino Serial Monitor (wired USB) or via Bluetooth from a PC
 *      or from a mobile phone or tablet.  The Tympan has a Bluetooth Classic
 *      module, so you have to manually connect to it from your PC or phone.
-*      
-*   Algorithm: The algorithm being executed in this example is the same as the   
+*
+*   Algorithm: The algorithm being executed in this example is the same as the
 *      "TrebleBoost" algorithm shown in the "Basic" collection of examples.
 *
 *   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
-*   
+*
 *   MIT License.  use at your own risk.
 */
 
@@ -29,13 +29,13 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206 audioHardware;
-AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC. 
+AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.
 AudioEffectGain_F32       gain1;                      //Applies digital gain to audio data.
-AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC. 
+AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
 
 //Make all of the audio connections
-AudioConnection_F32       patchCord1(i2s_in, 0, hp_filt1, 0);   //connect the Left input 
+AudioConnection_F32       patchCord1(i2s_in, 0, hp_filt1, 0);   //connect the Left input
 AudioConnection_F32       patchCord3(hp_filt1, 0, gain1, 0);    //gain
 AudioConnection_F32       patchCord5(gain1, 0, i2s_out, 0);     //connect the Left gain to the Left output
 AudioConnection_F32       patchCord6(gain1, 0, i2s_out, 1);     //connect the Right gain to the Right output
@@ -46,7 +46,7 @@ bool enable_printCPUandMemory = false;
 void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPUandMemory; };
 SerialManager serialManager_USB(&Serial); //this instance will handle the USB hard-wired serial link
 
-#define BT_SERIAL Serial1 
+#define BT_SERIAL Serial1
 SerialManager serialManager_BT(&BT_SERIAL); //this instance will handle the Bluetooth Serial link
 
 
@@ -66,13 +66,13 @@ void setup() {
 
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
-  
+
   //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
-  
+
   //Choose the desired input
-  //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
+  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
@@ -87,7 +87,7 @@ void setup() {
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
-  
+
   //End of setup
   Serial.println("Setup complete.");BT_SERIAL.println("Setup complete.");
   serialManager_USB.printHelp(); serialManager_BT.printHelp();
@@ -100,13 +100,13 @@ void loop() {
   //respond to Serial commands, if any have been received
   while (Serial.available()) serialManager_USB.respondToByte((char)Serial.read());
   while (BT_SERIAL.available()) serialManager_BT.respondToByte((char)BT_SERIAL.read());
- 
+
   //service the potentiometer...if enough time has passed
   servicePotentiometer(millis(),100);  //update every 100 msec
 
   //update the memory and CPU usage...if enough time has passed
   if (enable_printCPUandMemory) printCPUandMemory(millis(),3000); //update every 3000 msec
-  
+
 } //end loop();
 
 
@@ -130,8 +130,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     //send the potentiometer value to your algorithm as a control parameter
     if (abs(val - prev_val) > 0.05) { //is it different than before?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
-      
+
       //choose the desired gain value based on the knob setting
       const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
       vol_knob_gain_dB = min_gain_dB + (max_gain_dB - min_gain_dB)*val; //computed desired gain value in dB
@@ -197,9 +196,9 @@ void incrementKnobGain(float increment_dB) { //"extern" to make it available to 
   setVolKnobGain_dB(vol_knob_gain_dB+increment_dB);
 }
 void setVolKnobGain_dB(float gain_dB) {
-    gain1.setGain_dB(gain_dB);  
+    gain1.setGain_dB(gain_dB);
     vol_knob_gain_dB = gain_dB;
-    printGainSettings();  
+    printGainSettings();
 }
 
 //here's a function to change the highpass filter cutoff.  We'll also invoke it from our serialManager
@@ -209,9 +208,8 @@ extern void incrementHPCutoffFreq_Hz(float increment_frac) {
 void setHPCutoffFreq_Hz(float cutoff_Hz) {
   float min_allowed_Hz = 62.5f, max_allowed_Hz = 8000.f;
   hp_cutoff_Hz = max(min_allowed_Hz,min(max_allowed_Hz, cutoff_Hz));
-  
+
   Serial.print("Setting highpass filter cutoff to ");Serial.print(hp_cutoff_Hz);Serial.println(" Hz");
   BT_SERIAL.print("Setting highpass filter cutoff to ");BT_SERIAL.print(hp_cutoff_Hz);BT_SERIAL.println(" Hz");
   hp_filt1.setHighpass(0, hp_cutoff_Hz); //biquad IIR filter.
 }
-

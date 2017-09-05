@@ -2,24 +2,24 @@
 *   AudioViaUSB
 *
 *   Created: Chip Audette, OpenAudio, Apr 2017
-*   Purpose: Illustrate how to receive and send audio via USB.  
+*   Purpose: Illustrate how to receive and send audio via USB.
 *       * In the code below you can switch the audio input to be either USB or Tympan's analog input
 *       * In the code below, it'll send audio out both to USB and the Tympan's analog output
 *           - The left USB output will be the raw input audio (either USB or Tympan)
 *           - The right USB output will be the processed audio after the algorithms.
-*   
+*
 *   Audio Processing: the audio processing algorithm is a mono version of the algorithm shown
 *      in the example program TrebleBoost.
 *
 *   !!!!!! NOTE: USB Audio only works with sample rate of 44 kHz and block size of 128 !!!!!
-*   
+*
 *   !!!!! NOTE: To use USB, you must tell the Arduino IDE that you want to use USB Audio
 *       Under the "Tools" menu, select "Board", then select "Teensy 3.6"
-*       Then, again under the "Tools" menu, select "USB Type", then select "Serial + MIDI + Audio" 
-*       
+*       Then, again under the "Tools" menu, select "USB Type", then select "Serial + MIDI + Audio"
+*
 *   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
-*   
+*
 *   MIT License.  use at your own risk.
 */
 
@@ -34,11 +34,11 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206 audioHardware;
-AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC. 
+AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioInputUSB_F32         usb_in;                     //Provides digital audio *from* a PC via USB
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.
 AudioEffectGain_F32       gain1(audio_settings);      //Volume knob
-AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC. 
+AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
 AudioOutputUSB_F32        usb_out;                    //Send digital audio *to* a PC via USB
 
 //Make all of the audio connections
@@ -51,7 +51,7 @@ AudioOutputUSB_F32        usb_out;                    //Send digital audio *to* 
   AudioConnection_F32       patchCord1(usb_in, 0, hp_filt1, 0);   //connect the Left input to the left highpass filter
   AudioConnection_F32       patchCord2(usb_in, 0, usb_out, 0);    //connect input to USB left output, because it'll be neat
 #endif
-AudioConnection_F32       patchCord3(hp_filt1, 0, gain1, 0);    //connect to the left gain/compressor/limiter 
+AudioConnection_F32       patchCord3(hp_filt1, 0, gain1, 0);    //connect to the left gain/compressor/limiter
 AudioConnection_F32       patchCord4(gain1, 0, i2s_out, 0);     //connectto the Left output
 AudioConnection_F32       patchCord5(gain1, 0, i2s_out, 1);     //connect to the Right output
 AudioConnection_F32       patchCord6(gain1, 0, usb_out, 1);     //connect processed audio to the other USB output
@@ -68,16 +68,16 @@ void setup() {
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
   Serial.println("AudioViaUSB (TrebleBoost): Starting setup()...");
-  
+
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
-  
+
   //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
-  
+
   //Choose the desired input...only has an effect if you (earlier) selected the Tympan as the input source
-  //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
+  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
@@ -94,7 +94,7 @@ void setup() {
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
-  
+
   Serial.println("Setup complete.");
 } //end setup()
 
@@ -106,7 +106,7 @@ void loop() {
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
   //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),3000); //print every 3000 msec 
+  printCPUandMemory(millis(),3000); //print every 3000 msec
 
 } //end loop();
 
@@ -131,14 +131,13 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     //send the potentiometer value to your algorithm as a control parameter
     if (abs(val - prev_val) > 0.05) { //is it different than before?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
-      
+
       //choose the desired gain value based on the knob setting
       const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
       vol_knob_gain_dB = min_gain_dB + (max_gain_dB - min_gain_dB)*val; //computed desired gain value in dB
 
       //command the new gain setting
-      gain1.setGain_dB(vol_knob_gain_dB);  //set the gain 
+      gain1.setGain_dB(vol_knob_gain_dB);  //set the gain
       Serial.print("servicePotentiometer: Digital Gain dB = "); Serial.println(vol_knob_gain_dB); //print text to Serial port for debugging
     }
     lastUpdate_millis = curTime_millis;

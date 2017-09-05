@@ -26,8 +26,8 @@ void setupMyAudioBoard(void) {
   tlv320aic3206_1.enable(); // activate AIC
 
   // Choose the desired input
-  //tlv320aic3206_1.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones // default
-   tlv320aic3206_1.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones // default
+  //  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   //  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
   //  tlv320aic3206_1.inputSelect(TYMPAN_INPUT_LINE_IN); // use the line in pads on the TYMPAN board - defaults to mic bias OFF
 
@@ -45,10 +45,10 @@ void setup(void) {
   //Start the USB serial link (to enable debugging)
   Serial.begin(115200); delay(500);
   Serial.println("Setup starting...");
-  
+
   //Allocate dynamically shuffled memory for the audio subsystem
   AudioMemory(10);  AudioMemory_F32(10);
-  
+
   //setup high-pass IIR...[b,a]=butter(2,750/(44100/2),'high')
   float32_t hp_b[]={ 0.927221242739230,  -1.854442485478460,   0.927221242739230};
   float32_t hp_a[]={ 1.000000000000000,  -1.849138705449389,   0.859746265507531};
@@ -56,7 +56,7 @@ void setup(void) {
 
   // Enable the audio shield, select input, and enable output
   setupMyAudioBoard();
-  
+
   //End of setup
   Serial.println("Setup complete.");
 };
@@ -66,7 +66,7 @@ void setup(void) {
 //Note that the audio modules are called in the background.
 //They do not need to be serviced by the loop() function.
 void loop(void) {
-  
+
   //service the potentiometer...if enough time has passed
   servicePotentiometer(millis());
 
@@ -92,7 +92,6 @@ void servicePotentiometer(unsigned long curTime_millis) {
     //float scaled_val = val / 3.0; scaled_val = scaled_val * scaled_val;
     if (abs(val - prev_val) > 0.05) { //is it different than befor?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
 
       float min_mic_dB = +10.0f;
       float fixed_hp_dB = 00.0f;
@@ -109,4 +108,3 @@ void servicePotentiometer(unsigned long curTime_millis) {
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
-

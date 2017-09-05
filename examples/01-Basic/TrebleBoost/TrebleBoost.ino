@@ -6,7 +6,7 @@
 *
 *   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
-*   
+*
 *   MIT License.  use at your own risk.
 */
 
@@ -21,17 +21,17 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206 audioHardware;
-AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC. 
+AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
 AudioFilterBiquad_F32     hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
 AudioEffectGain_F32       gain1;                      //Applies digital gain to audio data.  Left.
 AudioEffectGain_F32       gain2;                      //Applies digital gain to audio data.  Right.
-AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC. 
+AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
 
 //Make all of the audio connections
-AudioConnection_F32       patchCord1(i2s_in, 0, hp_filt1, 0);   //connect the Left input 
+AudioConnection_F32       patchCord1(i2s_in, 0, hp_filt1, 0);   //connect the Left input
 AudioConnection_F32       patchCord2(i2s_in, 1, hp_filt2, 0);   //connect the Right input
-AudioConnection_F32       patchCord3(hp_filt1, 0, gain1, 0);    //Left 
+AudioConnection_F32       patchCord3(hp_filt1, 0, gain1, 0);    //Left
 AudioConnection_F32       patchCord4(hp_filt2, 0, gain2, 0);    //right
 AudioConnection_F32       patchCord5(gain1, 0, i2s_out, 0);     //connect the Left gain to the Left output
 AudioConnection_F32       patchCord6(gain2, 0, i2s_out, 1);     //connect the Right gain to the Right output
@@ -47,16 +47,16 @@ void setup() {
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
   Serial.println("TrebleBoost: Starting setup()...");
-  
+
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
-  
+
   //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
-  
+
   //Choose the desired input
-  //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
+  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
@@ -74,7 +74,7 @@ void setup() {
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
-  
+
   Serial.println("Setup complete.");
 } //end setup()
 
@@ -86,7 +86,7 @@ void loop() {
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
   //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),3000); //print every 3000 msec 
+  printCPUandMemory(millis(),3000); //print every 3000 msec
 
 } //end loop();
 
@@ -111,8 +111,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     //send the potentiometer value to your algorithm as a control parameter
     if (abs(val - prev_val) > 0.05) { //is it different than before?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
-      
+
       //choose the desired gain value based on the knob setting
       const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
       vol_knob_gain_dB = min_gain_dB + (max_gain_dB - min_gain_dB)*val; //computed desired gain value in dB

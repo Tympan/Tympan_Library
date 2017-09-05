@@ -6,9 +6,9 @@
 *
 *   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the audio signal.
-*   
+*
 *   Uses Teensy Audio default sample rate of 44100 Hz with Block Size of 128
-*   
+*
 *   MIT License.  use at your own risk.
 */
 
@@ -18,12 +18,12 @@
 
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206 audioHardware;
-AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Tympan AIC. 
+AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Tympan AIC.
 AudioEffectGain_F32       gain1, gain2;  //Applies digital gain to audio data.
 AudioOutputI2S_F32        i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
 
 //Make all of the audio connections
-AudioConnection_F32       patchCord1(i2s_in, 0, gain1, 0);    //connect the Left input 
+AudioConnection_F32       patchCord1(i2s_in, 0, gain1, 0);    //connect the Left input
 AudioConnection_F32       patchCord2(i2s_in, 1, gain2, 0);    //connect the Right input
 AudioConnection_F32       patchCord11(gain1, 0, i2s_out, 0);  //connect the Left gain to the Left output
 AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Right gain to the Right output
@@ -40,28 +40,28 @@ void setup() {
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
   Serial.println("BasicGain: starting setup()...");
-  
+
   //allocate the audio memory
   AudioMemory(10); AudioMemory_F32(10); //allocate both kinds of memory
- 
+
  //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
- 
+
   //Choose the desired input
-  //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
+  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   //  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
   audioHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   audioHardware.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
- 
+
   // setup any other other features
   pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
- 
+
   Serial.println("Setup complete.");
 } //end setup()
 
@@ -95,8 +95,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     //send the potentiometer value to your algorithm as a control parameter
     if (abs(val - prev_val) > 0.05) { //is it different than before?
       prev_val = val;  //save the value for comparison for the next time around
-      val = 1.0 - val; //reverse direction of potentiometer (error with Tympan PCB)
-      
+
       //choose the desired gain value based on the knob setting
       const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
       vol_knob_gain_dB = min_gain_dB + (max_gain_dB - min_gain_dB)*val; //computed desired gain value in dB
@@ -109,4 +108,3 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
-
