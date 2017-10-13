@@ -20,6 +20,7 @@ public:
 	AudioControlTLV320AIC3206(bool _debugToSerial) { debugToSerial = _debugToSerial; };
 	bool enable(void);
 	bool disable(void);
+	bool outputSelect(int n);
 	bool volume(float n);
 	bool volume_dB(float n);
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
@@ -40,6 +41,7 @@ private:
 };
 
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1
+#define TYMPAN_OUTPUT_LINE_OUT 2
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
 #define TYMPAN_INPUT_LINE_IN            1   //uses IN1

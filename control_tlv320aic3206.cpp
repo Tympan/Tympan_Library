@@ -338,7 +338,7 @@ bool AudioControlTLV320AIC3206::volume_dB(float volume) {
   int8_t volume_int = (int8_t) (round(volume)); // round
 
   if (debugToSerial) {
-	Serial.print("INFO: Setting DAC volume to ");
+	Serial.print("controlTLV320AIC3206: Setting DAC volume to ");
 	Serial.print(volume, 1);
 	Serial.print(".  Converted to volume map => ");
 	Serial.println(volume_int);
@@ -350,30 +350,79 @@ bool AudioControlTLV320AIC3206::volume_dB(float volume) {
 }
 
 void AudioControlTLV320AIC3206::aic_initDAC() {
-  if (debugToSerial) Serial.println("INFO: Initializing AIC DAC");
-  // PLAYBACK SETUP
-
-  aic_writeAddress(TYMPAN_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
-
-  //aic_writePage(1, 20, 0x25); // 0x14 De-Pop
-  aic_writePage(1, 12, 8); // route LDAC/RDAC to HPL/HPR
-  aic_writePage(1, 13, 8); // route LDAC/RDAC to HPL/HPR
-  aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
-//  aic_writePage(1, 14, 8); // route LDAC/RDAC to LOL/LOR
-//  aic_writePage(1, 15, 8); // route LDAC/RDAC to LOL/LOR
-  aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
-  aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
-//  aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
-//  aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain
-  aic_writePage(1, 9, 0x30); // Power up HPL/HPR and LOL/LOR drivers
-  delay(100);
-  aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-  aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-  aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+	if (debugToSerial) Serial.println("controlTLV320AIC3206: Initializing AIC DAC");
+	outputSelect(TYMPAN_OUTPUT_HEADPHONE_JACK_OUT); //default
 }
 
+bool AudioControlTLV320AIC3206::outputSelect(int n) {
+	// PLAYBACK SETUP: 
+	//	HPL/HPR are headphone output left and right
+	//	LOL/LOR are line output left and right
+	
+	aic_writeAddress(TYMPAN_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
+
+	//mute, disable, then power-down everything
+	aic_writePage(1, 16, 0b01000000); // mute HPL Driver, 0 gain
+	aic_writePage(1, 17, 0b01000000); // mute HPR Driver, 0 gain
+	aic_writePage(1, 18, 0b01000000); // mute LOL Driver, 0 gain
+	aic_writePage(1, 19, 0b01000000); // mute LOR Driver, 0 gain
+	aic_writePage(0, 63, 0); //disable LDAC/RDAC
+	aic_writePage(1, 9, 0); // Power down HPL/HPR and LOL/LOR drivers
+	
+	aic_writePage(1,12,0); //unroute from HPL
+	aic_writePage(1,13,0); //unroute from HPR
+	aic_writePage(1,14,0); //unroute from LOL
+	aic_writePage(1,15,0); //unroute from LOR	
+
+
+	if (n == TYMPAN_OUTPUT_HEADPHONE_JACK_OUT) {
+
+		//aic_writePage(1, 20, 0x25); // 0x14 De-Pop
+		//aic_writePage(1, 12, 8); // route LDAC/RDAC to HPL/HPR
+		//aic_writePage(1, 13, 8); // route LDAC/RDAC to HPL/HPR
+		aic_writePage(1, 12, 0b00001000); // route LDAC/RDAC to HPL/HPR
+		aic_writePage(1, 13, 0b00001000); // route LDAC/RDAC to HPL/HPR
+		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
+		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
+		aic_writePage(1, 9, 0x30); // Power up HPL/HPR drivers  0b00110000
+		delay(100);
+		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+
+
+		if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Headphone Jack");
+		return true;
+  } else if (n == TYMPAN_OUTPUT_LINE_OUT) {
+    
+		//aic_writePage(1, 20, 0x25); // 0x14 De-Pop
+		aic_writePage(1, 14, 0b00001000); // route LDAC/RDAC to LOL/LOR
+		aic_writePage(1, 15, 0b00001000); // route LDAC/RDAC to LOL/LOR
+		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC		
+		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
+		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain
+		aic_writePage(1, 9, 0b00001100); // Power up HPL/HPR and LOL/LOR drivers
+		delay(100);
+		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+
+
+		if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Headphone Jack");
+		return true;	
+	
+    if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Line Out");
+    return true;
+  } 
+  Serial.print("controlTLV320AIC3206: ERROR: Unable to Select Output - Value not supported: ");
+  Serial.println(n);
+  return false;
+}
+
+
 void AudioControlTLV320AIC3206::aic_init() {
-  if (debugToSerial) Serial.println("INFO: Initializing AIC");
+  if (debugToSerial) Serial.println("controlTLV320AIC3206: Initializing AIC");
   
   // PLL
   aic_writePage(0, 4, 3); // 0x04 low PLL clock range, MCLK is PLL input, PLL_OUT is CODEC_CLKIN
@@ -434,7 +483,7 @@ unsigned int AudioControlTLV320AIC3206::aic_readPage(uint8_t page, uint8_t reg)
     if (Wire.available() >= 1) {
       uint16_t val = Wire.read();
 	  if (debugToSerial) {
-		Serial.print("INFO: Read Page.  Page: ");Serial.print(page);
+		Serial.print("controlTLV320AIC3206: Read Page.  Page: ");Serial.print(page);
 		Serial.print(" Reg: ");Serial.print(reg);
 		Serial.print(".  Received: ");
 		Serial.println(val, HEX);
@@ -461,7 +510,7 @@ bool AudioControlTLV320AIC3206::aic_writeAddress(uint16_t address, uint8_t val) 
 
 bool AudioControlTLV320AIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) {
   if (debugToSerial) {
-	Serial.print("INFO: Write Page.  Page: ");Serial.print(page);
+	Serial.print("controlTLV320AIC3206: Write Page.  Page: ");Serial.print(page);
 	Serial.print(" Reg: ");Serial.print(reg);
 	Serial.print(" Val: ");Serial.println(val);
   }
