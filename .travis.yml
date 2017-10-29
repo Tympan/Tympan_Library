@@ -10,8 +10,10 @@ before_install:
   - sudo mv arduino-1.8.5 /usr/local/share/arduino
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
   # install teensyduino
+  - wget https://www.pjrc.com/teensy/49-teensy.rules   # get teensyduino udev rules
+  - sudo cp 49-teensy.rules /etc/udev/rules.d/
   - wget https://www.pjrc.com/teensy/td_140/TeensyduinoInstall.linux64
-  - chmod 0755 TeensyduinoInstall.linux64
+  - sudo chmod 0755 TeensyduinoInstall.linux64
   - ./TeensyduinoInstall.linux64
 # install:
 #  - ln -s $PWD /usr/local/share/arduino/libraries/Adafruit_FONA
