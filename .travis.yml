@@ -1,0 +1,22 @@
+language: c
+before_install:
+  # install arduino IDE - requires linux xvfb 
+  # setup derived from https://learn.adafruit.com/continuous-integration-arduino-and-you/testing-your-project
+  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
+  - sleep 3
+  - export DISPLAY=:1.0
+  - wget http://arduino.cc/download.php?f=/arduino-1.8.5-linux64.tgz
+  - tar xf arduino-1.8.5-linux64.tar.xz
+  - sudo mv arduino-1.8.5 /usr/local/share/arduino
+  - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+  # install teensyduino
+  - wget https://www.pjrc.com/teensy/td_140/TeensyduinoInstall.linux64
+  - chmod 0755 TeensyduinoInstall.linux64
+  - ./TeensyduinoInstall.linux64
+# install:
+#  - ln -s $PWD /usr/local/share/arduino/libraries/Adafruit_FONA
+#  - arduino --install-library "Adafruit SleepyDog Library,Adafruit MQTT Library"
+# script:
+#   - arduino --verify --board arduino:avr:uno $PWD/examples/FONAtest/FONAtest.ino
+#   - arduino --verify --board arduino:avr:uno $PWD/examples/IncomingCall/IncomingCall.ino
+#   - arduino --verify --board arduino:avr:uno $PWD/examples/AdafruitIO_GPS/AdafruitIO_GPS.ino
