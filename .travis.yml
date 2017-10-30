@@ -12,10 +12,9 @@ install:
     - pip install -U platformio
 
 script:
-    - platformio ci --project-conf=platformio.ini 
-      examples/01-Basic/AudioPassThru/AudioPassThru.ino 
-      examples/01-Basic/BasicGain/BasicGain.ino
-      examples/01-Basic/ChangeSampleRate/ChangeSampleRate.ino
-    #  examples/01-Basic/PrintCPUandMemoryUsage/PrintCPUandMemoryUsage.ino
-    #  examples/01-Basic/TrebleBoost/TrebleBoost.ino
-    #  examples/01-Basic/TrebleBoost_wComp/TrebleBoost_wComp.ino
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino 
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/BasicGain/BasicGain.ino
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/ChangeSampleRate/ChangeSampleRate.ino
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/PrintCPUandMemoryUsage/PrintCPUandMemoryUsage.ino
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost/TrebleBoost.ino
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost_wComp/TrebleBoost_wComp.ino
