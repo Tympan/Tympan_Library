@@ -1,56 +1,15 @@
-language: c
-before_install:
-  - cd ..   # travis drops you in the repository, we want to be in /home/travis/build/[repository]/
-  
-  # install arduino IDE - requires linux xvfb 
-  # setup derived from:
-  # - https://learn.adafruit.com/continuous-integration-arduino-and-you/testing-your-project
-  # - https://github.com/rlogiacco/MicroDebug/blob/master/.travis.yml
-  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
-  - sleep 3
-  - export DISPLAY=:1.0
-  - wget http://downloads.arduino.cc/arduino-1.8.2-linux64.tar.xz
-  - tar xf arduino-1.8.2-linux64.tar.xz
-  - sudo mv arduino-1.8.2 /usr/local/share/arduino
-  - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
-  
-  # attempt to install arduino from teensyduino modified source 
-  #- git clone https://github.com/PaulStoffregen/Arduino-1.8.2-Teensyduino.git
-  #- sudo ./Arduino-1.8.2-Teensyduino/build/linux/dist/install.sh
-  
-  # install teensyduino audio library (https://forum.pjrc.com/threads/36200-linux-development-without-teensyduino-howto?highlight=travis)
-  # is this necessary?
-  - cd /usr/local/share/arduino/hardware/
-  - mkdir teensy
-  - cd teensy
-  - git clone https://github.com/PaulStoffregen/cores
-  - cp ~/build/mlshapiro/Tympan_Library/boards.txt cores/boards.txt
-  - cd ~/build/mlshapiro/
-  
-  # clone teensyduino from source
-  - git clone https://github.com/PaulStoffregen/Audio.git
-  - mkdir -p ~/Arduino/libraries            # default locations for libraries on linux https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc#files
-  - ln -s Audio ~/Arduino/libraries/Audio   # link in Teensy source
-  
-  # install teensy audio library to arduino IDE
-  # - wget https://www.pjrc.com/teensy/49-teensy.rules   # get teensyduino udev rules
-  # - sudo cp 49-teensy.rules /etc/udev/rules.d/
-  # teensy loader 
-  # - wget https://www.pjrc.com/teensy/teensy_linux64.tar.gz
-  # - tar -xvzf teensy_linux64.tar.gz
-  # teensyduino 1.36
-  # - wget https://www.pjrc.com/teensy/td_136/TeensyduinoInstall.linux64
-  # - sudo chmod 0755 TeensyduinoInstall.linux64
-  # - ./TeensyduinoInstall.linux64
-  
-install:
-  # link in Tympan libraries
-  - ln -s Tympan_Library /usr/local/share/arduino/libraries/Tympan_Library
+language: python
+python:
+    - "2.7"
 
-  
+# Cache PlatformIO packages using Travis CI container-based infrastructure
+sudo: false
+cache:
+    directories:
+        - "~/.platformio"
+
+install:
+    - pip install -U platformio
+
 script:
-  # See reference for Arduino CLI: https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc
-  - arduino --verify Tympan_Library/examples/01-Basic/AudioPassThru/AudioPassThru.ino
-  
-# env:
-# - BOARD=arduino:avr:uno
+    - platformio ci --board=teensy36 examples/01-Basic/AudioPassThru/AudioPassThru.ino
