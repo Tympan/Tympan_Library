@@ -23,7 +23,7 @@ before_install:
   - mkdir teensy
   - cd teensy
   - git clone https://github.com/PaulStoffregen/cores
-  - cp ~/build/mlshapiro/Tympan_Library/boards.txt boards.txt
+  - cp ~/build/mlshapiro/Tympan_Library/boards.txt cores/boards.txt
   - cd ~/build/mlshapiro/
   
   # clone teensyduino from source
