@@ -23,7 +23,7 @@ before_install:
   - mkdir teensy
   - cd teensy
   - git clone https://github.com/PaulStoffregen/cores
-  - wget https://forum.pjrc.com/attachment.php?attachmentid=7896&d=1471618359 > boards.txt
+  - cp ~/build/mlshapiro/Tympan_Library/boards.txt boards.txt
   - cd ~/build/mlshapiro/
   
   # clone teensyduino from source
