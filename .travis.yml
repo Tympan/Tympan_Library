@@ -34,12 +34,13 @@ before_install:
   # - ./TeensyduinoInstall.linux64
   
 install:
-  # link in Tympan and Teensy libraries
-  - ln -s $PWD /usr/local/share/arduino/libraries/Tympan_Library
-  - ln -s ../Audio /usr/local/share/arduino/libraries/Audio
+  # link in Tympan libraries
+  - ln -s Tympan_Library /usr/local/share/arduino/libraries/Tympan_Library
+  #- ln -s ../Audio /usr/local/share/arduino/libraries/Audio
+  
 script:
   # See reference for Arduino CLI: https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc
-  - arduino --verify $PWD/examples/01-Basic/AudioPassThru/AudioPassThru.ino
+  - arduino --verify Tympan_Library/examples/01-Basic/AudioPassThru/AudioPassThru.ino
   
 # env:
 # - BOARD=arduino:avr:uno
