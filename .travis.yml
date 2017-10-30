@@ -1,8 +1,5 @@
 language: c
 before_install:
-  # REMOVE:
-  - pwd
-  - ls -la
   # install arduino IDE - requires linux xvfb 
   # setup derived from:
   # - https://learn.adafruit.com/continuous-integration-arduino-and-you/testing-your-project
@@ -14,6 +11,7 @@ before_install:
   - tar xf arduino-1.8.2-linux64.tar.xz
   - sudo mv arduino-1.8.2 /usr/local/share/arduino
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+
   # install teensyduino - do we need to do this?
   - wget https://www.pjrc.com/teensy/49-teensy.rules   # get teensyduino udev rules
   - sudo cp 49-teensy.rules /etc/udev/rules.d/
@@ -26,12 +24,15 @@ before_install:
   # - ./TeensyduinoInstall.linux64
   
 install:
+  # See reference for Arduino CLI: https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc
+  # make arduino home folder
+  - ls -la ~/Arduino
+  # - mkdir -p ~/Arduino
+  # - mkdir -p ~/Arduino/libraries
   - ln -s $PWD /usr/local/share/arduino/libraries/Tympan_Library
-#  - arduino --install-library "Adafruit SleepyDog Library,Adafruit MQTT Library"
+  
 script:
-  - arduino --verify --board arduino:avr:uno $PWD/examples/01-Basic/AudioPassThru
-#  - arduino --verify --board arduino:avr:uno $PWD/examples/IncomingCall/IncomingCall.ino  
-#  - arduino --verify --board arduino:avr:uno $PWD/examples/AdafruitIO_GPS/AdafruitIO_GPS.ino
+  - arduino --verify $PWD/examples/01-Basic/AudioPassThru/AudioPassThru.ino
   
 # env:
 # - BOARD=arduino:avr:uno
