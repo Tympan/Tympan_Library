@@ -19,6 +19,7 @@ before_install:
   #- sudo ./Arduino-1.8.2-Teensyduino/build/linux/dist/install.sh
   
   # install teensyduino audio library (https://forum.pjrc.com/threads/36200-linux-development-without-teensyduino-howto?highlight=travis)
+  # is this necessary?
   - cd /usr/local/share/arduino/hardware/
   - mkdir teensy
   - cd teensy
@@ -28,6 +29,9 @@ before_install:
   
   # clone teensyduino from source
   - git clone https://github.com/PaulStoffregen/Audio.git
+  - mkdir -p ~/Arduino/libraries            # default locations for libraries on linux https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc#files
+  - ln -s Audio ~/Arduino/libraries/Audio   # link in Teensy source
+  
   # install teensy audio library to arduino IDE
   # - wget https://www.pjrc.com/teensy/49-teensy.rules   # get teensyduino udev rules
   # - sudo cp 49-teensy.rules /etc/udev/rules.d/
@@ -42,7 +46,7 @@ before_install:
 install:
   # link in Tympan libraries
   - ln -s Tympan_Library /usr/local/share/arduino/libraries/Tympan_Library
-  - ln -s Audio /usr/local/share/arduino/libraries/Audio
+
   
 script:
   # See reference for Arduino CLI: https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc
