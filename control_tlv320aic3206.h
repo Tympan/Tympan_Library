@@ -16,7 +16,7 @@ class AudioControlTLV320AIC3206: public AudioControl
 {
 public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
-	AudioControlTLV320AIC3206(void) { debugToSerial = true; };
+	AudioControlTLV320AIC3206(void) { debugToSerial = false; };
 	AudioControlTLV320AIC3206(bool _debugToSerial) { debugToSerial = _debugToSerial; };
 	bool enable(void);
 	bool disable(void);
