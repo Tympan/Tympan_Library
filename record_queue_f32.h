@@ -39,7 +39,7 @@ public:
 	virtual void update(void);
 private:
 	audio_block_f32_t *inputQueueArray[1];
-	audio_block_f32_t * volatile queue[53];
+	audio_block_f32_t * volatile queue[100]; //was 53.  Increased to 100 to provide deeper buffering for handling slower SD cards
 	audio_block_f32_t *userblock;
 	volatile uint8_t head, tail, enabled;
 };
