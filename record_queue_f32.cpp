@@ -35,7 +35,7 @@ int AudioRecordQueue_F32::available(void)
 	h = head;
 	t = tail;
 	if (h >= t) return h - t;
-	return 53 + h - t;
+	return 100 + h - t;
 }
 
 void AudioRecordQueue_F32::clear(void)
@@ -48,7 +48,7 @@ void AudioRecordQueue_F32::clear(void)
 	}
 	t = tail;
 	while (t != head) {
-		if (++t >= 53) t = 0;
+		if (++t >= 100) t = 0;
 		AudioStream_F32::release(queue[t]);
 	}
 	tail = t;
@@ -75,7 +75,7 @@ audio_block_f32_t * AudioRecordQueue_F32::getAudioBlock(void)
 	if (userblock != NULL) return NULL;
 	t = tail;
 	if (t == head) return NULL;
-	if (++t >= 53) t = 0;
+	if (++t >= 100) t = 0;
 	userblock = queue[t];
 	tail = t;
 	return userblock;
@@ -104,7 +104,7 @@ void AudioRecordQueue_F32::update(void)
 		return;
 	}
 	h = head + 1;
-	if (h >= 53) h = 0;
+	if (h >= 100) h = 0;
 	if (h == tail) {
 		AudioStream_F32::release(block);
 	} else {
