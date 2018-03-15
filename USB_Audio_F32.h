@@ -11,7 +11,9 @@
 #define usb_audio_f32_h_
 //#include "Arduino.h"
 #include <AudioStream_F32.h>
-#include <Audio.h>
+#include <AudioStream.h>
+//#include <Audio.h>
+
 
 class AudioInputUSB_F32 : public AudioStream_F32
 {
