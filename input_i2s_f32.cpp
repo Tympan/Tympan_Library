@@ -34,6 +34,7 @@ audio_block_t * AudioInputI2S_F32::block_right = NULL;
 uint16_t AudioInputI2S_F32::block_offset = 0;
 bool AudioInputI2S_F32::update_responsibility = false;
 DMAChannel AudioInputI2S_F32::dma(false);
+int AudioInputI2S_F32::flag_out_of_memory = 0;
 
 
 float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
@@ -147,9 +148,12 @@ void AudioInputI2S_F32::update(void)
 	if (new_left != NULL) {
 		new_right = AudioStream::allocate();
 		if (new_right == NULL) {
+			flag_out_of_memory = 1;
 			AudioStream::release(new_left);
 			new_left = NULL;
 		}
+	} else {
+		flag_out_of_memory = 1;
 	}
 	__disable_irq();
 	//if (block_offset >= AUDIO_BLOCK_SAMPLES) {  //original
@@ -171,9 +175,12 @@ void AudioInputI2S_F32::update(void)
 		if (out_left_f32 != NULL) {
 			out_right_f32 = AudioStream_F32::allocate_f32();
 			if (out_right_f32 == NULL) {
+				flag_out_of_memory = 2;
 				AudioStream_F32::release(out_left_f32);
 				out_left_f32 = NULL;
 			}
+		} else {
+			flag_out_of_memory = 2;
 		}
 		if (out_left_f32 != NULL) {
 			//convert int16 to float 32

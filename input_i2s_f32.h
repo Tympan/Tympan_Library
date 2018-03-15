@@ -45,6 +45,8 @@ public:
 	virtual void update(void);
 	static void convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) ;
 	void begin(void);
+	int get_isOutOfMemory(void) { return flag_out_of_memory; }
+	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
 	//friend class AudioOutputI2S_F32;
 protected:	
 	AudioInputI2S_F32(int dummy): AudioStream_F32(0, NULL) {} // to be used only inside AudioInputI2Sslave !!
@@ -57,6 +59,7 @@ private:
 	static float sample_rate_Hz;
 	static int audio_block_samples;
 	static uint16_t block_offset;
+	static int flag_out_of_memory;
 };
 
 
