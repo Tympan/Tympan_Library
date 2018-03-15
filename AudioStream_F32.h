@@ -14,7 +14,8 @@
 #define _AudioStream_F32_h
 
 #include <arm_math.h> //ARM DSP extensions.  for speed!
-#include <Audio.h> //Teensy Audio Library
+//include <Audio.h> //Teensy Audio Library
+#include <AudioStream.h>  //needed for AUDIO_BLOCK_SAMPLES
 #include "AudioSettings_F32.h"
 
 

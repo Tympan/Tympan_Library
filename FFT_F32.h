@@ -17,6 +17,7 @@
 #ifndef _FFT_h
 #define _FFT_h
 
+#include <Arduino.h>  //for Serial
 //include <math.h>
 #include <arm_math.h>
 

@@ -15,6 +15,7 @@
 #ifndef _AudioCalcEnvelope_F32_h
 #define _AudioCalcEnvelope_F32_h
 
+#include <Arduino.h>  //for Serial
 #include <arm_math.h> //ARM DSP extensions.  for speed!
 #include <AudioStream_F32.h>
 
