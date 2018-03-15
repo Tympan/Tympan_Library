@@ -14,6 +14,7 @@
 #include "Arduino.h"
 #include "AudioStream_F32.h"
 
+#define MAX_RECORD_QUEUE 200
 class AudioRecordQueue_F32 : public AudioStream_F32
 {
 //GUI: inputs:1, outputs:0 //this line used for automatic generation of GUI node
@@ -37,11 +38,14 @@ public:
 		enabled = 0;
 	}
 	virtual void update(void);
+	bool getOverrun(void) { return overrun; }
+	void clearOverrun(void) { overrun = false; }
 private:
 	audio_block_f32_t *inputQueueArray[1];
-	audio_block_f32_t * volatile queue[100]; //was 53.  Increased to 100 to provide deeper buffering for handling slower SD cards
+	audio_block_f32_t * volatile queue[MAX_RECORD_QUEUE]; //was 53.  Increased to MAX_RECORD_QUEUE to provide deeper buffering for handling slower SD cards
 	audio_block_f32_t *userblock;
 	volatile uint8_t head, tail, enabled;
+	volatile bool overrun = false;
 };
 
 #endif
