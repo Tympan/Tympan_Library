@@ -9,9 +9,7 @@
     filters in the frequency-domain, whereas I implemented them in the time-domain.
     I've also added an expansion stage to manage noise at very low SPL
 
-  Uses Teensy Audio Adapter ro the Tympan Audio Board
-      For Teensy Audio Board, assumes microphones (or whatever) are attached to the
-      For Tympan Audio Board, can use on board mics or external mic
+  Uses Teensy Audio Adapter.
 
   User Controls:
     Potentiometer on Tympan controls the algorithm gain
