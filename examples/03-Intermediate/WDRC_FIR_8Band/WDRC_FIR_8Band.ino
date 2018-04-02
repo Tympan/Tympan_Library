@@ -26,15 +26,9 @@
 
 
 // Include all the of the needed libraries
-//include "AudioStream_Mod.h" //include my custom AudioStream.h...this prevents the default one from being used
-//include <Audio.h>      //Teensy Audio Library
-#include <Wire.h>
-#include <SPI.h>
-//include <SD.h>
-//include <SerialFlash.h>
 #include <Tympan_Library.h>
 
-
+// Define the digital audio parameters
 const float sample_rate_Hz = 24000.0f ; //24000 or 44117.64706f (or other frequencies in the table in AudioOutputI2S_F32
 const int audio_block_samples = 32;  //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
