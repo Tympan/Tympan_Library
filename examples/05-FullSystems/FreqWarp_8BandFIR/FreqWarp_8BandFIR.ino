@@ -9,13 +9,7 @@
    MIT License.  use at your own risk.
 */
 
-//These are the includes from the Teensy Audio Library
-//include <Audio.h>      //Teensy Audio Library
-#include <Wire.h>
-#include <SPI.h>
-//include <SD.h>
-//include <SerialFlash.h>
-
+//Include the needed Libraries and header files
 #include <Tympan_Library.h>
 #include "AudioFilterFreqWarpAllPassFIR_F32.h"
 
