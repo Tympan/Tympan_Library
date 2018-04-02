@@ -50,6 +50,7 @@ class SDAudioWriter_SdFat
         // write all audio bytes (512 bytes is most efficient)
         if (flagPrintElapsedWriteTime) { usec = 0; }
         file.write((byte *)write_buffer, buffer_len * sizeof(write_buffer[0]));
+        nBlocksWritten++;
         if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec);  }
       }
       return 0;
@@ -99,6 +100,12 @@ class SDAudioWriter_SdFat
     void disablePrintElapseWriteTime(void) {
       flagPrintElapsedWriteTime = false;
     }
+    unsigned long getNBlocksWritten(void) {
+      return nBlocksWritten;
+    }
+    void resetNBlocksWritten(void) {
+      nBlocksWritten = 0;
+    }
 
   private:
     //SdFatSdio sd; //slower
@@ -107,6 +114,7 @@ class SDAudioWriter_SdFat
     int16_t write_buffer[MAX_AUDIO_BUFF_LEN];
     boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
+    unsigned long nBlocksWritten = 0;
 
 };
 

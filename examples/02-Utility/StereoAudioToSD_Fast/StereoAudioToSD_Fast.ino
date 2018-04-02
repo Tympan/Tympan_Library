@@ -138,10 +138,8 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
     Serial.print("printCPUandMemory: ");
     Serial.print("CPU Cur/Peak: ");
     Serial.print(audio_settings.processorUsage());
-    //Serial.print(AudioProcessorUsage()); //if not using AudioSettings_F32
     Serial.print("%/");
     Serial.print(audio_settings.processorUsageMax());
-    //Serial.print(AudioProcessorUsageMax());  //if not using AudioSettings_F32
     Serial.print("%,   ");
     Serial.print("Dyn MEM Int16 Cur/Peak: ");
     Serial.print(AudioMemoryUsage());
@@ -166,16 +164,18 @@ void serviceSD(void) {
       my_SD_writer.writeF32AsInt16(queueLeft.readBuffer(),queueRight.readBuffer(),audio_block_samples); //stereo
       queueLeft.freeBuffer(); queueRight.freeBuffer();
 
-      //print a warning if there has been an overrun
+      //print a warning if there has been an SD writing hiccup
       if (PRINT_OVERRUN_WARNING) {
         if (queueLeft.getOverrun() || queueRight.getOverrun() || i2s_in.get_isOutOfMemory()) {
-          Serial.println("WARNING: there was a hiccup in the writing to SD.  There may be a gap.");
+          float blocksPerSecond = sample_rate_Hz / ((float)audio_block_samples);
+          Serial.print("SD Write Warning: there was a hiccup in the writing.  Approx Time (sec): ");
+          Serial.println( ((float)my_SD_writer.getNBlocksWritten()) / blocksPerSecond );
         }
       }
 
       //print timing information to help debug hiccups in the audio.  Are the writes fast enough?  Are there overruns?
       if (PRINT_FULL_SD_TIMING) {
-        Serial.print("Overrun: "); 
+        Serial.print("SD Write Status: "); 
         Serial.print(queueLeft.getOverrun()); //zero means no overrun
         Serial.print(", ");
         Serial.print(queueRight.getOverrun()); //zero means no overrun
