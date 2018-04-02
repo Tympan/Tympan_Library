@@ -20,11 +20,7 @@
 */
 
 
-// Include all the of the needed libraries
-#include <Wire.h>
-#include <SPI.h>
-//include <SD.h>
-//include <SerialFlash.h>
+// Include the of the needed libraries
 #include <Tympan_Library.h>
 
 #include "AudioEffectCompWDRC2_F32.h"
