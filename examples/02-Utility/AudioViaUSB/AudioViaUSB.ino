@@ -24,7 +24,7 @@
 */
 
 //here are the libraries that we need
-#include <Audio.h>           //include the Teensy Audio Library
+//include <Audio.h>           //include the Teensy Audio Library
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //set the sample rate and block size...USB only works at 44 kHz with 128-point BLOCKS!!!!!

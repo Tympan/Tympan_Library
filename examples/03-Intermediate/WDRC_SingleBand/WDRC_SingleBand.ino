@@ -1,9 +1,9 @@
 #include <Tympan_Library.h>
-#include <Audio.h>
-#include <Wire.h>
+//include <Audio.h>
+//include <Wire.h>
 #include <SPI.h>
-#include <SD.h>
-#include <SerialFlash.h>
+//include <SD.h>
+//include <SerialFlash.h>
 
 // GUItool: begin automatically generated code
 AudioInputI2S_F32        i2sAudioIn1;    //xy=136,112

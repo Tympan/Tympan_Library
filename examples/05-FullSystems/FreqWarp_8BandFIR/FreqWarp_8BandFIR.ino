@@ -10,11 +10,11 @@
 */
 
 //These are the includes from the Teensy Audio Library
-#include <Audio.h>      //Teensy Audio Library
+//include <Audio.h>      //Teensy Audio Library
 #include <Wire.h>
 #include <SPI.h>
-#include <SD.h>
-#include <SerialFlash.h>
+//include <SD.h>
+//include <SerialFlash.h>
 
 #include <Tympan_Library.h>
 #include "AudioFilterFreqWarpAllPassFIR_F32.h"

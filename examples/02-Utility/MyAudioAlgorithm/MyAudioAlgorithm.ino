@@ -10,7 +10,7 @@
 */
 
 //These are the includes from the Teensy Audio Library
-#include <Audio.h>      //Teensy Audio Library
+//include <Audio.h>      //Teensy Audio Library
 #include <Tympan_Library.h>
 #include "MyAudioAlgorithm_F32.h"  //include the file holding your new audio algorithm
 
