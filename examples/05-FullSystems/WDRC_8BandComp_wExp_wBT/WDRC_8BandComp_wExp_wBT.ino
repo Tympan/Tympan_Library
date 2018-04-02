@@ -76,7 +76,7 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   int count=0;
 
   //connect input
-  patchCord[count++] = new AudioConnection_F32(i2s_in, 1, audioTestGenerator, 0); //#8 wants left, #3 wants right. //connect the Left input to the Left Int->Float converter
+  patchCord[count++] = new AudioConnection_F32(i2s_in, 0, audioTestGenerator, 0); //#8 wants left, #3 wants right. //connect the Left input to the Left Int->Float converter
 
   //make the connection for the audio test measurements
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
