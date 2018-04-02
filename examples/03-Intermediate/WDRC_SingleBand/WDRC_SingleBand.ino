@@ -1,9 +1,23 @@
+/*
+  WDRC_SingleBand
+
+  Created: Chip Audette (OpenAudio), Feb 2017
+    Primarly built upon CHAPRO "Generic Hearing Aid" from
+    Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
+
+  Purpose: Implements BTNRH's Wide Dynamic Range Compressor, though
+    only in a single frequency band.  I've also added an expansion stage
+    to manage noise at very low SPL.
+
+  User Controls:
+    Potentiometer on Tympan controls the algorithm gain
+
+   MIT License.  use at your own risk.
+*/
+
+// Include the required libraries
 #include <Tympan_Library.h>
-//include <Audio.h>
-//include <Wire.h>
-#include <SPI.h>
-//include <SD.h>
-//include <SerialFlash.h>
+
 
 // GUItool: begin automatically generated code
 AudioInputI2S_F32        i2sAudioIn1;    //xy=136,112
