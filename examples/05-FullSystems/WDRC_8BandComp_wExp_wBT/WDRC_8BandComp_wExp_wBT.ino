@@ -303,6 +303,9 @@ void setup() {
   //setup filters and mixers
   setupAudioProcessing();
 
+  //update the potentiometer settings
+	if (USE_VOLUME_KNOB) servicePotentiometer(millis());
+
   //End of setup
   printGainSettings(&Serial);Serial.println("Setup complete.");serialManager_USB.printHelp();
   #if (USE_BT_SERIAL)
@@ -343,7 +346,7 @@ void loop() {
 void servicePotentiometer(unsigned long curTime_millis) {
   static unsigned long updatePeriod_millis = 100; //how many milliseconds between updating the potentiometer reading?
   static unsigned long lastUpdate_millis = 0;
-  static float prev_val = 0;
+  static float prev_val = -1.0;
 
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
@@ -365,7 +368,7 @@ void servicePotentiometer(unsigned long curTime_millis) {
 } //end servicePotentiometer();
 
 
-void printGainSettings() {
+void printGainSettings(void) {
   printGainSettings(&Serial);
   #if (USE_BT_SERIAL)
     printGainSettings(&BT_SERIAL);

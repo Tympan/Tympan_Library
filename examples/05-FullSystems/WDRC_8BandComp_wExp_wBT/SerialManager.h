@@ -15,12 +15,14 @@ class SerialManager {
           AudioControlTestAmpSweep_F32 &_ampSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester_FIR)
-      : N_CHAN(n), 
-        gain_algorithms(gain_algs), 
+      : gain_algorithms(gain_algs), 
         ampSweepTester(_ampSweepTester), 
         freqSweepTester(_freqSweepTester),
-        freqSweepTester_FIR(_freqSweepTester_FIR),
-        s(_s) {};
+        freqSweepTester_FIR(_freqSweepTester_FIR)  
+        {
+          s = _s;
+          N_CHAN = n;
+        };
       
     void respondToByte(char c);
     void printHelp(void);
@@ -30,7 +32,7 @@ class SerialManager {
     float channelGainIncrement_dB = 2.5f;  
     int N_CHAN;
   private:
-    Stream *s = NULL;
+    Stream *s;
     GainAlgorithm_t *gain_algorithms;  //point to first element in array of expanders
     AudioControlTestAmpSweep_F32 &ampSweepTester;
     AudioControlTestFreqSweep_F32 &freqSweepTester;
@@ -59,6 +61,7 @@ void SerialManager::printHelp(void) {
 //functions in the main sketch that I want to call from here
 extern void incrementKnobGain(float);
 extern void printGainSettings(void);
+extern void printGainSettings(Stream *);
 extern void togglePrintMemoryAndCPU(void);
 extern void togglePrintAveSignalLevels(bool);
 extern void incrementDSLConfiguration(Stream *);
