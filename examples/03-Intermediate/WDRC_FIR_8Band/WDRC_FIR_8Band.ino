@@ -1,5 +1,5 @@
 /*
-  MultiBandCompressor_Float
+  WDRC_FIR_8band
 
   Created: Chip Audette (OpenAudio), Feb 2017
     Primarly built upon CHAPRO "Generic Hearing Aid" from
@@ -7,6 +7,7 @@
 
   Purpose: Implements 8-band compressor.  The BTNRH version was implemented the
     filters in the frequency-domain, whereas I implemented them in the time-domain.
+    
 
   Uses Teensy Audio Adapter ro the Tympan Audio Board
       For Teensy Audio Board, assumes microphones (or whatever) are attached to the
