@@ -34,6 +34,8 @@ AudioConvert_F32toI16	KEYWORD1
 
 AudioEffectCompWDRC_F32	KEYWORD1
 
+AudioEffectDelay_F32	KEYWORD1
+
 AudioEffectGain_F32	KEYWORD1
 setGain_dB		KEYWORD2
 

@@ -11,6 +11,7 @@
 #include "AudioEffectEmpty_F32.h"
 #include "AudioEffectGain_F32.h"
 #include "AudioEffectCompressor_F32.h"
+#include "AudioEffectDelay_f32.h"
 #include "AudioFilterBiquad_F32.h"
 #include "AudioFilterFIR_F32.h"
 #include "AudioMixer_F32.h"

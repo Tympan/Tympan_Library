@@ -18,7 +18,7 @@
 // without any filtering (as opposed to doing nothing at all)
 #define IIR_F32_PASSTHRU ((const float32_t *) 1)
 
-#define IIR_MAX_STAGES 1  //meaningless right now
+#define IIR_MAX_STAGES 4  //meaningless right now
 
 class AudioFilterBiquad_F32 : public AudioStream_F32
 {
@@ -26,7 +26,8 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
   //GUI: shortName:IIR
   public:
     AudioFilterBiquad_F32(void): AudioStream_F32(1,inputQueueArray), coeff_p(IIR_F32_PASSTHRU) { 
-		setSampleRate_Hz(AUDIO_SAMPLE_RATE_EXACT); 
+		setSampleRate_Hz(AUDIO_SAMPLE_RATE_EXACT);
+		clearCoeffArray();		
 	}
 	AudioFilterBiquad_F32(const AudioSettings_F32 &settings): 
 		AudioStream_F32(1,inputQueueArray), coeff_p(IIR_F32_PASSTHRU) {
@@ -35,7 +36,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 
     void begin(const float32_t *cp, int n_stages = 1) {
       coeff_p = cp;
-      // Initialize FIR instance (ARM DSP Math Library)
+      // Initialize Biquad instance (ARM DSP Math Library)
       if (coeff_p && (coeff_p != IIR_F32_PASSTHRU) && n_stages <= IIR_MAX_STAGES) {
         //https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html
         arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, (float32_t *)coeff_p,  &StateF32[0]);
@@ -44,6 +45,11 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
     void end(void) {
       coeff_p = NULL;
     }
+	
+	void clearCoeffArray(void) {
+		for (int i=0; i<IIR_MAX_STAGES*5;i++) coeff[i]=0.0;
+		coeff[0]=1.0f;  //makes this be a simple pass-thru
+	}
 	
 	void setSampleRate_Hz(float _fs_Hz) { sampleRate_Hz = _fs_Hz; }
     
@@ -60,7 +66,28 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
       //Use matlab to compute the coeff, such as: [b,a]=butter(2,20/(44100/2),'high'); %assumes fs_Hz = 44100
       coeff[0] = b[0];   coeff[1] = b[1];  coeff[2] = b[2]; //here are the matlab "b" coefficients
       coeff[3] = -a[1];  coeff[4] = -a[2];  //the DSP needs the "a" terms to have opposite sign vs Matlab ;
-      begin(coeff);
+      begin(coeff,1);
+    }
+
+    void setFilterCoeff_Matlab_sos(float32_t sos[], int n_sos) { //n_sos second-order sections of IIR
+      //https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html#ga8e73b69a788e681a61bccc8959d823c5
+      //Use matlab to compute the coeff, such as: 
+	  //   fs_Hz = 44100;  %sample rate of the signal to be processed
+	  //   N_IIR = 3;      %order of the IIR filter 
+	  //   bp_Hz = [1000 2000];    %define the desired cutoff frequencies [low, high] of the bandpass filter in Hz
+	  //   [b,a]=butter(N_IIR,bp_Hz/(fs_Hz/2)));  %creates bandpass filter, but not yet a second-order sections
+	  //   [sos]=tf2sos(b,a);  %convert to second order section  (no gain term...try to add that into this code later)
+	  int start_ind;
+	  for (int i=0; i < min(n_sos,IIR_MAX_STAGES); i++) {
+		  start_ind = i*5;
+		  coeff[start_ind+0] = sos[i*6+0];   
+		  coeff[start_ind+1] = sos[i*6+1];  
+		  coeff[start_ind+2] = sos[i*6+2];  
+		  //sos[i][3];  //the DSP data structure skips over this because it should because should be 1.0 (ie, it is a[0])
+		  coeff[start_ind+3] = -sos[i*6+4];  //the DSP needs the "a" terms to have opposite sign vs Matlab ;
+		  coeff[start_ind+4] = -sos[i*6+5];  //the DSP needs the "a" terms to have opposite sign vs Matlab ;
+	  }
+      begin(coeff,n_sos);
     }
 	
 	//note: stage is currently ignored
@@ -186,7 +213,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
    
   private:
     audio_block_f32_t *inputQueueArray[1];
-    float32_t coeff[5 * 1] = {1.0, 0.0, 0.0, 0.0, 0.0}; //no filtering. actual filter coeff set later
+    float32_t coeff[5 * IIR_MAX_STAGES]; //no filtering. actual filter coeff set later
 	float sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
   
     // pointer to current coefficients or NULL or FIR_PASSTHRU
