@@ -12,7 +12,6 @@
 */
 
 //here are the libraries that we need
-//include <Audio.h>           //include the Teensy Audio Library
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //set the sample rate and block size
