@@ -13,7 +13,6 @@
 */
 
 //here are the libraries that we need
-//include <Audio.h>           //include the Teensy Audio Library
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //create audio library objects for handling the audio
