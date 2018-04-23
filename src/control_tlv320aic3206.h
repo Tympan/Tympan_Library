@@ -12,34 +12,6 @@
 
 #include "AudioControl.h"
 
-class AudioControlTLV320AIC3206: public AudioControl
-{
-public:
-	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
-	AudioControlTLV320AIC3206(void) { debugToSerial = false; };
-	AudioControlTLV320AIC3206(bool _debugToSerial) { debugToSerial = _debugToSerial; };
-	bool enable(void);
-	bool disable(void);
-	bool outputSelect(int n);
-	bool volume(float n);
-	bool volume_dB(float n);
-	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
-	bool inputSelect(int n);
-	bool setInputGain_dB(float n);
-	bool setMicBias(int n);
-	bool debugToSerial;
-private:
-  void aic_reset(void);
-  void aic_init(void);
-  void aic_initDAC(void);
-  void aic_initADC(void);
-  unsigned int aic_readPage(uint8_t page, uint8_t reg);
-  bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
-  bool aic_writeAddress(uint16_t address, uint8_t val);
-  bool aic_goToPage(uint8_t page);
-
-};
-
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1
 #define TYMPAN_OUTPUT_LINE_OUT 2
 
@@ -56,5 +28,40 @@ private:
 #define TYMPAN_MIC_BIAS_2_5             3
 #define TYMPAN_MIC_BIAS_VSUPPLY         4
 #define TYMPAN_DEFAULT_MIC_BIAS TYMPAN_MIC_BIAS_2_5
+
+class AudioControlTLV320AIC3206: public AudioControl
+{
+public:
+	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
+	AudioControlTLV320AIC3206(void) { debugToSerial = false; };
+	AudioControlTLV320AIC3206(bool _debugToSerial) { debugToSerial = _debugToSerial; };
+	bool enable(void);
+	bool disable(void);
+	bool outputSelect(int n);
+	bool volume(float n);
+	bool volume_dB(float n);
+	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
+	bool inputSelect(int n);
+	bool setInputGain_dB(float n);
+	bool setMicBias(int n);
+	bool updateInputBasedOnMicDetect(int setting = TYMPAN_INPUT_JACK_AS_MIC);
+	bool enableMicDetect(bool);
+	int  readMicDetect(void);
+	bool debugToSerial;
+    unsigned int aic_readPage(uint8_t page, uint8_t reg);
+    bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
+private:
+  void aic_reset(void);
+  void aic_init(void);
+  void aic_initDAC(void);
+  void aic_initADC(void);
+
+  bool aic_writeAddress(uint16_t address, uint8_t val);
+  bool aic_goToPage(uint8_t page);
+  int prevMicDetVal = -1;
+
+};
+
+
 
 #endif

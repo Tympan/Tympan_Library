@@ -547,3 +547,42 @@ bool AudioControlTLV320AIC3206::aic_goToPage(byte page) {
   }
   return true;
 }
+
+bool AudioControlTLV320AIC3206::updateInputBasedOnMicDetect(int setting) {
+	//read current mic detect setting
+	int curMicDetVal = readMicDetect();
+	if (curMicDetVal != prevMicDetVal) {
+		if (curMicDetVal) {
+			//enable the microphone input jack as our input
+			inputSelect(setting);
+		} else {
+			//switch back to the on-board mics
+			inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);
+		}
+	}
+	prevMicDetVal = curMicDetVal;
+	return (bool)curMicDetVal;
+}
+bool AudioControlTLV320AIC3206::enableMicDetect(bool state) {
+	//page 0, register 67
+	byte curVal = aic_readPage(0,67);
+	byte newVal = curVal;
+	if (state) {
+		//enable
+		newVal = 0b111010111 & newVal;  //set bits 4-2 to be 010 to set debounce to 64 msec
+		newVal = 0b10000000 | curVal;  //force bit 1 to 1 to enable headset to detect
+		aic_writePage(0,67,newVal);  //bit 7 (=1) enable headset detect, bits 4-2 (=010) debounce to 64ms
+	} else {
+		//disable
+		newVal = 0b01111111 & newVal;  //force bit 7 to zero to disable headset detect
+		aic_writePage(0,67,newVal);  //bit 7 (=1) enable headset detect, bits 4-2 (=010) debounce to 64ms
+	}
+	return state;
+}
+int AudioControlTLV320AIC3206::readMicDetect(void) {
+	//page 0, register 46, bit D4 (for D7-D0)
+	byte curVal = aic_readPage(0,46);
+	curVal = (curVal & 0b00010000);
+	curVal = (curVal != 0);
+	return curVal;
+}
