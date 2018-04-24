@@ -1,16 +1,23 @@
 /*
-  WDRC_8BandComp_wExp_wBT
+  WDRC_8BandIIR_wBT
 
   Created: Chip Audette (OpenAudio), Feb 2017
     Primarly built upon CHAPRO "Generic Hearing Aid" from
     Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
 
-  Purpose: Implements 8-band compressor.  The BTNRH version was implemented the
-    filters in the frequency-domain, whereas I implemented them in the time-domain.
-    I've also added an expansion stage to manage noise at very low SPL.
+  Purpose: Implements 8-band WDRC compressor based on the work of BTNRH.
+    Filters: The BTNRH filterbank was implemented in the frequency-domain, whereas
+	    I implemented them in the time-domain via IIR filters.  Furthermore, I delay
+		the individual IIR filters to try to line up their impulse response so that
+		the overall frequency response is smoother because the phases are better aligned
+		in the cross-over region between neighboring filters.
+	Compressor: The BTNRH WDRC compresssor did not include an expansion stage at low SPL.
+	    I added an expansion stage to better manage noise.
     Communicates via USB Serial and via Bluetooth Serial
 
-  Uses Teensy Audio Adapter.
+    This version uses IIR filters instead of FIR or FFT filters for the 8-band
+    filterbank.
+
 
   User Controls:
     Potentiometer on Tympan controls the algorithm gain
@@ -22,6 +29,7 @@
 // Include all the of the needed libraries
 #include <Tympan_Library.h>
 
+//local files
 #include "AudioEffectCompWDRC2_F32.h"
 #include "AudioCalcGainWDRC2_F32.h"
 #include "SerialManager.h"
@@ -50,7 +58,9 @@ AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio *from* t
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
-AudioFilterFIR_F32          firFilt[N_CHAN];        //here are the filters to break up the audio into multipel bands
+//AudioFilterFIR_F32       bpFilt[N_CHAN];        //here are the filters to break up the audio into multiple bands
+AudioFilterBiquad_F32       bpFilt[N_CHAN];        //here are the filters to break up the audio into multiple bands
+AudioEffectDelay_F32        postFiltDelay[N_CHAN];  //Here are the delay modules that we'll use to time-align the output of the filters
 AudioEffectCompWDRC2_F32    expCompLim[N_CHAN];     //here are the per-band compressors
 AudioMixer8_F32             mixer1;                 //mixer to reconstruct the broadband audio
 AudioEffectCompWDRC2_F32    compBroadband;          //broad band compressor
@@ -58,13 +68,13 @@ AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio *to* the T
 
 //complete the creation of the tester objects
 AudioTestSignalMeasurement_F32  audioTestMeasurement(audio_settings);
-AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_FIR(audio_settings);
+AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_filterbank(audio_settings);
 AudioControlTestAmpSweep_F32    ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32    freqSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
-AudioControlTestFreqSweep_F32    freqSweepTester_FIR(audio_settings,audioTestGenerator,audioTestMeasurement_FIR);
+AudioControlTestFreqSweep_F32    freqSweepTester_FIR(audio_settings,audioTestGenerator,audioTestMeasurement_filterbank);
 
 //make the audio connections
-#define N_MAX_CONNECTIONS 100  //some large number greater than the number of connections that we'll make
+#define N_MAX_CONNECTIONS 110  //some large number greater than the number of connections that we'll make
 AudioConnection_F32 *patchCord[N_MAX_CONNECTIONS];
 int makeAudioConnections(void) { //call this in setup() or somewhere like that
   int count=0;
@@ -74,17 +84,18 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
 
   //make the connection for the audio test measurements
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
-  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_FIR, 0);
+  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_filterbank, 0);
 
   //make per-channel connections
   for (int i = 0; i < N_CHAN; i++) {
     //audio connections
-    patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, firFilt[i], 0); //connect to FIR filter
-    patchCord[count++] = new AudioConnection_F32(firFilt[i], 0, expCompLim[i], 0); //connect filter to compressor
+    patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, bpFilt[i], 0); //connect to FIR filter
+    patchCord[count++] = new AudioConnection_F32(bpFilt[i], 0, postFiltDelay[i], 0);  //connect to delay
+    patchCord[count++] = new AudioConnection_F32(postFiltDelay[i], 0, expCompLim[i], 0); //connect to compressor
     patchCord[count++] = new AudioConnection_F32(expCompLim[i], 0, mixer1, i); //connect to mixer
 
     //make the connection for the audio test measurements
-    patchCord[count++] = new AudioConnection_F32(firFilt[i], 0, audioTestMeasurement_FIR, 1+i);
+    patchCord[count++] = new AudioConnection_F32(bpFilt[i], 0, audioTestMeasurement_filterbank, 1+i);
   }
 
   //connect the output of the mixers to the final broadband compressor
@@ -153,14 +164,15 @@ void setupTympanHardware(void) {
 //define functions to setup the audio processing parameters
 #include "GHA_Constants.h"  //this sets dsl and gha settings, which will be the defaults
 #include "GHA_Alternates.h"  //this sets alternate dsl and gha, which can be switched in via commands
+#include "filter_coeff_sos.h"  //IIR filter coefficients for our filterbank
 #define DSL_NORMAL 0
 #define DSL_FULLON 1
 int current_dsl_config = DSL_NORMAL; //used to select one of the configurations above for startup
 float overall_cal_dBSPL_at0dBFS; //will be set later
 
-//define the filterbank size
-#define N_FIR 96
-float firCoeff[N_CHAN][N_FIR];
+//define the filterbank FIR size
+#define N_FIR 96  //I need to remove some legacy dependencies on N_FIR.  The actual value shouldn't matter
+//float firCoeff[N_CHAN][N_FIR];
 
 void setupAudioProcessing(void) {
   //make all of the audio connections
@@ -179,11 +191,23 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::
 {
   int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
 
-  //compute the per-channel filter coefficients
-  AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
 
-  //set the coefficients (if we lower n_chan, we should be sure to clean out the ones that aren't set)
-  for (int i=0; i< n_chan; i++) firFilt[i].begin(firCoeff[i], n_fir, settings.audio_block_samples);
+  // //compute the per-channel filter coefficients
+  //AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
+
+  // //set the coefficients (if we lower n_chan, we should be sure to clean out the ones that aren't set)
+  //for (int i=0; i< n_chan; i++) bpFilt[i].begin(firCoeff[i], n_fir, settings.audio_block_samples);
+
+  //give the pre-computed coefficients to the IIR filters
+  for (int i=0; i< n_chan; i++) {
+    bpFilt[i].setFilterCoeff_Matlab_sos(&(all_matlab_sos[i][0]),SOS_N_BIQUADS_PER_FILTER);   //from filter_coeff_sos.h
+  }
+
+  //setup the per-channel delays
+  for (int i=0; i<N_CHAN; i++) { 
+    postFiltDelay[i].setSampleRate_Hz(audio_settings.sample_rate_Hz);
+    postFiltDelay[i].delay(0,all_matlab_sos_delay_msec[i]);  //from filter_coeff_sos.h.  milliseconds!!!
+  }
 
   //setup all of the per-channel compressors
   configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
@@ -295,7 +319,7 @@ void setup() {
 
   // Audio connections require memory
   AudioMemory(10);      //allocate Int16 audio data blocks (need a few for under-the-hood stuff)
-  AudioMemory_F32_wSettings(40,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
+  AudioMemory_F32_wSettings(200,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
 
   // Enable the audio shield, select input, and enable output
   setupTympanHardware();

@@ -4,7 +4,7 @@
 
 #include <Tympan_Library.h>
 
-#define max_steps 64
+#define max_steps 128
 #define max_num_chan 16   //max number of test signal inputs to the AudioTestSignalMeasurementMulti_F32
 
 //prototypes
