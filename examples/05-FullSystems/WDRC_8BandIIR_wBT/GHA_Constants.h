@@ -19,7 +19,7 @@ BTNRH_WDRC::CHA_DSL2 dsl = {5,  // attack (ms)
   {20.f, 20.f, 25.f, 30.f, 30.f, 30.f, 30.f, 30.f},   // compression-start gain
   {1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f},   // compression ratio
   {50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0},   // compression-start kneepoint (input dB SPL)
-  {90.f, 90.f, 90.f, 90.f, 90.f, 91.f, 92.f, 93.f}    // broadband output limiting threshold (comp ratio 10)
+  {90.f, 90.f, 90.f, 90.f, 90.f, 91.f, 92.f, 93.f}    // output limiting threshold (comp ratio 10)
 };
 
 // Here are the settings for the broadband limiter at the end.
@@ -34,7 +34,7 @@ BTNRH_WDRC::CHA_WDRC2 gha = {5.f, // attack time (ms)
   0.f,      // compression-start gain....set to zero for pure limitter
   115.f,    // compression-start kneepoint...set to some high value to make it not relevant
   1.f,      // compression ratio...set to 1.0 to make linear (to defeat)
-  98.0     // broadband output limiting threshold...hardwired to compression ratio of 10.0
+  98.0      // output limiting threshold...hardwired to compression ratio of 10.0
 };
 
 

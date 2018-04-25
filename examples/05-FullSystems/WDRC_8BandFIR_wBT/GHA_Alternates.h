@@ -20,7 +20,7 @@ BTNRH_WDRC::CHA_DSL2 dsl_fullon = {5,  // attack (ms)
   {40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0},   // compression-start gain.  Tweak these values up until it sounds bad!
   {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},           // compression ratio.  Set to 1.0 to defeat.
   {50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0},   // compression-start kneepoint (input dB SPL).  not relevant when there is no compression
-  {200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0}    // broadband output limiting threshold (comp ratio 10). set to large value to defeat.
+  {200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0}   // limiting threshold (comp ratio 10). set to large value to defeat.
 };
 
 // Here is the broadband limiter for the full-on gain condition.  Only the "bolt" (last value) needs to be iterated.
@@ -33,6 +33,6 @@ BTNRH_WDRC::CHA_WDRC2 gha_fullon = {5.f, // attack time (ms)
   0.f,      // compression-start gain....set to zero for pure limitter
   130.f,    // compression-start kneepoint...set to some high value to make it not relevant
   1.f,      // compression ratio...set to 1.0 to make linear (to defeat)
-  104.0     // broadband output limiting threshold...hardwired to compression ratio of 10.0
+  104.0     // limiting threshold...hardwired to compression ratio of 10.0
 };
 
