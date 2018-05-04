@@ -151,7 +151,27 @@ namespace BTNRH_WDRC {
 		float tk;                   // compression-start kneepoint
 		float cr;                   // compression ratio
 		float bolt;                 // broadband output limiting threshold
+		//float gcalfa;				// ??  Added May 1, 2018 as part of adaptie feedback cancelation
+		//float gcbeta;				// ??  Added May 1, 2018 as part of adaptie feedback cancelation
+		float mu;				// 1e-3, adaptive feedback cancelation  (AFC) filter-estimation step size
+		float rho;				// 0.984, AFC filter-estimation forgetting factor
+		float pwr;				// estimated (smoothed) signal power for modifying mu for AFC
+		float fbm;				// some sort of quality metric for AFC (some sort of power residual...smaller is better?)
+		
 	} CHA_DVAR_t;
+	
+	typedef struct {
+		//int cs;  //chunk size (number of samples in data block)
+		//int nc;  //number of frequency bands (channels)
+		//int nw;	//number of samples in data window
+		int rsz;    //32, ring buffer size (samples)?  Used for AFC
+		int rhd;    //last starting point in the ring buffer (head)
+		int rtl;    //last ending point in the ring buffer (tail)
+		int afl;	//100, adaptive filter length for AFC
+		int fbl;	//100, length of simulated feedback (ie, the given feedback impulse response)
+		int nqm;    //number of quality metrics:  nqm = (fbl < afl) ? fbl : afl;
+		
+	} CHA_IVAR_t;
 	
 	typedef struct {
 		float attack;               // attack time (ms), unused in this class
@@ -176,6 +196,8 @@ namespace BTNRH_WDRC {
 		float cr;                   // compression ratio
 		float bolt;                 // broadband output limiting threshold
 	} CHA_WDRC2;
+	
+
 };
 
 #endif
