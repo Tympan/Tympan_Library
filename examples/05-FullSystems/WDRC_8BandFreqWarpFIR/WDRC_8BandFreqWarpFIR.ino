@@ -2,9 +2,10 @@
    WDRC_8BandFreqWarpFIR
 
    Created: Chip Audette, Apr 2017
-   Purpose: Multiband processing using frequency warped FIR from Kates.
+   Purpose: Multiband processing using frequency warped FIR from Kates, Chapter 8.
+   Kates, James.  Digital Hearing Aids.  Plural Publishing Inc, San Diego, CA, USA.  2008.
 
-   Uses Tympan Audio Adapter.
+   Uses Tympan.
 
    MIT License.  use at your own risk.
 */

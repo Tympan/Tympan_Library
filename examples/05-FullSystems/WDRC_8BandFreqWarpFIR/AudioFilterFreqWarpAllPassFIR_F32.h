@@ -1,14 +1,5 @@
 
 /*
-   AudioEffectMine
-
-   Created: Chip Audette, December 2016
-   Purpose; Here is the skeleton of a audio processing algorithm that will
-       (hopefully) make it easier for people to start making their own 
-       algorithm.
-  
-   This processes a single stream fo audio data (ie, it is mono)
-
    MIT License.  use at your own risk.
 */
 
