@@ -144,7 +144,8 @@ bool AudioControlTLV320AIC3206::enable(void)
 
   //hard reset the AIC
   //Serial.println("Hardware reset of AIC...");
-  #define RESET_PIN  21
+  //define RESET_PIN  21
+  #define RESET_PIN (resetPinAIC)
   pinMode(RESET_PIN,OUTPUT); 
   digitalWrite(RESET_PIN,HIGH);delay(50); //not reset
   digitalWrite(RESET_PIN,LOW);delay(50);  //reset

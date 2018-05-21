@@ -27,5 +27,6 @@
 #include "synth_waveform_F32.h"
 #include "synth_whitenoise_f32.h"
 #include "synth_sine_f32.h"
+#include "Tympan.h"
 #include "output_i2s_f32.h"
 #include "USB_Audio_F32.h"
