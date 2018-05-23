@@ -445,16 +445,17 @@ void AudioControlTLV320AIC3206::aic_init() {
   aic_writePage(0, 30, 0x80 | BCLK_N); // power up BLCK N Divider, default is 128
 
   // POWER
-  aic_writePage(1, 1, 8); // 0x01
+  //aic_writePage(1, 1, 8); // 0x01 = 0b00001000 = weakly connect AVDD to DVDD.  Keep headphone charge pump disabled.
+  aic_writePage(1, 1, 10); // 0x01 = 0b00001010 = weakly connect AVDD to DVDD.  2018-05-22: Activate headphone charge pump disabled.
   aic_writePage(1, 2, 0); // 0x02 Enable Master Analog Power Control
   aic_writePage(1, 10, 0); // common mode 0.9 for full chip, HP, LO  // from WHF/CHA
   aic_writePage(1, 71, 0x31); // 0x47 Set input power-up time to 3.1ms (for ADC)
   aic_writePage(1, 123, 1); // 0x7B Set reference to power up in 40ms when analog blocks are powered up
   //aic_writePage(1, 124, 6); // 0x7D Charge Pump
-  aic_writePage(1, 125, 0x53); // Enable ground-centered mode, DC offset correction  // from WHF/CHA
+  aic_writePage(1, 125, 0x53); // 0b01010011 = 0 10 1 00 11: HPL is master gain, Enable ground-centered mode, 100% output power, DC offset correction  // from WHF/CHA
 
   // !!!!!!!!! The below writes are from WHF/CHA - probably don't need?
-  // aic_writePage(1, 1, 10); // 0x01 // Charge pump
+  // aic_writePage(1, 1, 10); // 10 = 0b00001010 // weakly connect AVDD to DVDD.  Activate charge pump
  aic_writePage(0, 27, 0x01 | AIC_CLK_DIR | (AIC_BITS == 32 ? 0x30 : 0)); // 0x1B
   // aic_writePage(0, 28, 0); // 0x1C
 }
