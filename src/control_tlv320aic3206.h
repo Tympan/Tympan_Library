@@ -10,7 +10,7 @@
 #ifndef control_tlv320aic3206_h_
 #define control_tlv320aic3206_h_
 
-//#include "AudioControl.h"
+#include "AudioControl.h"
 #include <Arduino.h>
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
