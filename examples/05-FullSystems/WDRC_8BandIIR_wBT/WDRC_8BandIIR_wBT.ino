@@ -52,7 +52,7 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206     audioHardware;            //controller for the Teensy Audio Board
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
-AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
+AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //keep this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
 AudioFilterBiquad_F32       bpFilt[N_CHAN];           //filters to break up the audio into multiple bands
