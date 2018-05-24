@@ -79,6 +79,7 @@ void AudioInputI2S_F32::begin(void)
 	I2S0_TCSR |= I2S_TCSR_TE | I2S_TCSR_BCE; // TX clock enable, because sync'd to TX
 	dma.attachInterrupt(isr);
 	
+	update_counter = 0;
 	
 };
 
@@ -186,6 +187,11 @@ void AudioInputI2S_F32::update(void)
 			//convert int16 to float 32
 			convert_i16_to_f32(out_left->data, out_left_f32->data, audio_block_samples);
 			convert_i16_to_f32(out_right->data, out_right_f32->data, audio_block_samples);
+			
+			//prepare to transmit
+			update_counter++;
+			out_left_f32->id = update_counter;
+			out_right_f32->id = update_counter;
 			
 			//transmit the f32 data!
 			AudioStream_F32::transmit(out_left_f32,0);
