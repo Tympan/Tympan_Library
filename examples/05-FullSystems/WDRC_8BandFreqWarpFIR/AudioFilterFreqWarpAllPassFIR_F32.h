@@ -83,7 +83,6 @@ class AudioFilterFreqWarpAllPassFIR_F32 : public AudioStream_F32
     // Here is where you can add your algorithm.
     // This function gets called block-wise
     void applyMyAlgorithm(audio_block_f32_t *audio_block) {
-      float out_val=0.0f;
 
       //allocate output block for each output channel
       audio_block_f32_t *out_blocks[N_FREQWARP_FIR];

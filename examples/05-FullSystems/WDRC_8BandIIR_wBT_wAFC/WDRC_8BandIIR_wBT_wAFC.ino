@@ -1,28 +1,43 @@
 /*
-  WDRC_8BandFIR_wBT
+  WDRC_8BandIIR_wBT_wAFC
 
-  Created: Chip Audette (OpenAudio), Feb 2017
+  Created: Chip Audette (OpenAudio), 2017-2018
     Primarly built upon CHAPRO "Generic Hearing Aid" from
     Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
 
-  Purpose: Implements 8-band WDRC compressor.  The BTNRH version was implemented the
-    filters in the frequency-domain, whereas I implemented them as FIR filters
-	in the time-domain. I've also added an expansion stage to manage noise at very
-	low SPL.  Communicates via USB Serial and via Bluetooth Serial
+  Purpose: Implements 8-band WDRC compressor with adaptive feedback cancelation (AFC)
+      based on the work of BTNRH.
+    
+  Filters: The BTNRH filterbank was implemented in the frequency-domain, whereas
+	  I implemented them in the time-domain via IIR filters.  Furthermore, I delay
+	  the individual IIR filters to try to line up their impulse response so that
+	  the overall frequency response is smoother because the phases are better aligned
+	  in the cross-over region between neighboring filters.
+   
+  Compressor: The BTNRH WDRC compresssor did not include an expansion stage at low SPL.
+	  I added an expansion stage to better manage noise.
+
+  Feedback Management: Implemented the BTNHRH adaptivev feedback cancelation algorithm
+    from their CHAPRO repository: https://github.com/BoysTownorg/chapro
+	  
+  Connectivity: Communicates via USB Serial and via Bluetooth Serial
 
   User Controls:
-    Potentiometer on Tympan controls the algorithm gain
+    Potentiometer on Tympan controls the algorithm gain.
 
-   MIT License.  use at your own risk.
+  MIT License.  use at your own risk.
 */
 
 
 // Include all the of the needed libraries
 #include <Tympan_Library.h>
+
+//local files
+#include "AudioEffectFeedbackCancel_F32.h"
 #include "SerialManager.h"
 
 //Bluetooth parameters...if used
-#define USE_BT_SERIAL 1   //set to zero to disable bluetooth
+#define USE_BT_SERIAL 0   //set to zero to disable bluetooth
 #define BT_SERIAL Serial1
 
 // Define the overall setup
@@ -33,30 +48,34 @@ float vol_knob_gain_dB = 0.0; //will be overridden by volume knob
 
 int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default vol_knob_gain_dB set a few lines below
 
-const float sample_rate_Hz = 24000.0f ; //24000 or 44117.64706f (or other frequencies in the table in AudioOutputI2S_F32
+const float sample_rate_Hz = 22050.0f ; //16000, 24000 or 44117.64706f (or other frequencies in the table in AudioOutputI2S_F32
 const int audio_block_samples = 16;  //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-AudioControlTLV320AIC3206     audioHardware;            //controller for the Teensy Audio Board
+TympanPins                tympPins(TYMPAN_REV_C);        //TYMPAN_REV_C or TYMPAN_REV_D
+TympanBase                audioHardware(tympPins);
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
-AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
+AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //keep this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
-AudioFilterFIR_F32          firFilt[N_CHAN];        //here are the filters to break up the audio into multipel bands
+AudioEffectFeedbackCancel_F32 feedbackCancel(audio_settings);      //this is the adaptive feedback cancellation algorithm
+AudioFilterBiquad_F32       bpFilt[N_CHAN];        //here are the filters to break up the audio into multiple bands
+AudioEffectDelay_F32        postFiltDelay[N_CHAN];  //Here are the delay modules that we'll use to time-align the output of the filters
 AudioEffectCompWDRC2_F32    expCompLim[N_CHAN];     //here are the per-band compressors
 AudioMixer8_F32             mixer1;                 //mixer to reconstruct the broadband audio
 AudioEffectCompWDRC2_F32    compBroadband;          //broad band compressor
+AudioEffectFeedbackCancel_LoopBack_F32 feedbackLoopBack(audio_settings);
 AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio output to the DAC.  Should be last.
 
 //complete the creation of the tester objects
 AudioTestSignalMeasurement_F32  audioTestMeasurement(audio_settings);
-AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_FIR(audio_settings);
+AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_filterbank(audio_settings);
 AudioControlTestAmpSweep_F32    ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32    freqSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
-AudioControlTestFreqSweep_F32    freqSweepTester_FIR(audio_settings,audioTestGenerator,audioTestMeasurement_FIR);
+AudioControlTestFreqSweep_F32    freqSweepTester_FIR(audio_settings,audioTestGenerator,audioTestMeasurement_filterbank);
 
 //make the audio connections
 #define N_MAX_CONNECTIONS 100  //some large number greater than the number of connections that we'll make
@@ -69,21 +88,33 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
 
   //make the connection for the audio test measurements
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
-  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_FIR, 0);
+  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_filterbank, 0);
 
-  //make per-channel connections
+  //start the algorithms with the feedback cancallation block
+  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, feedbackCancel, 0);
+
+  //make per-channel connections: filterbank -> delay -> WDRC Compressor -> mixer (synthesis)
   for (int i = 0; i < N_CHAN; i++) {
     //audio connections
-    patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, firFilt[i], 0); //connect to FIR filter
-    patchCord[count++] = new AudioConnection_F32(firFilt[i], 0, expCompLim[i], 0); //connect filter to compressor
+    #if 1
+        patchCord[count++] = new AudioConnection_F32(feedbackCancel, 0, bpFilt[i], 0); //connect to Feedback canceler
+    #else
+        patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, bpFilt[i], 0); //skip over the Feedback canceler
+    #endif
+    patchCord[count++] = new AudioConnection_F32(bpFilt[i], 0, postFiltDelay[i], 0);  //connect to delay
+    patchCord[count++] = new AudioConnection_F32(postFiltDelay[i], 0, expCompLim[i], 0); //connect to compressor
     patchCord[count++] = new AudioConnection_F32(expCompLim[i], 0, mixer1, i); //connect to mixer
 
     //make the connection for the audio test measurements
-    patchCord[count++] = new AudioConnection_F32(firFilt[i], 0, audioTestMeasurement_FIR, 1+i);
+    patchCord[count++] = new AudioConnection_F32(bpFilt[i], 0, audioTestMeasurement_filterbank, 1+i);
   }
 
   //connect the output of the mixers to the final broadband compressor
   patchCord[count++] = new AudioConnection_F32(mixer1, 0, compBroadband, 0);  //connect to final limiter
+
+  //connect the loop back to the adaptive feedback canceller
+  feedbackLoopBack.setTargetAFC(&feedbackCancel);
+  patchCord[count++] = new AudioConnection_F32(compBroadband, 0, feedbackLoopBack, 0); //loopback to the adaptive feedback canceler
 
   //send the audio out
   patchCord[count++] = new AudioConnection_F32(compBroadband, 0, i2s_out, 0);  //left output
@@ -103,13 +134,13 @@ bool enable_printCPUandMemory = false;
 void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPUandMemory; }; //"extern" let's be it accessible outside
 bool enable_printAveSignalLevels = false, printAveSignalLevels_as_dBSPL = false;
 void togglePrintAveSignalLevels(bool as_dBSPL) { enable_printAveSignalLevels = !enable_printAveSignalLevels; printAveSignalLevels_as_dBSPL = as_dBSPL;};
-SerialManager serialManager_USB(&Serial,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
+SerialManager serialManager_USB(&Serial,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,feedbackCancel);
 #if (USE_BT_SERIAL)
-  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR); //this instance will handle the Bluetooth Serial link
+  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,feedbackCancel); //this instance will handle the Bluetooth Serial link
 #endif
 
 //routine to setup the hardware
-#define POT_PIN A1  //potentiometer is tied to this pin
+//define POT_PIN A1  //potentiometer is tied to this pin
 void setupTympanHardware(void) {
   Serial.println("Setting up Tympan Audio Board...");
   #if (USE_BT_SERIAL)
@@ -140,7 +171,7 @@ void setupTympanHardware(void) {
   audioHardware.setInputGain_dB(input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
 
   //setup pin for potentiometer
-  pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
+  //pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
 }
 
 
@@ -148,14 +179,15 @@ void setupTympanHardware(void) {
 //define functions to setup the audio processing parameters
 #include "GHA_Constants.h"  //this sets dsl and gha settings, which will be the defaults
 #include "GHA_Alternates.h"  //this sets alternate dsl and gha, which can be switched in via commands
+#include "filter_coeff_sos.h"  //IIR filter coefficients for our filterbank
 #define DSL_NORMAL 0
 #define DSL_FULLON 1
 int current_dsl_config = DSL_NORMAL; //used to select one of the configurations above for startup
 float overall_cal_dBSPL_at0dBFS; //will be set later
 
-//define the filterbank size
-#define N_FIR 96
-float firCoeff[N_CHAN][N_FIR];
+//define the filterbank FIR size
+#define N_FIR 96  //I need to remove some legacy dependencies on N_FIR.  The actual value shouldn't matter
+//float firCoeff[N_CHAN][N_FIR];
 
 void setupAudioProcessing(void) {
   //make all of the audio connections
@@ -174,11 +206,23 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::
 {
   int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
 
-  //compute the per-channel filter coefficients
-  AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
 
-  //set the coefficients (if we lower n_chan, we should be sure to clean out the ones that aren't set)
-  for (int i=0; i< n_chan; i++) firFilt[i].begin(firCoeff[i], n_fir, settings.audio_block_samples);
+  // //compute the per-channel filter coefficients
+  //AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
+
+  // //set the coefficients (if we lower n_chan, we should be sure to clean out the ones that aren't set)
+  //for (int i=0; i< n_chan; i++) bpFilt[i].begin(firCoeff[i], n_fir, settings.audio_block_samples);
+
+  //give the pre-computed coefficients to the IIR filters
+  for (int i=0; i< n_chan; i++) {
+    bpFilt[i].setFilterCoeff_Matlab_sos(&(all_matlab_sos[i][0]),SOS_N_BIQUADS_PER_FILTER);   //from filter_coeff_sos.h
+  }
+
+  //setup the per-channel delays
+  for (int i=0; i<N_CHAN; i++) { 
+    postFiltDelay[i].setSampleRate_Hz(audio_settings.sample_rate_Hz);
+    postFiltDelay[i].delay(0,all_matlab_sos_delay_msec[i]);  //from filter_coeff_sos.h.  milliseconds!!!
+  }
 
   //setup all of the per-channel compressors
   configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
@@ -290,7 +334,7 @@ void setup() {
 
   // Audio connections require memory
   AudioMemory(10);      //allocate Int16 audio data blocks (need a few for under-the-hood stuff)
-  AudioMemory_F32_wSettings(40,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
+  AudioMemory_F32_wSettings(200,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
 
   // Enable the audio shield, select input, and enable output
   setupTympanHardware();
@@ -348,7 +392,8 @@ void servicePotentiometer(unsigned long curTime_millis) {
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(analogRead(POT_PIN)) / 1024.0; //0.0 to 1.0
+    //float val = float(analogRead(POT_PIN)) / 1024.0; //0.0 to 1.0
+    float val = float(audioHardware.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //send the potentiometer value to your algorithm as a control parameter

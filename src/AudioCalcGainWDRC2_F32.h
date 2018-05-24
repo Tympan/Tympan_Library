@@ -1,5 +1,5 @@
 /*
- * AudioCalcGainWDRC_F32
+ * AudioCalcGainWDRC2_F32
  * 
  * Created: Chip Audette, Feb 2017
  * Purpose: This module calculates the gain needed for wide dynamic range compression.
@@ -16,7 +16,7 @@
 #define _AudioCalcGainWDRC2_F32_h
 
 #include <arm_math.h> //ARM DSP extensions.  for speed!
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 #include "BTNRH_WDRC_Types.h"
 
 class AudioCalcGainWDRC2_F32 : public AudioStream_F32
@@ -79,9 +79,7 @@ class AudioCalcGainWDRC2_F32 : public AudioStream_F32
     	//tk = compression start kneepoint (pre-compression, dB SPL?)
     	//cr = compression ratio
     	//bolt = broadband output limiting threshold (post-compression, dB SPL?)
-
     {
-     
       float gdb, tkgo, pblt;
       int k;
       float *pdb = env_dB; //just rename it to keep the code below unchanged (input SPL dB)
@@ -110,13 +108,13 @@ class AudioCalcGainWDRC2_F32 : public AudioStream_F32
             gdb = tkgn;  //we're in the linear region.  Apply linear gain.
         } else if (pdb[k] > pblt) { //we're beyond the compression region into the limitting region
             gdb = bolt + ((pdb[k] - pblt) / 10.0f) - pdb[k]; //10:1 limiting!
-            //branch = 3;
         } else {
             gdb = cr_const * pdb[k] + tkgo; 
         }
         gain_out[k] = undb2(gdb);
         //y[k] = x[k] * undb2(gdb); //apply the gain
       }
+      last_gain = gain_out[n-1];  //hold this value, in case the user asks for it later (not needed for the algorithm)
     }
     
     void setDefaultValues(void) {
@@ -156,10 +154,10 @@ class AudioCalcGainWDRC2_F32 : public AudioStream_F32
     float incrementGain_dB(float increment_dB) {
       return setGain_dB(getGain_dB() + increment_dB);
     }    
-    //returns the linear gain of the system
-    float getGain_dB(void) {
-      return tkgn;
-    }
+	
+    float getGain_dB(void) { return tkgn;  }	//returns the linear gain of the system
+	float getCurrentGain(void) { return last_gain; }
+	float getCurrentGain_dB(void) { return db2(getCurrentGain()); }
     
 
     //dB functions.  Feed it the envelope amplitude (not squared) and it computes 20*log10(x) or it does 10.^(x/20)
@@ -199,6 +197,7 @@ class AudioCalcGainWDRC2_F32 : public AudioStream_F32
   private:
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
     float maxdB, exp_cr, exp_end_knee, tkgn, tk, cr, bolt;
+	float last_gain = 1.0;  //what was the last gain value computed for the signal
 };
 
 #endif

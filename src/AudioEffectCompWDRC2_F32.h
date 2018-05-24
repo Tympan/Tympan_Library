@@ -1,5 +1,5 @@
 /*
- * AudioEffectCompWDR_F32: Wide Dynamic Rnage Compressor
+ * AudioCalcGainWDRC2_F32: Wide Dynamic Rnage Compressor
  * 
  * Created: Chip Audette (OpenAudio) Feb 2017
  * Derived From: WDRC_circuit from CHAPRO from BTNRC: https://github.com/BTNRH/chapro
@@ -15,9 +15,9 @@
 class AudioCalcGainWDRC2_F32;  //forward declared.  Actually defined in later header file, but I need this here to avoid circularity
 
 #include <Arduino.h>
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 #include <arm_math.h>
-#include <AudioCalcEnvelope_F32.h>
+#include "AudioCalcEnvelope_F32.h"
 #include "AudioCalcGainWDRC2_F32.h"  //has definition of CHA_WDRC
 #include "BTNRH_WDRC_Types.h"
 
