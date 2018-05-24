@@ -8,16 +8,15 @@
   Purpose: Implements 8-band WDRC compressor based on the work of BTNRH.
     Filters: The BTNRH filterbank was implemented in the frequency-domain, whereas
 	    I implemented them in the time-domain via IIR filters.  Furthermore, I delay
-		the individual IIR filters to try to line up their impulse response so that
-		the overall frequency response is smoother because the phases are better aligned
-		in the cross-over region between neighboring filters.
-	Compressor: The BTNRH WDRC compresssor did not include an expansion stage at low SPL.
+		  the individual IIR filters to try to line up their impulse response so that
+		  the overall frequency response is smoother because the phases are better aligned
+		  in the cross-over region between neighboring filters.
+    Compressor: The BTNRH WDRC compresssor did not include an expansion stage at low SPL.
 	    I added an expansion stage to better manage noise.
     Communicates via USB Serial and via Bluetooth Serial
 
     This version uses IIR filters instead of FIR or FFT filters for the 8-band
     filterbank.
-
 
   User Controls:
     Potentiometer on Tympan controls the algorithm gain
@@ -30,8 +29,6 @@
 #include <Tympan_Library.h>
 
 //local files
-#include "AudioEffectCompWDRC2_F32.h"
-#include "AudioCalcGainWDRC2_F32.h"
 #include "SerialManager.h"
 
 //Bluetooth parameters...if used
@@ -54,17 +51,16 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 AudioControlTLV320AIC3206     audioHardware;            //controller for the Teensy Audio Board
-AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio *from* the Typmpan over the I2S bus
+AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
-//AudioFilterFIR_F32       bpFilt[N_CHAN];        //here are the filters to break up the audio into multiple bands
-AudioFilterBiquad_F32       bpFilt[N_CHAN];        //here are the filters to break up the audio into multiple bands
-AudioEffectDelay_F32        postFiltDelay[N_CHAN];  //Here are the delay modules that we'll use to time-align the output of the filters
-AudioEffectCompWDRC2_F32    expCompLim[N_CHAN];     //here are the per-band compressors
-AudioMixer8_F32             mixer1;                 //mixer to reconstruct the broadband audio
-AudioEffectCompWDRC2_F32    compBroadband;          //broad band compressor
-AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio *to* the Tympan over the I2S bus.  I moved it here to be last.
+AudioFilterBiquad_F32       bpFilt[N_CHAN];           //filters to break up the audio into multiple bands
+AudioEffectDelay_F32        postFiltDelay[N_CHAN];    //delay modules that we'll use to time-align the output of the filters
+AudioEffectCompWDRC2_F32    expCompLim[N_CHAN];       //per-band compressors
+AudioMixer8_F32             mixer1;                   //mixer to reconstruct the broadband audio
+AudioEffectCompWDRC2_F32    compBroadband;            //broadband compressor (for output limitting)
+AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio output to the DAC.  Should be last.
 
 //complete the creation of the tester objects
 AudioTestSignalMeasurement_F32  audioTestMeasurement(audio_settings);
