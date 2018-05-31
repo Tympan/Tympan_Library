@@ -10,7 +10,7 @@
 #ifndef control_tlv320aic3206_h_
 #define control_tlv320aic3206_h_
 
-#include "AudioControl.h"
+#include "TeensyAudioControl.h"
 #include <Arduino.h>
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
@@ -33,7 +33,7 @@
 
 
 
-class AudioControlTLV320AIC3206: public AudioControl
+class AudioControlTLV320AIC3206: public TeensyAudioControl
 {
 public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
