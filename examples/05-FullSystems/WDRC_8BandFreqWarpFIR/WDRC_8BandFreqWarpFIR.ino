@@ -13,9 +13,6 @@
 //Include the needed Libraries and header files
 #include <Tympan_Library.h>
 #include "AudioFilterFreqWarpAllPassFIR_F32.h"
-
-#include "AudioEffectCompWDRC2_F32.h"
-#include "AudioCalcGainWDRC2_F32.h"
 #include "SerialManager.h"
 
 

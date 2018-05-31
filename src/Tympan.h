@@ -78,6 +78,10 @@ class TympanBase : public AudioControlTLV320AIC3206
 		}
 		void setupPins(TympanPins &_pins) {
 			pins = _pins; //copy to local version
+			
+			//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: "); 
+			//Serial.print(_pins.potentiometer); Serial.print(" / "); Serial.println(pins.potentiometer);
+			
 			pinMode(pins.potentiometer,INPUT);
 			pinMode(pins.amberLED,OUTPUT); digitalWrite(pins.amberLED,LOW);
 			pinMode(pins.redLED,OUTPUT); digitalWrite(pins.redLED,LOW);
@@ -85,8 +89,12 @@ class TympanBase : public AudioControlTLV320AIC3206
 		//TympanPins getTympanPins(void) { return &pins; }
 		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
 		void setRedLED(int _value) { digitalWrite(pins.redLED,_value); }
-		int readPotentiometer(void) { return analogRead(pins.potentiometer); };
+		int readPotentiometer(void) { 
+			//Serial.print("TympanBase: readPot, pin "); Serial.println(pins.potentiometer);
+			return analogRead(pins.potentiometer); 
+		};	
 		int getTympanRev(void) { return pins.tympanRev; }
+		int getPotentiometerPin(void) { return pins.potentiometer; }
 		
 	private:
 		TympanPins pins;
