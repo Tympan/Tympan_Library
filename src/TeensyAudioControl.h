@@ -1,4 +1,9 @@
-/* Audio Library for Teensy 3.X
+/* 
+ * <note> N.B. THIS FILE/CLASS WAS NAMED AudioControl IN THE ORIGINAL TEENSY AUDIO 
+ * LIBRARY, BUT WAS MODIFIED HERE IN THE TYMPAN LIBRARY TO BE TeensyAudioControl 
+ * TO AVOID POTENTIAL NAMESPACE ISSUES.</note>
+ *
+ * Audio Library for Teensy 3.X
  * Copyright (c) 2014, Paul Stoffregen, paul@pjrc.com
  *
  * Development of this audio library was funded by PJRC.COM, LLC by sales of
@@ -24,8 +29,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef AudioControl_h_
-#define AudioControl_h_
+#ifndef TeensyAudioControl_h_
+#define TeensyAudioControl_h_
 
 #include <stdint.h>
 
@@ -35,7 +40,7 @@
 #define AUDIO_INPUT_LINEIN  0
 #define AUDIO_INPUT_MIC     1
 
-class AudioControl
+class TeensyAudioControl
 {
 public:
 	virtual bool enable(void) = 0;
