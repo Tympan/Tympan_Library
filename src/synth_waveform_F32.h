@@ -29,6 +29,7 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 				_PI(2*acos(0.0f)),
                 twoPI(2 * _PI),
 				sample_rate_Hz(AUDIO_SAMPLE_RATE_EXACT),
+				audio_block_samples(AUDIO_BLOCK_SAMPLES),
                 _OscillatorMode(OSCILLATOR_MODE_SINE),
                 _Frequency(440.0f),
                 _Phase(0.0f),
@@ -40,14 +41,16 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
                 _NotesPlaying(0)
 		{		
 			setSampleRate(settings.sample_rate_Hz);
+			setAudioBlockSamples(settings.audio_block_samples);
 		}
 		
                 
 	
-    AudioSynthWaveform_F32(void) : AudioStream_F32(1, inputQueueArray_f32),  //uses default AUDIO_SAMPLE_RATE from AudioStream.h
+    AudioSynthWaveform_F32(void) : AudioStream_F32(1, inputQueueArray_f32),  //uses default AUDIO_SAMPLE_RATE and AUDIO_BLOCK_SAMPLES from AudioStream.h
                 _PI(2*acos(0.0f)),
                 twoPI(2 * _PI),
 				sample_rate_Hz(AUDIO_SAMPLE_RATE_EXACT),
+				audio_block_samples(AUDIO_BLOCK_SAMPLES),
                 _OscillatorMode(OSCILLATOR_MODE_SINE),
                 _Frequency(440.0f),
                 _Phase(0.0f),
@@ -121,11 +124,15 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 		_PortamentoSamples = floorf( ((float)_PortamentoSamples) * fs_Hz / sample_rate_Hz );
 		sample_rate_Hz = fs_Hz;
 	}
+	void setAudioBlockSamples(const int _audio_block_samples) {
+		audio_block_samples = _audio_block_samples;
+	}
   private:
     inline float32_t applyMod(uint32_t sample, audio_block_f32_t *lfo);
     const float32_t _PI;
     float32_t twoPI;
 	float32_t sample_rate_Hz;
+	int audio_block_samples=AUDIO_BLOCK_SAMPLES;
     
     OscillatorMode _OscillatorMode;
     float32_t _Frequency;
