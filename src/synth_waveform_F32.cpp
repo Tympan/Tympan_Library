@@ -4,7 +4,7 @@
 void AudioSynthWaveform_F32::update(void) {
   audio_block_f32_t *block, *lfo;
 
-  if (_magnitude == 0.0f) return;
+  //if (_magnitude == 0.0f) return;
 
   block = allocate_f32();
   if (!block) return;

@@ -64,7 +64,7 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
     void frequency(float32_t freq) {
         float32_t nyquist = sample_rate_Hz/2.f;
 
-        if (freq < 0.0) freq = 0.0;
+        if (freq < 0.0) freq = 0.0f;
         else if (freq > nyquist) freq = nyquist;
 
         if (_PortamentoSamples > 0 && _NotesPlaying > 0) {
@@ -78,12 +78,12 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
     }
 
     void amplitude(float32_t n) {
-        if (n < 0) n = 0;
+        if (n < 0.0f) n = 0.0f;
         _magnitude = n;
     }
 
     void begin(short t_type) {
-        _Phase = 0;
+        _Phase = 0.0f;
         oscillatorMode(t_type);
     }
 
