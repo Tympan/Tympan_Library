@@ -20,7 +20,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 // Create the audio library objects that we'll use
 TympanPins                tympPins(TYMPAN_REV_C);     //TYMPAN_REV_C or TYMPAN_REV_D
 TympanBase                tympanHardware(tympPins);   //from the Tympan_Library
-AudioSynthWaveform_F32    sineWave;                   //from the Tympan_Library
+AudioSynthWaveform_F32    sineWave(audio_settings);   //from the Tympan_Library
 AudioOutputI2S_F32        audioOutput(audio_settings);//from the Tympan_Library
 
 // Create the audio connections from the sineWave object to the audio output object

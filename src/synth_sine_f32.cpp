@@ -12,11 +12,12 @@
 
 #include "synth_sine_f32.h"
 #include "utility/dspinst.h"
+#include "utility/data_waveforms.c"
 
 // data_waveforms.c
-extern "C" {
-  extern const int16_t AudioWaveformSine[257];
-}
+//extern "C" {
+//  extern const int16_t AudioWaveformSine[257];
+//}
 
 
 void AudioSynthWaveformSine_F32::update(void)

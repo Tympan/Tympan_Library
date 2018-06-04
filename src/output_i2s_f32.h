@@ -29,7 +29,7 @@
 
 #include "Arduino.h"
 #include "AudioStream_F32.h"
-#include "AudioStream.h"
+//include "AudioStream.h"
 #include "DMAChannel.h"
 
 
@@ -46,20 +46,28 @@ public:
 	}
 	virtual void update(void);
 	void begin(void);
+	void begin(bool);
+	void sub_begin_i32(void);
+	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
 	static void convert_f32_to_i16( float32_t *p_f32, int16_t *p_i16, int len) ;
-	
+	static void convert_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
+	static void convert_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
 protected:
 	//AudioOutputI2S_F32(const AudioSettings &settings): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	static void config_i2s(void);
-	static audio_block_t *block_left_1st;
-	static audio_block_t *block_right_1st;
+	static void config_i2s(bool);
+	static void config_i2s_i16(void);
+	static void config_i2s_i32(void);
+	static audio_block_f32_t *block_left_1st;
+	static audio_block_f32_t *block_right_1st;
 	static bool update_responsibility;
 	static DMAChannel dma;
-	static void isr(void);
+	static void isr_16(void);
+	static void isr_32(void);
 private:
-	static audio_block_t *block_left_2nd;
-	static audio_block_t *block_right_2nd;
+	static audio_block_f32_t *block_left_2nd;
+	static audio_block_f32_t *block_right_2nd;
 	static uint16_t block_left_offset;
 	static uint16_t block_right_offset;
 	audio_block_f32_t *inputQueueArray[2];
