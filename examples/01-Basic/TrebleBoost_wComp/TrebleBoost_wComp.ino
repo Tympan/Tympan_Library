@@ -177,11 +177,6 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
     Serial.print(audio_settings.processorUsageMax());
     //Serial.print(AudioProcessorUsageMax());  //if not using AudioSettings_F32
     Serial.print("%,   ");
-    Serial.print("Dyn MEM Int16 Cur/Peak: ");
-    Serial.print(AudioMemoryUsage());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax());
-    Serial.print(",   ");
     Serial.print("Dyn MEM Float32 Cur/Peak: ");
     Serial.print(AudioMemoryUsage_F32());
     Serial.print("/");
