@@ -66,15 +66,8 @@ float setI2SFreq(const float freq_Hz) {
   for (int f = 0; f < numfreqs; f++) {
     if ( freq == samplefreqs[f] ) {
       while (I2S0_MCR & I2S_MCR_DUF) ;
-	  //#if 1
-		//original
 		I2S0_MDR = I2S_MDR_FRACT((clkArr[f].mult - 1)) | I2S_MDR_DIVIDE((clkArr[f].div - 1));
 		return (float)(F_PLL / 256 * clkArr[f].mult / clkArr[f].div);
-	//  #else
-	//	//double the clock for 32-bit?
-	//	I2S0_MDR = I2S_MDR_FRACT((clkArr[f].mult - 1)) | I2S_MDR_DIVIDE((clkArr[f].div/2 - 1)); //For 32-bit transfers??
-	//	return (float)(F_PLL / 128 * clkArr[f].mult / (clkArr[f].div/2));  //For 32-bit transfers
-    // #endif
     }
   }
   return 0.0f;
@@ -320,7 +313,6 @@ void AudioOutputI2S_F32::sub_begin_i32(void) {
 #endif
 } */
 
-volatile int toggle_val = 0;
 void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio block
 {
 	int32_t *dest;
@@ -354,30 +346,15 @@ void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio
 		//memcpy_tointerleaveLRwLen(dest, blockL->data + offsetL, blockR->data + offsetR, audio_block_samples/2);
 		float32_t *pL = blockL->data + offsetL;
 		float32_t *pR = blockR->data + offsetR;
-		//if (toggle_val==0) {
-			for (int i=0; i < audio_block_samples/2; i++) {	//loop over half of the audio block (this routine gets called every half an audio block)
-				*d++ = (int32_t) (*pL++); 	
-				*d++ = (int32_t) (*pR++); //cast and interleave
-				//*d++ = (int32_t) (-200000000L); //for debugging
-			}
-		//	toggle_val = 1;
-		//} else {
-		//	for (int i=0; i < audio_block_samples/2; i++) {	
-		//		*d++ = (int32_t) (*pL++); 	
-		//		//*d++ = (int32_t)*pR++; //cast and interleave
-		//		//*d++ = 1000000000;
-		//		//*d++ = 5000000000;
-		//		*d++ = (int32_t) (200000000L);
-		//	}			
-		//	toggle_val = 0;
-		//}		
+		for (int i=0; i < audio_block_samples/2; i++) {	//loop over half of the audio block (this routine gets called every half an audio block)
+			*d++ = (int32_t) (*pL++); 	
+			*d++ = (int32_t) (*pR++); //cast and interleave
+		}
 		offsetL += (audio_block_samples / 2);
 		offsetR += (audio_block_samples / 2);
 	} else if (blockL) {
 		//memcpy_tointerleaveLR(dest, blockL->data + offsetL, blockR->data + offsetR);
 		float32_t *pL = blockL->data + offsetL;
-		//for (int i=0; i < audio_block_samples / 2 * 2; i+=2) { 
-			//*(d+i) = (int32_t) *pL++;  //cast and interleave
 		for (int i=0; i < audio_block_samples /2; i++) { 
 			*d++ = (int32_t) *pL++;  //cast and interleave
 			*d++ = 0;
@@ -385,8 +362,6 @@ void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio
 		offsetL += (audio_block_samples / 2);
 	} else if (blockR) {
 		float32_t *pR = blockR->data + offsetR;
-		//for (int i=0; i < audio_block_samples /2 * 2; i+=2) { 
-			//*(d+i) = (int32_t) *pR++; //cast and interleave
 		for (int i=0; i < audio_block_samples /2; i++) { 
 			*d++ = 0;
 			*d++ = (int32_t) *pR++;  //cast and interleave
@@ -395,22 +370,11 @@ void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio
 	} else {
 		//memset(dest,0,AUDIO_BLOCK_SAMPLES * 2);  //half buffer (AUDIO_BLOCK_SAMPLES/2), 16-bits per sample (AUDIO_BLOCK_SAMPLES/2*2), stereo (AUDIO_BLOCK_SAMPLES/2*2*2)
 		//memset(dest,0,audio_block_samples * 2 * 4 / 2);//half buffer (AUDIO_BLOCK_SAMPLES/2), 32-bits per sample (AUDIO_BLOCK_SAMPLES/2*4), stereo (AUDIO_BLOCK_SAMPLES/2*4*2)
-		
-		//if (toggle_val==0) {
-			for (int i=0; i < audio_block_samples/2; i++) {	//loop over half of the audio block (this routine gets called every half an audio block)
-				*d++ = (int32_t) 0; 	
-				*d++ = (int32_t) 0; 
-				//*d++ = (int32_t) (-200000000L);
-			}
-		//	toggle_val = 1;
-		//} else {
-		//	for (int i=0; i < audio_block_samples/2; i++) {	
-		//		*d++ = (int32_t) 0; 	
-		//		*d++ = (int32_t) 0; 
-		//		//*d++ = (int32_t) (200000000L);
-		//	}			
-		//	toggle_val = 0;
-		//}
+		for (int i=0; i < audio_block_samples/2; i++) {	//loop over half of the audio block (this routine gets called every half an audio block)
+			*d++ = (int32_t) 0; 	
+			*d++ = (int32_t) 0; 
+			//*d++ = (int32_t) (-200000000L);
+		}
 		return;
 	}
 

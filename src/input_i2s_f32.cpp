@@ -28,18 +28,16 @@
 #include "output_i2s_f32.h"
 #include <arm_math.h>
 
-//DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];  //minimum for stereo 16-bit transfers
-DMAMEM static int32_t i2s_rx_buffer[2*AUDIO_BLOCK_SAMPLES];//minimum for stereo 32-bit transfers
 //audio_block_t * AudioInputI2S_F32::block_left = NULL;
 //audio_block_t * AudioInputI2S_F32::block_right = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_right_f32 = NULL;
 uint16_t AudioInputI2S_F32::block_offset = 0;
 bool AudioInputI2S_F32::update_responsibility = false;
+//DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];  //minimum for stereo 16-bit transfers
+DMAMEM static int32_t i2s_rx_buffer[2*AUDIO_BLOCK_SAMPLES];//minimum for stereo 32-bit transfers
 DMAChannel AudioInputI2S_F32::dma(false);
 int AudioInputI2S_F32::flag_out_of_memory = 0;
-//int16_t I2S_32::shift=8; //8 shifts 24 bit data to LSB
-
 
 float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
@@ -59,9 +57,6 @@ void AudioInputI2S_F32::begin(void) {
 }
 void AudioInputI2S_F32::begin(bool transferUsing32bit) {
 	dma.begin(true); // Allocate the DMA channel first
-
-	//block_left_1st = NULL;
-	//block_right_1st = NULL;
 	
 	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz;
 	AudioOutputI2S_F32::audio_block_samples = audio_block_samples;
