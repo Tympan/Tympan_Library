@@ -4,6 +4,15 @@
 
 namespace BTNRH_WDRC {
 
+	// Here are the settings for the adaptive feedback cancelation
+	typedef struct {
+		int default_to_active; //enable AFC at startup?  1=active. 0=disabled.
+		int afl;	//length (samples) of adaptive filter for modeling feedback path.
+		float mu;	//mu, scale factor for how fast the adaptive filter adapts (bigger is faster)
+		float rho;	//rho, smoothing factor for estimating audio envelope (bigger is a longer average)
+		float eps;	//eps, when est the audio envelope, this is the min allowed level (avoids divide-by-zero)
+	} CHA_AFC;
+
 	// from CHAPRO cha_ff.h
 	#define DSL_MXCH 32              
 	//class CHA_DSL {
