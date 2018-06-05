@@ -30,6 +30,7 @@ class SerialManager {
     void printHelp(void);
     void incrementChannelGain(int chan, float change_dB);
     void decreaseChannelGain(int chan);
+    void set_N_CHAN(int _n_chan) { N_CHAN = _n_chan; };
 
     float channelGainIncrement_dB = 2.5f;  
     int N_CHAN;
@@ -42,7 +43,30 @@ class SerialManager {
     AudioEffectFeedbackCancel_F32 &feedbackCanceler;
 };
 
-void SerialManager::printHelp(void) {
+#define MAX_CHANS 8
+void printChanUpMsg(Stream *s, int N_CHAN) {
+  char fooChar[] = "12345678";
+  s->print("   ");
+  for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
+    s->print(fooChar[i]); 
+    if (i < (N_CHAN-1)) s->print(",");
+  }
+  s->print(": Increase linear gain of given channel (1-");
+  s->print(N_CHAN);
+  s->print(") by ");
+}
+void printChanDownMsg(Stream *s, int N_CHAN) {
+  char fooChar[] = "!@#$%^&*";
+  s->print("   ");
+  for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
+    s->print(fooChar[i]); 
+    if (i < (N_CHAN-1)) s->print(",");
+  }
+  s->print(": Decrease linear gain of given channel (1-");
+  s->print(N_CHAN);
+  s->print(") by ");
+}
+void SerialManager::printHelp(void) {  
   s->println();
   s->println("SerialManager Help: Available Commands:");
   s->println("   h: Print this help");
@@ -54,9 +78,9 @@ void SerialManager::printHelp(void) {
   s->println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
   s->println("   f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
   s->print("   k: Increase the gain of all channels (ie, knob gain) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   K: Decrease the gain of all channels (ie, knob gain) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   1,2,3,4,5,6,7,8: Increase linear gain of given channel (1-8) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   !,@,#,$,%,^,&,*: Decrease linear gain of given channel (1-8) by "); s->print(channelGainIncrement_dB); s->println(" dB");
+  s->print("   K: Decrease the gain of all channels (ie, knob gain) by ");
+  printChanUpMsg(s,N_CHAN);  s->print(channelGainIncrement_dB); s->println(" dB");
+  printChanDownMsg(s,N_CHAN);  s->print(channelGainIncrement_dB); s->println(" dB");
   s->println("   D: Toggle between DSL configurations: NORMAL vs FULL-ON");
   s->println("   p,P: Enable or Disable Adaptive Feedback Cancelation.");
   s->print("   m,M: Increase or Decrease AFC mu (currently "); s->print(feedbackCanceler.getMu(),6) ; s->println(").");

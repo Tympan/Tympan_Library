@@ -53,7 +53,10 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       int _afl = 100; //was 100.  For 24kHz sample rate
       setParams(_mu, _rho, _eps, _afl);
     }
-
+    void setParams(BTNRH_WDRC::CHA_AFC cha) {
+      setParams(cha.mu, cha.rho, cha.eps, cha.afl);
+      setEnable(cha.default_to_active);
+    }
     void setParams(float _mu, float _rho, float _eps, int _afl) {
       //AFC parameters
       setMu(_mu);     // AFC step size
@@ -77,6 +80,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
     float getEps(void) { return eps; };
 
     void setEnable(bool _enable) { enable = _enable; };
+    bool getEnable(void) { return enable;};
 
     //ring buffer
     static const int max_afc_ringbuff_len = MAX_AFC_FILT_LEN;
@@ -223,9 +227,9 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
     bool enable = true;
 
     //AFC parameters
-    float32_t mu;    // AFC step size
-    float32_t rho;   // AFC forgetting factor
-    float32_t eps;   // AFC tolerance for low signal levels (avoid divide-by-near-zero)
+    float32_t mu;    // AFC scale factor for how fast the filter adapts (bigger is faster)
+    float32_t rho;   // AFC averaging factor for estimating audio envelope (bigger is longer averaging)
+    float32_t eps;   // AFC when estimating audio level, this is the min value allowed (avoid divide-by-near-zero)
     int afl;         // AFC adaptive filter length
 
     //AFC states

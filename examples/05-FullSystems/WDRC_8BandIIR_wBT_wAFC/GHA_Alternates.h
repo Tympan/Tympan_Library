@@ -36,3 +36,13 @@ BTNRH_WDRC::CHA_WDRC2 gha_fullon = {5.f, // attack time (ms)
   104.0     // output limiting threshold...hardwired to compression ratio of 10.0
 };
 
+// Here are the settings for the adaptive feedback cancelation
+BTNRH_WDRC::CHA_AFC afc_fullon = {   
+  0, //enable AFC at startup?  Set to 1 to default to active.  Set to 0 to default to disabled
+  100, //afl, length (samples) of adaptive filter for modeling feedback path.  Max allowed is probably 256 samples.
+  1.0e-3, //mu, scale factor for how fast the adaptive filter adapts (bigger is faster)
+  0.9, //rho, smoothing factor for how fast the audio's envelope is tracked (bigger is a longer average)
+  0.008 //eps, when estimating the audio envelope, this is the minimum allowed level (helps avoid divide-by-zero)
+};
+
+
