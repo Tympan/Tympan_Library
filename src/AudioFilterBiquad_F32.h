@@ -114,7 +114,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	//void setLowpass(uint32_t stage, float frequency, float q = 0.7071) {
 	void setLowpass(uint32_t stage, float frequency, float q = 0.7071) {
 		//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / AUDIO_SAMPLE_RATE_EXACT);
+		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
 		double alpha = sinW0 / ((double)q * 2.0);
 		double cosW0 = cos(w0);
@@ -130,7 +130,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	}
 	void setHighpass(uint32_t stage, float frequency, float q = 0.7071) {
 		//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / AUDIO_SAMPLE_RATE_EXACT);
+		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
 		double alpha = sinW0 / ((double)q * 2.0);
 		double cosW0 = cos(w0);
@@ -144,7 +144,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	}
 	void setBandpass(uint32_t stage, float frequency, float q = 1.0) {
 		//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / AUDIO_SAMPLE_RATE_EXACT);
+		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
 		double alpha = sinW0 / ((double)q * 2.0);
 		double cosW0 = cos(w0);
@@ -158,7 +158,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	}
 	void setNotch(uint32_t stage, float frequency, float q = 1.0) {
 		//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / AUDIO_SAMPLE_RATE_EXACT);
+		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
 		double alpha = sinW0 / ((double)q * 2.0);
 		double cosW0 = cos(w0);
@@ -173,7 +173,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	void setLowShelf(uint32_t stage, float frequency, float gain, float slope = 1.0f) {
 		//int coeff[5];
 		double a = pow(10.0, gain/40.0);
-		double w0 = frequency * (2 * 3.141592654 / AUDIO_SAMPLE_RATE_EXACT);
+		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
 		//double alpha = (sinW0 * sqrt((a+1/a)*(1/slope-1)+2) ) / 2.0;
 		double cosW0 = cos(w0);
@@ -192,7 +192,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	void setHighShelf(uint32_t stage, float frequency, float gain, float slope = 1.0f) {
 		//int coeff[5];
 		double a = pow(10.0, gain/40.0);
-		double w0 = frequency * (2 * 3.141592654 / AUDIO_SAMPLE_RATE_EXACT);
+		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
 		//double alpha = (sinW0 * sqrt((a+1/a)*(1/slope-1)+2) ) / 2.0;
 		double cosW0 = cos(w0);
