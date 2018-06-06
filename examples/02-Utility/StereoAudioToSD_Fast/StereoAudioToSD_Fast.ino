@@ -6,13 +6,15 @@
  *    >>> START recording by having potentiometer turned above half-way
  *    >>> STOP recording by having potentiometer turned below half-way
  * 
- * Assumes use of Teensy 3.6 and Tympan Rev A or C
+ * Assumes Tympan Rev C or D.  Program in Arduino IDE as a Teensy 3.6.
  * 
  * Uses super-fast SD library that is originall from Greiman, but which
  *    has been forked, made compatible with the Teensy Audio library, and
  *    included as part of the Tympan Library.
  * 
  * Created: Chip Audette, OpenAudio, March 2018
+ *  Jun 2018: updated for Tympan RevC or RevD
+ *  Jun 2018: updated to adde automatic mic detection
  * 
  * License: MIT License, Use At Your Own Risk
  */
@@ -28,12 +30,12 @@
 
 //set the sample rate and block size
 const float sample_rate_Hz = 44117.0f ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
-//const float sample_rate_Hz = 96000.0f ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
 const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-AudioControlTLV320AIC3206 audioHardware;
+TympanPins                tympPins(TYMPAN_REV_C);        //TYMPAN_REV_C or TYMPAN_REV_D
+TympanBase                audioHardware(tympPins);
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC. 
 AudioRecordQueue_F32      queueLeft(audio_settings);     //gives access to audio data (will use for SD card)
 AudioRecordQueue_F32      queueRight(audio_settings);     //gives access to audio data (will use for SD card)
@@ -46,16 +48,11 @@ AudioConnection_F32       patchcord2(i2s_in, 1, queueRight, 0); //connect Raw au
 AudioConnection_F32       patchcord3(i2s_in, 0, i2s_out, 0);    //echo audio to output
 AudioConnection_F32       patchcord4(i2s_in, 1, i2s_out, 1);    //echo audio to output
 
-//The Tympan has a potentiometer and some LEDs
-#define POT_PIN A1  //potentiometer is tied to this pin
-#define RED_LED_PIN A16  //Red LED...shows that system is ready but not trying to write to SD
-#define AMBER_LED_PIN A17 //Amber LED...shows that system thinks that it is writing to SD
-
 // Create variables to decide how long to record to SD
 SDAudioWriter_SdFat my_SD_writer;
 
 // define the setup() function, the function that is called once when the device is booting
-const float input_gain_dB = 20.0f; //gain on the microphones
+const float input_gain_dB = 15.0f; //gain on the microphones
 float32_t potentiometer_value = 0.0f;  //set in Service Potentiometer
 void setup() {
   //begin the serial comms (for debugging)
@@ -63,15 +60,18 @@ void setup() {
   Serial.println("StereoAudioToSD: Starting setup()...");
   
   //allocate the audio memory
-  AudioMemory(10); AudioMemory_F32(MAX_F32_BLOCKS,audio_settings); //I can only seem to allocate 400 blocks
+  AudioMemory_F32(MAX_F32_BLOCKS,audio_settings); //I can only seem to allocate 400 blocks
   Serial.println("StereoAudioToSD: memory allocated.");
   
   //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
   Serial.print("StereoAudioToSD: runnng at a sample rate of (Hz): ");
   Serial.println(sample_rate_Hz);
+
+  //enable the Tympman to detect whether something was plugged inot the pink mic jack
+  audioHardware.enableMicDetect(true);
   
-  //Choose the desired audio input on the Typman
+  //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop() 
   audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
   //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
@@ -79,10 +79,9 @@ void setup() {
   //Set the desired input gain level
   audioHardware.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
   
-  // setup any other other features
-  pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
-  pinMode(RED_LED_PIN, OUTPUT);  digitalWrite(RED_LED_PIN,HIGH); //turn on Red LED
-  pinMode(AMBER_LED_PIN, OUTPUT); digitalWrite(AMBER_LED_PIN,LOW); //keep Amber LED off
+  //Set the state of the LEDs
+  audioHardware.setRedLED(HIGH);
+  audioHardware.setAmberLED(LOW);
   
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
@@ -103,6 +102,9 @@ void loop() {
   //check the potentiometer
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
+  //check the mic_detect signal
+  serviceMicDetect(millis(),500);
+  
   //check to see whether to print the CPU and Memory Usage
   //printCPUandMemory(millis(),3000); //print every 3000 msec 
 
@@ -120,16 +122,14 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-      potentiometer_value = ((float32_t)analogRead(POT_PIN)) / 1024.0;
-  
-      lastUpdate_millis = curTime_millis;
+    potentiometer_value = ((float32_t)(audioHardware.readPotentiometer())) / 1023.0;
+    lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
 
 
 //This routine prints the current and maximum CPU usage and the current usage of the AudioMemory that has been allocated
 void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  //static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
   static unsigned long lastUpdate_millis = 0;
 
   //has enough time passed to update everything?
@@ -141,11 +141,6 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
     Serial.print("%/");
     Serial.print(audio_settings.processorUsageMax());
     Serial.print("%,   ");
-    Serial.print("Dyn MEM Int16 Cur/Peak: ");
-    Serial.print(AudioMemoryUsage());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax());
-    Serial.print(",   ");
     Serial.print("Dyn MEM Float32 Cur/Peak: ");
     Serial.print(AudioMemoryUsage_F32());
     Serial.print("/");
@@ -153,6 +148,29 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
     Serial.println();
 
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
+  }
+}
+
+
+void serviceMicDetect(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
+  static unsigned long lastUpdate_millis = 0;
+  static unsigned int prev_val = 1111; //some sort of weird value
+  unsigned int cur_val = 0;
+
+  //has enough time passed to update everything?
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+
+    cur_val = audioHardware.updateInputBasedOnMicDetect(); //if mic is plugged in, defaults to TYMPAN_INPUT_JACK_AS_MIC
+    if (cur_val != prev_val) {
+      if (cur_val) {
+        Serial.println("serviceMicDetect: detected plug-in microphone!  External mic now active.");
+      } else {
+        Serial.println("serviceMicDetect: detected removal of plug-in microphone. On-board PCB mics now active.");
+      }
+    }
+    prev_val = cur_val;
+    lastUpdate_millis = curTime_millis;
   }
 }
 
@@ -201,7 +219,7 @@ void serviceSD(void) {
       Serial.println("Closing SD File...");
       my_SD_writer.close();
       queueLeft.end();  queueRight.end();
-      digitalWrite(RED_LED_PIN,HIGH); digitalWrite(AMBER_LED_PIN,LOW); //turn on red LED
+      audioHardware.setRedLED(HIGH); audioHardware.setAmberLED(LOW); //Turn OFF the Amber LED
     }
   } else {
     //no SD recording currently, so no SD action
@@ -213,7 +231,7 @@ void serviceSD(void) {
       if (my_SD_writer.open(fname)) {
         Serial.print("Opened "); Serial.print(fname); Serial.println(" on SD for writing.");
         queueLeft.begin(); queueRight.begin();
-        digitalWrite(RED_LED_PIN,LOW); digitalWrite(AMBER_LED_PIN,HIGH); //turn on Amber LED
+        audioHardware.setRedLED(LOW); audioHardware.setAmberLED(HIGH); //Turn ON the Amber LED
       } else {
         Serial.print("Failed to open "); Serial.print(fname); Serial.println(" on SD for writing.");
       }
