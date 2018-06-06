@@ -11,6 +11,7 @@
 #define _Tympan_h
 
 //constants to help define which version of Tympan is being used
+#define TYMPAN_REV_A (2)
 #define TYMPAN_REV_C (3)
 #define TYMPAN_REV_D (4)
 
@@ -27,6 +28,16 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		void setTympanRev(int _tympanRev) {
 			tympanRev = _tympanRev;
 			switch (tympanRev) {
+				case (TYMPAN_REV_A) :
+					//Teensy 3.6 Pin Numbering
+					resetAIC = 21;  //PTD6
+					potentiometer = 15;  //PTC0
+					amberLED = 36;  //PTC9
+					redLED = 35;  //PTC8
+					BT_nReset = 6; //PTD4
+					BT_PIO4 = 2;  //PTD0
+					reversePot = true;
+					break;				
 				case (TYMPAN_REV_C) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 21;  //PTD6
@@ -56,7 +67,12 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int redLED = 35;  //PTC8
 		int BT_nReset = 6; //PTD4
 		int BT_PIO4 = 2;  //PTD0
+		bool reversePot = false;
 
+};
+class TympanPins_RevA : public TympanPins {
+	public:
+		TympanPins_RevA(void) : TympanPins(TYMPAN_REV_A) {};
 };
 class TympanPins_RevC : public TympanPins {
 	public:
@@ -91,7 +107,9 @@ class TympanBase : public AudioControlTLV320AIC3206
 		void setRedLED(int _value) { digitalWrite(pins.redLED,_value); }
 		int readPotentiometer(void) { 
 			//Serial.print("TympanBase: readPot, pin "); Serial.println(pins.potentiometer);
-			return analogRead(pins.potentiometer); 
+			int val = analogRead(pins.potentiometer);
+			if (pins.reversePot) val = 1023 - val;
+			return val;
 		};	
 		int getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
