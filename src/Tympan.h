@@ -10,6 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
+
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (2)
 #define TYMPAN_REV_C (3)
@@ -17,7 +18,9 @@
 
 //the Tympan is a Teensy audio library "control" object
 #include "control_tlv320aic3206.h"  //see in here for more #define statements that are very relevant!
+#include <Arduino.h>  //for the Serial objects
 
+#define NOT_A_FEATURE (-9999)
 
 class TympanPins { //Teensy 3.6 Pin Numbering
 	public:
@@ -25,6 +28,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		TympanPins(int _tympanRev) {
 			setTympanRev(_tympanRev);
 		}
+		//int NOT_A_FEATURE = -9999;
 		void setTympanRev(int _tympanRev) {
 			tympanRev = _tympanRev;
 			switch (tympanRev) {
@@ -37,6 +41,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_nReset = 6; //PTD4
 					BT_PIO4 = 2;  //PTD0
 					reversePot = true;
+					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
 					break;				
 				case (TYMPAN_REV_C) :
 					//Teensy 3.6 Pin Numbering
@@ -46,6 +51,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					redLED = 35;  //PTC8
 					BT_nReset = 6; //PTD4
 					BT_PIO4 = 2;  //PTD0
+					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
 					break;
 				case (TYMPAN_REV_D) :
 					//Teensy 3.6 Pin Numbering
@@ -55,9 +61,12 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25
 					BT_PIO4 = 33;  //PTE24
+					enableStereoExtMicBias = 20; //PTD5
 					break;
 			}
 		}
+		Stream * getUSBSerial(void) { return USB_Serial; }
+		Stream * getBTSerial(void) { return BT_Serial; }
 		
 		//Defaults (Teensy 3.6 Pin Numbering), assuming Rev C
 		int tympanRev = TYMPAN_REV_C;
@@ -68,7 +77,9 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int BT_nReset = 6; //PTD4
 		int BT_PIO4 = 2;  //PTD0
 		bool reversePot = false;
-
+		int enableStereoExtMicBias = NOT_A_FEATURE;
+		Stream *USB_Serial = &Serial; //Rev_A, Rev_C, Rev_D
+		Stream *BT_Serial = &Serial1; //Rev_A, Rev_C, Rev_D
 };
 class TympanPins_RevA : public TympanPins {
 	public:
@@ -101,6 +112,10 @@ class TympanBase : public AudioControlTLV320AIC3206
 			pinMode(pins.potentiometer,INPUT);
 			pinMode(pins.amberLED,OUTPUT); digitalWrite(pins.amberLED,LOW);
 			pinMode(pins.redLED,OUTPUT); digitalWrite(pins.redLED,LOW);
+			if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
+				pinMode(pins.enableStereoExtMicBias,OUTPUT);
+				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
+			}
 		};
 		//TympanPins getTympanPins(void) { return &pins; }
 		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
@@ -111,8 +126,19 @@ class TympanBase : public AudioControlTLV320AIC3206
 			if (pins.reversePot) val = 1023 - val;
 			return val;
 		};	
+		int setEnableStereoExtMicBias(int new_state) {
+			if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
+				digitalWrite(pins.enableStereoExtMicBias,new_state);
+				return new_state;
+			} else {
+				return pins.enableStereoExtMicBias;
+			}
+		}
 		int getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
+		Stream *getUSBSerial(void) { return pins.getUSBSerial(); }
+		Stream *getBTSerial(void) { return pins.getBTSerial(); }
+		
 		
 	private:
 		TympanPins pins;
