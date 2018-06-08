@@ -44,46 +44,66 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       //if you need the block size, it is: n = settings.audio_block_samples;
     };
 
-	//Daniel, go ahead and change these as you'd like!
-    void setDefaultValues(void) {
+  //Daniel, go ahead and change these as you'd like!
+    virtual void setDefaultValues(void) {
       //set default values...taken from BTNRH tst_iffb.c
       float _mu = 1.E-3;
       float _rho = 0.9;  //was 0.984, then Neely 2018-05-07 said try 0.9
       float _eps = 0.008;  //was 1e-30, then Neely 2018-05-07 said try 0.008
       int _afl = 100; //was 100.  For 24kHz sample rate
+      //n_coeff_to_zero = 0;
       setParams(_mu, _rho, _eps, _afl);
     }
-    void setParams(BTNRH_WDRC::CHA_AFC cha) {
+    virtual void setParams(BTNRH_WDRC::CHA_AFC cha) {
       setParams(cha.mu, cha.rho, cha.eps, cha.afl);
+      //setNCoeffToZero(0);
       setEnable(cha.default_to_active);
     }
-    void setParams(float _mu, float _rho, float _eps, int _afl) {
+    virtual void setParams(float _mu, float _rho, float _eps, int _afl) {
       //AFC parameters
       setMu(_mu);     // AFC step size
       setRho(_rho);   // AFC forgetting factor
       setEps (_eps);   // AFC tolerance for setting a floor on the smallest signal level (thereby avoiding divide-by-near-zero)
-      afl  = _afl;  // AFC adaptive filter length
-      if (afl > max_afc_ringbuff_len) {
+      setAfl(_afl);  // AFC adaptive filter length
+      if (_afl > max_afc_ringbuff_len) {
         Serial.println(F("AudioEffectFeedbackCancel_F32: *** ERROR ***"));
         Serial.print(F("    : Adaptive filter length (")); Serial.print(afl);
         Serial.print(F(") too long for ring buffer (")); Serial.print(max_afc_ringbuff_len); Serial.println(")");
-        afl = max_afc_ringbuff_len;
+        afl = setAfl(max_afc_ringbuff_len);
         Serial.print(F("    : Limiting filter length to ")); Serial.println(afl);
       }
     }
 
-    float setMu(float _mu) { return mu = _mu; }
-    float setRho(float _rho) { return rho = min(max(_rho,0.0),1.0); };
-    float setEps(float _eps) { return eps = min(max(_eps,1e-30),1.0); };
-    float getMu(void) { return mu; };
-    float getRho(void) { return rho; };
-    float getEps(void) { return eps; };
+    virtual float setMu(float _mu) { return mu = _mu; }
+    virtual float setRho(float _rho) { return rho = min(max(_rho,0.0),1.0); };
+    virtual float setEps(float _eps) { return eps = min(max(_eps,1e-30),1.0); };
+    virtual float getMu(void) { return mu; };
+    virtual float getRho(void) { return rho; };
+    virtual float getEps(void) { return eps; };
+    virtual int setAfl(int _afl) { 
+      //apply limits on the input value
+      afl = min(max(_afl,1),MAX_AFC_FILT_LEN);
 
-    void setEnable(bool _enable) { enable = _enable; };
-    bool getEnable(void) { return enable;};
+      //clear out the upper coefficients
+      if (afl < MAX_AFC_FILT_LEN) {
+          for (int i=afl; i<MAX_AFC_FILT_LEN; i++) { 
+            efbp[i] = 0.0;
+          };
+      }
+
+      return  afl;
+    };
+    virtual int getAfl(void) { return afl;};
+
+    //int setNCoeffToZero(int _n_coeff_to_zero) { return n_coeff_to_zero = min(max(_n_coeff_to_zero,0),MAX_AFC_FILT_LEN); }
+    //int getNCoeffToZero(void) { return n_coeff_to_zero; };
+    
+    virtual void setEnable(bool _enable) { enable = _enable; };
+    virtual bool getEnable(void) { return enable;};
 
     //ring buffer
-    static const int max_afc_ringbuff_len = MAX_AFC_FILT_LEN;
+    //static const int max_afc_ringbuff_len = MAX_AFC_FILT_LEN;
+    static const int max_afc_ringbuff_len = 2*MAX_AFC_FILT_LEN;
     float32_t ring[max_afc_ringbuff_len];
     int rhd, rtl;
     unsigned long newest_ring_audio_block_id = 999999;
@@ -95,13 +115,13 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
     //int mask = rsz - 1;
 
     //initializeStates
-    void initializeStates(void) {
+    virtual void initializeStates(void) {
       pwr = 0.0;
       for (int i = 0; i < MAX_AFC_FILT_LEN; i++) efbp[i] = 0.0;
     }
 
     //here's the method that is called automatically by the Teensy Audio Library
-    void update(void) {
+    virtual void update(void) {
      
       //receive the input audio data
       audio_block_f32_t *in_block = AudioStream_F32::receiveReadOnly_f32();
@@ -137,7 +157,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       AudioStream_F32::release(in_block);
     }
 
-    void cha_afc(float32_t *x, //input audio array
+    virtual void cha_afc(float32_t *x, //input audio array
                  float32_t *y, //output audio array
                  int cs) //"chunk size"...the length of the audio array
     {
@@ -158,7 +178,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
           arm_dot_prod_f32(offset_ringbuff, efbp, afl, &fbe); //from CMSIS-DSP library for ARM chips
         #else
           fbe = 0;
-          for (j = 0; j < afl; j++) {
+          for (int j = 0; j < afl; j++) {
             //ij = (ii - j + rsz) & mask;
             //fbe += ring[ij] * efbp[j];
             fbe += offset_ringbuff[j] * efbp[j];
@@ -182,23 +202,30 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
           arm_add_f32(efbp,foo_float_array,efbp,afl);
         #else
           foo = mum*s1;
-          for (j = 0; j < afl; j++) {
+          for (int j = 0; j < afl; j++) {
             //ij = (ii - j + rsz) & mask;
             //efbp[j] += mum * ring[ij] * s1;  //update the estimated feedback coefficients
             efbp[j] += foo * offset_ringbuff[j];  //update the estimated feedback coefficients
           }
         #endif
 
+//        if (n_coeff_to_zero > 0) {
+//          //zero out the first feedback coefficients
+//          for (int j=0; j < n_coeff_to_zero; j++) {
+//            efbp[j] = 0.0;
+//          }
+//        }
+
         // copy AFC signal to output
         y[i] = s1;
       }
     }
   
-    void addNewAudio(audio_block_f32_t *in_block) {
+    virtual void addNewAudio(audio_block_f32_t *in_block) {
       newest_ring_audio_block_id = in_block->id; 
       addNewAudio(in_block->data, in_block->length);
     }
-    void addNewAudio(float *x, //input audio block
+    virtual void addNewAudio(float *x, //input audio block
                        int cs)   //number of samples in this audio block
     {
       int Isrc, Idst;
@@ -221,7 +248,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       }
     }
 
-  private:
+  protected:
     //state-related variables
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
     bool enable = true;
@@ -231,6 +258,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
     float32_t rho;   // AFC averaging factor for estimating audio envelope (bigger is longer averaging)
     float32_t eps;   // AFC when estimating audio level, this is the min value allowed (avoid divide-by-near-zero)
     int afl;         // AFC adaptive filter length
+    //int n_coeff_to_zero;  //number of the first AFC filter coefficients to artificially zero out (debugging)
 
     //AFC states
     float32_t pwr;   // AFC estimate of error power...a state variable

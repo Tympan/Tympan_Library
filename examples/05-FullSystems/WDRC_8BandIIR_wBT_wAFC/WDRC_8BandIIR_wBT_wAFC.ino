@@ -37,11 +37,11 @@
 #include "SerialManager.h"
 
 //Bluetooth parameters...if used
-#define USE_BT_SERIAL 0   //set to zero to disable bluetooth
+#define USE_BT_SERIAL 1   //set to zero to disable bluetooth
 #define BT_SERIAL Serial1
 
 // Define the overall setup
-String overall_name = String("Tympan: WDRC Expander-Compressor-Limiter with Overall Limiter");
+String overall_name = String("Tympan: 8-Band IIR WDRC with Adaptive Feedback Cancelation");
 const int N_CHAN_MAX = 8;  //number of frequency bands (channels)
 int N_CHAN = N_CHAN_MAX;  //will be changed to user-selected number of channels later
 const float input_gain_dB = 15.0f; //gain on the microphone
@@ -56,7 +56,7 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-TympanPins                    tympPins(TYMPAN_REV_C);        //TYMPAN_REV_C or TYMPAN_REV_D
+TympanPins                    tympPins(TYMPAN_REV_A);        //TYMPAN_REV_C or TYMPAN_REV_D
 TympanBase                    audioHardware(tympPins);
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //keep this to be *after* the creation of the i2s_in object
@@ -148,23 +148,13 @@ void setupTympanHardware(void) {
   #endif
   audioHardware.enable(); // activate AIC
 
-  //choose input
-  switch (1) {
-    case 1:
-      //choose on-board mics
-      audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-      break;
-    case 2:
-      //choose external input, as a line in
-      audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); //
-      break;
-    case 3:
-      //choose external mic plus the desired bias level
-      audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack
-      int myBiasLevel = TYMPAN_MIC_BIAS_2_5;  //choices: TYMPAN_MIC_BIAS_2_5, TYMPAN_MIC_BIAS_1_7, TYMPAN_MIC_BIAS_1_25, TYMPAN_MIC_BIAS_VSUPPLY
-      audioHardware.setMicBias(myBiasLevel); // set mic bias to 2.5 // default
-      break;
-  }
+  //enable the Tympman to detect whether something was plugged inot the pink mic jack
+  audioHardware.enableMicDetect(true);
+
+  //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop() 
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
+  //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //set volumes
   audioHardware.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
@@ -369,6 +359,9 @@ void loop() {
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
 
+  //check the mic_detect signal
+  serviceMicDetect(millis(),500);
+  
   //update the memory and CPU usage...if enough time has passed
   if (enable_printCPUandMemory) printCPUandMemory(millis());
 
@@ -441,7 +434,27 @@ void setVolKnobGain_dB(float gain_dB) {
     printGainSettings();
 }
 
+void serviceMicDetect(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
+  static unsigned long lastUpdate_millis = 0;
+  static unsigned int prev_val = 1111; //some sort of weird value
+  unsigned int cur_val = 0;
 
+  //has enough time passed to update everything?
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+
+    cur_val = audioHardware.updateInputBasedOnMicDetect(); //if mic is plugged in, defaults to TYMPAN_INPUT_JACK_AS_MIC
+    if (cur_val != prev_val) {
+      if (cur_val) {
+        Serial.println("serviceMicDetect: detected plug-in microphone!  External mic now active.");
+      } else {
+        Serial.println("serviceMicDetect: detected removal of plug-in microphone. On-board PCB mics now active.");
+      }
+    }
+    prev_val = cur_val;
+    lastUpdate_millis = curTime_millis;
+  }
+}
 
 void printCPUandMemory(unsigned long curTime_millis) {
   static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?

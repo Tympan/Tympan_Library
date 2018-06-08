@@ -85,7 +85,8 @@ void SerialManager::printHelp(void) {
   s->println("   p,P: Enable or Disable Adaptive Feedback Cancelation.");
   s->print("   m,M: Increase or Decrease AFC mu (currently "); s->print(feedbackCanceler.getMu(),6) ; s->println(").");
   s->print("   r,R: Increase or Decrease AFC rho (currently "); s->print(feedbackCanceler.getRho(),6) ; s->println(").");
-  s->print("   e,E: Increase or Decrease AFC eps (currently "); s->print(feedbackCanceler.getEps(),6) ; s->println(").");;
+  s->print("   e,E: Increase or Decrease AFC eps (currently "); s->print(feedbackCanceler.getEps(),6) ; s->println(").");
+  s->print("   x,X: Increase or Decrease AFC filter length (currently "); s->print(feedbackCanceler.getAfl()) ; s->println(").");
   s->println();
 }
 
@@ -226,6 +227,14 @@ void SerialManager::respondToByte(char c) {
     case 'E':
       old_val = feedbackCanceler.getEps(); new_val = old_val/sqrt(10.0);
       s->print("Command received: increasing AFC eps to "); s->println(feedbackCanceler.setEps(new_val),6);
+      break;    
+    case 'x':
+      old_val = feedbackCanceler.getAfl(); new_val = old_val + 5;
+      s->print("Command received: increasing AFC filter length to "); s->println(feedbackCanceler.setAfl(new_val));
+      break;    
+    case 'X':
+      old_val = feedbackCanceler.getAfl(); new_val = old_val - 5;
+      s->print("Command received: decreasing AFC filter length to "); s->println(feedbackCanceler.setAfl(new_val));
       break;            
   }
 }
@@ -240,3 +249,4 @@ void SerialManager::incrementChannelGain(int chan, float change_dB) {
 }
 
 #endif
+
