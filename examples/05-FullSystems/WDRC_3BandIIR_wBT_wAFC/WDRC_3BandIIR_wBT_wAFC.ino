@@ -34,14 +34,15 @@
 
 //local files
 #include "AudioEffectFeedbackCancel_F32.h"
+#include "AudioEffectAFC_BTNRH_F32.h"
 #include "SerialManager.h"
 
 //Bluetooth parameters...if used
-#define USE_BT_SERIAL 0   //set to zero to disable bluetooth
+#define USE_BT_SERIAL 1   //set to zero to disable bluetooth
 #define BT_SERIAL Serial1
 
 // Define the overall setup
-String overall_name = String("Tympan: WDRC Expander-Compressor-Limiter with Overall Limiter");
+String overall_name = String("Tympan: 3-Band IIR WDRC with Adaptive Feedback Cancelation");
 const int N_CHAN_MAX = 3;  //number of frequency bands (channels)
 int N_CHAN = N_CHAN_MAX;  //will be changed to user-selected number of channels later
 const float input_gain_dB = 15.0f; //gain on the microphone
@@ -62,7 +63,11 @@ AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input fr
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //keep this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
-AudioEffectFeedbackCancel_F32 feedbackCancel(audio_settings);      //this is the adaptive feedback cancellation algorithm
+#if 0
+  AudioEffectFeedbackCancel_F32 feedbackCancel(audio_settings);      //adaptive feedback cancelation, optimized by Chip Audette
+#else
+  AudioEffectAFC_BTNRH_F32 feedbackCancel(audio_settings);   //original adaptive feedback cancelation from BTNRH
+#endif
 AudioFilterBiquad_F32       bpFilt[N_CHAN_MAX];         //here are the filters to break up the audio into multiple bands
 AudioEffectDelay_F32        postFiltDelay[N_CHAN_MAX];  //Here are the delay modules that we'll use to time-align the output of the filters
 AudioEffectCompWDRC2_F32    expCompLim[N_CHAN_MAX];     //here are the per-band compressors
@@ -418,8 +423,6 @@ void printGainSettings(Stream *s) {
   }
   s->println();
 }
-
-
 
 extern void incrementKnobGain(float increment_dB) { //"extern" to make it available to other files, such as SerialManager.h
   setVolKnobGain_dB(vol_knob_gain_dB+increment_dB);

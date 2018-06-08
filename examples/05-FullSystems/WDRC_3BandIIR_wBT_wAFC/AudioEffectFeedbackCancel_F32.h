@@ -45,7 +45,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
     };
 
   //Daniel, go ahead and change these as you'd like!
-    void setDefaultValues(void) {
+    virtual void setDefaultValues(void) {
       //set default values...taken from BTNRH tst_iffb.c
       float _mu = 1.E-3;
       float _rho = 0.9;  //was 0.984, then Neely 2018-05-07 said try 0.9
@@ -54,12 +54,12 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       //n_coeff_to_zero = 0;
       setParams(_mu, _rho, _eps, _afl);
     }
-    void setParams(BTNRH_WDRC::CHA_AFC cha) {
+    virtual void setParams(BTNRH_WDRC::CHA_AFC cha) {
       setParams(cha.mu, cha.rho, cha.eps, cha.afl);
       //setNCoeffToZero(0);
       setEnable(cha.default_to_active);
     }
-    void setParams(float _mu, float _rho, float _eps, int _afl) {
+    virtual void setParams(float _mu, float _rho, float _eps, int _afl) {
       //AFC parameters
       setMu(_mu);     // AFC step size
       setRho(_rho);   // AFC forgetting factor
@@ -74,13 +74,13 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       }
     }
 
-    float setMu(float _mu) { return mu = _mu; }
-    float setRho(float _rho) { return rho = min(max(_rho,0.0),1.0); };
-    float setEps(float _eps) { return eps = min(max(_eps,1e-30),1.0); };
-    float getMu(void) { return mu; };
-    float getRho(void) { return rho; };
-    float getEps(void) { return eps; };
-    int setAfl(int _afl) { 
+    virtual float setMu(float _mu) { return mu = _mu; }
+    virtual float setRho(float _rho) { return rho = min(max(_rho,0.0),1.0); };
+    virtual float setEps(float _eps) { return eps = min(max(_eps,1e-30),1.0); };
+    virtual float getMu(void) { return mu; };
+    virtual float getRho(void) { return rho; };
+    virtual float getEps(void) { return eps; };
+    virtual int setAfl(int _afl) { 
       //apply limits on the input value
       afl = min(max(_afl,1),MAX_AFC_FILT_LEN);
 
@@ -93,16 +93,17 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
 
       return  afl;
     };
-    int getAfl(void) { return afl;};
+    virtual int getAfl(void) { return afl;};
 
     //int setNCoeffToZero(int _n_coeff_to_zero) { return n_coeff_to_zero = min(max(_n_coeff_to_zero,0),MAX_AFC_FILT_LEN); }
     //int getNCoeffToZero(void) { return n_coeff_to_zero; };
     
-    void setEnable(bool _enable) { enable = _enable; };
-    bool getEnable(void) { return enable;};
+    virtual void setEnable(bool _enable) { enable = _enable; };
+    virtual bool getEnable(void) { return enable;};
 
     //ring buffer
-    static const int max_afc_ringbuff_len = MAX_AFC_FILT_LEN;
+    //static const int max_afc_ringbuff_len = MAX_AFC_FILT_LEN;
+    static const int max_afc_ringbuff_len = 2*MAX_AFC_FILT_LEN;
     float32_t ring[max_afc_ringbuff_len];
     int rhd, rtl;
     unsigned long newest_ring_audio_block_id = 999999;
@@ -114,13 +115,13 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
     //int mask = rsz - 1;
 
     //initializeStates
-    void initializeStates(void) {
+    virtual void initializeStates(void) {
       pwr = 0.0;
       for (int i = 0; i < MAX_AFC_FILT_LEN; i++) efbp[i] = 0.0;
     }
 
     //here's the method that is called automatically by the Teensy Audio Library
-    void update(void) {
+    virtual void update(void) {
      
       //receive the input audio data
       audio_block_f32_t *in_block = AudioStream_F32::receiveReadOnly_f32();
@@ -156,7 +157,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       AudioStream_F32::release(in_block);
     }
 
-    void cha_afc(float32_t *x, //input audio array
+    virtual void cha_afc(float32_t *x, //input audio array
                  float32_t *y, //output audio array
                  int cs) //"chunk size"...the length of the audio array
     {
@@ -220,11 +221,11 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       }
     }
   
-    void addNewAudio(audio_block_f32_t *in_block) {
+    virtual void addNewAudio(audio_block_f32_t *in_block) {
       newest_ring_audio_block_id = in_block->id; 
       addNewAudio(in_block->data, in_block->length);
     }
-    void addNewAudio(float *x, //input audio block
+    virtual void addNewAudio(float *x, //input audio block
                        int cs)   //number of samples in this audio block
     {
       int Isrc, Idst;
@@ -247,7 +248,7 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
       }
     }
 
-  private:
+  protected:
     //state-related variables
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
     bool enable = true;
