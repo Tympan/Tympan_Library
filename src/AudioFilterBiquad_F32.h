@@ -113,6 +113,8 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
 	//void setLowpass(uint32_t stage, float frequency, float q = 0.7071) {
 	void setLowpass(uint32_t stage, float frequency, float q = 0.7071) {
+		cutoff_Hz = frequency;
+		
 		//int coeff[5];
 		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
@@ -129,7 +131,9 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 		setCoefficients(stage, coeff);
 	}
 	void setHighpass(uint32_t stage, float frequency, float q = 0.7071) {
-		//int coeff[5];
+		cutoff_Hz = frequency;
+		
+    	//int coeff[5];
 		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
 		double alpha = sinW0 / ((double)q * 2.0);
@@ -157,6 +161,8 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 		setCoefficients(stage, coeff);
 	}
 	void setNotch(uint32_t stage, float frequency, float q = 1.0) {
+		cutoff_Hz = frequency;
+		
 		//int coeff[5];
 		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
 		double sinW0 = sin(w0);
@@ -171,6 +177,8 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 		setCoefficients(stage, coeff);
 	}
 	void setLowShelf(uint32_t stage, float frequency, float gain, float slope = 1.0f) {
+		cutoff_Hz = frequency;
+				
 		//int coeff[5];
 		double a = pow(10.0, gain/40.0);
 		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
@@ -190,6 +198,8 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 		setCoefficients(stage, coeff);
 	}
 	void setHighShelf(uint32_t stage, float frequency, float gain, float slope = 1.0f) {
+		cutoff_Hz = frequency;
+				
 		//int coeff[5];
 		double a = pow(10.0, gain/40.0);
 		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
@@ -210,11 +220,13 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	}
     
     void update(void);
+	float32_t getCutoffFrequency_Hz(void) { return cutoff_Hz; }
    
   private:
     audio_block_f32_t *inputQueueArray[1];
     float32_t coeff[5 * IIR_MAX_STAGES]; //no filtering. actual filter coeff set later
 	float sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
+	float32_t cutoff_Hz = -999;
   
     // pointer to current coefficients or NULL or FIR_PASSTHRU
     const float32_t *coeff_p;
