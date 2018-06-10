@@ -590,70 +590,131 @@ int AudioControlTLV320AIC3206::readMicDetect(void) {
 	return curVal;
 }
 
-/*
-void AudioControlTLV320AIC3206::enableDCBlockingIIRonADC(bool enable, float fs_Hz = 44100.f) {
+void computeFirstOrderHPCoeff_F32(float cutoff_Hz, float fs_Hz, float *coeff) {
+	//cutoff_Hz is the cutoff frequency in Hz
+	//fs_Hz is the sample rate in Hz
+	
+	//First-order Butterworth IIR
+	//From https://www.dsprelated.com/showcode/199.php
+	const float pi = 3.141592653589793;
+	float T = 1.0f/fs_Hz; //sample period
+	float w = cutoff_Hz * 2.0 * pi;
+	float A = 1.0f / (tan( (w*T) / 2.0));
+	coeff[0] = A / (1.0 + A); // first b coefficient
+	coeff[1] = -coeff[0];     // second b coefficient
+	coeff[2] = (1.0 - A) / (1.0 + A);  //second a coefficient (Matlab sign convention)
+	coeff[2] = -coeff[2];  //flip to be TI sign convention
+}
+#define CONST_2_31_m1  (2147483647)   //2^31 - 1
+void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
+	float coeff_f32[3];
+	computeFirstOrderHPCoeff_F32(cutoff_Hz,fs_Hz,coeff_f32);
+	for (int i=0; i<3; i++) {
+		//scale
+		coeff_f32[i] *= (float)CONST_2_31_m1;
+		
+		//truncate
+		coeff[i] = (int32_t)coeff_f32[i];
+	}
+}
+	
+void AudioControlTLV320AIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz) { //fs_Hz is sample rate
 	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	uint32_t coeff[3];
 	if (enable) {
-		//I used TI filter coefficient calcuation tool to get the coefficients
-		if (fs_Hz > 80000.f) {
-			coeff[0]=0x7FEA90; coeff[1]=0x801570; coeff[2]=0x7FD521; // HP at 20Hz for sample rate of 96000 Hz
-		} else if (fs_Hz > 40000.f) {
-			coeff[0]=0x7FD160; coeff[1]=0x802EA0; coeff[2]=0x7FA2C1;  //Butterworth HP at 20Hz for sample rate of 44100 Hz
-		} else if (fs_Hz > 30000.f) {
-			coeff[0]=0x7FBFC8; coeff[1]=0x804038; coeff[2]=0x7F7F91;  //Butterworth HP at 20Hz for sample rate of 32000 Hz
-		} else if (fs_Hz > 23000.f) {
-			coeff[0]=0x7FD160; coeff[1]=0x802EA0; coeff[2]=0x7FA2C1; //Butterworth HP at 20Hz for sample rate of 24000 Hz
-		} else if (fs_Hz > 20000.f) {
-			coeff[0]=0x7FA2E3; coeff[1]=0x805D1D; coeff[2]=0x7F45C7; //Butterworth HP at 20Hz for sample rate of 22050 Hz
-		} else {
-			coeff[0]=0x7F7FD1; coeff[1]=0x80802F; coeff[2]=0x7EFFA4; //Butterworth HP at 20Hz for sample rate of 16000 Hz
-		}
+		HP_cutoff_Hz = cutoff_Hz; 
+		sample_rate_Hz = fs_Hz;
+		computeFirstOrderHPCoeff_i32(cutoff_Hz,fs_Hz,(int32_t *)coeff);
+		//Serial.print("enableHPFonADC: coefficients, Hex: ");
+		//Serial.print(coeff[0],HEX);
+		//Serial.print(", ");
+		//Serial.print(coeff[1],HEX);
+		//Serial.print(", ");
+		//Serial.print(coeff[2],HEX);
+		//Serial.println();
+		
 	} else {
-		//disable...see Table 5-4 in TI application guide  Coeff C4, C5, C6
-		coeff[0] = 0x7FFFFF; coeff[1] = 0; coeff[2]=0;
+		//disable
+		HP_cutoff_Hz = cutoff_Hz;
+		
+		//see Table 5-4 in TI application guide  Coeff C4, C5, C6
+		coeff[0] = 0x7FFFFFFF; coeff[1] = 0; coeff[2]=0;
 	}
 	
-	setIIRCoeffOnADC(LEFT_CHAN, coeff);
-	setIIRCoeffOnADC(RIGHT_CHAN, coeff);
+	setIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
 }
-*/
 
-/*
+
 //set first-order IIR filter coefficients on ADC
 void AudioControlTLV320AIC3206::setIIRCoeffOnADC(int chan, uint32_t *coeff) {
+
+	//power down the AIC to allow change in coefficients
+	uint32_t prev_state = aic_readPage(0x00,0x51);
+	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
+	
+	if (chan == BOTH_CHAN) {
+		setIIRCoeffOnADC_Left(coeff);
+		setIIRCoeffOnADC_Right(coeff);
+	} else if (chan == LEFT_CHAN) {
+		setIIRCoeffOnADC_Left(coeff);
+	} else {
+		setIIRCoeffOnADC_Right(coeff);
+	}
+
+	//power the ADC back up
+	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
+}
+		
+void AudioControlTLV320AIC3206::setIIRCoeffOnADC_Left(uint32_t *coeff) {
 	int page;
 	uint32_t c;
 	
 	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
-	if (chan == LEFT_CHAN) {
-		//Coeff N0, Coeff C4
-		page = 8;
-		c = coeff[0] & 0x00FFFFFF;
-		aic_writePage(page,24,(uint8_t)(c>>16));aic_writePage(page,25,(uint8_t)(c>>8));aic_writePage(page,26,(uint8_t)c);
+	
+	//Coeff N0, Coeff C4
+	page = 8;
+	c = coeff[0];
+	aic_writePage(page,24,(uint8_t)(c>>24));
+	aic_writePage(page,25,(uint8_t)(c>>16));
+	aic_writePage(page,26,(uint8_t)(c>>8));
+	//int foo  = aic_readPage(page,24);	Serial.print("setIIRCoeffOnADC: first coefficient: ");  Serial.println(foo);
 
-		//Coeff N1, Coeff C5
-		c = coeff[1] & 0x00FFFFFF;
-		aic_writePage(page,28,(uint8_t)(c>>16));aic_writePage(page,29,(uint8_t)(c>>8));aic_writePage(page,30,(uint8_t)c);
-		
-		//Coeff N2, Coeff C6
-		c = coeff[2] & 0x00FFFFFF;
-		aic_writePage(page,32,(uint8_t)(c>>16));aic_writePage(page,33,(uint8_t)(c>>8));aic_writePage(page,34,(uint8_t)c);	
-		
-	} else { //RIGHT CHAN}		
-		//Coeff N0, Coeff C36
-		page = 9;
-		c = coeff[0] & 0x00FFFFFF;
-		aic_writePage(page,32,(uint8_t)(c>>16));aic_writePage(page,33,(uint8_t)(c>>8));aic_writePage(page,34,(uint8_t)c);
-
-		//Coeff N1, Coeff C37
-		c = coeff[1] & 0x00FFFFFF;
-		aic_writePage(page,36,(uint8_t)(c>>16));aic_writePage(page,37,(uint8_t)(c>>8));aic_writePage(page,38,(uint8_t)c);
-		
-		//Coeff N2, Coeff C39
-		c = coeff[2] & 0x00FFFFFF;
-		aic_writePage(page,40,(uint8_t)(c>>16));aic_writePage(page,41,(uint8_t)(c>>8));aic_writePage(page,42,(uint8_t)c);
-		
-	}
+	//Coeff N1, Coeff C5
+	c = coeff[1];
+	aic_writePage(page,28,(uint8_t)(c>>24));
+	aic_writePage(page,29,(uint8_t)(c>>16));
+	aic_writePage(page,30,(uint8_t)(c>>8));
+	
+	//Coeff N2, Coeff C6
+	c = coeff[2];
+	aic_writePage(page,32,(uint8_t)(c>>24));
+	aic_writePage(page,33,(uint8_t)(c>>16));
+	aic_writePage(page,34,(uint8_t)(c>>9));	
 }
-*/
+void AudioControlTLV320AIC3206::setIIRCoeffOnADC_Right(uint32_t *coeff) {
+	int page;
+	uint32_t c;
+	
+	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+				
+	//Coeff N0, Coeff C36
+	page = 9;
+	c = coeff[0];
+	aic_writePage(page,32,(uint8_t)(c>>24));
+	aic_writePage(page,33,(uint8_t)(c>>16));
+	aic_writePage(page,34,(uint8_t)(c>>8));
+
+	//Coeff N1, Coeff C37
+	c = coeff[1];
+	aic_writePage(page,36,(uint8_t)(c>>24));
+	aic_writePage(page,37,(uint8_t)(c>>16));
+	aic_writePage(page,38,(uint8_t)(c>>8));
+	
+	//Coeff N2, Coeff C39
+	c = coeff[2];;
+	aic_writePage(page,40,(uint8_t)(c>>24));
+	aic_writePage(page,41,(uint8_t)(c>>16));
+	aic_writePage(page,42,(uint8_t)(c>>8));
+
+}
+
