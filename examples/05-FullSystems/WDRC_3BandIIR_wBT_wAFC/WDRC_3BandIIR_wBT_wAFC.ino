@@ -63,6 +63,7 @@ AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input fr
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //keep this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
+AudioFilterBiquad_F32      preFilter(audio_settings);   //remove low frequencies near DC
 #if 0
   AudioEffectFeedbackCancel_F32 feedbackCancel(audio_settings);      //adaptive feedback cancelation, optimized by Chip Audette
 #else
@@ -96,8 +97,16 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_filterbank, 0);
 
-  //start the algorithms with the feedback cancallation block
-  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, feedbackCancel, 0);
+  #if 0
+    //start the algorithms with the feedback cancallation block
+    patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, feedbackCancel, 0);
+  #else
+    //add the DC-blocking pre filter
+	patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, preFilter, 0);
+	
+	//start the algorithms with the feedback cancallation block
+    patchCord[count++] = new AudioConnection_F32(preFilter, 0, feedbackCancel, 0);
+  #endif
 
   //make per-channel connections: filterbank -> delay -> WDRC Compressor -> mixer (synthesis)
   for (int i = 0; i < N_CHAN_MAX; i++) {
@@ -134,15 +143,14 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
 }
 
 
-
 //control display and serial interaction
 bool enable_printCPUandMemory = false;
 void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPUandMemory; }; //"extern" let's be it accessible outside
 bool enable_printAveSignalLevels = false, printAveSignalLevels_as_dBSPL = false;
 void togglePrintAveSignalLevels(bool as_dBSPL) { enable_printAveSignalLevels = !enable_printAveSignalLevels; printAveSignalLevels_as_dBSPL = as_dBSPL;};
-SerialManager serialManager_USB(&Serial,N_CHAN_MAX,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,feedbackCancel);
+SerialManager serialManager_USB(&Serial,N_CHAN_MAX,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,preFilter,feedbackCancel);
 #if (USE_BT_SERIAL)
-  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN_MAX,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,feedbackCancel); //this instance will handle the Bluetooth Serial link
+  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN_MAX,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,preFilter,feedbackCancel); //this instance will handle the Bluetooth Serial link
 #endif
 
 //routine to setup the hardware
@@ -157,14 +165,13 @@ void setupTympanHardware(void) {
   audioHardware.enableMicDetect(true);
 
   //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop() 
-  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
-  //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
+  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //set volumes
   audioHardware.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
   audioHardware.setInputGain_dB(input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
-
 }
 
 
@@ -181,6 +188,9 @@ float overall_cal_dBSPL_at0dBFS; //will be set later
 void setupAudioProcessing(void) {
   //make all of the audio connections
   makeAudioConnections();
+
+  //set the DC-blocking higpass filter cutoff
+  preFilter.setHighpass(0,40.0);
 
   //setup processing based on the DSL and GHA prescriptions
   if (current_dsl_config == DSL_NORMAL) {

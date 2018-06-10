@@ -15,11 +15,13 @@ class SerialManager {
           AudioControlTestAmpSweep_F32 &_ampSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester_filterbank,
+          AudioFilterBiquad_F32 &_preFilter,
           AudioEffectFeedbackCancel_F32 &_feedbackCancel)
       : gain_algorithms(gain_algs), 
         ampSweepTester(_ampSweepTester), 
         freqSweepTester(_freqSweepTester),
         freqSweepTester_filterbank(_freqSweepTester_filterbank),  
+        preFilterBiquad(_preFilter),
         feedbackCanceler(_feedbackCancel)
         {
           s = _s;
@@ -39,6 +41,7 @@ class SerialManager {
     GainAlgorithm_t *gain_algorithms;  //point to first element in array of expanders
     AudioControlTestAmpSweep_F32 &ampSweepTester;
     AudioControlTestFreqSweep_F32 &freqSweepTester;
+    AudioFilterBiquad_F32 &preFilterBiquad;
     AudioControlTestFreqSweep_F32 &freqSweepTester_filterbank;
     AudioEffectFeedbackCancel_F32 &feedbackCanceler;
 };
@@ -87,6 +90,8 @@ void SerialManager::printHelp(void) {
   s->print("   r,R: Increase or Decrease AFC rho (currently "); s->print(feedbackCanceler.getRho(),6) ; s->println(").");
   s->print("   e,E: Increase or Decrease AFC eps (currently "); s->print(feedbackCanceler.getEps(),6) ; s->println(").");
   s->print("   x,X: Increase or Decrease AFC filter length (currently "); s->print(feedbackCanceler.getAfl()) ; s->println(").");
+  s->print("   u,U: Increase or Decrease Cutoff Frequency of Prefilter (currently "); s->print(preFilterBiquad.getCutoffFrequency_Hz()); s->println(").");
+  //s->print("   z,Z: Increase or Decrease AFC N_Coeff_To_Zero (currently "); s->print(feedbackCanceler.getNCoeffToZero()) ; s->println(").");  
   s->println();
 }
 
@@ -199,6 +204,7 @@ void SerialManager::respondToByte(char c) {
     case 'p':
       s->println("Command Received: enabling adaptive feedback cancelation.");
       feedbackCanceler.setEnable(true);
+      //feedbackCanceler.resetAFCfilter();
       break;
     case 'P':
       s->println("Command Received: disabling adaptive feedback cancelation.");      
@@ -236,6 +242,25 @@ void SerialManager::respondToByte(char c) {
       old_val = feedbackCanceler.getAfl(); new_val = old_val - 5;
       s->print("Command received: decreasing AFC filter length to "); s->println(feedbackCanceler.setAfl(new_val));
       break;            
+//    case 'z':
+//      old_val = feedbackCanceler.getNCoeffToZero(); new_val = old_val + 5;
+//      s->print("Command received: increasing AFC N_Coeff_To_Zero to "); s->println(feedbackCanceler.setNCoeffToZero(new_val));
+//      break;
+//    case 'Z':
+//      old_val = feedbackCanceler.getNCoeffToZero(); new_val = old_val - 5;
+//      s->print("Command received: decreasing AFC N_Coeff_To_Zero to "); s->println(feedbackCanceler.setNCoeffToZero(new_val));      
+//      break;
+    case 'u':
+      old_val = preFilterBiquad.getCutoffFrequency_Hz(); new_val = min(old_val + 5, 8000.0);
+      preFilterBiquad.setHighpass(0,new_val);
+      s->print("Command received: Increasing Prefilter HP Cutoff to "); s->print(preFilterBiquad.getCutoffFrequency_Hz());s->println(" Hz");
+      break;
+    case 'U':
+      old_val = preFilterBiquad.getCutoffFrequency_Hz(); new_val = max(old_val - 5, 5.0);
+      preFilterBiquad.setHighpass(0,new_val);
+      s->print("Command received: Decreasing Prefilter HP Cutoff to "); s->print(preFilterBiquad.getCutoffFrequency_Hz());s->println(" Hz");   
+      break;
+
   }
 }
 
@@ -249,4 +274,3 @@ void SerialManager::incrementChannelGain(int chan, float change_dB) {
 }
 
 #endif
-

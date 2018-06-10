@@ -19,7 +19,7 @@ class AudioEffectAFC_BTNRH_F32 : public AudioEffectFeedbackCancel_F32 {
     {
       float32_t fbe, mum, s0, s1, ipwr;
       int i,ii,j,ij;
-      float32_t *offset_ringbuff;
+      //float32_t *offset_ringbuff;
       float32_t foo;
 
       //float32_t *ring, *efbp, *sfbp, *merr;
