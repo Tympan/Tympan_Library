@@ -11,17 +11,18 @@ typedef AudioEffectCompWDRC2_F32 GainAlgorithm_t; //change this if you change th
 //now, define the Serial Manager class
 class SerialManager {
   public:
-    SerialManager(Stream *_s, int n, GainAlgorithm_t *gain_algs, 
+    SerialManager(Stream *_s, int n,
+          TympanBase &_audioHardware,
+          GainAlgorithm_t *gain_algs, 
           AudioControlTestAmpSweep_F32 &_ampSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester_filterbank,
-          AudioFilterBiquad_F32 &_preFilter,
           AudioEffectFeedbackCancel_F32 &_feedbackCancel)
-      : gain_algorithms(gain_algs), 
+      : audioHardware(_audioHardware),
+        gain_algorithms(gain_algs), 
         ampSweepTester(_ampSweepTester), 
         freqSweepTester(_freqSweepTester),
-        freqSweepTester_filterbank(_freqSweepTester_filterbank),  
-        preFilterBiquad(_preFilter),
+        freqSweepTester_filterbank(_freqSweepTester_filterbank),
         feedbackCanceler(_feedbackCancel)
         {
           s = _s;
@@ -38,10 +39,10 @@ class SerialManager {
     int N_CHAN;
   private:
     Stream *s;
+    TympanBase &audioHardware;
     GainAlgorithm_t *gain_algorithms;  //point to first element in array of expanders
     AudioControlTestAmpSweep_F32 &ampSweepTester;
     AudioControlTestFreqSweep_F32 &freqSweepTester;
-    AudioFilterBiquad_F32 &preFilterBiquad;
     AudioControlTestFreqSweep_F32 &freqSweepTester_filterbank;
     AudioEffectFeedbackCancel_F32 &feedbackCanceler;
 };
@@ -90,8 +91,8 @@ void SerialManager::printHelp(void) {
   s->print("   r,R: Increase or Decrease AFC rho (currently "); s->print(feedbackCanceler.getRho(),6) ; s->println(").");
   s->print("   e,E: Increase or Decrease AFC eps (currently "); s->print(feedbackCanceler.getEps(),6) ; s->println(").");
   s->print("   x,X: Increase or Decrease AFC filter length (currently "); s->print(feedbackCanceler.getAfl()) ; s->println(").");
-  s->print("   u,U: Increase or Decrease Cutoff Frequency of Prefilter (currently "); s->print(preFilterBiquad.getCutoffFrequency_Hz()); s->println(").");
-  //s->print("   z,Z: Increase or Decrease AFC N_Coeff_To_Zero (currently "); s->print(feedbackCanceler.getNCoeffToZero()) ; s->println(").");  
+  s->print("   u,U: Increase or Decrease Cutoff Frequency of HP Prefilter (currently "); s->print(audioHardware.getHPCutoff_Hz()); s->println(").");
+  //s->print("   z,Z: Increase or Decrease AFC N_Coeff_To_Zero (currently "); s->print(feedbackCanceler.getNCoeffToZero()) ; s->println(" Hz).");  
   s->println();
 }
 
@@ -251,15 +252,21 @@ void SerialManager::respondToByte(char c) {
 //      s->print("Command received: decreasing AFC N_Coeff_To_Zero to "); s->println(feedbackCanceler.setNCoeffToZero(new_val));      
 //      break;
     case 'u':
-      old_val = preFilterBiquad.getCutoffFrequency_Hz(); new_val = min(old_val + 5, 8000.0);
-      preFilterBiquad.setHighpass(0,new_val);
-      s->print("Command received: Increasing Prefilter HP Cutoff to "); s->print(preFilterBiquad.getCutoffFrequency_Hz());s->println(" Hz");
+    {
+      old_val = audioHardware.getHPCutoff_Hz(); new_val = min(old_val*sqrt(2.0), 8000.0); //half-octave steps up
+      float fs_Hz = audioHardware.getSampleRate_Hz();
+      audioHardware.setHPFonADC(true,new_val,fs_Hz);
+      s->print("Command received: Increasing ADC HP Cutoff to "); s->print(audioHardware.getHPCutoff_Hz());s->println(" Hz");
+    }
       break;
     case 'U':
-      old_val = preFilterBiquad.getCutoffFrequency_Hz(); new_val = max(old_val - 5, 5.0);
-      preFilterBiquad.setHighpass(0,new_val);
-      s->print("Command received: Decreasing Prefilter HP Cutoff to "); s->print(preFilterBiquad.getCutoffFrequency_Hz());s->println(" Hz");   
+    {
+      old_val = audioHardware.getHPCutoff_Hz(); new_val = max(old_val/sqrt(2.0), 5.0); //half-octave steps down
+      float fs_Hz = audioHardware.getSampleRate_Hz();
+      audioHardware.setHPFonADC(true,new_val,fs_Hz);
+      s->print("Command received: Decreasing ADC HP Cutoff to "); s->print(audioHardware.getHPCutoff_Hz());s->println(" Hz");   
       break;
+    }
 
   }
 }
@@ -274,3 +281,4 @@ void SerialManager::incrementChannelGain(int chan, float change_dB) {
 }
 
 #endif
+

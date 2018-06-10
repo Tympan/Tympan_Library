@@ -92,16 +92,8 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_filterbank, 0);
 
-  #if 0
-    //start the algorithms with the feedback cancallation block
-    patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, feedbackCancel, 0);
-  #else
-    //add the DC-blocking pre filter
-	patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, preFilter, 0);
-	
-	//start the algorithms with the feedback cancallation block
-    patchCord[count++] = new AudioConnection_F32(preFilter, 0, feedbackCancel, 0);
-  #endif
+  //start the algorithms with the feedback cancallation block
+  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, feedbackCancel, 0);
 
   //make per-channel connections: filterbank -> delay -> WDRC Compressor -> mixer (synthesis)
   for (int i = 0; i < N_CHAN_MAX; i++) {
@@ -144,10 +136,11 @@ bool enable_printCPUandMemory = false;
 void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPUandMemory; }; //"extern" let's be it accessible outside
 bool enable_printAveSignalLevels = false, printAveSignalLevels_as_dBSPL = false;
 void togglePrintAveSignalLevels(bool as_dBSPL) { enable_printAveSignalLevels = !enable_printAveSignalLevels; printAveSignalLevels_as_dBSPL = as_dBSPL;};
-SerialManager serialManager_USB(&Serial,N_CHAN_MAX,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,preFilter,feedbackCancel);
+SerialManager serialManager_USB(&Serial,N_CHAN_MAX,audioHardware,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,feedbackCancel);
 #if (USE_BT_SERIAL)
-  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN_MAX,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,preFilter,feedbackCancel); //this instance will handle the Bluetooth Serial link
+  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN_MAX,audioHardware,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR,feedbackCancel); //this instance will handle the Bluetooth Serial link
 #endif
+
 
 //routine to setup the hardware
 void setupTympanHardware(void) {
@@ -159,6 +152,11 @@ void setupTympanHardware(void) {
 
   //enable the Tympman to detect whether something was plugged inot the pink mic jack
   audioHardware.enableMicDetect(true);
+
+  //setup DC-blocking highpass filter running in the ADC hardware itself
+  float cutoff_Hz = 40.0;  //set the default cutoff frequency for the highpass filter
+  audioHardware.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
+  //Serial.print("Setting HP Filter in hardware at "); Serial.print(audioHardware.getHPCutoff_Hz()); Serial.println(" Hz.");
 
   //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop() 
   //audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
