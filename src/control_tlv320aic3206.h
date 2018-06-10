@@ -31,7 +31,8 @@
 #define TYMPAN_MIC_BIAS_VSUPPLY         4
 #define TYMPAN_DEFAULT_MIC_BIAS TYMPAN_MIC_BIAS_2_5
 
-
+#define LEFT_CHAN 0
+#define RIGHT_CHAN 1
 
 class AudioControlTLV320AIC3206: public TeensyAudioControl
 {
@@ -56,6 +57,8 @@ public:
 	bool debugToSerial;
     unsigned int aic_readPage(uint8_t page, uint8_t reg);
     bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
+	//void enableDCBlockingIIRonADC(bool enable, float fs_Hz);
+	//void setIIRCoeffOnADC(int chan, uint32_t *coeff);
 private:
   void aic_reset(void);
   void aic_init(void);
