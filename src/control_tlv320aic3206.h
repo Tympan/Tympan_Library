@@ -22,6 +22,7 @@
 //convenience names to use with outputSelect()
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1
 #define TYMPAN_OUTPUT_LINE_OUT 2
+#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3
 
 //names to use with setMicBias() to set the amount of bias voltage to use
 #define TYMPAN_MIC_BIAS_OFF             0
@@ -62,6 +63,7 @@ public:
 	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
+	bool enableAutoMuteDAC(bool, uint8_t);
 private:
   void aic_reset(void);
   void aic_init(void);
