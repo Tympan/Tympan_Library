@@ -1,5 +1,5 @@
 /*
- * AudioOffset
+ * AudioMathAdd
  * 
  * Created: Chip Audette, Open Audio, June 2018
  * Purpose: Add a fixed DC offset to the audio data
@@ -9,18 +9,18 @@
  *          
  * MIT License.  use at your own risk.
 */
-#ifndef AudioOffset_F32_H
-#define AudioOffset_F32_H
+#ifndef AudioMathAdd_F32_H
+#define AudioMathAdd_F32_H
 
 #include <arm_math.h>
 #include <AudioStream_F32.h>
 
-class AudioOffset_F32 : public AudioStream_F32
+class AudioMathAdd_F32 : public AudioStream_F32
 {
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
   public:
-    AudioOffset_F32(void) : AudioStream_F32(2, inputQueueArray_f32) {};
-	AudioOffset_F32(const AudioSettings_F32 &settings) : AudioStream_F32(2, inputQueueArray_f32) {};
+    AudioMathAdd_F32(void) : AudioStream_F32(2, inputQueueArray_f32) {};
+	AudioMathAdd_F32(const AudioSettings_F32 &settings) : AudioStream_F32(2, inputQueueArray_f32) {};
 	
     void update(void);
     float setOffset(float _offset) { return offset = _offset;}

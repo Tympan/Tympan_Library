@@ -1,6 +1,6 @@
-#include "AudioOffset_F32.h"
+#include "AudioMathAdd_F32.h"
 
-void AudioOffset_F32::update(void) {
+void AudioMathAdd_F32::update(void) {
   audio_block_f32_t *block;
 
   block = AudioStream_F32::receiveWritable_f32(0);
