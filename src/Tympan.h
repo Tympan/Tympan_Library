@@ -19,6 +19,7 @@
 //the Tympan is a Teensy audio library "control" object
 #include "control_tlv320aic3206.h"  //see in here for more #define statements that are very relevant!
 #include <Arduino.h>  //for the Serial objects
+#include <Print.h>
 
 #define NOT_A_FEATURE (-9999)
 
@@ -62,11 +63,12 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_nReset = 34;  //PTE25
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
+					BT_serial_speed = 9600;
 					break;
 			}
 		}
-		Stream * getUSBSerial(void) { return USB_Serial; }
-		Stream * getBTSerial(void) { return BT_Serial; }
+		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
+		HardwareSerial * getBTSerial(void) { return BT_Serial; }
 		
 		//Defaults (Teensy 3.6 Pin Numbering), assuming Rev C
 		int tympanRev = TYMPAN_REV_C;
@@ -78,8 +80,9 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int BT_PIO4 = 2;  //PTD0
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
-		Stream *USB_Serial = &Serial; //Rev_A, Rev_C, Rev_D
-		Stream *BT_Serial = &Serial1; //Rev_A, Rev_C, Rev_D
+		usb_serial_class *USB_Serial = &Serial; //true for Rev_A/C/D
+		HardwareSerial *BT_Serial = &Serial1; //true for Rev_A/C/D
+		int BT_serial_speed = 115200; //true for Rev_A/C
 };
 class TympanPins_RevA : public TympanPins {
 	public:
@@ -94,7 +97,7 @@ class TympanPins_RevD : public TympanPins {
 		TympanPins_RevD(void) : TympanPins(TYMPAN_REV_D) {};
 };
 
-class TympanBase : public AudioControlTLV320AIC3206
+class TympanBase : public AudioControlTLV320AIC3206, public Print
 {
 	public:
 		TympanBase(TympanPins &_pins) : AudioControlTLV320AIC3206(_pins.resetAIC) {
@@ -116,6 +119,8 @@ class TympanBase : public AudioControlTLV320AIC3206
 				pinMode(pins.enableStereoExtMicBias,OUTPUT);
 				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
 			}
+			USB_Serial = pins.getUSBSerial();
+			BT_Serial = pins.getBTSerial();
 		};
 		//TympanPins getTympanPins(void) { return &pins; }
 		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
@@ -136,12 +141,25 @@ class TympanBase : public AudioControlTLV320AIC3206
 		}
 		int getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
-		Stream *getUSBSerial(void) { return pins.getUSBSerial(); }
-		Stream *getBTSerial(void) { return pins.getBTSerial(); }
+		usb_serial_class *getUSBSerial(void) { return USB_Serial; }
+		HardwareSerial *getBTSerial(void) { return BT_Serial; }
+		void beginBothSerial(void) { beginBothSerial(115200, pins.BT_serial_speed); }
+		void beginBothSerial(int USB_speed, int BT_speed) {
+			USB_Serial->begin(USB_speed); BT_Serial->begin(BT_speed);
+		}
 		
-		
-	private:
+	protected:
 		TympanPins pins;
+		usb_serial_class *USB_Serial;
+		HardwareSerial *BT_Serial;
+		
+		//I want to enable an easy way to print to both USB and BT serial with one call.
+		//So, I inhereted the Print class, which gives me all of the Arduino print/write
+		//methods except for the most basic write().  Here, I define write() so that all
+		//of print() and println() and all of that works transparently.  Yay!
+		virtual size_t write(uint8_t foo) { 
+			BT_Serial->write(foo); return USB_Serial->write(foo);
+		}
 	
 };
 		
