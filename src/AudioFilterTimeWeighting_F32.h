@@ -9,9 +9,7 @@
 #define TIME_CONST_SLOW  (1.0f)
 #define TIME_CONST_FAST	 (0.125f)
 
-
-
-//Frequency weighting.  Defaults to A-Weighting
+//Time weighting for sound level meter.  Defaults to SLOW
 class AudioFilterTimeWeighting_F32 : public AudioStream_F32 
 {
 	public:
