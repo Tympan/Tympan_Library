@@ -19,13 +19,17 @@ void AudioFilterTimeWeighting_F32::update(void)
   if (!block) return;
 
   //apply filter
-  float32_t foo = (1.0f - alpha);
-  for (int i=0; i < block->length; i++) {
-	  block->data[i] = foo * block->data[i] + alpha * prev_val;
-	  prev_val = block->data[i]; //save for next time
-  }
+  applyFilterInPlace(block->data,block->length);
   
   //transmit the data
   AudioStream_F32::transmit(block); // send the IIR output
   AudioStream_F32::release(block);
+}
+
+void AudioFilterTimeWeighting_F32::applyFilterInPlace(float32_t *data, int length) {
+  float32_t foo = (1.0f - alpha);
+  for (int i=0; i < length; i++) {
+	  data[i] = foo * data[i] + alpha * prev_val;
+	  prev_val = data[i]; //save for next time
+  }
 }

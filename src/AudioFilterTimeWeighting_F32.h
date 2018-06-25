@@ -34,6 +34,7 @@ class AudioFilterTimeWeighting_F32 : public AudioStream_F32
 		virtual float32_t getSampleRate_Hz(void) { return sampleRate_Hz; }
 		virtual void clearStates(void) { prev_val = 0.0f; }
 		virtual void update(void);
+		virtual void applyFilterInPlace(float32_t *, int);
 	
 	protected:
 		audio_block_f32_t *inputQueueArray[1];
