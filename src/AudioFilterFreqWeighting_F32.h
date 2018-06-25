@@ -2,7 +2,7 @@
 #ifndef _AudioFilterFreqWeighting_F32_h
 #define _AudioFilterFreqWeighting_F32_h
 
-#include "utility\FreqWeighting_IEC1672.h"
+#include "utility/FreqWeighting_IEC1672.h"
 
 //Frequency weighting.  Defaults to A-Weighting
 class AudioFilterFreqWeighting_F32: public AudioFilterBiquad_F32 {
