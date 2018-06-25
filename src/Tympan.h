@@ -145,8 +145,10 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		HardwareSerial *getBTSerial(void) { return BT_Serial; }
 		void beginBothSerial(void) { beginBothSerial(115200, pins.BT_serial_speed); }
 		void beginBothSerial(int USB_speed, int BT_speed) {
-			USB_Serial->begin(USB_speed); BT_Serial->begin(BT_speed);
+			USB_Serial->begin(USB_speed); delay(50);
+			BT_Serial->begin(BT_speed); delay(50);
 		}
+		int USB_dtr() { return USB_Serial->dtr(); }
 		
 	protected:
 		TympanPins pins;
@@ -158,8 +160,10 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		//methods except for the most basic write().  Here, I define write() so that all
 		//of print() and println() and all of that works transparently.  Yay!
 		virtual size_t write(uint8_t foo) { 
-			BT_Serial->write(foo); return USB_Serial->write(foo);
+			if (USB_dtr()) USB_Serial->write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
+			return BT_Serial->write(foo); 
 		}
+		
 	
 };
 		
