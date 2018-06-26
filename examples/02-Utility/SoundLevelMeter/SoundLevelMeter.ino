@@ -1,7 +1,7 @@
 /*
 *   SoundLevelMeter
 *
-*   Created: Chip Audette, OpenAudio, Apr 2017
+*   Created: Chip Audette, OpenAudio, June 2018
 *   Purpose: Compute the current sound level, dBA-Fast or whatever
 *            Uses exponential time weighting, not integrating.
 *
@@ -36,7 +36,8 @@ AudioConnection_F32       patchCord4(i2s_in, 0, i2s_out, 0);      //echo the ori
 AudioConnection_F32       patchCord5(calcLevel1, 0, i2s_out, 1);     //connect the Right gain to the Right output
 
 //calibraiton information for the microphone being used
-float32_t mic_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f;  //PCB Mic, http://openaudio.blogspot.com/search/label/Microphone
+//float32_t mic_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f ;  //PCB Mic, http://openaudio.blogspot.com/search/label/Microphone
+float32_t mic_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f + 8.4575;  //PCB Mic baseline with manually tested adjustment.   Baseline:  http://openaudio.blogspot.com/search/label/Microphone
 
 //other variables
 #define BOTH_SERIAL audioHardware
