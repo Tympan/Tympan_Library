@@ -135,7 +135,7 @@ class AudioEffectCompWDRC2_F32 : public AudioStream_F32
       calcEnvelope.setSampleRate_Hz(_fs_Hz);
     }
 
-    float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
+    float getCurrentLevel_dB(void) { return AudioCalcGainWDRC2_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 
     //set the linear gain of the system
     float setGain_dB(float linear_gain_dB) {
