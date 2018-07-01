@@ -8,7 +8,7 @@
 
 // Here is the per-band prescription that is the default behavior of the multi-band
 // processing.  This sounded decent to WEA's ears but YMMV.
-BTNRH_WDRC::CHA_DSL2 dsl = {5,  // attack (ms)
+BTNRH_WDRC::CHA_DSL dsl = {5,  // attack (ms)
   300,  // release (ms)
   115,  //maxdB.  calibration.  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   0,    // 0=left, 1=right...ignored
@@ -25,7 +25,7 @@ BTNRH_WDRC::CHA_DSL2 dsl = {5,  // attack (ms)
 // Here are the settings for the broadband limiter at the end.
 // Again, it sounds OK to WEA, but YMMV.
 //from GHA_Demo.c  from "amplify()"   Used for broad-band limiter.
-BTNRH_WDRC::CHA_WDRC2 gha = {5.f, // attack time (ms)
+BTNRH_WDRC::CHA_WDRC gha = {5.f, // attack time (ms)
   300.f,    // release time (ms)
   24000.f,  // sampling rate (Hz)...ignored.  Set globally in the main program.
   115.f,    // maxdB.  calibration.  dB SPL for signal at 0dBFS.  Needs to be tailored to mic, spkrs, and mic gain.

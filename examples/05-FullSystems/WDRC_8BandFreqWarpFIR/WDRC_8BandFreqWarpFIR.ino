@@ -164,7 +164,7 @@ void setupAudioProcessing(void) {
   }
 }
 
-void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
+void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
      const int n_chan_max, const int n_fir, const AudioSettings_F32 &settings)
 {
   int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
@@ -193,7 +193,7 @@ void incrementDSLConfiguration(Stream *s) {
   }
 }
 
-void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
+void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &this_gha,
       float vol_knob_gain_dB, AudioEffectCompWDRC_F32 &WDRC)
 {
   //assume all broadband compressors are the same
@@ -222,7 +222,7 @@ void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
 }
 
 void configurePerBandWDRCs(int nchan, float fs_Hz,
-    const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
+    const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
     AudioEffectCompWDRC_F32 *WDRCs)
 {
   if (nchan > this_dsl.nchannel) {
