@@ -25,7 +25,7 @@ class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later hea
 class AudioEffectCompWDRC_F32 : public AudioStream_F32
 {
 	//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
-	//GUI: shortName: CompressWDRC2
+	//GUI: shortName: CompressWDRC
   public:
     AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
       setSampleRate_Hz(AUDIO_SAMPLE_RATE);
@@ -94,7 +94,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
     void setDefaultValues(void) {
       //set default values...taken from CHAPRO, GHA_Demo.c  from "amplify()"...ignores given sample rate
       //assumes that the sample rate has already been set!!!!
-      BTNRH_WDRC::CHA_WDRC2 gha = {1.0f, // attack time (ms)
+      BTNRH_WDRC::CHA_WDRC gha = {1.0f, // attack time (ms)
         50.0f,     // release time (ms)
         24000.0f,  // fs, sampling rate (Hz), THIS IS IGNORED!
         119.0f,    // maxdB, maximum signal (dB SPL)
@@ -110,7 +110,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
     //set all of the parameters for the compressor using the CHA_WDRC structure
     //assumes that the sample rate has already been set!!!
-    void setParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC2 *gha) {
+    void setParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {
       //configure the envelope calculator...assumes that the sample rate has already been set!
       calcEnvelope.setAttackRelease_msec(gha->attack,gha->release); //these are in milliseconds
 
