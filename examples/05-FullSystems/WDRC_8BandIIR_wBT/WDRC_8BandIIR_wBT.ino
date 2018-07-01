@@ -57,9 +57,9 @@ AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //keep this to
 //create audio objects for the algorithm
 AudioFilterBiquad_F32       bpFilt[N_CHAN];           //filters to break up the audio into multiple bands
 AudioEffectDelay_F32        postFiltDelay[N_CHAN];    //delay modules that we'll use to time-align the output of the filters
-AudioEffectCompWDRC2_F32    expCompLim[N_CHAN];       //per-band compressors
+AudioEffectCompWDRC_F32    expCompLim[N_CHAN];       //per-band compressors
 AudioMixer8_F32             mixer1;                   //mixer to reconstruct the broadband audio
-AudioEffectCompWDRC2_F32    compBroadband;            //broadband compressor (for output limitting)
+AudioEffectCompWDRC_F32    compBroadband;            //broadband compressor (for output limitting)
 AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio output to the DAC.  Should be last.
 
 //complete the creation of the tester objects
@@ -230,7 +230,7 @@ void incrementDSLConfiguration(Stream *s) {
 }
 
 void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
-      float vol_knob_gain_dB, AudioEffectCompWDRC2_F32 &WDRC)
+      float vol_knob_gain_dB, AudioEffectCompWDRC_F32 &WDRC)
 {
   //assume all broadband compressors are the same
   //for (int i=0; i< ncompressors; i++) {
@@ -259,7 +259,7 @@ void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
 
 void configurePerBandWDRCs(int nchan, float fs_Hz,
     const BTNRH_WDRC::CHA_DSL2 &this_dsl, const BTNRH_WDRC::CHA_WDRC2 &this_gha,
-    AudioEffectCompWDRC2_F32 *WDRCs)
+    AudioEffectCompWDRC_F32 *WDRCs)
 {
   if (nchan > this_dsl.nchannel) {
     Serial.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));

@@ -5,8 +5,8 @@
 #include <Tympan_Library.h>
 
 //add in the algorithm whose gains we wish to set via this SerialManager...change this if your gain algorithms class changes names!
-#include "AudioEffectCompWDRC2_F32.h"    //change this if you change the name of the algorithm's source code filename
-typedef AudioEffectCompWDRC2_F32 GainAlgorithm_t; //change this if you change the algorithm's class name
+#include "AudioEffectCompWDRC_F32.h"    //change this if you change the name of the algorithm's source code filename
+typedef AudioEffectCompWDRC_F32 GainAlgorithm_t; //change this if you change the algorithm's class name
 
 //now, define the Serial Manager class
 class SerialManager {
