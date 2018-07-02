@@ -40,12 +40,21 @@ class AudioEffectGain_F32 : public AudioStream_F32
     }
 
     //methods to set parameters of this module
-    void setGain(float g) { gain = g; }
-    void setGain_dB(float gain_dB) {
+    float setGain(float g) { return gain = g;}
+    float setGain_dB(float gain_dB) {
       float gain = pow(10.0, gain_dB / 20.0);
       setGain(gain);
+	  return getGain_dB();
     }
 
+	//increment the linear gain
+    float incrementGain_dB(float increment_dB) {
+      return setGain_dB(getGain_dB() + increment_dB);
+    }    
+	
+    void setSampleRate_Hz(const float _fs_Hz) {};  //unused.  included for interface compatability with fancier gain algorithms
+	float getCurrentLevel_dB(void) { return 0.0; };  //meaningless.  included for interface compatibility with fancier gain algorithms
+	
     //methods to return information about this module
     float getGain(void) { return gain; }
     float getGain_dB(void) { return 20.0*log10(gain); }

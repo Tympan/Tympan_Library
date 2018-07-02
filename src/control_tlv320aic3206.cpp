@@ -19,7 +19,8 @@
 #  define AIC_FS                                                     44100UL
 #endif
 
-#define AIC_BITS                                                        16
+//define AIC_BITS                                                        16
+#define AIC_BITS                                                        32
 
 #define AIC_I2S_SLAVE                                                     1
 #if AIC_I2S_SLAVE
@@ -111,7 +112,7 @@
 #define TYMPAN_MIC_ROUTING_RESISTANCE_10k 0b01010101
 #define TYMPAN_MIC_ROUTING_RESISTANCE_20k 0b10101010
 #define TYMPAN_MIC_ROUTING_RESISTANCE_40k 0b11111111
-#define TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT TYMPAN_MIC_ROUTING_RESISTANCE_10k
+#define TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT TYMPAN_MIC_ROUTING_RESISTANCE_10k //datasheet (application notes) defaults to 20K...why?
 
 #define TYMPAN_MICPGA_LEFT_VOLUME_REG    0x013B // page 1 register 59 // 0 to 47.5dB in 0.5dB steps
 #define TYMPAN_MICPGA_RIGHT_VOLUME_REG   0x013C // page 1 register 60 // 0 to 47.5dB in 0.5dB steps
@@ -265,7 +266,7 @@ void AudioControlTLV320AIC3206::aic_reset() {
 void AudioControlTLV320AIC3206::aic_initADC() {
   if (debugToSerial) Serial.println("INFO: Initializing AIC ADC");
   aic_writeAddress(TYMPAN_ADC_PROCESSING_BLOCK_REG, PRB_R);  // processing blocks - ADC
-  aic_writePage(1, 61, 0); // 0x3D // Select ADC PTM_R4 Power Tune?
+  aic_writePage(1, 61, 0); // 0x3D // Select ADC PTM_R4 Power Tune?  (this line is from datasheet (application guide, Section 4.2)
   aic_writePage(1, 71, 0b00110001); // 0x47 // Set MicPGA startup delay to 3.1ms
   aic_writeAddress(TYMPAN_MIC_BIAS_REG, TYMPAN_MIC_BIAS_POWER_ON | TYMPAN_MIC_BIAS_2_5); // power up mic bias
 
@@ -320,6 +321,20 @@ bool AudioControlTLV320AIC3206::volume(float volume) {
 	float vol_dB = -58.f + (15.0 - (-58.0f)) * volume;
 	volume_dB(vol_dB);
 	return true;
+}
+
+bool AudioControlTLV320AIC3206::enableAutoMuteDAC(bool enable, uint8_t mute_delay_code=7) {
+	if (enable) {
+		mute_delay_code = max(0,min(mute_delay_code,7));
+		if (mute_delay_code == 0) enable = false;
+	} else {
+		mute_delay_code = 0;  //this disables the auto mute
+	}
+	uint8_t val = aic_readPage(0,64);
+	val = val & 0b10001111;  //clear these bits
+	val = val | (mute_delay_code << 4); //set these bits
+	aic_writePage(0,64,val);
+	return enable;
 }
 
 // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
@@ -392,7 +407,6 @@ bool AudioControlTLV320AIC3206::outputSelect(int n) {
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
 
-
 		if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Headphone Jack");
 		return true;
   } else if (n == TYMPAN_OUTPUT_LINE_OUT) {
@@ -403,19 +417,36 @@ bool AudioControlTLV320AIC3206::outputSelect(int n) {
 		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC		
 		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
 		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain
-		aic_writePage(1, 9, 0b00001100); // Power up HPL/HPR and LOL/LOR drivers
+		aic_writePage(1, 9, 0b00001100); // Power up LOL/LOR drivers
 		delay(100);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
 
+		if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Line Out");
+		return true;
+  }  else if (n == TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT) {
+	  	aic_writePage(1, 12, 0b00001000); // route LDAC/RDAC to HPL/HPR
+		aic_writePage(1, 13, 0b00001000); // route LDAC/RDAC to HPL/HPR
+		aic_writePage(1, 14, 0b00001000); // route LDAC/RDAC to LOL/LOR
+		aic_writePage(1, 15, 0b00001000); // route LDAC/RDAC to LOL/LOR
+		
+		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
+		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain		
+		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
+		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
 
-		if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Headphone Jack");
+		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
+		
+		delay(100);
+		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+
+		if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Headphone Jack and Line out");
 		return true;	
-	
-    if (debugToSerial) Serial.println("controlTLV320AIC3206: Set Audio Output to Line Out");
-    return true;
-  } 
+  }
   Serial.print("controlTLV320AIC3206: ERROR: Unable to Select Output - Value not supported: ");
   Serial.println(n);
   return false;
@@ -445,16 +476,17 @@ void AudioControlTLV320AIC3206::aic_init() {
   aic_writePage(0, 30, 0x80 | BCLK_N); // power up BLCK N Divider, default is 128
 
   // POWER
-  aic_writePage(1, 1, 8); // 0x01
-  aic_writePage(1, 2, 0); // 0x02 Enable Master Analog Power Control
-  aic_writePage(1, 10, 0); // common mode 0.9 for full chip, HP, LO  // from WHF/CHA
-  aic_writePage(1, 71, 0x31); // 0x47 Set input power-up time to 3.1ms (for ADC)
-  aic_writePage(1, 123, 1); // 0x7B Set reference to power up in 40ms when analog blocks are powered up
-  //aic_writePage(1, 124, 6); // 0x7D Charge Pump
-  aic_writePage(1, 125, 0x53); // Enable ground-centered mode, DC offset correction  // from WHF/CHA
+  aic_writePage(1, 0x01, 8); // Reg 1, Val = 8 = 0b00001000 = disable weak connection AVDD to DVDD.  Keep headphone charge pump disabled.
+  aic_writePage(1, 0x02, 0); // Reg 2, Val = 0 = 0b00000000 = Enable Master Analog Power Control
+  aic_writePage(1, 0x7B, 1); // Reg 123, Val = 1 = 0b00000001 = Set reference to power up in 40ms when analog blocks are powered up
+  aic_writePage(1, 0x7C, 6); // Reg 124, Val = 6 = 0b00000110 = Charge Pump, full peak current (000), clock divider (110) to Div 6 = 333 kHz
+  aic_writePage(1, 0x01, 10); // Reg 1, Val = 10 = 0x0A = 0b00001010.  Activate headphone charge pump.
+  aic_writePage(1, 0x0A, 0); // Reg 10, Val = 0 = common mode 0.9 for full chip, HP, LO  // from WHF/CHA
+  aic_writePage(1, 0x47, 0x31); // Reg 71, val = 0x31 = 0b00110001 = Set input power-up time to 3.1ms (for ADC)
+  aic_writePage(1, 0x7D, 0x53); // Reg 125, Val = 0x53 = 0b01010011 = 0 10 1 00 11: HPL is master gain, Enable ground-centered mode, 100% output power, DC offset correction  // from WHF/CHA
 
   // !!!!!!!!! The below writes are from WHF/CHA - probably don't need?
-  // aic_writePage(1, 1, 10); // 0x01 // Charge pump
+  // aic_writePage(1, 1, 10); // 10 = 0b00001010 // weakly connect AVDD to DVDD.  Activate charge pump
  aic_writePage(0, 27, 0x01 | AIC_CLK_DIR | (AIC_BITS == 32 ? 0x30 : 0)); // 0x1B
   // aic_writePage(0, 28, 0); // 0x1C
 }
@@ -587,3 +619,132 @@ int AudioControlTLV320AIC3206::readMicDetect(void) {
 	curVal = (curVal != 0);
 	return curVal;
 }
+
+void computeFirstOrderHPCoeff_F32(float cutoff_Hz, float fs_Hz, float *coeff) {
+	//cutoff_Hz is the cutoff frequency in Hz
+	//fs_Hz is the sample rate in Hz
+	
+	//First-order Butterworth IIR
+	//From https://www.dsprelated.com/showcode/199.php
+	const float pi = 3.141592653589793;
+	float T = 1.0f/fs_Hz; //sample period
+	float w = cutoff_Hz * 2.0 * pi;
+	float A = 1.0f / (tan( (w*T) / 2.0));
+	coeff[0] = A / (1.0 + A); // first b coefficient
+	coeff[1] = -coeff[0];     // second b coefficient
+	coeff[2] = (1.0 - A) / (1.0 + A);  //second a coefficient (Matlab sign convention)
+	coeff[2] = -coeff[2];  //flip to be TI sign convention
+}
+#define CONST_2_31_m1  (2147483647)   //2^31 - 1
+void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
+	float coeff_f32[3];
+	computeFirstOrderHPCoeff_F32(cutoff_Hz,fs_Hz,coeff_f32);
+	for (int i=0; i<3; i++) {
+		//scale
+		coeff_f32[i] *= (float)CONST_2_31_m1;
+		
+		//truncate
+		coeff[i] = (int32_t)coeff_f32[i];
+	}
+}
+	
+void AudioControlTLV320AIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz) { //fs_Hz is sample rate
+	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	uint32_t coeff[3];
+	if (enable) {
+		HP_cutoff_Hz = cutoff_Hz; 
+		sample_rate_Hz = fs_Hz;
+		computeFirstOrderHPCoeff_i32(cutoff_Hz,fs_Hz,(int32_t *)coeff);
+		//Serial.print("enableHPFonADC: coefficients, Hex: ");
+		//Serial.print(coeff[0],HEX);
+		//Serial.print(", ");
+		//Serial.print(coeff[1],HEX);
+		//Serial.print(", ");
+		//Serial.print(coeff[2],HEX);
+		//Serial.println();
+		
+	} else {
+		//disable
+		HP_cutoff_Hz = cutoff_Hz;
+		
+		//see Table 5-4 in TI application guide  Coeff C4, C5, C6
+		coeff[0] = 0x7FFFFFFF; coeff[1] = 0; coeff[2]=0;
+	}
+	
+	setIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
+}
+
+
+//set first-order IIR filter coefficients on ADC
+void AudioControlTLV320AIC3206::setIIRCoeffOnADC(int chan, uint32_t *coeff) {
+
+	//power down the AIC to allow change in coefficients
+	uint32_t prev_state = aic_readPage(0x00,0x51);
+	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
+	
+	if (chan == BOTH_CHAN) {
+		setIIRCoeffOnADC_Left(coeff);
+		setIIRCoeffOnADC_Right(coeff);
+	} else if (chan == LEFT_CHAN) {
+		setIIRCoeffOnADC_Left(coeff);
+	} else {
+		setIIRCoeffOnADC_Right(coeff);
+	}
+
+	//power the ADC back up
+	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
+}
+		
+void AudioControlTLV320AIC3206::setIIRCoeffOnADC_Left(uint32_t *coeff) {
+	int page;
+	uint32_t c;
+	
+	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	
+	//Coeff N0, Coeff C4
+	page = 8;
+	c = coeff[0];
+	aic_writePage(page,24,(uint8_t)(c>>24));
+	aic_writePage(page,25,(uint8_t)(c>>16));
+	aic_writePage(page,26,(uint8_t)(c>>8));
+	//int foo  = aic_readPage(page,24);	Serial.print("setIIRCoeffOnADC: first coefficient: ");  Serial.println(foo);
+
+	//Coeff N1, Coeff C5
+	c = coeff[1];
+	aic_writePage(page,28,(uint8_t)(c>>24));
+	aic_writePage(page,29,(uint8_t)(c>>16));
+	aic_writePage(page,30,(uint8_t)(c>>8));
+	
+	//Coeff N2, Coeff C6
+	c = coeff[2];
+	aic_writePage(page,32,(uint8_t)(c>>24));
+	aic_writePage(page,33,(uint8_t)(c>>16));
+	aic_writePage(page,34,(uint8_t)(c>>9));	
+}
+void AudioControlTLV320AIC3206::setIIRCoeffOnADC_Right(uint32_t *coeff) {
+	int page;
+	uint32_t c;
+	
+	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+				
+	//Coeff N0, Coeff C36
+	page = 9;
+	c = coeff[0];
+	aic_writePage(page,32,(uint8_t)(c>>24));
+	aic_writePage(page,33,(uint8_t)(c>>16));
+	aic_writePage(page,34,(uint8_t)(c>>8));
+
+	//Coeff N1, Coeff C37
+	c = coeff[1];
+	aic_writePage(page,36,(uint8_t)(c>>24));
+	aic_writePage(page,37,(uint8_t)(c>>16));
+	aic_writePage(page,38,(uint8_t)(c>>8));
+	
+	//Coeff N2, Coeff C39
+	c = coeff[2];;
+	aic_writePage(page,40,(uint8_t)(c>>24));
+	aic_writePage(page,41,(uint8_t)(c>>16));
+	aic_writePage(page,42,(uint8_t)(c>>8));
+
+}
+

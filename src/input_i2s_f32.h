@@ -44,7 +44,12 @@ public:
 	}
 	virtual void update(void);
 	static void convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) ;
+	static void convert_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
+	static void convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void);
+	void begin(bool);
+	void sub_begin_i32(void);
+	//void sub_begin_i16(void);
 	int get_isOutOfMemory(void) { return flag_out_of_memory; }
 	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
 	//friend class AudioOutputI2S_F32;
@@ -52,14 +57,15 @@ protected:
 	AudioInputI2S_F32(int dummy): AudioStream_F32(0, NULL) {} // to be used only inside AudioInputI2Sslave !!
 	static bool update_responsibility;
 	static DMAChannel dma;
-	static void isr(void);
+	static void isr_32(void);
 private:
-	static audio_block_t *block_left;
-	static audio_block_t *block_right;
+	static audio_block_f32_t *block_left_f32;
+	static audio_block_f32_t *block_right_f32;
 	static float sample_rate_Hz;
 	static int audio_block_samples;
 	static uint16_t block_offset;
 	static int flag_out_of_memory;
+	unsigned long update_counter=0;
 };
 
 

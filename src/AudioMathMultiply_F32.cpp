@@ -1,6 +1,6 @@
-#include "AudioMultiply_F32.h"
+#include "AudioMathMultiply_F32.h"
 
-void AudioMultiply_F32::update(void) {
+void AudioMathMultiply_F32::update(void) {
   audio_block_f32_t *block, *in;
 
   block = AudioStream_F32::receiveWritable_f32(0);
@@ -12,7 +12,7 @@ void AudioMultiply_F32::update(void) {
     return;
   }
 
-  arm_mult_f32(block->data, in->data, block->data, AUDIO_BLOCK_SAMPLES);
+  arm_mult_f32(block->data, in->data, block->data, block->length);
   release(in);
 
   transmit(block);

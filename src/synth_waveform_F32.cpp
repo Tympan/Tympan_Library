@@ -4,7 +4,7 @@
 void AudioSynthWaveform_F32::update(void) {
   audio_block_f32_t *block, *lfo;
 
-  if (_magnitude == 0.0f) return;
+  //if (_magnitude == 0.0f) return;
 
   block = allocate_f32();
   if (!block) return;
@@ -12,7 +12,7 @@ void AudioSynthWaveform_F32::update(void) {
   lfo = receiveReadOnly_f32(0);
   switch (_OscillatorMode) {
     case OSCILLATOR_MODE_SINE:
-        for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
+        for (int i = 0; i < audio_block_samples; i++) {
           applyMod(i, lfo);
 
           block->data[i] = arm_sin_f32(_Phase);
@@ -23,7 +23,7 @@ void AudioSynthWaveform_F32::update(void) {
         }
         break;
     case OSCILLATOR_MODE_SAW:
-        for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
+        for (int i = 0; i < audio_block_samples; i++) {
           applyMod(i, lfo);
 
           block->data[i] = 1.0f - (2.0f * _Phase / twoPI);
@@ -34,7 +34,7 @@ void AudioSynthWaveform_F32::update(void) {
         }
         break;
     case OSCILLATOR_MODE_SQUARE:
-      for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
+      for (int i = 0; i < audio_block_samples; i++) {
         applyMod(i, lfo);
 
         if (_Phase <= _PI) {
@@ -50,7 +50,7 @@ void AudioSynthWaveform_F32::update(void) {
       }
       break;
     case OSCILLATOR_MODE_TRIANGLE:
-      for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
+      for (int i = 0; i < audio_block_samples; i++) {
         applyMod(i, lfo);
 
         float32_t value = -1.0f + (2.0f * _Phase / twoPI);
@@ -64,7 +64,7 @@ void AudioSynthWaveform_F32::update(void) {
   }
 
   if (_magnitude != 1.0f) {
-    arm_scale_f32(block->data, _magnitude, block->data, AUDIO_BLOCK_SAMPLES);
+    arm_scale_f32(block->data, _magnitude, block->data, audio_block_samples);
   }
 
   if (lfo) {
@@ -86,7 +86,7 @@ inline float32_t AudioSynthWaveform_F32::applyMod(uint32_t sample, audio_block_f
     osc_frequency = _Frequency * powf(2.0f, 0.0f / 1200.0f + lfo->data[sample] * _PitchModAmt);
   }
 
-  _PhaseIncrement = osc_frequency * twoPI / AUDIO_SAMPLE_RATE_EXACT;
+  _PhaseIncrement = osc_frequency * twoPI / sample_rate_Hz;
 
   return osc_frequency;
 }

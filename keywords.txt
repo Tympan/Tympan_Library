@@ -14,7 +14,9 @@ AudioMemoryUsageMaxReset_F32	KEYWORD1
 AudioConnection_F32	KEYWORD1
 
 AudioCalcGainWDRC_F32	KEYWORD1
+AudioCalcGainWDRC2_F32	KEYWORD1
 AudioCalcEnvelope_F32	KEYWORD1
+AudioCalcLevel_F32	KEYWORD1
 
 AudioControlTLV320AIC3206	KEYWORD1
 inputSelect		KEYWORD2
@@ -32,7 +34,9 @@ createFilterCoeff	KEYWORD2
 AudioConvert_I16toF32	KEYWORD1
 AudioConvert_F32toI16	KEYWORD1
 
+AudioEffectCompressor_F32	KEYWORD1
 AudioEffectCompWDRC_F32	KEYWORD1
+AudioEffectCompWDRC2_F32	KEYWORD1
 
 AudioEffectDelay_F32	KEYWORD1
 
@@ -41,12 +45,14 @@ setGain_dB		KEYWORD2
 
 AudioFilterBiquad_F32	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
-AudioEffectCompressor_F32	KEYWORD1
+AudioFilterFreqWeighting_F32	KEYWORD1
+AudioFilterTimeWeighting_F32	KEYWORD1
 AudioInputI2S_F32	KEYWORD1
 AudioInputUSB_F32	KEYWORD1
 AudioMixer4_F32		KEYWORD1
 AudioMixer8_F32		KEYWORD1
-AudioMultiply_F32	KEYWORD1
+AudioMathMultiply_F32	KEYWORD1
+AudioMathOffset_F32	KEYWORD1
 AudioOutputI2S_F32	KEYWORD1
 AudioOutputUSB_F32	KEYWORD1
 AudioPlayQueue_F32	KEYWORD1
@@ -65,6 +71,13 @@ AudioSynthWaveformSine_F32	KEYWORD1
 frequency		KEYWORD2
 phase			KEYWORD2
 amplitude		KEYWORD2
+
+AudioTestSignalGenerator_F32	KEYWORD1
+AudioTestSignalMeasurement_F32	KEYWORD1
+AudioTestSignalMeasurementMulti_F32	KEYWORD1
+AudioControlTestAmpSweep_F32	KEYWORD1
+AudioControlTestFreqSweep_F32	KEYWORD1
+
 
 FFT_F32			KEYWORD1
 useHanningWindow	KEYWORD2

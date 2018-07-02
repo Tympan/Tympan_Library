@@ -30,6 +30,7 @@ public:
 	void frequency(float freq) {
 		if (freq < 0.0) freq = 0.0;
 		else if (freq > sample_rate_Hz/2.f) freq = sample_rate_Hz/2.f;
+		frequency_Hz = freq;
 		phase_increment = freq * (4294967296.0 / sample_rate_Hz);
 	}
 	void phase(float angle) {
@@ -52,6 +53,8 @@ public:
 	void begin(void) { enabled = true; }
 	void end(void) { enabled = false; }
 	virtual void update(void);
+	float getFrequency_Hz(void) { return frequency_Hz; }
+	float setFrequency_Hz(float _freq_Hz) { frequency(_freq_Hz); return getFrequency_Hz(); }
 	
 private:
 	uint32_t phase_accumulator = 0;
@@ -59,6 +62,7 @@ private:
 	int32_t magnitude = 0;
 	float sample_rate_Hz = AUDIO_SAMPLE_RATE;
 	volatile uint8_t enabled = 1;
+	float32_t frequency_Hz;
 };
 
 

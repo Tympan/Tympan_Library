@@ -4,10 +4,19 @@
 
 namespace BTNRH_WDRC {
 
+	// Here are the settings for the adaptive feedback cancelation
+	typedef struct {
+		int default_to_active; //enable AFC at startup?  1=active. 0=disabled.
+		int afl;	//length (samples) of adaptive filter for modeling feedback path.
+		float mu;	//mu, scale factor for how fast the adaptive filter adapts (bigger is faster)
+		float rho;	//rho, smoothing factor for estimating audio envelope (bigger is a longer average)
+		float eps;	//eps, when est the audio envelope, this is the min allowed level (avoids divide-by-zero)
+	} CHA_AFC;
+
 	// from CHAPRO cha_ff.h
 	#define DSL_MXCH 32              
 	//class CHA_DSL {
-	typedef struct {
+/* 	typedef struct {
 		//public:
 			//CHA_DSL(void) {};  
 			//static const int DSL_MXCH = 32;    // maximum number of channels
@@ -21,7 +30,7 @@ namespace BTNRH_WDRC {
 			float cr[DSL_MXCH];         // compression ratio
 			float tk[DSL_MXCH];         // compression-start kneepoint
 			float bolt[DSL_MXCH];       // broadband output limiting threshold
-	} CHA_DSL;
+	} CHA_DSL; */
 	
 	typedef struct {
 	//public:
@@ -39,7 +48,7 @@ namespace BTNRH_WDRC {
 		float cr[DSL_MXCH];         // compression ratio
 		float tk[DSL_MXCH];         // compression-start kneepoint
 		float bolt[DSL_MXCH];       // broadband output limiting threshold
-	} CHA_DSL2;
+	} CHA_DSL;
 	
 	/* 		int parseStringIntoDSL(String &text_buffer) {
 			  int position = 0;
@@ -173,7 +182,7 @@ namespace BTNRH_WDRC {
 		
 	} CHA_IVAR_t;
 	
-	typedef struct {
+/* 	typedef struct {
 		float attack;               // attack time (ms), unused in this class
 		float release;              // release time (ms), unused in this class
 		float fs;                   // sampling rate (Hz), set through other means in this class
@@ -182,7 +191,7 @@ namespace BTNRH_WDRC {
 		float tk;                   // compression-start kneepoint
 		float cr;                   // compression ratio
 		float bolt;                 // broadband output limiting threshold
-	} CHA_WDRC;
+	} CHA_WDRC; */
 	
 	typedef struct {
 		float attack;               // attack time (ms), unused in this class
@@ -195,7 +204,7 @@ namespace BTNRH_WDRC {
 		float tk;                   // compression-start kneepoint
 		float cr;                   // compression ratio
 		float bolt;                 // broadband output limiting threshold
-	} CHA_WDRC2;
+	} CHA_WDRC;
 	
 
 };

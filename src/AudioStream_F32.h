@@ -45,6 +45,7 @@ class audio_block_f32_t {
 		const int full_length = AUDIO_BLOCK_SAMPLES;
 		int length = AUDIO_BLOCK_SAMPLES; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
 		float fs_Hz = AUDIO_SAMPLE_RATE; // AUDIO_SAMPLE_RATE is 44117.64706 from AudioStream.h
+		unsigned long id;
 };
 
 class AudioConnection_F32

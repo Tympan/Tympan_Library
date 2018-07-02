@@ -42,16 +42,16 @@ void setup() {
   Serial.begin(115200);  delay(500);
   Serial.println("BasicGain: starting setup()...");
 
-  //allocate the audio memory
-  AudioMemory(10); AudioMemory_F32(10,audio_settings); //allocate both kinds of memory
+  //allocate the dynamic memory for audio processing blocks
+  AudioMemory_F32(10,audio_settings); 
 
   //Enable the Tympan to start the audio flowing!
   audioHardware.enable(); // activate AIC
 
   //Choose the desired input
-  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
-  //  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
+  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones
+  //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);    // use the microphone jack - defaults to mic bias 2.5V
+  //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
   audioHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
@@ -130,11 +130,6 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
     Serial.print(audio_settings.processorUsageMax());
     //Serial.print(AudioProcessorUsageMax());  //if not using AudioSettings_F32
     Serial.print("%,   ");
-    Serial.print("Dyn MEM Int16 Cur/Peak: ");
-    Serial.print(AudioMemoryUsage());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax());
-    Serial.print(",   ");
     Serial.print("Dyn MEM Float32 Cur/Peak: ");
     Serial.print(AudioMemoryUsage_F32());
     Serial.print("/");
