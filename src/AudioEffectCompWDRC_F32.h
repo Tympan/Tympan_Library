@@ -1,5 +1,5 @@
 /*
- * AudioEffectCompWDR_F32: Wide Dynamic Rnage Compressor
+ * AudioCalcGainWDRC_F32: Wide Dynamic Rnage Compressor
  * 
  * Created: Chip Audette (OpenAudio) Feb 2017
  * Derived From: WDRC_circuit from CHAPRO from BTNRC: https://github.com/BTNRH/chapro
@@ -15,12 +15,11 @@
 class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later header file, but I need this here to avoid circularity
 
 #include <Arduino.h>
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 #include <arm_math.h>
-#include <AudioCalcEnvelope_F32.h>
-#include <AudioCalcGainWDRC_F32.h>  //has definition of CHA_WDRC
+#include "AudioCalcEnvelope_F32.h"
+#include "AudioCalcGainWDRC_F32.h"  //has definition of CHA_WDRC
 #include "BTNRH_WDRC_Types.h"
-//#include "utility/textAndStringUtils.h"
 
 
 class AudioEffectCompWDRC_F32 : public AudioStream_F32
@@ -49,7 +48,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       if (!out_block) return;
       
       //do the algorithm
-      compress(block->data, out_block->data, block->length);
+      cha_agc_channel(block->data, out_block->data, block->length);
       
       // transmit the block and release memory
       AudioStream_F32::transmit(out_block); // send the FIR output
@@ -59,11 +58,11 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
 
     //here is the function that does all the work
-    //void cha_agc_channel(float *input, float *output, int cs) {  
-    //  //compress(input, output, cs, &prev_env,
-    //  //  CHA_DVAR.alfa, CHA_DVAR.beta, CHA_DVAR.tkgain, CHA_DVAR.tk, CHA_DVAR.cr, CHA_DVAR.bolt, CHA_DVAR.maxdB);
-    //  compress(input, output, cs);
-    //}
+    void cha_agc_channel(float *input, float *output, int cs) {  
+      //compress(input, output, cs, &prev_env,
+      //  CHA_DVAR.alfa, CHA_DVAR.beta, CHA_DVAR.tkgain, CHA_DVAR.tk, CHA_DVAR.cr, CHA_DVAR.bolt, CHA_DVAR.maxdB);
+      compress(input, output, cs);
+    }
 
     //void compress(float *x, float *y, int n, float *prev_env,
     //    float &alfa, float &beta, float &tkgn, float &tk, float &cr, float &bolt, float &mxdB)
@@ -93,16 +92,18 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
 
     void setDefaultValues(void) {
-      //set default values...configure as limitter
-      BTNRH_WDRC::CHA_WDRC gha = {
-		5.0f, // attack time (ms)
+      //set default values...taken from CHAPRO, GHA_Demo.c  from "amplify()"...ignores given sample rate
+      //assumes that the sample rate has already been set!!!!
+      BTNRH_WDRC::CHA_WDRC gha = {1.0f, // attack time (ms)
         50.0f,     // release time (ms)
         24000.0f,  // fs, sampling rate (Hz), THIS IS IGNORED!
-        115.0f,    // maxdB, maximum signal (dB SPL)...assumed SPL for full-scale input signal
-        0.0f,      // tkgain, compression-start gain (dB)
-        55.0f,    // tk, compression-start kneepoint (dB SPL)
-        1.0f,     // cr, compression ratio  (set to 1.0 to defeat)
-        100.0f     // bolt, broadband output limiting threshold (ie, the limiter. SPL. 10:1 comp ratio)
+        119.0f,    // maxdB, maximum signal (dB SPL)
+        1.0f,      // compression ratio for lowest-SPL region (ie, the expansion region)
+        0.0f,      // expansion ending kneepoint (see small to defeat the expansion)
+        0.0f,      // tkgain, compression-start gain
+        105.0f,    // tk, compression-start kneepoint
+        10.0f,     // cr, compression ratio
+        105.0f     // bolt, broadband output limiting threshold
       };
       setParams_from_CHA_WDRC(&gha);
     }
@@ -119,13 +120,13 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
     //set all of the user parameters for the compressor
     //assumes that the sample rate has already been set!!!
-    void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt) {
+    void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt) {
       
       //configure the envelope calculator...assumes that the sample rate has already been set!
       calcEnvelope.setAttackRelease_msec(attack_ms,release_ms);
 
       //configure the WDRC gains
-      calcGain.setParams(maxdB, tkgain, comp_ratio, tk, bolt);
+      calcGain.setParams(maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
     }
 
     void setSampleRate_Hz(const float _fs_Hz) {
@@ -133,25 +134,22 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       given_sample_rate_Hz = _fs_Hz;
       calcEnvelope.setSampleRate_Hz(_fs_Hz);
     }
-	
-	void setAttackRelease_msec(const float atk_msec, const float rel_msec) {
-		calcEnvelope.setAttackRelease_msec(atk_msec, rel_msec);
-	}
-	
-	void setKneeLimiter_dBSPL(float _bolt) { calcGain.setKneeLimiter_dBSPL(_bolt); }
-	void setKneeLimiter_dBFS(float _bolt_dBFS) {  calcGain.setKneeLimiter_dBFS(_bolt_dBFS); }
-	void setGain_dB(float _gain_dB) { calcGain.setGain_dB(_gain_dB); } //gain at start of compression
-	void setKneeCompressor_dBSPL(float _tk) { calcGain.setKneeCompressor_dBSPL(_tk); }
-	void setKneeCompressor_dBFS(float _tk_dBFS) { calcGain.setKneeCompressor_dBFS(_tk_dBFS); }
-	void setCompRatio(float _cr) { calcGain.setCompRatio(_cr); }
-	void setMaxdB(float _maxdB) { calcGain.setMaxdB(_maxdB); };
 
     float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 
-    float getGain_dB(void) { return calcGain.getGain_dB(); }	//returns the linear gain of the system
-	float getCurrentGain(void) { return calcGain.getCurrentGain(); }
-	float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
-	
+    //set the linear gain of the system
+    float setGain_dB(float linear_gain_dB) {
+      return calcGain.setGain_dB(linear_gain_dB);
+    }
+    //increment the linear gain
+    float incrementGain_dB(float increment_dB) {
+      return calcGain.incrementGain_dB(increment_dB);
+    }    
+    //returns the linear gain of the system
+    float getGain_dB(void) {
+      return calcGain.getGain_dB();
+    }
+
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
     

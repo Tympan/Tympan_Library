@@ -11,14 +11,19 @@ typedef AudioEffectCompWDRC_F32 GainAlgorithm_t; //change this if you change the
 //now, define the Serial Manager class
 class SerialManager {
   public:
-    SerialManager(Stream *_s, int n, GainAlgorithm_t *gain_algs, 
+    SerialManager(Stream *_s, int n,
+          TympanBase &_audioHardware,
+          GainAlgorithm_t *gain_algs, 
           AudioControlTestAmpSweep_F32 &_ampSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester,
-          AudioControlTestFreqSweep_F32 &_freqSweepTester_filterbank)
-      : gain_algorithms(gain_algs), 
+          AudioControlTestFreqSweep_F32 &_freqSweepTester_filterbank,
+          AudioEffectFeedbackCancel_F32 &_feedbackCancel)
+      : audioHardware(_audioHardware),
+        gain_algorithms(gain_algs), 
         ampSweepTester(_ampSweepTester), 
         freqSweepTester(_freqSweepTester),
-        freqSweepTester_filterbank(_freqSweepTester_filterbank)  
+        freqSweepTester_filterbank(_freqSweepTester_filterbank),
+        feedbackCanceler(_feedbackCancel)
         {
           s = _s;
           N_CHAN = n;
@@ -28,18 +33,44 @@ class SerialManager {
     void printHelp(void);
     void incrementChannelGain(int chan, float change_dB);
     void decreaseChannelGain(int chan);
+    void set_N_CHAN(int _n_chan) { N_CHAN = _n_chan; };
 
     float channelGainIncrement_dB = 2.5f;  
     int N_CHAN;
   private:
     Stream *s;
+    TympanBase &audioHardware;
     GainAlgorithm_t *gain_algorithms;  //point to first element in array of expanders
     AudioControlTestAmpSweep_F32 &ampSweepTester;
     AudioControlTestFreqSweep_F32 &freqSweepTester;
     AudioControlTestFreqSweep_F32 &freqSweepTester_filterbank;
+    AudioEffectFeedbackCancel_F32 &feedbackCanceler;
 };
 
-void SerialManager::printHelp(void) {
+#define MAX_CHANS 8
+void printChanUpMsg(Stream *s, int N_CHAN) {
+  char fooChar[] = "12345678";
+  s->print("   ");
+  for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
+    s->print(fooChar[i]); 
+    if (i < (N_CHAN-1)) s->print(",");
+  }
+  s->print(": Increase linear gain of given channel (1-");
+  s->print(N_CHAN);
+  s->print(") by ");
+}
+void printChanDownMsg(Stream *s, int N_CHAN) {
+  char fooChar[] = "!@#$%^&*";
+  s->print("   ");
+  for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
+    s->print(fooChar[i]); 
+    if (i < (N_CHAN-1)) s->print(",");
+  }
+  s->print(": Decrease linear gain of given channel (1-");
+  s->print(N_CHAN);
+  s->print(") by ");
+}
+void SerialManager::printHelp(void) {  
   s->println();
   s->println("SerialManager Help: Available Commands:");
   s->println("   h: Print this help");
@@ -51,10 +82,17 @@ void SerialManager::printHelp(void) {
   s->println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
   s->println("   f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
   s->print("   k: Increase the gain of all channels (ie, knob gain) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   K: Decrease the gain of all channels (ie, knob gain) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   1,2,3,4,5,6,7,8: Increase linear gain of given channel (1-8) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   !,@,#,$,%,^,&,*: Decrease linear gain of given channel (1-8) by "); s->print(channelGainIncrement_dB); s->println(" dB");
+  s->print("   K: Decrease the gain of all channels (ie, knob gain) by ");
+  printChanUpMsg(s,N_CHAN);  s->print(channelGainIncrement_dB); s->println(" dB");
+  printChanDownMsg(s,N_CHAN);  s->print(channelGainIncrement_dB); s->println(" dB");
   s->println("   D: Toggle between DSL configurations: NORMAL vs FULL-ON");
+  s->println("   p,P: Enable or Disable Adaptive Feedback Cancelation.");
+  s->print("   m,M: Increase or Decrease AFC mu (currently "); s->print(feedbackCanceler.getMu(),6) ; s->println(").");
+  s->print("   r,R: Increase or Decrease AFC rho (currently "); s->print(feedbackCanceler.getRho(),6) ; s->println(").");
+  s->print("   e,E: Increase or Decrease AFC eps (currently "); s->print(feedbackCanceler.getEps(),6) ; s->println(").");
+  s->print("   x,X: Increase or Decrease AFC filter length (currently "); s->print(feedbackCanceler.getAfl()) ; s->println(").");
+  s->print("   u,U: Increase or Decrease Cutoff Frequency of HP Prefilter (currently "); s->print(audioHardware.getHPCutoff_Hz()); s->println(" Hz).");
+  //s->print("   z,Z: Increase or Decrease AFC N_Coeff_To_Zero (currently "); s->print(feedbackCanceler.getNCoeffToZero()) ; s->println(").");  
   s->println();
 }
 
@@ -68,6 +106,7 @@ extern void incrementDSLConfiguration(Stream *);
 
 //switch yard to determine the desired action
 void SerialManager::respondToByte(char c) {
+  float old_val = 0.0, new_val = 0.0;
   switch (c) {
     case 'h': case '?':
       printHelp(); break;
@@ -163,6 +202,72 @@ void SerialManager::respondToByte(char c) {
       s->println("Command Received: toggle printing of per-band ave signal levels.");
       { bool as_dBSPL = true; togglePrintAveSignalLevels(as_dBSPL); }
       break;
+    case 'p':
+      s->println("Command Received: enabling adaptive feedback cancelation.");
+      feedbackCanceler.setEnable(true);
+      //feedbackCanceler.resetAFCfilter();
+      break;
+    case 'P':
+      s->println("Command Received: disabling adaptive feedback cancelation.");      
+      feedbackCanceler.setEnable(false);
+      break;
+    case 'm':
+      old_val = feedbackCanceler.getMu(); new_val = old_val * 2.0;
+      s->print("Command received: increasing AFC mu to "); s->println(feedbackCanceler.setMu(new_val),6);
+      break;
+    case 'M':
+      old_val = feedbackCanceler.getMu(); new_val = old_val / 2.0;
+      s->print("Command received: decreasing AFC mu to "); s->println(feedbackCanceler.setMu(new_val),6);
+      break;
+    case 'r':
+      old_val = feedbackCanceler.getRho(); new_val = 1.0-((1.0-old_val)/sqrt(2.0));
+      s->print("Command received: increasing AFC rho to "); s->println(feedbackCanceler.setRho(new_val),6);
+      break;
+    case 'R':
+      old_val = feedbackCanceler.getRho(); new_val = 1.0-((1.0-old_val)*sqrt(2.0));
+      s->print("Command received: increasing AFC rho to "); s->println(feedbackCanceler.setRho(new_val),6);
+      break;
+    case 'e':
+      old_val = feedbackCanceler.getEps(); new_val = old_val*sqrt(10.0);
+      s->print("Command received: increasing AFC eps to "); s->println(feedbackCanceler.setEps(new_val),6);
+      break;
+    case 'E':
+      old_val = feedbackCanceler.getEps(); new_val = old_val/sqrt(10.0);
+      s->print("Command received: increasing AFC eps to "); s->println(feedbackCanceler.setEps(new_val),6);
+      break;    
+    case 'x':
+      old_val = feedbackCanceler.getAfl(); new_val = old_val + 5;
+      s->print("Command received: increasing AFC filter length to "); s->println(feedbackCanceler.setAfl(new_val));
+      break;    
+    case 'X':
+      old_val = feedbackCanceler.getAfl(); new_val = old_val - 5;
+      s->print("Command received: decreasing AFC filter length to "); s->println(feedbackCanceler.setAfl(new_val));
+      break;            
+//    case 'z':
+//      old_val = feedbackCanceler.getNCoeffToZero(); new_val = old_val + 5;
+//      s->print("Command received: increasing AFC N_Coeff_To_Zero to "); s->println(feedbackCanceler.setNCoeffToZero(new_val));
+//      break;
+//    case 'Z':
+//      old_val = feedbackCanceler.getNCoeffToZero(); new_val = old_val - 5;
+//      s->print("Command received: decreasing AFC N_Coeff_To_Zero to "); s->println(feedbackCanceler.setNCoeffToZero(new_val));      
+//      break;
+    case 'u':
+    {
+      old_val = audioHardware.getHPCutoff_Hz(); new_val = min(old_val*sqrt(2.0), 8000.0); //half-octave steps up
+      float fs_Hz = audioHardware.getSampleRate_Hz();
+      audioHardware.setHPFonADC(true,new_val,fs_Hz);
+      s->print("Command received: Increasing ADC HP Cutoff to "); s->print(audioHardware.getHPCutoff_Hz());s->println(" Hz");
+    }
+      break;
+    case 'U':
+    {
+      old_val = audioHardware.getHPCutoff_Hz(); new_val = max(old_val/sqrt(2.0), 5.0); //half-octave steps down
+      float fs_Hz = audioHardware.getSampleRate_Hz();
+      audioHardware.setHPFonADC(true,new_val,fs_Hz);
+      s->print("Command received: Decreasing ADC HP Cutoff to "); s->print(audioHardware.getHPCutoff_Hz());s->println(" Hz");   
+      break;
+    }
+
   }
 }
 

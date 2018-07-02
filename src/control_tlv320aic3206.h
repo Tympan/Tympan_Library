@@ -22,6 +22,7 @@
 //convenience names to use with outputSelect()
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1
 #define TYMPAN_OUTPUT_LINE_OUT 2
+#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3
 
 //names to use with setMicBias() to set the amount of bias voltage to use
 #define TYMPAN_MIC_BIAS_OFF             0
@@ -31,7 +32,9 @@
 #define TYMPAN_MIC_BIAS_VSUPPLY         4
 #define TYMPAN_DEFAULT_MIC_BIAS TYMPAN_MIC_BIAS_2_5
 
-
+#define BOTH_CHAN 0
+#define LEFT_CHAN 1
+#define RIGHT_CHAN 2
 
 class AudioControlTLV320AIC3206: public TeensyAudioControl
 {
@@ -56,6 +59,11 @@ public:
 	bool debugToSerial;
     unsigned int aic_readPage(uint8_t page, uint8_t reg);
     bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
+	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz);
+	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
+	float getSampleRate_Hz(void) { return sample_rate_Hz; }
+	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
+	bool enableAutoMuteDAC(bool, uint8_t);
 private:
   void aic_reset(void);
   void aic_init(void);
@@ -66,7 +74,10 @@ private:
   bool aic_goToPage(uint8_t page);
   int prevMicDetVal = -1;
   int resetPinAIC = 21;  //AIC reset pin, Rev C
-
+  float HP_cutoff_Hz = 0.0f;
+  float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
+  void setIIRCoeffOnADC_Left(uint32_t *coeff);
+  void setIIRCoeffOnADC_Right(uint32_t *coeff);
 };
 
 
