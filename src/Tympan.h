@@ -39,7 +39,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					potentiometer = 15;  //PTC0
 					amberLED = 36;  //PTC9
 					redLED = 35;  //PTC8
-					BT_nReset = 6; //PTD4
+					BT_nReset = 6; //
+					BT_REGEN = NOT_A_FEATURE;
 					BT_PIO4 = 2;  //PTD0
 					reversePot = true;
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
@@ -51,6 +52,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					amberLED = 36;  //PTC9
 					redLED = 35;  //PTC8
 					BT_nReset = 6; //PTD4
+					BT_REGEN = NOT_A_FEATURE;
 					BT_PIO4 = 2;  //PTD0
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
 					break;
@@ -60,7 +62,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					potentiometer = 15; //PTC0
 					amberLED = 36; //PTC9
 					redLED = 10;  //PTC4
-					BT_nReset = 34;  //PTE25
+					BT_nReset = 34;  //PTE25, active LOW reset
+					BT_REGEN = 31;  //must pull high to enable BC127
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
@@ -77,6 +80,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int amberLED = 36;  //PTC9
 		int redLED = 35;  //PTC8
 		int BT_nReset = 6; //PTD4
+		int BT_REGEN = NOT_A_FEATURE;  
 		int BT_PIO4 = 2;  //PTD0
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
@@ -96,6 +100,8 @@ class TympanPins_RevD : public TympanPins {
 	public:
 		TympanPins_RevD(void) : TympanPins(TYMPAN_REV_D) {};
 };
+
+//include "utility/TympanPrint.h"
 
 class TympanBase : public AudioControlTLV320AIC3206, public Print
 {
@@ -119,8 +125,20 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 				pinMode(pins.enableStereoExtMicBias,OUTPUT);
 				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
 			}
+			
+			//get the comm pins and setup the regen and reset pins
 			USB_Serial = pins.getUSBSerial();
 			BT_Serial = pins.getBTSerial();
+			if (pins.BT_REGEN != NOT_A_FEATURE) {
+				pinMode(pins.BT_REGEN,OUTPUT);digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
+				delay(10);  digitalWrite(pins.BT_REGEN,LOW); //then return low
+				
+			}
+			if (pins.BT_nReset != NOT_A_FEATURE) {
+				pinMode(pins.BT_nReset,OUTPUT);
+				digitalWrite(pins.BT_nReset,LOW);delay(1); //reset the device
+				digitalWrite(pins.BT_nReset,HIGH);  //normal operation.
+			}
 		};
 		//TympanPins getTympanPins(void) { return &pins; }
 		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
@@ -146,25 +164,73 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		void beginBothSerial(void) { beginBothSerial(115200, pins.BT_serial_speed); }
 		void beginBothSerial(int USB_speed, int BT_speed) {
 			USB_Serial->begin(USB_speed); delay(50);
-			BT_Serial->begin(BT_speed); delay(50);
+			beginBluetoothSerial(BT_speed);
 		}
 		int USB_dtr() { return USB_Serial->dtr(); }
-		
-	protected:
-		TympanPins pins;
-		usb_serial_class *USB_Serial;
-		HardwareSerial *BT_Serial;
+	
+		void beginBluetoothSerial(void) { beginBluetoothSerial(pins.BT_serial_speed); }
+		void beginBluetoothSerial(int BT_speed) {
+			BT_Serial->begin(BT_speed); delay(500);
+			
+		   //clear out any text that is waiting
+			//Serial.println("Clearing BT serial buffer...");
+			while(BT_Serial->available()) {
+			  //Serial.print((char)BT_SERIAL.read());
+			  BT_Serial->read(); delay(5);
+			}
+			//Serial.println("Finished clearing BT serial buffer...");
+
+			//transition to data mode
+			//Serial.println("Transition BT to data mode");
+			BT_Serial->print("ENTER_DATA");BT_Serial->write(0x0D); //enter data mode.  Finish with carraige return
+			delay(100);
+			int count = 0;
+			while ((count < 3) & (BT_Serial->available())) { //we should receive on "OK"
+			  //Serial.print((char)BT_SERIAL.read());
+			  BT_Serial->read(); count++;  delay(5);
+			}
+			//Serial.println("BT Should be ready.");
+			
+		}
 		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
 		//So, I inhereted the Print class, which gives me all of the Arduino print/write
 		//methods except for the most basic write().  Here, I define write() so that all
 		//of print() and println() and all of that works transparently.  Yay!
+		using Print::write;
 		virtual size_t write(uint8_t foo) { 
 			if (USB_dtr()) USB_Serial->write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
-			return BT_Serial->write(foo); 
+			return BT_Serial->write(foo);
+			//if (USB_dtr()) Serial.write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
+			//return Serial1.write(foo);			
 		}
+		virtual size_t write(const uint8_t *buffer, size_t orig_size) { //this should be faster than the core write(uint8_t);
+			//USB_Serial->write('t');
+			size_t count = 0;
+			size_t size = orig_size;
+			int i=0;
+			if (USB_dtr()) {
+				//while (size--) count += USB_Serial->write(*buffer++);
+				while (size--) USB_Serial->write(buffer[i++]);
+				//return count;
+			}
+			size = orig_size;
+			while (size--) count += BT_Serial->write(*buffer++);
+			return count;
+		}
+		virtual size_t write(const char *str) { return write((const uint8_t *)str, strlen(str)); } //should use the faster write
+
+		//using TympanPrint::print;
+		//using TympanPrint::println;
+		//virtual size_t print(const char *s) { return write(s); }  //should use the faster write
+		//virtual size_t println(const char *s) { return print(s) + println(); }  //should use the faster write
+		//virtual size_t println(void) { 	uint8_t buf[2]={'\r', '\n'}; return write(buf, 2); }
+
+	protected:
+		TympanPins pins;
+		usb_serial_class *USB_Serial;
+		HardwareSerial *BT_Serial;
 		
-	
 };
 		
 
@@ -186,8 +252,6 @@ class TympanRevD : public TympanBase
 	private:
 
 };
-
-
 
 
 #endif
