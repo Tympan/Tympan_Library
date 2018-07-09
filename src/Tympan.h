@@ -170,15 +170,25 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 	
 		void beginBluetoothSerial(void) { beginBluetoothSerial(pins.BT_serial_speed); }
 		void beginBluetoothSerial(int BT_speed) {
-			BT_Serial->begin(BT_speed); delay(500);
+			BT_Serial->begin(BT_speed);
 			
+			switch (getTympanRev()) {
+				case (TYMPAN_REV_D) :
+					clearAndConfigureBTSerialRevD();
+					break;
+				default:
+					delay(50);
+					break;
+			}
+		}
+		void clearAndConfigureBTSerialRevD(void) {					
 		   //clear out any text that is waiting
 			//Serial.println("Clearing BT serial buffer...");
+			delay(500);
 			while(BT_Serial->available()) {
 			  //Serial.print((char)BT_SERIAL.read());
 			  BT_Serial->read(); delay(5);
 			}
-			//Serial.println("Finished clearing BT serial buffer...");
 
 			//transition to data mode
 			//Serial.println("Transition BT to data mode");
@@ -189,8 +199,7 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			  //Serial.print((char)BT_SERIAL.read());
 			  BT_Serial->read(); count++;  delay(5);
 			}
-			//Serial.println("BT Should be ready.");
-			
+			//Serial.println("BT Should be ready.");			
 		}
 		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
