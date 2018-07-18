@@ -149,7 +149,16 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
     float getGain_dB(void) {
       return calcGain.getGain_dB();
     }
-
+	float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
+	
+	void setAttackRelease_msec(float32_t attack_ms, float32_t release_ms) {
+		calcEnvelope.setAttackRelease_msec(attack_ms, release_ms);
+	}
+	void setMaxdB(float32_t foo) { calcGain.setMaxdB(foo); }
+	void setKneeCompressor_dBSPL(float32_t foo) { calcGain.setKneeCompressor_dBSPL(foo); }
+	void setCompRatio(float32_t foo) { calcGain.setCompRatio(foo); }
+	void setKneeLimiter_dBSPL(float32_t foo) { calcGain.setKneeLimiter_dBSPL(foo); }	
+	
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
     

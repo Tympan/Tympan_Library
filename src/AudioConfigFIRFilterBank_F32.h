@@ -7,7 +7,7 @@
  *   
  * License: MIT License.  Use at your own risk.
  * 
- */
+*/
 
 #ifndef AudioConfigFIRFilterBank_F32_h
 #define AudioConfigFIRFilterBank_F32_h

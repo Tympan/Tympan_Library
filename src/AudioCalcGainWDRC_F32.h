@@ -159,6 +159,10 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
 	float getCurrentGain(void) { return last_gain; }
 	float getCurrentGain_dB(void) { return db2(getCurrentGain()); }
     
+	void setMaxdB(float32_t _maxdB) { maxdB = _maxdB; }
+	void setKneeCompressor_dBSPL(float32_t _knee) { tk = _knee; }
+	void setCompRatio(float32_t _cr) {cr = _cr; }
+	void setKneeLimiter_dBSPL(float32_t _bolt) { bolt = _bolt; }
 
     //dB functions.  Feed it the envelope amplitude (not squared) and it computes 20*log10(x) or it does 10.^(x/20)
     static float undb2(const float &x)  { return expf(0.11512925464970228420089957273422f*x); } //faster:  exp(log(10.0f)*x/20);  this is exact
