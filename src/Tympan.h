@@ -131,7 +131,7 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			BT_Serial = pins.getBTSerial();
 			if (pins.BT_REGEN != NOT_A_FEATURE) {
 				pinMode(pins.BT_REGEN,OUTPUT);digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
-				delay(10);  digitalWrite(pins.BT_REGEN,LOW); //then return low
+				delay(10);  digitalWrite(pins.BT_REGEN,LOW); //hold at least 5 msec, then return low
 				
 			}
 			if (pins.BT_nReset != NOT_A_FEATURE) {
