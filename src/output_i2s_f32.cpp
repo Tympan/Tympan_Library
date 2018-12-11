@@ -33,6 +33,9 @@
 
 //Here's the function to change the sample rate of the system (via changing the clocking of the I2S bus)
 //https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=121365&viewfull=1#post121365
+//
+//And, a post on how to compute the frac and div portions?  I haven't checked the code presented in this post:
+//https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=188812&viewfull=1#post188812
 float setI2SFreq(const float freq_Hz) {
 	int freq = (int)freq_Hz;
   typedef struct {
