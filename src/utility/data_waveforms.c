@@ -31,7 +31,7 @@
 // is needed because the waveform generator uses linear interpolation
 // between each point and the next point in the waveform.
 
-const int16_t AudioWaveformSine[257] = {
+const int16_t AudioWaveformSine_tympan[257] = {
      0,   804,  1608,  2410,  3212,  4011,  4808,  5602,  6393,  7179,
   7962,  8739,  9512, 10278, 11039, 11793, 12539, 13279, 14010, 14732,
  15446, 16151, 16846, 17530, 18204, 18868, 19519, 20159, 20787, 21403,
@@ -64,7 +64,7 @@ const int16_t AudioWaveformSine[257] = {
 #! /usr/bin/perl
 use Math::Trig ':pi';
 $len = 256;
-print "const int16_t AudioWaveformSine[257] = {\n";
+print "const int16_t AudioWaveformSine_tympan[257] = {\n";
 for ($i=0; $i <= $len; $i++) {
         $f = sin($i / $len * 2 * pi);
         $d = sprintf "%.0f", $f * 32767.0;
@@ -78,7 +78,7 @@ print "};\n";
 #endif
 
 
-const int16_t fader_table[257] = {
+const int16_t fader_table_tympan[257] = {
     0,    1,    4,   11,   19,   30,   44,   60,   78,   99,
   123,  149,  177,  208,  241,  276,  314,  355,  398,  443,
   490,  541,  593,  648,  705,  764,  826,  891,  957, 1026,
@@ -108,7 +108,7 @@ const int16_t fader_table[257] = {
 };
 #if 0
 #! /usr/bin/perl
-print "const int16_t fader_table[257] = {\n";
+print "const int16_t fader_table_tympan[257] = {\n";
 $len = 256;
 for ($i=0; $i < $len+1; $i++) {
         $a = cos(3.14149 * $i / $len);
