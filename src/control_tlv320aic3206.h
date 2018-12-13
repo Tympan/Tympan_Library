@@ -12,6 +12,8 @@
 
 #include "TeensyAudioControl.h"
 #include <Arduino.h>
+#include <Wire.h>  //for using multiple Teensy I2C busses simultaneously
+
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
 #define TYMPAN_INPUT_LINE_IN            1   //uses IN1
@@ -36,14 +38,31 @@
 #define LEFT_CHAN 1
 #define RIGHT_CHAN 2
 
+#define AIC3206_DEFAULT_I2C_BUS 0
+#define AIC3206_DEFAULT_RESET_PIN 21
+
 class AudioControlTLV320AIC3206: public TeensyAudioControl
 {
 public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
-	AudioControlTLV320AIC3206(void) { debugToSerial = false; };
-	AudioControlTLV320AIC3206(bool _debugToSerial) { debugToSerial = _debugToSerial; };
-	AudioControlTLV320AIC3206(int _resetPin) { debugToSerial = false; resetPinAIC = _resetPin; }
-	AudioControlTLV320AIC3206(int _resetPin, bool _debugToSerial) {  resetPinAIC = _resetPin; debugToSerial = _debugToSerial; };
+	AudioControlTLV320AIC3206(void) { 
+		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
+		debugToSerial = false; 
+	};
+	AudioControlTLV320AIC3206(bool _debugToSerial) { 
+		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
+		debugToSerial = _debugToSerial;		
+	};
+	AudioControlTLV320AIC3206(int _resetPin, int i2cBusInd) { 
+		resetPinAIC = _resetPin; 
+		setI2Cbus(i2cBusInd);
+		debugToSerial = false; 
+	}
+	AudioControlTLV320AIC3206(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  
+		resetPinAIC = _resetPin; 
+		setI2Cbus(i2cBusIndex);
+		debugToSerial = _debugToSerial;
+	};
 	bool enable(void);
 	bool disable(void);
 	bool outputSelect(int n);
@@ -65,6 +84,8 @@ public:
 	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
 	bool enableAutoMuteDAC(bool, uint8_t);
 private:
+  TwoWire *myWire;  //from Wire.h
+  void setI2Cbus(int i2cBus);
   void aic_reset(void);
   void aic_init(void);
   void aic_initDAC(void);
@@ -73,11 +94,12 @@ private:
   bool aic_writeAddress(uint16_t address, uint8_t val);
   bool aic_goToPage(uint8_t page);
   int prevMicDetVal = -1;
-  int resetPinAIC = 21;  //AIC reset pin, Rev C
+  int resetPinAIC = AIC3206_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
   float HP_cutoff_Hz = 0.0f;
   float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
   void setIIRCoeffOnADC_Left(uint32_t *coeff);
   void setIIRCoeffOnADC_Right(uint32_t *coeff);
+  
 };
 
 

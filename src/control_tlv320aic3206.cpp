@@ -8,7 +8,7 @@
  */
 
 #include "control_tlv320aic3206.h"
-#include <Wire.h>
+
 
 //********************************  Constants  *******************************//
 
@@ -135,13 +135,26 @@
 #define TYMPAN_ADC_MUTE_REG 0x0052 //  page 0, register 82
 #define TYMPAN_ADC_UNMUTE 0x00
 
-bool AudioControlTLV320AIC3206::enable(void)
+void AudioControlTLV320AIC3206::setI2Cbus(int i2cBusIndex)
 {
-  delay(100);
-
   // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
-	Wire.begin();
-	delay(5);
+  switch (i2cBusIndex) {
+	case 0:
+		myWire = &Wire; break;
+	//case 1:
+	//	myWire = &Wire1; break;  //defined in WireKinetis.h via Teensy's 
+	case 2:
+		myWire = &Wire2; break; //defined in WireKinetis.h via Teensy's Wire.h
+	//case 3:
+	//	myWire = &Wire3; break; //commented out in WireKinetis.h?? Why?
+	default:
+		myWire = &Wire; break;
+  }
+}
+bool AudioControlTLV320AIC3206::enable(void) {
+  delay(100);
+  myWire->begin();
+  delay(5);
 
   //hard reset the AIC
   //Serial.println("Hardware reset of AIC...");
@@ -495,9 +508,9 @@ unsigned int AudioControlTLV320AIC3206::aic_readPage(uint8_t page, uint8_t reg)
 {
   unsigned int val;
   if (aic_goToPage(page)) {
-    Wire.beginTransmission(AIC3206_I2C_ADDR);
-    Wire.write(reg);
-    unsigned int result = Wire.endTransmission();
+    myWire->beginTransmission(AIC3206_I2C_ADDR);
+    myWire->write(reg);
+    unsigned int result = myWire->endTransmission();
     if (result != 0) {
       Serial.print("controlTLV320AIC3206: ERROR: Read Page.  Page: ");Serial.print(page);
       Serial.print(" Reg: ");Serial.print(reg);
@@ -506,15 +519,15 @@ unsigned int AudioControlTLV320AIC3206::aic_readPage(uint8_t page, uint8_t reg)
       val = 300 + result;
       return val;
     }
-    if (Wire.requestFrom(AIC3206_I2C_ADDR, 1) < 1) {
+    if (myWire->requestFrom(AIC3206_I2C_ADDR, 1) < 1) {
       Serial.print("controlTLV320AIC3206: ERROR: Read Page.  Page: ");Serial.print(page);
       Serial.print(" Reg: ");Serial.print(reg);
       Serial.println(".  Nothing to return");
       val = 400;
       return val;
     }
-    if (Wire.available() >= 1) {
-      uint16_t val = Wire.read();
+    if (myWire->available() >= 1) {
+      uint16_t val = myWire->read();
 	  if (debugToSerial) {
 		Serial.print("controlTLV320AIC3206: Read Page.  Page: ");Serial.print(page);
 		Serial.print(" Reg: ");Serial.print(reg);
@@ -548,10 +561,10 @@ bool AudioControlTLV320AIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t
 	Serial.print(" Val: ");Serial.println(val);
   }
   if (aic_goToPage(page)) {
-    Wire.beginTransmission(AIC3206_I2C_ADDR);
-    Wire.write(reg);delay(10);
-    Wire.write(val);delay(10);
-    uint8_t result = Wire.endTransmission();
+    myWire->beginTransmission(AIC3206_I2C_ADDR);
+    myWire->write(reg);delay(10);
+    myWire->write(val);delay(10);
+    uint8_t result = myWire->endTransmission();
     if (result == 0) return true;
     else {
       Serial.print("controlTLV320AIC3206: Received Error During writePage(): Error = ");
@@ -562,10 +575,10 @@ bool AudioControlTLV320AIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t
 }
 
 bool AudioControlTLV320AIC3206::aic_goToPage(byte page) {
-  Wire.beginTransmission(AIC3206_I2C_ADDR);
-  Wire.write(0x00); delay(10);// page register  //was delay(10) from BPF
-  Wire.write(page); delay(10);// go to page   //was delay(10) from BPF
-  byte result = Wire.endTransmission();
+  myWire->beginTransmission(AIC3206_I2C_ADDR);
+  myWire->write(0x00); delay(10);// page register  //was delay(10) from BPF
+  myWire->write(page); delay(10);// go to page   //was delay(10) from BPF
+  byte result = myWire->endTransmission();
   if (result != 0) {
     Serial.print("controlTLV320AIC3206: Received Error During goToPage(): Error = ");
     Serial.println(result);
