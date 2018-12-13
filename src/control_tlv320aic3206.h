@@ -48,11 +48,11 @@ public:
 	AudioControlTLV320AIC3206(void) { 
 		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = false; 
-	};
+	}
 	AudioControlTLV320AIC3206(bool _debugToSerial) { 
 		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = _debugToSerial;		
-	};
+	}
 	AudioControlTLV320AIC3206(int _resetPin, int i2cBusInd) { 
 		resetPinAIC = _resetPin; 
 		setI2Cbus(i2cBusInd);
@@ -62,7 +62,7 @@ public:
 		resetPinAIC = _resetPin; 
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;
-	};
+	}
 	bool enable(void);
 	bool disable(void);
 	bool outputSelect(int n);
