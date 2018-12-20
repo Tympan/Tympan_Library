@@ -14,7 +14,8 @@
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (2)
 #define TYMPAN_REV_C (3)
-#define TYMPAN_REV_D (4)
+#define TYMPAN_REV_D0 (4)
+#define TYMPAN_REV_D (5)
 
 //the Tympan is a Teensy audio library "control" object
 #include "control_tlv320aic3206.h"  //see in here for more #define statements that are very relevant!
@@ -55,6 +56,18 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_REGEN = NOT_A_FEATURE;
 					BT_PIO4 = 2;  //PTD0
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
+					break;
+				case (TYMPAN_REV_D0) :
+					//Teensy 3.6 Pin Numbering
+					resetAIC = 35;  //PTC8
+					potentiometer = 15; //PTC0
+					amberLED = 36; //PTC9
+					redLED = 10;  //PTC4
+					BT_nReset = 34;  //PTE25, active LOW reset
+					BT_REGEN = 31;  //must pull high to enable BC127
+					BT_PIO4 = 33;  //PTE24
+					enableStereoExtMicBias = 20; //PTD5
+					BT_serial_speed = 9600;
 					break;
 				case (TYMPAN_REV_D) :
 					//Teensy 3.6 Pin Numbering
@@ -123,7 +136,7 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			pinMode(pins.redLED,OUTPUT); digitalWrite(pins.redLED,LOW);
 			if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
 				pinMode(pins.enableStereoExtMicBias,OUTPUT);
-				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
+				setEnableStereoExtMicBias(false); //enable stereo external mics (REV_D)
 			}
 			
 			//get the comm pins and setup the regen and reset pins
