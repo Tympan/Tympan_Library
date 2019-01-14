@@ -45,20 +45,25 @@ class AudioControlTLV320AIC3206: public TeensyAudioControl
 {
 public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
-	AudioControlTLV320AIC3206(void) { 
+	AudioControlTLV320AIC3206(void) {   //specify nothing
 		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = false; 
 	}
-	AudioControlTLV320AIC3206(bool _debugToSerial) { 
+	AudioControlTLV320AIC3206(bool _debugToSerial) {  //specify debug
 		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = _debugToSerial;		
 	}
-	AudioControlTLV320AIC3206(int _resetPin, int i2cBusInd) { 
+	AudioControlTLV320AIC3206(int _resetPin) {  //specify reset pin (minimum recommended!)
+		resetPinAIC = _resetPin; 
+		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
+		debugToSerial = false; 
+	}	
+	AudioControlTLV320AIC3206(int _resetPin, int i2cBusInd) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
 		resetPinAIC = _resetPin; 
 		setI2Cbus(i2cBusInd);
 		debugToSerial = false; 
 	}
-	AudioControlTLV320AIC3206(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  
+	AudioControlTLV320AIC3206(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  //specify everything
 		resetPinAIC = _resetPin; 
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;
