@@ -80,6 +80,10 @@ frequency		KEYWORD2
 phase			KEYWORD2
 amplitude		KEYWORD2
 
+AudioSynthToneSweep_F32	KEYWORD1
+play			KEYWORD2
+isPlaying		KEYWORD2
+
 AudioTestSignalGenerator_F32	KEYWORD1
 AudioTestSignalMeasurement_F32	KEYWORD1
 AudioTestSignalMeasurementMulti_F32	KEYWORD1
