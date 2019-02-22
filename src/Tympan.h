@@ -15,7 +15,10 @@
 #define TYMPAN_REV_A (2)
 #define TYMPAN_REV_C (3)
 #define TYMPAN_REV_D0 (4)
-#define TYMPAN_REV_D (5)
+#define TYMPAN_REV_D1 (5)
+#define TYMPAN_REV_D2 (6)
+#define TYMPAN_REV_D3 (7)
+#define TYMPAN_REV_D (8)
 
 //the Tympan is a Teensy audio library "control" object
 #include "control_tlv320aic3206.h"  //see in here for more #define statements that are very relevant!
@@ -57,7 +60,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 2;  //PTD0
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
 					break;
-				case (TYMPAN_REV_D0) :
+				case (TYMPAN_REV_D0) : case (TYMPAN_REV_D1) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 15; //PTC0
@@ -69,7 +72,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
-				case (TYMPAN_REV_D) :
+				case (TYMPAN_REV_D) : case (TYMPAN_REV_D2) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 15; //PTC0
@@ -81,6 +84,19 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
+				case (TYMPAN_REV_D3) :
+					//Teensy 3.6 Pin Numbering
+					resetAIC = 35;  //PTC8
+					potentiometer = 39; //A20
+					amberLED = 36; //PTC9
+					redLED = 10;  //PTC4
+					BT_nReset = 34;  //PTE25, active LOW reset
+					BT_REGEN = 31;  //must pull high to enable BC127
+					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
+					enableStereoExtMicBias = 20; //PTD5
+					BT_serial_speed = 9600;
+					Rev_Test = 44;
+					break;					
 			}
 		}
 		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
@@ -95,6 +111,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int BT_nReset = 6; //PTD4
 		int BT_REGEN = NOT_A_FEATURE;  
 		int BT_PIO4 = 2;  //PTD0
+		int Rev_Test = NOT_A_FEATURE;
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
 		usb_serial_class *USB_Serial = &Serial; //true for Rev_A/C/D
