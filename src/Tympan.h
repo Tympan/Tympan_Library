@@ -80,6 +80,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
+					BT_PIO0 = A10;  //a hard reset for the BT module
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
@@ -87,11 +88,12 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 				case (TYMPAN_REV_D3) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
-					potentiometer = 39; //A20
+					potentiometer = 39; //A20...this is the only difference from RevD2
 					amberLED = 36; //PTC9
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
+					BT_PIO0 = A10;  //a hard reset for the BT module
 					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
@@ -109,8 +111,9 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int amberLED = 36;  //PTC9
 		int redLED = 35;  //PTC8
 		int BT_nReset = 6; //PTD4
-		int BT_REGEN = NOT_A_FEATURE;  
-		int BT_PIO4 = 2;  //PTD0
+		int BT_REGEN = NOT_A_FEATURE; 
+		int BT_PIO0 = NOT_A_FEATURE;
+		int BT_PIO4 = NOT_A_FEATURE;  //PTD0
 		int Rev_Test = NOT_A_FEATURE;
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
@@ -166,10 +169,24 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			}
 			if (pins.BT_nReset != NOT_A_FEATURE) {
 				pinMode(pins.BT_nReset,OUTPUT);
-				digitalWrite(pins.BT_nReset,LOW);delay(1); //reset the device
+				digitalWrite(pins.BT_nReset,LOW);delay(10); //reset the device
 				digitalWrite(pins.BT_nReset,HIGH);  //normal operation.
 			}
+			forceBTtoDataMode(true);
 		};
+		void forceBTtoDataMode(bool state) {
+ 			if (pins.BT_PIO4 != NOT_A_FEATURE) {
+				if (state == true) {
+					pinMode(pins.BT_PIO4,OUTPUT);
+					digitalWrite(pins.BT_PIO4,HIGH);
+				} else {
+					//pinMode(pins.BT_PIO4,INPUT);  //go high-impedance (ie disable this pin)
+					pinMode(pins.BT_PIO4,OUTPUT);
+					digitalWrite(pins.BT_PIO4,LOW);
+				}
+			}
+		}
+		
 		//TympanPins getTympanPins(void) { return &pins; }
 		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
 		void setRedLED(int _value) { digitalWrite(pins.redLED,_value); }
@@ -265,10 +282,11 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		//virtual size_t println(const char *s) { return print(s) + println(); }  //should use the faster write
 		//virtual size_t println(void) { 	uint8_t buf[2]={'\r', '\n'}; return write(buf, 2); }
 
+		usb_serial_class *USB_Serial;
+		HardwareSerial *BT_Serial;		
+		
 	protected:
 		TympanPins pins;
-		usb_serial_class *USB_Serial;
-		HardwareSerial *BT_Serial;
 		
 };
 		
