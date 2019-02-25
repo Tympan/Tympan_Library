@@ -249,6 +249,8 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			//Serial.println("BT Should be ready.");			
 		}
 		
+		bool mixBTAudioWithOutput(bool state) { return mixInput1toHPout(state); } //bluetooth audio is on Input1
+		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
 		//So, I inhereted the Print class, which gives me all of the Arduino print/write
 		//methods except for the most basic write().  Here, I define write() so that all

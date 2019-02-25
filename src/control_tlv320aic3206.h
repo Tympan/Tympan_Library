@@ -88,6 +88,7 @@ public:
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
 	bool enableAutoMuteDAC(bool, uint8_t);
+	bool mixInput1toHPout(bool state);
 private:
   TwoWire *myWire;  //from Wire.h
   void setI2Cbus(int i2cBus);

@@ -761,3 +761,20 @@ void AudioControlTLV320AIC3206::setIIRCoeffOnADC_Right(uint32_t *coeff) {
 
 }
 
+bool AudioControlTLV320AIC3206::mixInput1toHPout(bool state) {
+	int page = 1;
+	int reg;
+	uint8_t val;
+	
+	//loop over both channels
+	for (reg = 12; reg <= 13; reg++) { //reg 12 is Left, reg 13 is right
+		val = aic_readPage(page,reg);
+		if (state == true) {  //activate
+			val = val | 0b00000100; //set this bit.  Route IN1L to HPL
+		} else {
+			val = val & 0b11111011; //clear this bit.  Un-do routing of IN1L to HPL
+		}
+		aic_writePage(page,reg,val);
+	}
+	return state;
+}
