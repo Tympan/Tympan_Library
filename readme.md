@@ -5,7 +5,7 @@ Tympan Library
 
 **Purpose**: This library allows you to program your own audio processing algorithms for the Tympan!  It owes a big debt to the [Teensy Audio Library](http://www.pjrc.com/teensy/td_libs_Audio.html) and all of its contributors.
 
-**Note**: These instructions were based on the *Arduino IDE 1.8.2* and *Teensyduino 1.36*. If you have different versions of either of these or have downloaded different versions, the program may or may not function as expected. You may revert or upgrade to the stated versions or check for solutions on the [Tympan Forum](https://forum.typman.org/).
+**Note**: These instructions were based on the *Arduino IDE 1.8.2* and *Teensyduino 1.36*. If you have different versions of either of these or have downloaded different versions, the program may or may not function as expected. You may revert or upgrade to the stated versions or check for solutions on the [Tympan Forum](https://forum.tympan.org/).
 
 Requirements
 ------------
