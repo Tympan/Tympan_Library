@@ -89,6 +89,9 @@ public:
 	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
+	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
+	bool enableDigitalMicInputs(bool desired_state);
+	
 private:
   TwoWire *myWire;  //from Wire.h
   void setI2Cbus(int i2cBus);
