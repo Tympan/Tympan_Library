@@ -11,10 +11,10 @@ void FFT_Overlapped_F32::execute(audio_block_f32_t *block, float *complex_2N_buf
 
   //add a claim to this block.  As a result, be sure that this function issues a "release()".
   //Also, be sure that the calling function issues its own release() to release its claim.
-  block->ref_count++;  
+  block->ref_count++;   
   
   //shuffle all of input data blocks in preperation for this latest processing
-  AudioStream_F32::release(buff_blocks[0]);  //release the oldest one
+  AudioStream_F32::release(buff_blocks[0]);  //release the oldest one...this is the release the corresponds to the claim above
   for (int i = 1; i < N_BUFF_BLOCKS; i++) buff_blocks[i - 1] = buff_blocks[i];
   buff_blocks[N_BUFF_BLOCKS - 1] = block; //append the newest input data to the complex_buffer blocks
 
@@ -41,10 +41,10 @@ audio_block_f32_t* IFFT_Overlapped_F32::execute(float *complex_2N_buffer) { //re
 
   //call the IFFT...any follow-up windowing is handdled in the IFFT routine, if configured
   myIFFT.execute(complex_2N_buffer);
-
+  
   
   //prepare for the overlap-and-add for the output
-  audio_block_f32_t *temp_buff = buff_blocks[0]; //hold onto this one for a moment
+  audio_block_f32_t *temp_buff = buff_blocks[0]; //hold onto this one for a moment...it'll get overwritten later
   for (int i = 1; i < N_BUFF_BLOCKS; i++) buff_blocks[i - 1] = buff_blocks[i]; //shuffle the output data blocks
   buff_blocks[N_BUFF_BLOCKS - 1] = temp_buff; //put the oldest output buffer back in the list
 
