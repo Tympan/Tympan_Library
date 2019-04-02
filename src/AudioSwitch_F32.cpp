@@ -1,9 +1,9 @@
 #include "AudioSwitch_F32.h"
 
 void AudioSwitch4_F32::update(void) {
-  audio_block_f32_t *in, *out=NULL;
+  audio_block_f32_t *out=NULL;
   
-  out = receiveWritable_f32(0);
+  out = receiveReadOnly_f32(0);
   if (!out) return;
   
   AudioStream_F32::transmit(out,outputChannel); //just output to the one channel
