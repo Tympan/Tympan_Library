@@ -70,6 +70,10 @@ AudioSettings_F32	KEYWORD1
 sample_rate_Hz		KEYWORD2
 audio_block_samples	KEYWORD2
 
+AudioSwitch4_F32	KEYWORD1
+setChannel		KEYWORD2
+
+
 AudioSynthNoiseWhite_F32	KEYWORD1
 AudioSynthNoisePink_F32	KEYWORD1
 AudioSynthWaveform_F32	KEYWORD1

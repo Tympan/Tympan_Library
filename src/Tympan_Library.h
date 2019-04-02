@@ -23,6 +23,7 @@
 #include "AudioMathOffset_F32.h"
 #include "AudioMathScale_F32.h"
 #include "AudioSettings_F32.h"
+#include "AudioSwitch_F32.h"
 #include "FFT_F32.h"
 #include "FFT_Overlapped_F32.h"
 #include "input_i2s_f32.h"
