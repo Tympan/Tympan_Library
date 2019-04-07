@@ -48,7 +48,7 @@ extern void printGainSettings(void);
 extern void togglePrintMemoryAndCPU(void);
 extern float incrementFormantShift(float);
 extern void switchToPCBMics(void);
-extern void swtichToMicInOnMicJack(void);
+extern void switchToMicInOnMicJack(void);
 extern void switchToLineInOnMicJack(void);
 
 //switch yard to determine the desired action
@@ -69,7 +69,7 @@ void SerialManager::respondToByte(char c) {
     case 'p':
       switchToPCBMics(); break;
     case 'm':
-      swtichToMicInOnMicJack(); break;
+      switchToMicInOnMicJack(); break;
     case 'l':
       switchToLineInOnMicJack();break;
     case 'f':

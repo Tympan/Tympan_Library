@@ -63,7 +63,7 @@ void switchToLineInOnMicJack(void) {
   audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF  
   audioHardware.setInputGain_dB(0.0);
 }
-void swtichToMicInOnMicJack(void) {
+void switchToMicInOnMicJack(void) {
   mySerial.println("Switching to Mic-In on Mic Jack.");
   audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias OFF   
   audioHardware.setInputGain_dB(input_gain_dB);
