@@ -2,6 +2,8 @@
 #include "AudioStream_F32.h"
 #include "BTNRH_WDRC_Types.h"
 #include "control_tlv320aic3206.h"
+#include "control_sgtl5000_32bit.h"
+#include "AudioAnalyzeRMS_F32.h"
 #include "AudioCalcEnvelope_F32.h"
 #include "AudioCalcGainWDRC_F32.h"
 #include "AudioCalcLevel_F32.h"
