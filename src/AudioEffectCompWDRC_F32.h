@@ -156,8 +156,11 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	}
 	void setMaxdB(float32_t foo) { calcGain.setMaxdB(foo); }
 	void setKneeCompressor_dBSPL(float32_t foo) { calcGain.setKneeCompressor_dBSPL(foo); }
+	float getKneeCompressor_dBSPL(void) { return calcGain.getKneeCompressor_dBSPL(); }
 	void setCompRatio(float32_t foo) { calcGain.setCompRatio(foo); }
-	void setKneeLimiter_dBSPL(float32_t foo) { calcGain.setKneeLimiter_dBSPL(foo); }	
+	void setKneeLimiter_dBSPL(float32_t foo) { calcGain.setKneeLimiter_dBSPL(foo); }
+	float getAttack_msec(void) { return calcEnvelope.getAttack_msec(); }
+	float getRelease_msec(void) { return calcEnvelope.getRelease_msec(); }
 	
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
