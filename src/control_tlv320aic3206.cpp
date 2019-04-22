@@ -196,6 +196,7 @@ bool AudioControlTLV320AIC3206::inputSelect(int n) {
     aic_writeAddress(TYMPAN_MICPGA_RIGHT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     // BIAS OFF
     setMicBias(TYMPAN_MIC_BIAS_OFF);
+	
 
     if (debugToSerial) Serial.println("Set Audio Input to Line In");
     return true;
@@ -317,6 +318,8 @@ void AudioControlTLV320AIC3206::aic_initADC() {
   aic_writeAddress(TYMPAN_MICPGA_LEFT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE); // enable Left MicPGA, set gain to 0 dB
   aic_writeAddress(TYMPAN_MICPGA_RIGHT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE); // enable Right MicPGA, set gain to 0 dB
 
+  //aic_writePage(1, 58, 0b11111100); // Anti-thump on aill input channels...doesn't seem to od anything here.  :(
+  
   aic_writeAddress(TYMPAN_ADC_MUTE_REG, TYMPAN_ADC_UNMUTE); // Unmute Left and Right ADC Digital Volume Control
   aic_writeAddress(TYMPAN_ADC_CHANNEL_POWER_REG, TYMPAN_ADC_CHANNELS_ON); // Unmute Left and Right ADC Digital Volume Control
 }
