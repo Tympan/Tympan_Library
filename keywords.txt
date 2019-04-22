@@ -50,13 +50,15 @@ AudioFilterTimeWeighting_F32	KEYWORD1
 AudioInputI2S_F32	KEYWORD1
 AudioInputUSB_F32	KEYWORD1
 AudioMixer4_F32		KEYWORD1
+gain			KEYWORD2
+mute			KEYWORD2
+switchChannel		KEYWORD2
 AudioMixer8_F32		KEYWORD1
 AudioMathAdd_F32	KEYWORD1
 AudioMathMultiply_F32	KEYWORD1
 AudioMathOffset_F32	KEYWORD1
 setOffset		KEYWORD2
 getOffset		KEYWORD2
-
 AudioMatScale_F32	KEYWORD1
 setScale		KEYWORD2
 getScale		KEYWORD2
