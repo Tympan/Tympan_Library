@@ -59,7 +59,7 @@ AudioMathMultiply_F32	KEYWORD1
 AudioMathOffset_F32	KEYWORD1
 setOffset		KEYWORD2
 getOffset		KEYWORD2
-AudioMatScale_F32	KEYWORD1
+AudioMathScale_F32	KEYWORD1
 setScale		KEYWORD2
 getScale		KEYWORD2
 
