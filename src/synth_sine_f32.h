@@ -44,7 +44,7 @@ public:
 	void amplitude(float n) {
 		if (n < 0) n = 0;
 		else if (n > 1.0f) n = 1.0f;
-		magnitude = n * 65536.0f;
+		magnitude = n * magnitude_scale_factor;
 	}
 	void setSampleRate_Hz(const float &fs_Hz) {
 		phase_increment *= sample_rate_Hz / fs_Hz; //change the phase increment for the new frequency
@@ -55,6 +55,8 @@ public:
 	virtual void update(void);
 	float getFrequency_Hz(void) { return frequency_Hz; }
 	float setFrequency_Hz(float _freq_Hz) { frequency(_freq_Hz); return getFrequency_Hz(); }
+	float getAmplitude(void) { return (magnitude/magnitude_scale_factor); }
+	float setAmplitude(float amp) { amplitude(amp); return getAmplitude(); }
 	
 private:
 	uint32_t phase_accumulator = 0;
@@ -63,6 +65,7 @@ private:
 	float sample_rate_Hz = AUDIO_SAMPLE_RATE;
 	volatile uint8_t enabled = 1;
 	float32_t frequency_Hz;
+	const float magnitude_scale_factor = 65536.0f;
 };
 
 
