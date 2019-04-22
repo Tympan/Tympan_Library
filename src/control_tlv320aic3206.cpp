@@ -428,7 +428,9 @@ bool AudioControlTLV320AIC3206::outputSelect(int n) {
 	aic_writePage(1,13,0); //unroute from HPR
 	aic_writePage(1,14,0); //unroute from LOL
 	aic_writePage(1,15,0); //unroute from LOR	
-
+	
+	//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
+	aic_writePage(1, 20, 0b10100101);  //soft routing step is 200ms, 5.0 time constants, assume 6K resistance
 
 	if (n == TYMPAN_OUTPUT_HEADPHONE_JACK_OUT) {
 
