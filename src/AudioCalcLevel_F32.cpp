@@ -25,7 +25,7 @@ void AudioCalcLevel_F32::update(void)
   applyFilterInPlace(block->data, block->length);
   
   //save last value
-  cur_value = block->data[(block->length)-1];
+  cur_value = block->data[(block->length)-1]; //get the last value
   
 	
   //transmit the data
