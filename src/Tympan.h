@@ -277,7 +277,8 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			return count;
 		}
 		virtual size_t write(const char *str) { return write((const uint8_t *)str, strlen(str)); } //should use the faster write
-
+		virtual void flush(void) { USB_Serial->flush(); BT_Serial->flush(); }
+		
 		//using TympanPrint::print;
 		//using TympanPrint::println;
 		//virtual size_t print(const char *s) { return write(s); }  //should use the faster write
