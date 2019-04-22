@@ -80,7 +80,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
-					BT_PIO0 = A10;  //a hard reset for the BT module
+					BT_PIO0 = A10;  //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
@@ -93,7 +93,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
-					BT_PIO0 = A10;  //a hard reset for the BT module
+					BT_PIO0 = A10;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
 					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
@@ -172,6 +172,10 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 				digitalWrite(pins.BT_nReset,LOW);delay(10); //reset the device
 				digitalWrite(pins.BT_nReset,HIGH);  //normal operation.
 			}
+			if (pins.BT_PIO0 != NOT_A_FEATURE) {
+				pinMode(pins.BT_PIO0,INPUT);
+			}
+			
 			forceBTtoDataMode(true);
 		};
 		void forceBTtoDataMode(bool state) {
@@ -250,6 +254,70 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		}
 		
 		bool mixBTAudioWithOutput(bool state) { return mixInput1toHPout(state); } //bluetooth audio is on Input1
+		void echoIncomingBTSerial(void) {
+			while (BT_Serial->available()) USB_Serial->write(BT_Serial->read());//echo messages from BT serial over to USB Serial
+		}
+		void setBTAudioVolume(int vol) {  //only works when you are connected via Bluetooth!!!!
+			//vol is 0 (min) to 15 (max)
+			if (pins.tympanRev >= TYMPAN_REV_D0) {   //This is only for the BC127 BT module
+					//get into command mode
+					USB_Serial->println("*** Changing BT into command mode...");
+					forceBTtoDataMode(false); //un-forcing (via hardware pin) the BT device to be in data mode
+					delay(500);
+					BT_Serial->print("$");  delay(400);
+					BT_Serial->print("$$$");  delay(400);
+					delay(2000);
+					echoIncomingBTSerial();
+
+					// clear the buffer by forcing an error
+					USB_Serial->println("*** Clearing buffers.  Sending carraige return.");
+					BT_Serial->print('\r'); delay(500);
+					echoIncomingBTSerial();
+					USB_Serial->println("*** Should have gotten 'ERROR', which is fine here.");
+
+					//check A2DP volume
+					USB_Serial->println("*** Check A2DP and HFP Volume...");
+					BT_Serial->print("VOLUME A2DP"); BT_Serial->print('\r'); 
+					delay(1000);
+					echoIncomingBTSerial();
+					BT_Serial->print("VOLUME HFP"); BT_Serial->print('\r'); 
+					delay(1000);
+					echoIncomingBTSerial();
+
+					//change volume
+					USB_Serial->println("*** Setting A2DP Volume...");
+					BT_Serial->print("VOLUME A2DP="); BT_Serial->print(vol); BT_Serial->print('\r'); 
+					delay(1000);
+					echoIncomingBTSerial();
+					BT_Serial->print("VOLUME HFP="); BT_Serial->print(vol); BT_Serial->print('\r'); 
+					delay(1000);
+					echoIncomingBTSerial();
+
+					//check A2DP volume again
+					USB_Serial->println("*** Check A2DP and HFP Volume again...");
+					BT_Serial->print("VOLUME A2DP"); BT_Serial->print('\r'); 
+					delay(1000);
+					echoIncomingBTSerial();
+					BT_Serial->print("VOLUME HFP"); BT_Serial->print('\r'); 
+					delay(1000);
+					echoIncomingBTSerial();
+
+					//confirm GPIO State
+					USB_Serial->println("*** Setting GPIOCONTROL Mode...");
+					BT_Serial->print("SET GPIOCONTROL=OFF");BT_Serial->print('\r'); delay(500);
+					echoIncomingBTSerial();
+
+					//save
+					USB_Serial->println("*** Saving Settings...");
+					BT_Serial->print("WRITE"); BT_Serial->print('\r'); delay(500);
+
+					USB_Serial->println("*** Changing into transparanet data mode...");
+					BT_Serial->print("ENTER_DATA");BT_Serial->print('\r'); delay(500); 
+					echoIncomingBTSerial();
+					forceBTtoDataMode(true); //forcing (via hardware pin) the BT device to be in data mode
+				}
+		}
+		
 		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
 		//So, I inhereted the Print class, which gives me all of the Arduino print/write
