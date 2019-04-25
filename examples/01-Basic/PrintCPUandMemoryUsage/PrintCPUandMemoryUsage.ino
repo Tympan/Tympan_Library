@@ -19,7 +19,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan myTympan;
+Tympan                    myTympan(TympanRev::D);
 AudioInputI2S_F32         i2s_in(audio_settings);   //Digital audio *from* the Tympan AIC.
 AudioEffectGain_F32       gain1, gain2;             //Applies digital gain to audio data.
 AudioOutputI2S_F32        i2s_out(audio_settings);  //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
@@ -30,9 +30,6 @@ AudioConnection_F32       patchCord2(i2s_in, 1, gain2, 0);    //connect the Righ
 AudioConnection_F32       patchCord11(gain1, 0, i2s_out, 0);  //connect the Left gain to the Left output
 AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Right gain to the Right output
 
-
-//I have a potentiometer on the Teensy Audio Board
-#define POT_PIN A1  //potentiometer is tied to this pin
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 20.0f; //gain on the microphone
@@ -56,9 +53,6 @@ void setup() {
   //Set the desired volume levels
   myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
-
-  // setup any other other features
-  pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
@@ -93,7 +87,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(analogRead(POT_PIN)) / 1024.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //send the potentiometer value to your algorithm as a control parameter
@@ -125,12 +119,10 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
     Serial.print("printCPUandMemory: ");
     Serial.print("CPU Cur/Peak: ");
     Serial.print(audio_settings.processorUsage());
-    //Serial.print(AudioProcessorUsage()); //if not using AudioSettings_F32
     Serial.print("%/");
     Serial.print(audio_settings.processorUsageMax());
-    //Serial.print(AudioProcessorUsageMax());  //if not using AudioSettings_F32
-    Serial.print("%,   ");
-    Serial.print("Dyn MEM Float32 Cur/Peak: ");
+    Serial.print("%, ");
+    Serial.print("MEM Cur/Peak: ");
     Serial.print(AudioMemoryUsage_F32());
     Serial.print("/");
     Serial.print(AudioMemoryUsageMax_F32());
