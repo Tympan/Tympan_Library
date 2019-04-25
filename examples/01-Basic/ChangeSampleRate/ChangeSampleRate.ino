@@ -37,7 +37,7 @@ float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void setup() {
   //begin the serial comms (for debugging)
   Serial.begin(115200);  delay(500);
-  Serial.println("BasicGain: starting setup()...");
+  Serial.println("ChangeSampleRate: starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10,audio_settings); 
