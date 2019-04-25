@@ -33,13 +33,11 @@
 
 #if 1
   //Use this if you have a Tympan RevD
-  TympanPins tympPins(TYMPAN_REV_D);     //set to TYMPAN_REV_D, or be more specific to your version of D
-  TympanBase audioHardware(tympPins);
+  Tympan     myTympan(TympanRev::D); //set to C or D
   String     new_BT_name = "TympanD";    //change this to whatever you'd like
 #else
   //Use this if you have a Tympan RevC
-  TympanPins tympPins(TYMPAN_REV_C);
-  TympanBase audioHardware(tympPins);
+  Tympan     myTympan(TympanRev::C); //set to C or D
   String     new_BT_name = "TympanC";    //change this to whatever you'd like
 #endif
 
@@ -69,13 +67,13 @@ void readBTResponse(void) {
 // Arduino setup() function, which is run once when the device starts
 void setup() {
   // Start the serial ports on the Tympan
-  audioHardware.beginBothSerial(); delay(2000);
-  USB_Serial = audioHardware.getUSBSerial();
-  BT_Serial = audioHardware.getBTSerial();
+  myTympan.beginBothSerial(); delay(2000);
+  USB_Serial = myTympan.getUSBSerial();
+  BT_Serial = myTympan.getBTSerial();
   USB_Serial->println("*** RenameTypmanBT.  Starting...");
 
   // Issue the commands to change the BT name (and set other BT settings)
-  if (tympPins.tympanRev == TYMPAN_REV_C) {
+  if (myTympan.getTympanRev() == TympanRev::C) {
     renameBT_RevC();
   } else {
     renameBT_RevD(); 

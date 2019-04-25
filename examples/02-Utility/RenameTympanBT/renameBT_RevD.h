@@ -5,7 +5,7 @@ void renameBT_RevD(void) {
   
   // go into command mode
   USB_Serial->println("*** Switching Tympan RevD BT module into command mode...");
-  audioHardware.forceBTtoDataMode(false);   delay(500); echoIncomingBTSerial(); //stop forcing the device to be in data mode
+  myTympan.forceBTtoDataMode(false);   delay(500); echoIncomingBTSerial(); //stop forcing the device to be in data mode
   BT_Serial->print("$");  delay(400);
   BT_Serial->print("$$$");  delay(400);
   //BT_Serial->print('\r'); delay(400);
@@ -53,6 +53,6 @@ void renameBT_RevD(void) {
   // go into data mode (Tympan's normal way of operating)
   USB_Serial->println("*** Changing into transparanet data mode...");
   BT_Serial->print("ENTER_DATA");BT_Serial->print('\r'); delay(500); echoIncomingBTSerial();
-  audioHardware.forceBTtoDataMode(true); //forcing (via hardware pin) the BT device to be in data mode
+  myTympan.forceBTtoDataMode(true); //forcing (via hardware pin) the BT device to be in data mode
   USB_Serial->println("*** BT Setup complete.");
 }

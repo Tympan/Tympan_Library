@@ -5,7 +5,7 @@ void renameBT_RevC(void) {
 
   //go into command mode
   USB_Serial->println("*** Switching Tympan RevC BT module to command mode...");
-  audioHardware.forceBTtoDataMode(false);   delay(400); 
+  myTympan.forceBTtoDataMode(false);   delay(400); 
   BT_Serial->print("$$$");delay(200);echoIncomingBTSerial();  //should respond "CMD"
   USB_Serial->println("*** If successful, should see 'CMD'.");
 
