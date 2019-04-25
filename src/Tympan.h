@@ -10,15 +10,16 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
+enum class TympanRev { A, C, D, D0, D1, D2, D3 };
 
 //constants to help define which version of Tympan is being used
-#define TYMPAN_REV_A (2)
-#define TYMPAN_REV_C (3)
-#define TYMPAN_REV_D0 (4)
-#define TYMPAN_REV_D1 (5)
-#define TYMPAN_REV_D2 (6)
-#define TYMPAN_REV_D3 (7)
-#define TYMPAN_REV_D (8)
+#define TYMPAN_REV_A (TympanRev::A)
+#define TYMPAN_REV_C (TympanRev::C)
+#define TYMPAN_REV_D0 (TympanRev::D0)
+#define TYMPAN_REV_D1 (TympanRev::D1)
+#define TYMPAN_REV_D2 (TympanRev::D2)
+#define TYMPAN_REV_D3 (TympanRev::D3)
+#define TYMPAN_REV_D (TympanRev::D)
 
 //the Tympan is a Teensy audio library "control" object
 #include "control_tlv320aic3206.h"  //see in here for more #define statements that are very relevant!
@@ -30,14 +31,13 @@
 class TympanPins { //Teensy 3.6 Pin Numbering
 	public:
 		TympanPins(void) {}; //use default pins
-		TympanPins(int _tympanRev) {
+		TympanPins(TympanRev _tympanRev) {
 			setTympanRev(_tympanRev);
 		}
-		//int NOT_A_FEATURE = -9999;
-		void setTympanRev(int _tympanRev) {
+		void setTympanRev(TympanRev _tympanRev) {
 			tympanRev = _tympanRev;
 			switch (tympanRev) {
-				case (TYMPAN_REV_A) :
+				case (TympanRev::A) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 21;  //PTD6
 					potentiometer = 15;  //PTC0
@@ -49,7 +49,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					reversePot = true;
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
 					break;				
-				case (TYMPAN_REV_C) :
+				case (TympanRev::C) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 21;  //PTD6
 					potentiometer = 15;  //PTC0
@@ -60,7 +60,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 2;  //PTD0
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
 					break;
-				case (TYMPAN_REV_D0) : case (TYMPAN_REV_D1) :
+				case (TympanRev::D0) : case (TympanRev::D1) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 15; //PTC0
@@ -72,7 +72,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
-				case (TYMPAN_REV_D) : case (TYMPAN_REV_D2) :
+				case (TympanRev::D2) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 15; //PTC0
@@ -85,7 +85,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
-				case (TYMPAN_REV_D3) :
+				case (TympanRev::D3) : case (TympanRev::D) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 39; //A20...this is the only difference from RevD2
@@ -105,7 +105,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		HardwareSerial * getBTSerial(void) { return BT_Serial; }
 		
 		//Defaults (Teensy 3.6 Pin Numbering), assuming Rev C
-		int tympanRev = TYMPAN_REV_C;
+		TympanRev tympanRev = TympanRev::C;
  		int resetAIC = 21;  //PTD6
 		int potentiometer = 15;  //PTC0
 		int amberLED = 36;  //PTC9
@@ -121,32 +121,24 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		HardwareSerial *BT_Serial = &Serial1; //true for Rev_A/C/D
 		int BT_serial_speed = 115200; //true for Rev_A/C
 };
-class TympanPins_RevA : public TympanPins {
-	public:
-		TympanPins_RevA(void) : TympanPins(TYMPAN_REV_A) {};
-};
-class TympanPins_RevC : public TympanPins {
-	public:
-		TympanPins_RevC(void) : TympanPins(TYMPAN_REV_C) {};
-};
-class TympanPins_RevD : public TympanPins {
-	public:
-		TympanPins_RevD(void) : TympanPins(TYMPAN_REV_D) {};
-};
 
 //include "utility/TympanPrint.h"
-
 class TympanBase : public AudioControlTLV320AIC3206, public Print
 {
 	public:
-		TympanBase(TympanPins &_pins) : AudioControlTLV320AIC3206(_pins.resetAIC) {
+		TympanBase(void) : AudioControlTLV320AIC3206() {}
+		TympanBase(bool _debugToSerial) : AudioControlTLV320AIC3206(_debugToSerial) {}
+		TympanBase(const TympanPins &_pins) : AudioControlTLV320AIC3206() {
 			setupPins(_pins);
 		}
-		TympanBase(TympanPins &_pins, bool _debugToSerial) : AudioControlTLV320AIC3206(_pins.resetAIC, _debugToSerial) {
+		TympanBase(const TympanPins &_pins, bool _debugToSerial) : AudioControlTLV320AIC3206(_debugToSerial) {
 			setupPins(_pins);
 		}
-		void setupPins(TympanPins &_pins) {
-			pins = _pins; //copy to local version
+
+		
+		void setupPins(const TympanPins &_pins) {
+			AudioControlTLV320AIC3206::setResetPin(_pins.resetAIC);
+			pins = _pins; //shallow copy to local version
 			
 			//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: "); 
 			//Serial.print(_pins.potentiometer); Serial.print(" / "); Serial.println(pins.potentiometer);
@@ -208,7 +200,7 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 				return pins.enableStereoExtMicBias;
 			}
 		}
-		int getTympanRev(void) { return pins.tympanRev; }
+		TympanRev getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
 		usb_serial_class *getUSBSerial(void) { return USB_Serial; }
 		HardwareSerial *getBTSerial(void) { return BT_Serial; }
@@ -224,7 +216,7 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			BT_Serial->begin(BT_speed);
 			
 			switch (getTympanRev()) {
-				case (TYMPAN_REV_D) :
+				case (TYMPAN_REV_D) : case (TYMPAN_REV_D0) : case (TYMPAN_REV_D1) : case (TYMPAN_REV_D2) : case (TYMPAN_REV_D3) :
 					clearAndConfigureBTSerialRevD();
 					break;
 				default:
@@ -361,25 +353,18 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		
 };
 		
-
-class TympanRevC : public TympanBase
-{
+class Tympan : public TympanBase {
 	public:
-		TympanRevC(void) : TympanBase(RevC_pins) {};
-		TympanRevC(bool _debugToSerial) : TympanBase(RevC_pins, _debugToSerial) {};
-		TympanPins_RevC RevC_pins;
-	private:
+		Tympan(const TympanRev &_myRev) : TympanBase() {
+			//initialize the TympanBase
+			TympanPins myPins(_myRev);
+			TympanBase::setupPins(myPins);
+		}
+		Tympan(const TympanRev &_myRev, bool _debugToSerial) : TympanBase(_debugToSerial) {
+			//initialize the TympanBase
+			TympanPins myPins(_myRev);
+			TympanBase::setupPins(myPins);
+		}
 };
-
-class TympanRevD : public TympanBase
-{
-	public:
-		TympanRevD(void) : TympanBase(RevD_pins)  {};
-		TympanRevD(bool _debugToSerial) : TympanBase(RevD_pins, _debugToSerial) {};
-		TympanPins_RevD RevD_pins;
-	private:
-
-};
-
 
 #endif

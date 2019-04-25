@@ -109,16 +109,15 @@ getNBuffBlocks		KEYWORD2
 getFFTObject		KEYWORD2
 IFFT_Overlapped_F32	KEYWORD1
 
+TympanRev		KEYWORD1
 TympanPins		KEYWORD1
-TympanPins_RevC		KEYWORD1
-TympanPins_RevD		KEYWORD1
+Tympan			KEYWORD1
 TympanBase		KEYWORD1
 setAmberLED		KEYWORD2
 setRedLED		KEYWORD2
 readPotentiometer	KEYWORD2
 getTympanRev		KEYWORD2
-TympanRevC		KEYWORD1
-TympanRevD		KEYWORD1
+
 
 
 

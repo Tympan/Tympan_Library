@@ -38,7 +38,7 @@
 #define LEFT_CHAN 1
 #define RIGHT_CHAN 2
 
-#define AIC3206_DEFAULT_I2C_BUS 0
+//define AIC3206_DEFAULT_I2C_BUS 0   //bus zero is &Wire
 #define AIC3206_DEFAULT_RESET_PIN 21
 
 class AudioControlTLV320AIC3206: public TeensyAudioControl
@@ -46,25 +46,25 @@ class AudioControlTLV320AIC3206: public TeensyAudioControl
 public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
 	AudioControlTLV320AIC3206(void) {   //specify nothing
-		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
+		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = false; 
 	}
 	AudioControlTLV320AIC3206(bool _debugToSerial) {  //specify debug
-		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
+		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = _debugToSerial;		
 	}
 	AudioControlTLV320AIC3206(int _resetPin) {  //specify reset pin (minimum recommended!)
 		resetPinAIC = _resetPin; 
-		setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
+		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = false; 
 	}	
-	AudioControlTLV320AIC3206(int _resetPin, int i2cBusInd) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
-		resetPinAIC = _resetPin; 
-		setI2Cbus(i2cBusInd);
+	AudioControlTLV320AIC3206(int _resetPin, int i2cBusIndex) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
+		setResetPin(_resetPin); 
+		setI2Cbus(i2cBusIndex);
 		debugToSerial = false; 
 	}
 	AudioControlTLV320AIC3206(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  //specify everything
-		resetPinAIC = _resetPin; 
+		setResetPin(_resetPin); 
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;
 	}
@@ -92,14 +92,15 @@ public:
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
 	bool enableDigitalMicInputs(bool desired_state);
 	
-private:
-  TwoWire *myWire;  //from Wire.h
+protected:
+  TwoWire *myWire = &Wire;  //from Wire.h
   void setI2Cbus(int i2cBus);
   void aic_reset(void);
   void aic_init(void);
   void aic_initDAC(void);
   void aic_initADC(void);
-
+  void setResetPin(int pin) { resetPinAIC = pin; }
+  
   bool aic_writeAddress(uint16_t address, uint8_t val);
   bool aic_goToPage(uint8_t page);
   int prevMicDetVal = -1;
