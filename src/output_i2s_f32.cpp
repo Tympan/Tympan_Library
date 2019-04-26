@@ -458,6 +458,7 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
+		transmit(block_f32,0);	release(block_f32); //echo the incoming audio out the outputs
 	}
 	
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
@@ -483,6 +484,8 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
+		
+		transmit(block_f32,1);	release(block_f32); //echo the incoming audio out the outputs
 	}
 }
 
