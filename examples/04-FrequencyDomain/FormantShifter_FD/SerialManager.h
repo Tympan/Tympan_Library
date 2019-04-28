@@ -10,7 +10,7 @@
 class SerialManager {
   public:
   public:
-    SerialManager(TympanBase &_audioHardware)
+    SerialManager(Tympan &_audioHardware)
       : audioHardware(_audioHardware)
     {  };
     //SerialManager(void)
@@ -23,7 +23,7 @@ class SerialManager {
     float formantScaleIncrement = powf(2.0,1.0/6.0);
     
   private:
-    TympanBase &audioHardware;
+    Tympan &audioHardware;
 };
 #define thisSerial audioHardware
 

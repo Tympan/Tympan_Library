@@ -8,7 +8,7 @@
 class SerialManager {
   public:
     SerialManager(
-      TympanBase &_audioHardware //,
+      Tympan &_audioHardware //,
       //AudioControlTestFreqSweep_F32 &_freqSweepTester,
     )
       : audioHardware(_audioHardware)//,
@@ -19,7 +19,7 @@ class SerialManager {
     void printHelp(void);
 
   private:
-    TympanBase &audioHardware;
+    Tympan &audioHardware;
     //AudioControlTestFreqSweep_F32 &freqSweepTester;
 };
 

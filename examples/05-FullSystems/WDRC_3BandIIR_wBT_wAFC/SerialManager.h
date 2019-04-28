@@ -12,7 +12,7 @@ typedef AudioEffectCompWDRC_F32 GainAlgorithm_t; //change this if you change the
 class SerialManager {
   public:
     SerialManager(Stream *_s, int n,
-          TympanBase &_audioHardware,
+          Tympan&_audioHardware,
           GainAlgorithm_t *gain_algs, 
           AudioControlTestAmpSweep_F32 &_ampSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester,
@@ -39,7 +39,7 @@ class SerialManager {
     int N_CHAN;
   private:
     Stream *s;
-    TympanBase &audioHardware;
+    Tympan &audioHardware;
     GainAlgorithm_t *gain_algorithms;  //point to first element in array of expanders
     AudioControlTestAmpSweep_F32 &ampSweepTester;
     AudioControlTestFreqSweep_F32 &freqSweepTester;

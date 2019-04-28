@@ -40,8 +40,7 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-TympanPins                    tympPins(TYMPAN_REV_C);        //TYMPAN_REV_C or TYMPAN_REV_D
-TympanBase                    audioHardware(tympPins);
+Tympan                        audioHardware(TympanRev::D);     //do TympanRev::C or TympanRev::D
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
