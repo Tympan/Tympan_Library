@@ -14,7 +14,7 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 // define audio objects and connections
-Tympan                        myTympan(TympanRev::D);
+Tympan                        myTympan(TympanRev::D);  //do TympanRev::D or TympanRev::C
 AudioInputI2S_F32         	  i2s_in;        //Digital audio *from* the Tympan AIC.
 AudioOutputI2S_F32        	  i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
 

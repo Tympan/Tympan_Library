@@ -19,7 +19,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::D);
+Tympan                    myTympan(TympanRev::D);   //do TympanRev::D or TympanRev::C
 AudioInputI2S_F32         i2s_in(audio_settings);   //Digital audio *from* the Tympan AIC.
 AudioEffectGain_F32       gain1, gain2;             //Applies digital gain to audio data.
 AudioOutputI2S_F32        i2s_out(audio_settings);  //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
