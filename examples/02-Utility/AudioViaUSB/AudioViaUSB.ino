@@ -33,7 +33,7 @@ const int audio_block_samples = 128;  //For USB Audio, must be 128
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-AudioControlTLV320AIC3206 audioHardware;
+Tympan                    audioHardware(TympanRev::D); //TympanRev::D or TympanRev::C
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioInputUSB_F32         usb_in;                     //Provides digital audio *from* a PC via USB
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.
