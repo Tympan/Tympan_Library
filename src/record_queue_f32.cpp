@@ -95,10 +95,15 @@ void AudioRecordQueue_F32::freeAudioBlock(void) {
 void AudioRecordQueue_F32::update(void)
 {
 	audio_block_f32_t *block;
-	uint32_t h;
 
 	block = receiveReadOnly_f32();
+	update(block);
+}
+void AudioRecordQueue_F32::update(audio_block_f32_t *block)
+{
 	if (block==NULL) return;
+	uint32_t h;
+
 	if (!enabled) {
 		AudioStream_F32::release(block);
 		return;
