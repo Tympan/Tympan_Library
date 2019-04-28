@@ -22,7 +22,7 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3 };
 #define TYMPAN_REV_D (TympanRev::D)
 
 //the Tympan is a Teensy audio library "control" object
-#include "control_tlv320aic3206.h"  //see in here for more #define statements that are very relevant!
+#include "control_aic3206.h"  //see in here for more #define statements that are very relevant!
 #include <Arduino.h>  //for the Serial objects
 #include <Print.h>
 
@@ -123,21 +123,21 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 };
 
 //include "utility/TympanPrint.h"
-class TympanBase : public AudioControlTLV320AIC3206, public Print
+class TympanBase : public AudioControlAIC3206, public Print
 {
 	public:
-		TympanBase(void) : AudioControlTLV320AIC3206() {}
-		TympanBase(bool _debugToSerial) : AudioControlTLV320AIC3206(_debugToSerial) {}
-		TympanBase(const TympanPins &_pins) : AudioControlTLV320AIC3206() {
+		TympanBase(void) : AudioControlAIC3206() {}
+		TympanBase(bool _debugToSerial) : AudioControlAIC3206(_debugToSerial) {}
+		TympanBase(const TympanPins &_pins) : AudioControlAIC3206() {
 			setupPins(_pins);
 		}
-		TympanBase(const TympanPins &_pins, bool _debugToSerial) : AudioControlTLV320AIC3206(_debugToSerial) {
+		TympanBase(const TympanPins &_pins, bool _debugToSerial) : AudioControlAIC3206(_debugToSerial) {
 			setupPins(_pins);
 		}
 
 		
 		void setupPins(const TympanPins &_pins) {
-			AudioControlTLV320AIC3206::setResetPin(_pins.resetAIC);
+			AudioControlAIC3206::setResetPin(_pins.resetAIC);
 			pins = _pins; //shallow copy to local version
 			
 			//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: "); 

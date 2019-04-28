@@ -7,8 +7,8 @@
 	License: MIT License.  Use at your own risk.
  */
 
-#ifndef control_tlv320aic3206_h_
-#define control_tlv320aic3206_h_
+#ifndef control_aic3206_h_
+#define control_aic3206_h_
 
 #include "TeensyAudioControl.h"
 #include <Arduino.h>
@@ -41,29 +41,29 @@
 //define AIC3206_DEFAULT_I2C_BUS 0   //bus zero is &Wire
 #define AIC3206_DEFAULT_RESET_PIN 21
 
-class AudioControlTLV320AIC3206: public TeensyAudioControl
+class AudioControlAIC3206: public TeensyAudioControl
 {
 public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
-	AudioControlTLV320AIC3206(void) {   //specify nothing
+	AudioControlAIC3206(void) {   //specify nothing
 		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = false; 
 	}
-	AudioControlTLV320AIC3206(bool _debugToSerial) {  //specify debug
+	AudioControlAIC3206(bool _debugToSerial) {  //specify debug
 		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = _debugToSerial;		
 	}
-	AudioControlTLV320AIC3206(int _resetPin) {  //specify reset pin (minimum recommended!)
+	AudioControlAIC3206(int _resetPin) {  //specify reset pin (minimum recommended!)
 		resetPinAIC = _resetPin; 
 		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
 		debugToSerial = false; 
 	}	
-	AudioControlTLV320AIC3206(int _resetPin, int i2cBusIndex) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
+	AudioControlAIC3206(int _resetPin, int i2cBusIndex) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
 		setResetPin(_resetPin); 
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = false; 
 	}
-	AudioControlTLV320AIC3206(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  //specify everything
+	AudioControlAIC3206(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  //specify everything
 		setResetPin(_resetPin); 
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;

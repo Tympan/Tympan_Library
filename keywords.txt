@@ -18,7 +18,7 @@ AudioCalcGainWDRC2_F32	KEYWORD1
 AudioCalcEnvelope_F32	KEYWORD1
 AudioCalcLevel_F32	KEYWORD1
 
-AudioControlTLV320AIC3206	KEYWORD1
+AudioControlAIC3206	KEYWORD1
 inputSelect		KEYWORD2
 setMicBias		KEYWORD2
 volume			KEYWORD2
