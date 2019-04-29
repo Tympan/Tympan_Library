@@ -116,7 +116,6 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("printCPUandMemory: ");
     Serial.print("CPU Cur/Peak: ");
     Serial.print(audio_settings.processorUsage());
     Serial.print("%/");

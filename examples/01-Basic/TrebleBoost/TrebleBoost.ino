@@ -35,10 +35,6 @@ AudioConnection_F32       patchCord4(hp_filt2, 0, gain2, 0);    //right
 AudioConnection_F32       patchCord5(gain1, 0, i2s_out, 0);     //connect the Left gain to the Left output
 AudioConnection_F32       patchCord6(gain2, 0, i2s_out, 1);     //connect the Right gain to the Right output
 
-
-//I have a potentiometer on the Teensy Audio Board
-#define POT_PIN A1  //potentiometer is tied to this pin
-
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 20.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
@@ -67,9 +63,6 @@ void setup() {
   Serial.print("Highpass filter cutoff at ");Serial.print(cutoff_Hz);Serial.println(" Hz");
   hp_filt1.setHighpass(0, cutoff_Hz); //biquad IIR filter.  left channel
   hp_filt2.setHighpass(0, cutoff_Hz); //biquad IIR filter.  right channel
-
-  // setup any other other features
-  pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
@@ -104,7 +97,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(analogRead(POT_PIN)) / 1024.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1024.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //send the potentiometer value to your algorithm as a control parameter
@@ -133,15 +126,12 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("printCPUandMemory: ");
     Serial.print("CPU Cur/Peak: ");
     Serial.print(audio_settings.processorUsage());
-    //Serial.print(AudioProcessorUsage()); //if not using AudioSettings_F32
     Serial.print("%/");
     Serial.print(audio_settings.processorUsageMax());
-    //Serial.print(AudioProcessorUsageMax());  //if not using AudioSettings_F32
-    Serial.print("%,   ");
-    Serial.print("Dyn MEM Float32 Cur/Peak: ");
+    Serial.print("%, ");
+    Serial.print("MEM Cur/Peak: ");
     Serial.print(AudioMemoryUsage_F32());
     Serial.print("/");
     Serial.print(AudioMemoryUsageMax_F32());
