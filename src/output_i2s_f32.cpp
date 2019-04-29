@@ -439,7 +439,6 @@ void AudioOutputI2S_F32::update(void)
 		//convert F32 to Int16
 		block_f32_scaled = AudioStream_F32::allocate_f32();
 		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		AudioStream_F32::release(block_f32);
 		
 		//now process the data blocks
 		__disable_irq();
@@ -458,7 +457,7 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		transmit(block_f32,0);	release(block_f32); //echo the incoming audio out the outputs
+		transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
 	}
 	
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
@@ -466,7 +465,6 @@ void AudioOutputI2S_F32::update(void)
 		//convert F32 to Int16
 		block_f32_scaled = AudioStream_F32::allocate_f32();
 		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		AudioStream_F32::release(block_f32);
 		
 		__disable_irq();
 		if (block_right_1st == NULL) {
@@ -485,7 +483,7 @@ void AudioOutputI2S_F32::update(void)
 			AudioStream_F32::release(tmp);
 		}
 		
-		transmit(block_f32,1);	release(block_f32); //echo the incoming audio out the outputs
+		transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
 	}
 }
 
