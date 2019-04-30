@@ -1,12 +1,12 @@
-/* 
+/*
 	Tympan
-	
+
 	Created: Chip Audette, Open Audio
 	Purpose: Classes to wrap up the hardware features of Tympan.
- 
+
 	License: MIT License.  Use at your own risk.
  */
- 
+
 #ifndef _Tympan_h
 #define _Tympan_h
 
@@ -45,7 +45,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 2;  //PTD0
 					reversePot = true;
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
-					break;				
+					break;
 				case (TYMPAN_REV_C) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 21;  //PTD6
@@ -71,21 +71,23 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					break;
 				case (TYMPAN_REV_D) :
 					//Teensy 3.6 Pin Numbering
-					resetAIC = 35;  //PTC8
-					potentiometer = 15; //PTC0
+					resetAIC = 42;	// was 35;  //PTC8
+					potentiometer = 20;	// PTA16	was 15; //PTC0
 					amberLED = 36; //PTC9
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
-					BT_PIO4 = 33;  //PTE24
-					enableStereoExtMicBias = 20; //PTD5
+					BT_PIO4 = NOT_A_FEATURE;	// was 33;  //PTE24
+					BT_PIO5 = 33;
+					BT_PIO0 = 10; // A10 is analog pin!
+					enableStereoExtMicBias = 41; // was 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
 			}
 		}
 		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
 		HardwareSerial * getBTSerial(void) { return BT_Serial; }
-		
+
 		//Defaults (Teensy 3.6 Pin Numbering), assuming Rev C
 		int tympanRev = TYMPAN_REV_C;
  		int resetAIC = 21;  //PTD6
@@ -93,8 +95,10 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int amberLED = 36;  //PTC9
 		int redLED = 35;  //PTC8
 		int BT_nReset = 6; //PTD4
-		int BT_REGEN = NOT_A_FEATURE;  
+		int BT_REGEN = NOT_A_FEATURE;
 		int BT_PIO4 = 2;  //PTD0
+		int BT_PIO5 = 33;
+		int BT_PIO0 = 10; // A10 is analog pin!
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
 		usb_serial_class *USB_Serial = &Serial; //true for Rev_A/C/D
@@ -127,10 +131,10 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		}
 		void setupPins(TympanPins &_pins) {
 			pins = _pins; //copy to local version
-			
-			//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: "); 
+
+			//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: ");
 			//Serial.print(_pins.potentiometer); Serial.print(" / "); Serial.println(pins.potentiometer);
-			
+
 			pinMode(pins.potentiometer,INPUT);
 			pinMode(pins.amberLED,OUTPUT); digitalWrite(pins.amberLED,LOW);
 			pinMode(pins.redLED,OUTPUT); digitalWrite(pins.redLED,LOW);
@@ -138,14 +142,14 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 				pinMode(pins.enableStereoExtMicBias,OUTPUT);
 				setEnableStereoExtMicBias(false); //enable stereo external mics (REV_D)
 			}
-			
+
 			//get the comm pins and setup the regen and reset pins
 			USB_Serial = pins.getUSBSerial();
 			BT_Serial = pins.getBTSerial();
 			if (pins.BT_REGEN != NOT_A_FEATURE) {
 				pinMode(pins.BT_REGEN,OUTPUT);digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
 				delay(10);  digitalWrite(pins.BT_REGEN,LOW); //hold at least 5 msec, then return low
-				
+
 			}
 			if (pins.BT_nReset != NOT_A_FEATURE) {
 				pinMode(pins.BT_nReset,OUTPUT);
@@ -156,12 +160,12 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		//TympanPins getTympanPins(void) { return &pins; }
 		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
 		void setRedLED(int _value) { digitalWrite(pins.redLED,_value); }
-		int readPotentiometer(void) { 
+		int readPotentiometer(void) {
 			//Serial.print("TympanBase: readPot, pin "); Serial.println(pins.potentiometer);
 			int val = analogRead(pins.potentiometer);
 			if (pins.reversePot) val = 1023 - val;
 			return val;
-		};	
+		};
 		int setEnableStereoExtMicBias(int new_state) {
 			if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
 				digitalWrite(pins.enableStereoExtMicBias,new_state);
@@ -180,11 +184,11 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			beginBluetoothSerial(BT_speed);
 		}
 		int USB_dtr() { return USB_Serial->dtr(); }
-	
+
 		void beginBluetoothSerial(void) { beginBluetoothSerial(pins.BT_serial_speed); }
 		void beginBluetoothSerial(int BT_speed) {
 			BT_Serial->begin(BT_speed);
-			
+
 			switch (getTympanRev()) {
 				case (TYMPAN_REV_D) :
 					clearAndConfigureBTSerialRevD();
@@ -194,7 +198,7 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 					break;
 			}
 		}
-		void clearAndConfigureBTSerialRevD(void) {					
+		void clearAndConfigureBTSerialRevD(void) {
 		   //clear out any text that is waiting
 			//Serial.println("Clearing BT serial buffer...");
 			delay(500);
@@ -212,19 +216,19 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 			  //Serial.print((char)BT_SERIAL.read());
 			  BT_Serial->read(); count++;  delay(5);
 			}
-			//Serial.println("BT Should be ready.");			
+			//Serial.println("BT Should be ready.");
 		}
-		
+
 		//I want to enable an easy way to print to both USB and BT serial with one call.
 		//So, I inhereted the Print class, which gives me all of the Arduino print/write
 		//methods except for the most basic write().  Here, I define write() so that all
 		//of print() and println() and all of that works transparently.  Yay!
 		using Print::write;
-		virtual size_t write(uint8_t foo) { 
+		virtual size_t write(uint8_t foo) {
 			if (USB_dtr()) USB_Serial->write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
 			return BT_Serial->write(foo);
 			//if (USB_dtr()) Serial.write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
-			//return Serial1.write(foo);			
+			//return Serial1.write(foo);
 		}
 		virtual size_t write(const uint8_t *buffer, size_t orig_size) { //this should be faster than the core write(uint8_t);
 			//USB_Serial->write('t');
@@ -252,9 +256,9 @@ class TympanBase : public AudioControlTLV320AIC3206, public Print
 		TympanPins pins;
 		usb_serial_class *USB_Serial;
 		HardwareSerial *BT_Serial;
-		
+
 };
-		
+
 
 class TympanRevC : public TympanBase
 {
