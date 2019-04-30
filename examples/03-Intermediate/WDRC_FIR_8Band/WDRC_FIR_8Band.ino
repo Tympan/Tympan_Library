@@ -38,7 +38,7 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 #if USE_TYMPAN == 0
   AudioControlSGTL5000        audioHardware;    //controller for the Teensy Audio Board
 #else
-  AudioControlTLV320AIC3206   audioHardware;    //controller for the Teensy Audio Board
+  Tympan                    audioHardware(TympanRev::D);  //TympanRev::D or TympanRev::C
 #endif
 AudioSynthWaveformSine_F32  testSignal(audio_settings);          //use to generate test tone as input
 AudioInputI2S_F32           i2s_in(audio_settings);          //Digital audio *from* the Teensy Audio Board ADC.  Sends Int16.  Stereo.

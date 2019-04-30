@@ -77,20 +77,21 @@ class FFT_F32
       if (window != NULL) {
         for (int i=0; i < N_FFT; i++) window[i] = 1.0; 
       }
-      if (Serial) { Serial.print("FFT_F32: useRectangularWindow.  flag__useWindow = "); Serial.println(flag__useWindow); }
+      //if (Serial) { Serial.print("FFT_F32: useRectangularWindow.  flag__useWindow = "); Serial.println(flag__useWindow); }
     }
     virtual void useHanningWindow(void) {
       flag__useWindow = 1;
       if (window != NULL) {
-        Serial.print("FFT_F32: useHanningWindow: ");
+        //Serial.print("FFT_F32: useHanningWindow, N=");
+		//Serial.print(N_FFT); Serial.print(": ");
         for (int i=0; i < N_FFT; i++) { 
-          window[i] = (-0.5f*cosf(2.0f*M_PI*(float)i/(float)N_FFT) + 0.5f);
-          Serial.print(window[i]*10.f);
-          Serial.print(" ");
+          window[i] = 0.5*(1.0 - cosf(2.0*M_PI*(float)i/((float)(N_FFT-1))));
+          //Serial.print(window[i]);
+          //Serial.print(" ");
         }
-        Serial.println();
+        //Serial.println();
       }
-      if (Serial) { Serial.print("FFT_F32: useHanningWindow.  flag__useWindow = "); Serial.println(flag__useWindow); }
+      //if (Serial) { Serial.print("FFT_F32: useHanningWindow.  flag__useWindow = "); Serial.println(flag__useWindow); }
     }
     
     virtual void applyWindowToRealPartOfComplexVector(float32_t *complex_2N_buffer) {
@@ -108,8 +109,8 @@ class FFT_F32
       if (N_FFT == 0) return;
 
       //apply window before FFT (if it is an FFT and not IFFT)
-      if ((~is_IFFT) && (flag__useWindow)) applyWindowToRealPartOfComplexVector(complex_2N_buffer);
-
+      if ((!is_IFFT) && (flag__useWindow)) applyWindowToRealPartOfComplexVector(complex_2N_buffer);
+	  
       //do the FFT
       if (is_rad4) {
         arm_cfft_radix4_f32(&fft_inst_r4, complex_2N_buffer);
@@ -119,17 +120,27 @@ class FFT_F32
 
       //apply window after FFT (if it is an IFFT and not FFT)
       if ((is_IFFT) && (flag__useWindow)) applyWindowToRealPartOfComplexVector(complex_2N_buffer);
-    }
+
+	}
     
     virtual void rebuildNegativeFrequencySpace(float *complex_2N_buffer) {
       //create the negative frequency space via complex conjugate of the positive frequency space
-      int ind_nyquist_bin = N_FFT/2;  //nyquist is neither positive nor negative
-      int targ_ind = ind_nyquist_bin+1; //negative frequencies start start one above nyquist
-      for (int source_ind = ind_nyquist_bin-1; source_ind > 0; source_ind--) {  //exclude the 0'th bin as DC is neither positive nor negative
-        complex_2N_buffer[2*targ_ind] = complex_2N_buffer[2*source_ind]; //real
-        complex_2N_buffer[2*targ_ind+1] = -complex_2N_buffer[2*source_ind+1]; //imaginary.  negative makes it the complex conjugate, which is what we want for the neg freq space
-        targ_ind++;
-      }
+
+	  //int ind_nyquist_bin = N_FFT/2;  //nyquist is neither positive nor negative
+	  //int targ_ind = ind_nyquist_bin+1; //negative frequencies start start one above nyquist
+	  //for (int source_ind = ind_nyquist_bin-1; source_ind > 0; source_ind--) {  //exclude the 0'th bin as DC is neither positive nor negative
+		//complex_2N_buffer[2*targ_ind] = complex_2N_buffer[2*source_ind]; //real
+		//complex_2N_buffer[2*targ_ind+1] = -complex_2N_buffer[2*source_ind+1]; //imaginary.  negative makes it the complex conjugate, which is what we want for the neg freq space
+		//targ_ind++;
+	  //}
+
+	  int targ_ind = 0;
+	  for (int source_ind = 1; source_ind < (N_FFT/2-1); source_ind++) {
+			targ_ind = N_FFT - source_ind;
+			complex_2N_buffer[2*targ_ind] = complex_2N_buffer[2*source_ind]; //real
+			complex_2N_buffer[2*targ_ind+1] = -complex_2N_buffer[2*source_ind+1]; //imaginary.  negative makes it the complex conjugate, which is what we want for the neg freq space
+	  }
+
     }
     virtual int getNFFT(void) { return N_FFT; };
     int get_flagUseWindow(void) { return flag__useWindow; };
