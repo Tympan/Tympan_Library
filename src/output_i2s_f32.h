@@ -56,9 +56,10 @@ public:
 	void sub_begin_i32(void);
 	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
-	static void convert_f32_to_i16( float32_t *p_f32, int16_t *p_i16, int len) ;
-	static void convert_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
-	static void convert_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
+	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
+	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
+	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
+	static float setI2SFreq(const float);
 protected:
 	//AudioOutputI2S_F32(const AudioSettings &settings): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	static void config_i2s(void);

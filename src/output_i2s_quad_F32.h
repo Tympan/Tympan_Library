@@ -37,12 +37,13 @@
 #include "AudioStream_F32.h"
 //include "AudioStream.h"
 #include "DMAChannel.h"
+#include "output_i2s_f32.h"  //for setI2Sfreq()
 
 class AudioOutputI2SQuad_F32 : public AudioStream_F32
 {
 public:
 	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { begin(); }
-	AudioOutputI2S_F32(const AudioSettings_F32 &settings) : AudioStream_F32(2, inputQueueArray)
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(2, inputQueueArray)
 	{ 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
@@ -51,9 +52,9 @@ public:
 	virtual void update(void);
 	void begin(void);
 	friend class AudioInputI2SQuad_F32;
-	static void convert_f32_to_i16( float32_t *p_f32, int16_t *p_i16, int len) ;
-	static void convert_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
-	static void convert_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
+	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
+	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
+	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
 protected: 
 	static void config_i2s(void);
 	static audio_block_f32_t *block_ch1_1st;

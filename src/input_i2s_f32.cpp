@@ -256,15 +256,15 @@ void AudioInputI2S_F32::isr_32(void)
 }
 
 #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
-void AudioInputI2S_F32::convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) {
-	for (int i=0; i<len; i++) { *p_f32++ = ((float32_t)(*p_i16++)) * I16_TO_F32_NORM_FACTOR; }
+void AudioInputI2S_F32::scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) {
+	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i16++) * I16_TO_F32_NORM_FACTOR); }
 }
 #define I24_TO_F32_NORM_FACTOR (1.192093037616377e-07)   //which is 1/(2^23 - 1)
-void AudioInputI2S_F32::convert_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
+void AudioInputI2S_F32::scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i24++) * I24_TO_F32_NORM_FACTOR); }
 }
 #define I32_TO_F32_NORM_FACTOR (4.656612875245797e-10)   //which is 1/(2^31 - 1)
-void AudioInputI2S_F32::convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
+void AudioInputI2S_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
 }
 
@@ -314,8 +314,8 @@ void AudioInputI2S_F32::convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, 
 		}
 		if (out_left_f32 != NULL) {
 			//convert int16 to float 32
-			convert_i16_to_f32(out_left->data, out_left_f32->data, audio_block_samples);
-			convert_i16_to_f32(out_right->data, out_right_f32->data, audio_block_samples);
+			scale_i16_to_f32(out_left->data, out_left_f32->data, audio_block_samples);
+			scale_i16_to_f32(out_right->data, out_right_f32->data, audio_block_samples);
 			
 			//prepare to transmit
 			update_counter++;
@@ -385,8 +385,8 @@ void AudioInputI2S_F32::update(void)
 		__enable_irq();
 		
 		//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
-		convert_i32_to_f32(out_left_f32->data, out_left_f32->data, audio_block_samples);
-		convert_i32_to_f32(out_right_f32->data, out_right_f32->data,audio_block_samples);
+		scale_i32_to_f32(out_left_f32->data, out_left_f32->data, audio_block_samples);
+		scale_i32_to_f32(out_right_f32->data, out_right_f32->data,audio_block_samples);
 		//float32_t *foo_left = &(out_left_f32->data[0]);
 		//float32_t *foo_right = &(out_right_f32->data[0]);
 		//for (int i=0; i<audio_block_samples; i++) {
@@ -396,7 +396,7 @@ void AudioInputI2S_F32::update(void)
 		//	(*foo_right++) *= I24_TO_F32_NORM_FACTOR;
 		//}
 	
-		//prepare to transmit
+		//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 		update_counter++;
 		out_left_f32->id = update_counter;
 		out_right_f32->id = update_counter;

@@ -42,7 +42,7 @@
 //
 //And, a post on how to compute the frac and div portions?  I haven't checked the code presented in this post:
 //https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=188812&viewfull=1#post188812
-float setI2SFreq(const float freq_Hz) {
+float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
 	int freq = (int)freq_Hz;
   typedef struct {
     uint8_t mult;
@@ -408,16 +408,16 @@ void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio
 
 }
 
-void AudioOutputI2S_F32::convert_f32_to_i16(float32_t *p_f32, int16_t *p_i16, int len) {
-	for (int i=0; i<len; i++) { *p_i16++ = max(-32768,min(32768,(int16_t)((*p_f32++) * 32768.f))); }
+void AudioOutputI2S_F32::scale_f32_to_i16(float32_t *p_f32, float32_t *p_i16, int len) {
+	for (int i=0; i<len; i++) { *p_i16++ = max(-32767,min(32767,(*p_f32++) * 32767.f)); }
 }
 #define F32_TO_I24_NORM_FACTOR (8388607)   //which is 2^23-1
-void AudioOutputI2S_F32::convert_f32_to_i24( float32_t *p_f32, float32_t *p_i24, int len) {
+void AudioOutputI2S_F32::scale_f32_to_i24( float32_t *p_f32, float32_t *p_i24, int len) {
 	for (int i=0; i<len; i++) { *p_i24++ = max(-F32_TO_I24_NORM_FACTOR,min(F32_TO_I24_NORM_FACTOR,(*p_f32++) * F32_TO_I24_NORM_FACTOR)); }
 }
 #define F32_TO_I32_NORM_FACTOR (2147483647)   //which is 2^31-1
 //define F32_TO_I32_NORM_FACTOR (8388607)   //which is 2^23-1
-void AudioOutputI2S_F32::convert_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) {
+void AudioOutputI2S_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) {
 	for (int i=0; i<len; i++) { *p_i32++ = max(-F32_TO_I32_NORM_FACTOR,min(F32_TO_I32_NORM_FACTOR,(*p_f32++) * F32_TO_I32_NORM_FACTOR)); }
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
 }
@@ -442,9 +442,9 @@ void AudioOutputI2S_F32::update(void)
 		//Serial.print("AudioOutputI2S_F32: audio_block_samples = ");
 		//Serial.println(audio_block_samples);
 	
-		//convert F32 to Int16
+		//scale F32 to Int32
 		block_f32_scaled = AudioStream_F32::allocate_f32();
-		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		//now process the data blocks
 		__disable_irq();
@@ -468,9 +468,9 @@ void AudioOutputI2S_F32::update(void)
 	
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
 	if (block_f32) {
-		//convert F32 to Int16
+		//scale F32 to Int32
 		block_f32_scaled = AudioStream_F32::allocate_f32();
-		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		__disable_irq();
 		if (block_right_1st == NULL) {

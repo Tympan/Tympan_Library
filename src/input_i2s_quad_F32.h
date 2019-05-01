@@ -49,9 +49,9 @@ public:
 		begin(); 
 	}
 	virtual void update(void);
-	static void convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) ;
-	static void convert_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
-	static void convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
+	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
+	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
+	static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void);
 	//void begin(bool);
 	int get_isOutOfMemory(void) { return flag_out_of_memory; }
@@ -61,10 +61,10 @@ protected:
 	static DMAChannel dma;
 	static void isr(void);
 private:
-	static audio_block_t *block_ch1;
-	static audio_block_t *block_ch2;
-	static audio_block_t *block_ch3;
-	static audio_block_t *block_ch4;
+	static audio_block_f32_t *block_ch1;
+	static audio_block_f32_t *block_ch2;
+	static audio_block_f32_t *block_ch3;
+	static audio_block_f32_t *block_ch4;
 	static float sample_rate_Hz;
 	static int audio_block_samples;
 	static uint16_t block_offset;

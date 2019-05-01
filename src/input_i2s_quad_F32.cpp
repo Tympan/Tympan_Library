@@ -44,8 +44,8 @@ bool AudioInputI2SQuad_F32::update_responsibility = false;
 DMAChannel AudioInputI2SQuad_F32::dma(false);
 int AudioInputI2SQuad_F32::flag_out_of_memory = 0;
 
-float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
+float AudioInputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
+int AudioInputI2SQuad_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
 #define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2SQuad_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
 
@@ -56,8 +56,8 @@ void AudioInputI2SQuad_F32::begin(void)
 {
 	dma.begin(true); // Allocate the DMA channel first
 
-	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz;  //these were given in the AudioSettings in the Contructor
-	AudioOutputI2S_F32::audio_block_samples = audio_block_samples;//these were given in the AudioSettings in the Contructor
+	AudioOutputI2SQuad_F32::sample_rate_Hz = sample_rate_Hz;  //these were given in the AudioSettings in the Contructor
+	AudioOutputI2SQuad_F32::audio_block_samples = audio_block_samples;//these were given in the AudioSettings in the Contructor
 	
 	// TODO: should we set & clear the I2S_RCSR_SR bit here?
 	AudioOutputI2SQuad_F32::config_i2s();
@@ -125,7 +125,7 @@ void AudioInputI2SQuad_F32::isr(void)
 	
 	if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
 		offset = AudioInputI2SQuad_F32::block_offset;
-		if (offset <= audio_block_samples/2) {
+		if (offset <= ((uint32_t)audio_block_samples/2)) {
 			AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
 			dest1_f32 = &(block_ch1->data[offset]);
 			dest2_f32 = &(block_ch2->data[offset]);
@@ -143,15 +143,15 @@ void AudioInputI2SQuad_F32::isr(void)
 }
 
 #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
-void AudioInputI2SQuad_F32::convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) {
-	for (int i=0; i<len; i++) { *p_f32++ = ((float32_t)(*p_i16++)) * I16_TO_F32_NORM_FACTOR; }
+void AudioInputI2SQuad_F32::scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) {
+	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i16++) * I16_TO_F32_NORM_FACTOR); }
 }
 #define I24_TO_F32_NORM_FACTOR (1.192093037616377e-07)   //which is 1/(2^23 - 1)
-void AudioInputI2SQuad_F32::convert_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
+void AudioInputI2SQuad_F32::scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i24++) * I24_TO_F32_NORM_FACTOR); }
 }
 #define I32_TO_F32_NORM_FACTOR (4.656612875245797e-10)   //which is 1/(2^31 - 1)
-void AudioInputI2SQuad_F32::convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
+void AudioInputI2SQuad_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
 }
 
@@ -168,7 +168,7 @@ void AudioInputI2SQuad_F32::update(void)
 	new4 = AudioStream_F32::allocate_f32();
 	// but if any fails, allocate none
 	if (!new1 || !new2 || !new3 || !new4) {
-		flag_out_of_memroy = 1;
+		flag_out_of_memory = 1;
 		if (new1) {
 			AudioStream_F32::release(new1);
 			new1 = NULL;
@@ -201,7 +201,13 @@ void AudioInputI2SQuad_F32::update(void)
 		block_offset = 0;
 		__enable_irq();
 		
-		//prepare to transmit
+		//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
+		scale_i32_to_f32(out1->data, out1->data, audio_block_samples);
+		scale_i32_to_f32(out2->data, out2->data, audio_block_samples);
+		scale_i32_to_f32(out3->data, out3->data, audio_block_samples);
+		scale_i32_to_f32(out4->data, out4->data, audio_block_samples);
+		
+		//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 		update_counter++;
 		out1->id = update_counter;
 		out2->id = update_counter;

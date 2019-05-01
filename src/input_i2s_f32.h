@@ -49,9 +49,9 @@ public:
 		begin(); 
 	}
 	virtual void update(void);
-	static void convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) ;
-	static void convert_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
-	static void convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
+	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
+	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
+	static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void);
 	void begin(bool);
 	void sub_begin_i32(void);
