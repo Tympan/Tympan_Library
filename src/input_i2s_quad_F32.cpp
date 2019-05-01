@@ -47,7 +47,7 @@ int AudioInputI2SQuad_F32::flag_out_of_memory = 0;
 float AudioInputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioInputI2SQuad_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
-#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2SQuad_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
+#define I2S_BUFFER_TO_USE_BYTES ((AudioInputI2SQuad_F32::audio_block_samples)*2*sizeof(i2s_rx_buffer[0]))
 
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)

@@ -64,6 +64,7 @@ protected:
 	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr(void);
+	void receiveScaleAndShuffleBlocks(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint16_t &);
 private:
 	static audio_block_f32_t *block_ch1_2nd;
 	static audio_block_f32_t *block_ch2_2nd;

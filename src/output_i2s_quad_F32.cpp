@@ -53,16 +53,17 @@ uint16_t  AudioOutputI2SQuad_F32::ch3_offset = 0;
 uint16_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
 //audio_block_f32_t * AudioOutputI2SQuad_F32::inputQueueArray[4];
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
-DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*2];
+DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*2];  //pack 2 int16s into 1 int32 to make dense, so 4 channels = 4*(audio_block_samples/2)
 DMAChannel AudioOutputI2SQuad_F32::dma(false);
 
 //static const uint32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0};
 static const float32_t zerodata[AUDIO_BLOCK_SAMPLES/2] = {0};
 
+//initialize some static variables.  Likely get overwritten by constructor.
 float AudioOutputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioOutputI2SQuad_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
-#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2SQuad_F32::audio_block_samples*sizeof(i2s_tx_buffer[0]))
+#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*2*sizeof(i2s_tx_buffer[0]))
 
 
 void AudioOutputI2SQuad_F32::begin(void)
@@ -84,6 +85,8 @@ void AudioOutputI2SQuad_F32::begin(void)
 	dma.TCD->SOFF = 2;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1) | DMA_TCD_ATTR_DMOD(3);
 	dma.TCD->NBYTES_MLNO = 4;
+	Serial.print("sizeof(i2s_tx_buffer) = "); Serial.println(sizeof(i2s_tx_buffer));
+	Serial.print("I2S_BUFFER_TO_USE_BYTES = "); Serial.println(I2S_BUFFER_TO_USE_BYTES);
 	//dma.TCD->SLAST = -sizeof(i2s_tx_buffer); //orig
 	dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
 	dma.TCD->DADDR = &I2S0_TDR0;
@@ -119,7 +122,7 @@ void AudioOutputI2SQuad_F32::isr(void)
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	//if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) { //orig
-	if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //variable audio block length
+	if (saddr < (uint32_t)(i2s_tx_buffer + (I2S_BUFFER_TO_USE_BYTES / 2))) { //variable audio block length
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
 		//dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES]; //orig
@@ -141,8 +144,8 @@ void AudioOutputI2SQuad_F32::isr(void)
 	//for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {	//original
 	for (int i=0; i < audio_block_samples/2; i++) {
 		*dest++ = (int16_t) (*src1++); //hopefully the float32 src1 data was pre-scaled in the update() method
-		*dest++ = (int16_t) (*src3++);
 		*dest++ = (int16_t) (*src2++);
+		*dest++ = (int16_t) (*src3++);
 		*dest++ = (int16_t) (*src4++);
 	}
 //#endif
@@ -152,8 +155,8 @@ void AudioOutputI2SQuad_F32::isr(void)
 			AudioOutputI2SQuad_F32::ch1_offset = audio_block_samples/2;
 		} else {
 			AudioOutputI2SQuad_F32::ch1_offset = 0;
-			AudioStream_F32::release(block_ch1_1st);
-			AudioOutputI2SQuad_F32::block_ch1_1st = block_ch1_2nd;
+			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch1_1st);
+			AudioOutputI2SQuad_F32::block_ch1_1st = AudioOutputI2SQuad_F32::block_ch1_2nd;
 			AudioOutputI2SQuad_F32::block_ch1_2nd = NULL;
 		}
 	}
@@ -162,8 +165,8 @@ void AudioOutputI2SQuad_F32::isr(void)
 			AudioOutputI2SQuad_F32::ch2_offset = audio_block_samples/2;
 		} else {
 			AudioOutputI2SQuad_F32::ch2_offset = 0;
-			AudioStream_F32::release(block_ch2_1st);
-			AudioOutputI2SQuad_F32::block_ch2_1st = block_ch2_2nd;
+			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch2_1st);
+			AudioOutputI2SQuad_F32::block_ch2_1st = AudioOutputI2SQuad_F32::block_ch2_2nd;
 			AudioOutputI2SQuad_F32::block_ch2_2nd = NULL;
 		}
 	}
@@ -172,8 +175,8 @@ void AudioOutputI2SQuad_F32::isr(void)
 			AudioOutputI2SQuad_F32::ch3_offset = audio_block_samples/2;
 		} else {
 			AudioOutputI2SQuad_F32::ch3_offset = 0;
-			AudioStream_F32::release(block_ch3_1st);
-			AudioOutputI2SQuad_F32::block_ch3_1st = block_ch3_2nd;
+			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch3_1st);
+			AudioOutputI2SQuad_F32::block_ch3_1st = AudioOutputI2SQuad_F32::block_ch3_2nd;
 			AudioOutputI2SQuad_F32::block_ch3_2nd = NULL;
 		}
 	}
@@ -182,8 +185,8 @@ void AudioOutputI2SQuad_F32::isr(void)
 			AudioOutputI2SQuad_F32::ch4_offset = audio_block_samples/2;
 		} else {
 			AudioOutputI2SQuad_F32::ch4_offset = 0;
-			AudioStream_F32::release(block_ch4_1st);
-			AudioOutputI2SQuad_F32::block_ch4_1st = block_ch4_2nd;
+			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch4_1st);
+			AudioOutputI2SQuad_F32::block_ch4_1st = AudioOutputI2SQuad_F32::block_ch4_2nd;
 			AudioOutputI2SQuad_F32::block_ch4_2nd = NULL;
 		}
 	}
@@ -204,114 +207,62 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
 }
 
-void AudioOutputI2SQuad_F32::update(void)
+void AudioOutputI2SQuad_F32::receiveScaleAndShuffleBlocks(const int chan,  //this is not changed upon return
+		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint16_t &ch_offset) //all three of these are changed upon return  
 {
-	audio_block_f32_t *block_f32, *block_f32_scaled, *tmp;
-
-	block_f32 = receiveReadOnly_f32(0); // channel 1
+	//Receive the incoming audio blocks
+	audio_block_f32_t *block_f32 = receiveReadOnly_f32(chan); // channel 1
+	
+	//is it valid?
 	if (block_f32) {
-		if (block_f32->length != audio_block_samples) {
+		//it is valid.  now process it.
+		
+		/* if (block_f32->length != audio_block_samples) {
 			Serial.print("AudioOutputI2SQuad_F32: *** WARNING ***: audio_block says len = ");
 			Serial.print(block_f32->length);
 			Serial.print(", but I2S settings want it to be = ");
 			Serial.println(audio_block_samples);
-		}
+		} */
 	
 		//scale F32 to Int16
-		block_f32_scaled = AudioStream_F32::allocate_f32();
+		audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
 		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
+		//shuffle between the two buffers that the isr() routines looks for
 		__disable_irq();
-		if (block_ch1_1st == NULL) {
-			block_ch1_1st = block_f32_scaled;
-			ch1_offset = 0;
+		if (block_1st == NULL) {
+			block_1st = block_f32_scaled;
+			ch_offset = 0;
 			__enable_irq();
-		} else if (block_ch1_2nd == NULL) {
-			block_ch1_2nd = block_f32_scaled;
+		} else if (block_2nd == NULL) {
+			block_2nd = block_f32_scaled;
 			__enable_irq();
 		} else {
-			tmp = block_ch1_1st;
-			block_ch1_1st = block_ch1_2nd;
-			block_ch1_2nd = block_f32_scaled;
-			ch1_offset = 0;
+			audio_block_f32_t *tmp = block_1st;
+			block_1st = block_2nd;
+			block_2nd = block_f32_scaled;
+			ch_offset = 0;
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		transmit(block_f32,0); AudioStream_F32::release(block_f32);
+		transmit(block_f32,chan); AudioStream_F32::release(block_f32);	
 	}
-	block_f32 = receiveReadOnly_f32(1); // channel 2
-	if (block_f32) {
-		//scale F32 to Int16
-		block_f32_scaled = AudioStream_F32::allocate_f32();
-		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		
-		__disable_irq();
-		if (block_ch2_1st == NULL) {
-			block_ch2_1st = block_f32_scaled;
-			ch2_offset = 0;
-			__enable_irq();
-		} else if (block_ch2_2nd == NULL) {
-			block_ch2_2nd = block_f32_scaled;
-			__enable_irq();
-		} else {
-			tmp = block_ch2_1st;
-			block_ch2_1st = block_ch2_2nd;
-			block_ch2_2nd = block_f32_scaled;
-			ch2_offset = 0;
-			__enable_irq();
-			release(tmp);
-			AudioStream_F32::release(tmp);
-		}
-		transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
-	}
-	block_f32 = receiveReadOnly_f32(2); // channel 3
-	if (block_f32) {
-		//scale F32 to Int16
-		block_f32_scaled = AudioStream_F32::allocate_f32();
-		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
 
-		__disable_irq();
-		if (block_ch3_1st == NULL) {
-			block_ch3_1st = block_f32_scaled;
-			ch3_offset = 0;
-			__enable_irq();
-		} else if (block_ch3_2nd == NULL) {
-			block_ch3_2nd = block_f32_scaled;
-			__enable_irq();
-		} else {
-			tmp = block_ch3_1st;
-			block_ch3_1st = block_ch3_2nd;
-			block_ch3_2nd = block_f32_scaled;
-			ch3_offset = 0;
-			__enable_irq();
-			AudioStream_F32::release(tmp);
-		}
-		transmit(block_f32,2);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
-	}
-	block_f32 = receiveReadOnly_f32(3); // channel 4
-	if (block_f32) {
-		//scale F32 to Int16
-		block_f32_scaled = AudioStream_F32::allocate_f32();
-		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+}
 
-		__disable_irq();
-		if (block_ch4_1st == NULL) {
-			block_ch4_1st = block_f32;
-			ch4_offset = 0;
-			__enable_irq();
-		} else if (block_ch4_2nd == NULL) {
-			block_ch4_2nd = block_f32;
-			__enable_irq();
-		} else {
-			tmp = block_ch4_1st;
-			block_ch4_1st = block_ch4_2nd;
-			block_ch4_2nd = block_f32;
-			ch4_offset = 0;
-			__enable_irq();
-			AudioStream_F32::release(tmp);
-		}
-	}
-	transmit(block_f32,3);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+//This routine receives an audio block of F32 data from audio processing
+//routines.  This routine will receive one block from each audio channel.
+//This routine must receive that data, scale it (not convert it) to I16 fullscale
+//from F32 fullscale, and stage it (via the correct pointers) so that the isr
+// can find all four audio blocks, cast them to I16, interleave them, and put them
+//into the DMA that the I2S peripheral pulls from.
+void AudioOutputI2SQuad_F32::update(void)
+{
+	//process (shuffle data) for each audio channel
+	receiveScaleAndShuffleBlocks(0, block_ch1_1st, block_ch1_2nd, ch1_offset);
+	receiveScaleAndShuffleBlocks(1, block_ch2_1st, block_ch2_2nd, ch2_offset);
+	receiveScaleAndShuffleBlocks(2, block_ch3_1st, block_ch3_2nd, ch3_offset);
+	receiveScaleAndShuffleBlocks(3, block_ch4_1st, block_ch4_2nd, ch4_offset);
 }
 
 
