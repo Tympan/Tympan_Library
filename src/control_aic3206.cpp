@@ -19,7 +19,7 @@
 #  define AIC_FS                                                     44100UL
 #endif
 
-//define AIC_BITS                                                        16
+//#define AIC_BITS                                                        16
 #define AIC_BITS                                                        32
 
 #define AIC_I2S_SLAVE                                                     1
@@ -664,7 +664,7 @@ int AudioControlAIC3206::readMicDetect(void) {
 	return curVal;
 }
 
-void computeFirstOrderHPCoeff_F32(float cutoff_Hz, float fs_Hz, float *coeff) {
+void AudioControlAIC3206::computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff) {
 	//cutoff_Hz is the cutoff frequency in Hz
 	//fs_Hz is the sample rate in Hz
 	
@@ -679,10 +679,11 @@ void computeFirstOrderHPCoeff_F32(float cutoff_Hz, float fs_Hz, float *coeff) {
 	coeff[2] = (1.0 - A) / (1.0 + A);  //second a coefficient (Matlab sign convention)
 	coeff[2] = -coeff[2];  //flip to be TI sign convention
 }
+
 #define CONST_2_31_m1  (2147483647)   //2^31 - 1
-void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
+void AudioControlAIC3206::computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
 	float coeff_f32[3];
-	computeFirstOrderHPCoeff_F32(cutoff_Hz,fs_Hz,coeff_f32);
+	computeFirstOrderHPCoeff_f32(cutoff_Hz,fs_Hz,coeff_f32);
 	for (int i=0; i<3; i++) {
 		//scale
 		coeff_f32[i] *= (float)CONST_2_31_m1;
