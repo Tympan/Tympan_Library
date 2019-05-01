@@ -23,6 +23,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+  
+ /* 
+ *  Extended by Chip Audette, OpenAudio, May 2019
+ *  Converted to F32 and to variable audio block length
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
+ */
 
 #ifndef output_i2s_f32_h_
 #define output_i2s_f32_h_

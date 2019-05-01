@@ -23,28 +23,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+ 
+ /* 
+ *  Extended by Chip Audette, OpenAudio, May 2019
+ *  Converted to F32 and to variable audio block length
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
+ */
 
 #include <Arduino.h>
-#include "input_i2s_quad.h"
-#include "output_i2s_quad.h"
+#include "input_i2s_quad_f32.h"
+#include "output_i2s_quad_f32.h"
 
 DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*2];
-audio_block_t * AudioInputI2SQuad::block_ch1 = NULL;
-audio_block_t * AudioInputI2SQuad::block_ch2 = NULL;
-audio_block_t * AudioInputI2SQuad::block_ch3 = NULL;
-audio_block_t * AudioInputI2SQuad::block_ch4 = NULL;
-uint16_t AudioInputI2SQuad::block_offset = 0;
-bool AudioInputI2SQuad::update_responsibility = false;
-DMAChannel AudioInputI2SQuad::dma(false);
+audio_block_f32_t * AudioInputI2SQuad_F32::block_ch1 = NULL;
+audio_block_f32_t * AudioInputI2SQuad_F32::block_ch2 = NULL;
+audio_block_f32_t * AudioInputI2SQuad_F32::block_ch3 = NULL;
+audio_block_f32_t * AudioInputI2SQuad_F32::block_ch4 = NULL;
+uint16_t AudioInputI2SQuad_F32::block_offset = 0;
+bool AudioInputI2SQuad_F32::update_responsibility = false;
+DMAChannel AudioInputI2SQuad_F32::dma(false);
+int AudioInputI2SQuad_F32::flag_out_of_memory = 0;
+
+float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
+int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
+
+#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2SQuad_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
+
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 
-void AudioInputI2SQuad::begin(void)
+void AudioInputI2SQuad_F32::begin(void)
 {
 	dma.begin(true); // Allocate the DMA channel first
 
+	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz;  //these were given in the AudioSettings in the Contructor
+	AudioOutputI2S_F32::audio_block_samples = audio_block_samples;//these were given in the AudioSettings in the Contructor
+	
 	// TODO: should we set & clear the I2S_RCSR_SR bit here?
-	AudioOutputI2SQuad::config_i2s();
+	AudioOutputI2SQuad_F32::config_i2s();
 
 	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0
 #if defined(__MK20DX256__)
@@ -52,6 +68,9 @@ void AudioInputI2SQuad::begin(void)
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	CORE_PIN38_CONFIG = PORT_PCR_MUX(4); // pin 38, PTC11, I2S0_RXD1
 #endif
+
+#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2SQuad_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
+
 
 #if defined(KINETISK)
 	dma.TCD->SADDR = &I2S0_RDR0;
@@ -61,9 +80,14 @@ void AudioInputI2SQuad::begin(void)
 	dma.TCD->SLAST = 0;
 	dma.TCD->DADDR = i2s_rx_buffer;
 	dma.TCD->DOFF = 2;
-	dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 4;
-	dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);
-	dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 4;
+	//dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 4; //original quad
+	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer			//original quad
+	//dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 4; //original quad
+	
+	dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES/ 4; //new quad, enable diff len audio blocks
+	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;			//new quad, enable diff len audio blocks
+	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 4;//new quad, enable diff len audio blocks
+	
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 #endif
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_RX);
@@ -75,77 +99,95 @@ void AudioInputI2SQuad::begin(void)
 	dma.attachInterrupt(isr);
 }
 
-void AudioInputI2SQuad::isr(void)
+void AudioInputI2SQuad_F32::isr(void)
 {
 	uint32_t daddr, offset;
-	const int16_t *src;
-	int16_t *dest1, *dest2, *dest3, *dest4;
+	const int16_t *src;  //*end;
+	float32_t *dest1_f32, *dest2_f32, *dest3_f32, *dest4_f32;
 
 	//digitalWriteFast(3, HIGH);
 	daddr = (uint32_t)(dma.TCD->DADDR);
 	dma.clearInterrupt();
 
-	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
+	//if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) { //orig quad
+	if (daddr < (uint32_t)i2s_rx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //new quad, enable diff audio block lengths
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
-		if (update_responsibility) update_all();
+		src = (int16_t *)&i2s_rx_buffer[audio_block_samples];
+		//end = (int16_t *)&i2s_rx_buffer[audio_block_samples*2];
+		if (AudioInputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
 		src = (int16_t *)&i2s_rx_buffer[0];
+		//end = (int16_t *)&i2s_rx_buffer[audio_block_samples];
 	}
-	if (block_ch1) {
-		offset = block_offset;
-		if (offset <= AUDIO_BLOCK_SAMPLES/2) {
-			block_offset = offset + AUDIO_BLOCK_SAMPLES/2;
-			dest1 = &(block_ch1->data[offset]);
-			dest2 = &(block_ch2->data[offset]);
-			dest3 = &(block_ch3->data[offset]);
-			dest4 = &(block_ch4->data[offset]);
-			for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
-				*dest1++ = *src++;
-				*dest3++ = *src++;
-				*dest2++ = *src++;
-				*dest4++ = *src++;
+	
+	if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
+		offset = AudioInputI2SQuad_F32::block_offset;
+		if (offset <= audio_block_samples/2) {
+			AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
+			dest1_f32 = &(block_ch1->data[offset]);
+			dest2_f32 = &(block_ch2->data[offset]);
+			dest3_f32 = &(block_ch3->data[offset]);
+			dest4_f32 = &(block_ch4->data[offset]);
+			for (int i=0; i < audio_block_samples/2; i++) {
+				*dest1_f32++ = (float32_t) *src++; //will need to scale this in update()
+				*dest3_f32++ = (float32_t) *src++;//will need to scale this in update()
+				*dest2_f32++ = (float32_t) *src++;//will need to scale this in update()
+				*dest4_f32++ = (float32_t) *src++;//will need to scale this in update()
 			}
 		}
 	}
 	//digitalWriteFast(3, LOW);
 }
 
+#define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
+void AudioInputI2SQuad_F32::convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) {
+	for (int i=0; i<len; i++) { *p_f32++ = ((float32_t)(*p_i16++)) * I16_TO_F32_NORM_FACTOR; }
+}
+#define I24_TO_F32_NORM_FACTOR (1.192093037616377e-07)   //which is 1/(2^23 - 1)
+void AudioInputI2SQuad_F32::convert_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
+	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i24++) * I24_TO_F32_NORM_FACTOR); }
+}
+#define I32_TO_F32_NORM_FACTOR (4.656612875245797e-10)   //which is 1/(2^31 - 1)
+void AudioInputI2SQuad_F32::convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
+	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
+}
 
-void AudioInputI2SQuad::update(void)
+
+void AudioInputI2SQuad_F32::update(void)
 {
-	audio_block_t *new1, *new2, *new3, *new4;
-	audio_block_t *out1, *out2, *out3, *out4;
+	audio_block_f32_t *new1, *new2, *new3, *new4;
+	audio_block_f32_t *out1, *out2, *out3, *out4;
 
 	// allocate 4 new blocks
-	new1 = allocate();
-	new2 = allocate();
-	new3 = allocate();
-	new4 = allocate();
+	new1 = AudioStream_F32::allocate_f32();
+	new2 = AudioStream_F32::allocate_f32();
+	new3 = AudioStream_F32::allocate_f32();
+	new4 = AudioStream_F32::allocate_f32();
 	// but if any fails, allocate none
 	if (!new1 || !new2 || !new3 || !new4) {
+		flag_out_of_memroy = 1;
 		if (new1) {
-			release(new1);
+			AudioStream_F32::release(new1);
 			new1 = NULL;
 		}
 		if (new2) {
-			release(new2);
+			AudioStream_F32::release(new2);
 			new2 = NULL;
 		}
 		if (new3) {
-			release(new3);
+			AudioStream_F32::release(new3);
 			new3 = NULL;
 		}
 		if (new4) {
-			release(new4);
+			AudioStream_F32::release(new4);
 			new4 = NULL;
 		}
 	}
 	__disable_irq();
-	if (block_offset >= AUDIO_BLOCK_SAMPLES) {
+	if (block_offset >= audio_block_samples) {
 		// the DMA filled 4 blocks, so grab them and get the
 		// 4 new blocks to the DMA, as quickly as possible
 		out1 = block_ch1;
@@ -158,15 +200,20 @@ void AudioInputI2SQuad::update(void)
 		block_ch4 = new4;
 		block_offset = 0;
 		__enable_irq();
-		// then transmit the DMA's former blocks
-		transmit(out1, 0);
-		release(out1);
-		transmit(out2, 1);
-		release(out2);
-		transmit(out3, 2);
-		release(out3);
-		transmit(out4, 3);
-		release(out4);
+		
+		//prepare to transmit
+		update_counter++;
+		out1->id = update_counter;
+		out2->id = update_counter;
+		out3->id = update_counter;
+		out4->id = update_counter;
+		
+		// then transmit and release the DMA's former blocks
+		AudioStream_F32::transmit(out1, 0);		AudioStream_F32::release(out1);
+		AudioStream_F32::transmit(out2, 1);		AudioStream_F32::release(out2);
+		AudioStream_F32::transmit(out3, 2);		AudioStream_F32::release(out3);
+		AudioStream_F32::transmit(out4, 3);		AudioStream_F32::release(out4);
+		
 	} else if (new1 != NULL) {
 		// the DMA didn't fill blocks, but we allocated blocks
 		if (block_ch1 == NULL) {
@@ -181,10 +228,10 @@ void AudioInputI2SQuad::update(void)
 		} else {
 			// the DMA already has blocks, doesn't need these
 			__enable_irq();
-			release(new1);
-			release(new2);
-			release(new3);
-			release(new4);
+			AudioStream_F32::release(new1);
+			AudioStream_F32::release(new2);
+			AudioStream_F32::release(new3);
+			AudioStream_F32::release(new4);
 		}
 	} else {
 		// The DMA didn't fill blocks, and we could not allocate
@@ -196,7 +243,7 @@ void AudioInputI2SQuad::update(void)
 
 #else // not __MK20DX256__
 
-void AudioInputI2SQuad::begin(void)
+void AudioInputI2SQuad_F32::begin(void)
 {
 }
 

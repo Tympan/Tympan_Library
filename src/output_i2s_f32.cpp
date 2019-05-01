@@ -23,7 +23,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+ 
+ /* 
+ *  Extended by Chip Audette, OpenAudio, May 2019
+ *  Converted to F32 and to variable audio block length
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
+ */
+ 
 #include "output_i2s_f32.h"
 //#include "input_i2s_f32.h"
 //include "memcpy_audio.h"
@@ -318,7 +324,7 @@ void AudioOutputI2S_F32::sub_begin_i32(void) {
 
 void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio block
 {
-	int32_t *dest;
+	int32_t *dest;  //int32 is the data type being sent to the audio codec
 	audio_block_f32_t *blockL, *blockR;
 	uint32_t saddr; 
 	uint32_t offsetL, offsetR;

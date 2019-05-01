@@ -23,7 +23,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+ 
+ /* 
+ *  Extended by Chip Audette, OpenAudio, May 2019
+ *  Converted to F32 and to variable audio block length
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
+ */
+ 
 #include "input_i2s_f32.h"
 #include "output_i2s_f32.h"
 #include <arm_math.h>
@@ -58,8 +64,8 @@ void AudioInputI2S_F32::begin(void) {
 void AudioInputI2S_F32::begin(bool transferUsing32bit) {
 	dma.begin(true); // Allocate the DMA channel first
 	
-	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz;
-	AudioOutputI2S_F32::audio_block_samples = audio_block_samples;
+	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz; //these were given in the AudioSettings in the contructor
+	AudioOutputI2S_F32::audio_block_samples = audio_block_samples;//these were given in the AudioSettings in the contructor
 	
 	//setup I2S parameters
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit);
