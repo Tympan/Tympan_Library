@@ -53,7 +53,7 @@ uint16_t  AudioOutputI2SQuad_F32::ch3_offset = 0;
 uint16_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
 //audio_block_f32_t * AudioOutputI2SQuad_F32::inputQueueArray[4];
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
-DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*2];  //pack 2 int16s into 1 int32 to make dense, so 4 channels = 4*(audio_block_samples/2)
+DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
 DMAChannel AudioOutputI2SQuad_F32::dma(false);
 
 //static const uint32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0};
@@ -106,7 +106,7 @@ void AudioOutputI2SQuad_F32::begin(void)
 	dma.attachInterrupt(isr);
 	
 	// change the I2S frequencies to make the requested sample rate
-	AudioOutputI2S_F32::setI2SFreq(AudioOutputI2SQuad_F32::sample_rate_Hz);
+	//AudioOutputI2S_F32::setI2SFreq(AudioOutputI2SQuad_F32::sample_rate_Hz);
 	
 	enabled = 1;
 #endif
@@ -142,7 +142,7 @@ void AudioOutputI2SQuad_F32::isr(void)
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
 		//dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES]; //orig
-		dest = (int16_t *)&i2s_tx_buffer[audio_block_samples]; //new
+		dest = (int16_t *)(&i2s_tx_buffer[audio_block_samples]); //new
 		if (AudioOutputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
 		dest = (int16_t *)i2s_tx_buffer;
