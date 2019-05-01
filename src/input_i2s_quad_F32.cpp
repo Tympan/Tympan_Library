@@ -69,8 +69,6 @@ void AudioInputI2SQuad_F32::begin(void)
 	CORE_PIN38_CONFIG = PORT_PCR_MUX(4); // pin 38, PTC11, I2S0_RXD1
 #endif
 
-#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2SQuad_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
-
 
 #if defined(KINETISK)
 	dma.TCD->SADDR = &I2S0_RDR0;

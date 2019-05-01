@@ -112,6 +112,21 @@ void AudioOutputI2SQuad_F32::begin(void)
 #endif
 }
 
+void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint16_t &ch_offset)
+{
+	if (block_1st) {
+		if (ch_offset == 0) {
+			ch_offset = audio_block_samples/2;
+		} else {
+			ch_offset = 0;
+			AudioStream_F32::release(block_1st);
+			block_1st = block_2nd;
+			block_2nd = NULL;
+		}
+	}
+}
+
+
 void AudioOutputI2SQuad_F32::isr(void)
 {
 	uint32_t saddr;
@@ -119,10 +134,11 @@ void AudioOutputI2SQuad_F32::isr(void)
 	const float32_t *zeros = (const float32_t *)zerodata;
 	int16_t *dest; //int16 is data type being sent to the audio codec
 
+	//update the dma and get pointer for the destination tx buffer
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	//if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) { //orig
-	if (saddr < (uint32_t)(i2s_tx_buffer + (I2S_BUFFER_TO_USE_BYTES / 2))) { //variable audio block length
+	if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //variable audio block length
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
 		//dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES]; //orig
@@ -132,6 +148,7 @@ void AudioOutputI2SQuad_F32::isr(void)
 		dest = (int16_t *)i2s_tx_buffer;
 	}
 
+	//get pointers for source data to copy into the tx buffer
 	src1 = (block_ch1_1st) ? block_ch1_1st->data + ch1_offset : zeros;
 	src2 = (block_ch2_1st) ? block_ch2_1st->data + ch2_offset : zeros;
 	src3 = (block_ch3_1st) ? block_ch3_1st->data + ch3_offset : zeros;
@@ -150,46 +167,12 @@ void AudioOutputI2SQuad_F32::isr(void)
 	}
 //#endif
 
-	if (AudioOutputI2SQuad_F32::block_ch1_1st) {
-		if (AudioOutputI2SQuad_F32::ch1_offset == 0) {
-			AudioOutputI2SQuad_F32::ch1_offset = audio_block_samples/2;
-		} else {
-			AudioOutputI2SQuad_F32::ch1_offset = 0;
-			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch1_1st);
-			AudioOutputI2SQuad_F32::block_ch1_1st = AudioOutputI2SQuad_F32::block_ch1_2nd;
-			AudioOutputI2SQuad_F32::block_ch1_2nd = NULL;
-		}
-	}
-	if (AudioOutputI2SQuad_F32::block_ch2_1st) {
-		if (AudioOutputI2SQuad_F32::ch2_offset == 0) {
-			AudioOutputI2SQuad_F32::ch2_offset = audio_block_samples/2;
-		} else {
-			AudioOutputI2SQuad_F32::ch2_offset = 0;
-			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch2_1st);
-			AudioOutputI2SQuad_F32::block_ch2_1st = AudioOutputI2SQuad_F32::block_ch2_2nd;
-			AudioOutputI2SQuad_F32::block_ch2_2nd = NULL;
-		}
-	}
-	if (AudioOutputI2SQuad_F32::block_ch3_1st) {
-		if (AudioOutputI2SQuad_F32::ch3_offset == 0) {
-			AudioOutputI2SQuad_F32::ch3_offset = audio_block_samples/2;
-		} else {
-			AudioOutputI2SQuad_F32::ch3_offset = 0;
-			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch3_1st);
-			AudioOutputI2SQuad_F32::block_ch3_1st = AudioOutputI2SQuad_F32::block_ch3_2nd;
-			AudioOutputI2SQuad_F32::block_ch3_2nd = NULL;
-		}
-	}
-	if (AudioOutputI2SQuad_F32::block_ch4_1st) {
-		if (AudioOutputI2SQuad_F32::ch4_offset == 0) {
-			AudioOutputI2SQuad_F32::ch4_offset = audio_block_samples/2;
-		} else {
-			AudioOutputI2SQuad_F32::ch4_offset = 0;
-			AudioStream_F32::release(AudioOutputI2SQuad_F32::block_ch4_1st);
-			AudioOutputI2SQuad_F32::block_ch4_1st = AudioOutputI2SQuad_F32::block_ch4_2nd;
-			AudioOutputI2SQuad_F32::block_ch4_2nd = NULL;
-		}
-	}
+	//now, shuffle the 1st and 2nd data block for each channel
+	isr_shuffleDataBlocks(block_ch1_1st, block_ch1_2nd, ch1_offset);
+	isr_shuffleDataBlocks(block_ch2_1st, block_ch2_2nd, ch2_offset);
+	isr_shuffleDataBlocks(block_ch3_1st, block_ch3_2nd, ch3_offset);
+	isr_shuffleDataBlocks(block_ch4_1st, block_ch4_2nd, ch4_offset);
+	
 }
 
 
@@ -207,7 +190,7 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
 }
 
-void AudioOutputI2SQuad_F32::receiveScaleAndShuffleBlocks(const int chan,  //this is not changed upon return
+void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
 		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint16_t &ch_offset) //all three of these are changed upon return  
 {
 	//Receive the incoming audio blocks
@@ -259,10 +242,10 @@ void AudioOutputI2SQuad_F32::receiveScaleAndShuffleBlocks(const int chan,  //thi
 void AudioOutputI2SQuad_F32::update(void)
 {
 	//process (shuffle data) for each audio channel
-	receiveScaleAndShuffleBlocks(0, block_ch1_1st, block_ch1_2nd, ch1_offset);
-	receiveScaleAndShuffleBlocks(1, block_ch2_1st, block_ch2_2nd, ch2_offset);
-	receiveScaleAndShuffleBlocks(2, block_ch3_1st, block_ch3_2nd, ch3_offset);
-	receiveScaleAndShuffleBlocks(3, block_ch4_1st, block_ch4_2nd, ch4_offset);
+	update_1chan(0, block_ch1_1st, block_ch1_2nd, ch1_offset);
+	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset);
+	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset);
+	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset);
 }
 
 
