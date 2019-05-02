@@ -19,6 +19,7 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
 #define TYMPAN_REV_D1 (TympanRev::D1)
 #define TYMPAN_REV_D2 (TympanRev::D2)
 #define TYMPAN_REV_D3 (TympanRev::D3)
+#define TYMPAN_REV_D4 (TympanRev::D4)
 #define TYMPAN_REV_D (TympanRev::D)
 
 //the Tympan is a Teensy audio library "control" object
