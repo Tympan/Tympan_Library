@@ -67,7 +67,7 @@ private:
 	static audio_block_f32_t *block_ch4;
 	static float sample_rate_Hz;
 	static int audio_block_samples;
-	static uint16_t block_offset;
+	static uint32_t block_offset;
 	static int flag_out_of_memory;
 	unsigned long update_counter=0;
 };

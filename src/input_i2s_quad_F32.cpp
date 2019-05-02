@@ -34,12 +34,12 @@
 #include "input_i2s_quad_f32.h"
 #include "output_i2s_quad_f32.h"
 
-DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*2];
+DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2*4];
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch1 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch2 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch3 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch4 = NULL;
-uint16_t AudioInputI2SQuad_F32::block_offset = 0;
+uint32_t AudioInputI2SQuad_F32::block_offset = 0;
 bool AudioInputI2SQuad_F32::update_responsibility = false;
 DMAChannel AudioInputI2SQuad_F32::dma(false);
 int AudioInputI2SQuad_F32::flag_out_of_memory = 0;
@@ -47,7 +47,7 @@ int AudioInputI2SQuad_F32::flag_out_of_memory = 0;
 float AudioInputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioInputI2SQuad_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
-#define I2S_BUFFER_TO_USE_BYTES ((AudioInputI2SQuad_F32::audio_block_samples)*2*sizeof(i2s_rx_buffer[0]))
+#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*(sizeof(i2s_rx_buffer[0])/2))
 
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
@@ -121,9 +121,11 @@ void AudioInputI2SQuad_F32::isr(void)
 		//end = (int16_t *)&i2s_rx_buffer[audio_block_samples];
 	}
 	
+	//De-interleave and copy to destination audio buffers.  
+	//Note the unexpected order!!! Chan 1, 3, 2, 4
 	if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
 		offset = AudioInputI2SQuad_F32::block_offset;
-		if (offset <= ((uint32_t)audio_block_samples/2)) {
+		if (offset <= (uint32_t)(audio_block_samples/2)) {
 			AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
 			dest1_f32 = &(block_ch1->data[offset]);
 			dest2_f32 = &(block_ch2->data[offset]);
@@ -136,7 +138,9 @@ void AudioInputI2SQuad_F32::isr(void)
 				*dest4_f32++ = (float32_t) *src++;//will need to scale this in update()
 			}
 		}
-	}
+	} //else {
+	//	Serial.println("Quad: ISR: do not have all data blocks.");
+	//}
 	//digitalWriteFast(3, LOW);
 }
 
@@ -167,6 +171,7 @@ void AudioInputI2SQuad_F32::update(void)
 	// but if any fails, allocate none
 	if (!new1 || !new2 || !new3 || !new4) {
 		flag_out_of_memory = 1;
+		//Serial.println("Quad In: out of memory.");
 		if (new1) {
 			AudioStream_F32::release(new1);
 			new1 = NULL;
@@ -185,7 +190,7 @@ void AudioInputI2SQuad_F32::update(void)
 		}
 	}
 	__disable_irq();
-	if (block_offset >= audio_block_samples) {
+	if (block_offset >= (uint32_t)audio_block_samples) {
 		// the DMA filled 4 blocks, so grab them and get the
 		// 4 new blocks to the DMA, as quickly as possible
 		out1 = block_ch1;
@@ -200,10 +205,10 @@ void AudioInputI2SQuad_F32::update(void)
 		__enable_irq();
 		
 		//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
-		scale_i32_to_f32(out1->data, out1->data, audio_block_samples);
-		scale_i32_to_f32(out2->data, out2->data, audio_block_samples);
-		scale_i32_to_f32(out3->data, out3->data, audio_block_samples);
-		scale_i32_to_f32(out4->data, out4->data, audio_block_samples);
+		scale_i16_to_f32(out1->data, out1->data, audio_block_samples);
+		scale_i16_to_f32(out2->data, out2->data, audio_block_samples);
+		scale_i16_to_f32(out3->data, out3->data, audio_block_samples);
+		scale_i16_to_f32(out4->data, out4->data, audio_block_samples);
 		
 		//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 		update_counter++;
