@@ -43,7 +43,7 @@ class AudioOutputI2SQuad_F32 : public AudioStream_F32
 {
 public:
 	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { begin(); }
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(2, inputQueueArray)
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(4, inputQueueArray)
 	{ 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
@@ -64,17 +64,18 @@ protected:
 	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr(void);
-	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint16_t &);
-	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint16_t &);
+	static void isr_orig(void);
+	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
+	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
 private:
 	static audio_block_f32_t *block_ch1_2nd;
 	static audio_block_f32_t *block_ch2_2nd;
 	static audio_block_f32_t *block_ch3_2nd;
 	static audio_block_f32_t *block_ch4_2nd;
-	static uint16_t ch1_offset;
-	static uint16_t ch2_offset;
-	static uint16_t ch3_offset;
-	static uint16_t ch4_offset;
+	static uint32_t ch1_offset;
+	static uint32_t ch2_offset;
+	static uint32_t ch3_offset;
+	static uint32_t ch4_offset;
 	audio_block_f32_t *inputQueueArray[4];
 	static float sample_rate_Hz;
 	static int audio_block_samples;
