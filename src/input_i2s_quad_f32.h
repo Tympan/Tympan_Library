@@ -1,10 +1,3 @@
-/*
-	Extended to f32 data
-	Created: Chip Audette, OpenAudio, Feb 2017
-	
-	License: MIT License. Use at your own risk.
-*/
-
 /* Audio Library for Teensy 3.X
  * Copyright (c) 2014, Paul Stoffregen, paul@pjrc.com
  *
@@ -30,56 +23,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+ 
+ /* 
+ *  Extended by Chip Audette, OpenAudio, May 2019
+ *  Converted to F32 and to variable audio block length
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
+ */
+ 
+#ifndef _input_i2s_quad_f32_h_
+#define _input_i2s_quad_f32_h_
 
-#ifndef synth_pinknoise_f32_h_
-#define synth_pinknoise_f32_h_
 #include "Arduino.h"
-#include "AudioStream.h"
 #include "AudioStream_F32.h"
-#include "utility/dspinst.h"
-#include "AudioConvert_F32.h" //for convert_i16_to_f32
+#include "AudioStream.h"
+#include "DMAChannel.h"
 
-
-
-class AudioSynthNoisePink_F32 : public AudioStream_F32
+class AudioInputI2SQuad_F32 : public AudioStream_F32
 {
-//GUI: inputs:0, outputs:1 //this line used for automatic generation of GUI node
-//GUI: shortName:pinknoise  //this line used for automatic generation of GUI node
+//GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
-	AudioSynthNoisePink_F32() : AudioStream_F32(0, NULL) {
-		setDefaultValues();
-		enabled = 1;
-	}
-	AudioSynthNoisePink_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) {
-		setDefaultValues();
-		enabled = 1;
-	}
-	
-	void setDefaultValues() {
-		plfsr  = 0x5EED41F5 + instance_cnt++;
-		paccu  = 0;
-		pncnt  = 0;
-		pinc   = 0x0CCC;
-		pdec   = 0x0CCC;
-	}	
-	void amplitude(float n) {
-		if (n < 0.0) n = 0.0;
-		else if (n > 1.0) n = 1.0;
-		level = (int32_t)(n * 65536.0);
+	AudioInputI2SQuad_F32(void) : AudioStream_F32(0, NULL) { begin(); }
+	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { 
+		sample_rate_Hz = settings.sample_rate_Hz;
+		audio_block_samples = settings.audio_block_samples;
+		begin(); 
 	}
 	virtual void update(void);
-	int enabled = 0;
+	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
+	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
+	static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
+	void begin(void);
+	//void begin(bool);
+	int get_isOutOfMemory(void) { return flag_out_of_memory; }
+	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
+protected:
+	static bool update_responsibility;
+	static DMAChannel dma;
+	static void isr(void);
 private:
-	static const uint8_t pnmask[256];
-	static const int32_t pfira[64];
-	static const int32_t pfirb[64];
-	static int16_t instance_cnt;
-	int32_t plfsr;		// linear feedback shift register
-	int32_t pinc;		// increment for all noise sources (bits)
-	int32_t pdec;		// decrement for all noise sources
-	int32_t paccu;		// accumulator
-	uint8_t pncnt;		// overflowing counter as index to pnmask[]
-	int32_t level;		// 0=off, 65536=max
+	static audio_block_f32_t *block_ch1;
+	static audio_block_f32_t *block_ch2;
+	static audio_block_f32_t *block_ch3;
+	static audio_block_f32_t *block_ch4;
+	static float sample_rate_Hz;
+	static int audio_block_samples;
+	static uint32_t block_offset;
+	static int flag_out_of_memory;
+	unsigned long update_counter=0;
 };
+
 
 #endif
