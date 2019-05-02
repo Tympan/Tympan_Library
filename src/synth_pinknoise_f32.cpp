@@ -43,7 +43,6 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #include "synth_pinknoise_f32.h"
-#include "input_i2s_f32.h" //for the audio_convert_i16_to_f32 routine
 
 int16_t AudioSynthNoisePink_F32::instance_cnt = 0;
 
@@ -155,7 +154,7 @@ void AudioSynthNoisePink_F32::update(void)
 	plfsr = lfsr;
 	
 	//convert int16 to f32
-	AudioInputI2S_F32::convert_i16_to_f32(block->data,block_f32->data,block_f32->length);
+	AudioConvert_I16toF32::convert_i16_to_f32(block->data,block_f32->data,block_f32->length);
 	
 	AudioStream_F32::transmit(block_f32);
 	AudioStream_F32::release(block_f32);

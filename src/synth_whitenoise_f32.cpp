@@ -32,7 +32,8 @@
  */
 
 #include "synth_whitenoise_f32.h"
-#include "input_i2s_f32.h" //for the audio_convert_i16_to_f32 routine
+
+
 
 // Park-Miller-Carta Pseudo-Random Number Generator
 // http://www.firstpr.com.au/dsp/rand31/
@@ -112,7 +113,7 @@ void AudioSynthNoiseWhite_F32::update(void)
 	seed = lo;
 	
 	//convert int16 to f32
-	AudioInputI2S_F32::convert_i16_to_f32(block->data,block_f32->data,block_f32->length);
+	AudioConvert_I16toF32::convert_i16_to_f32(block->data,block_f32->data,block_f32->length);
 	
 	AudioStream_F32::transmit(block_f32);
 	AudioStream_F32::release(block_f32);

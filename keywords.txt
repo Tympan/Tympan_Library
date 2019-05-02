@@ -48,6 +48,7 @@ AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1
 AudioFilterTimeWeighting_F32	KEYWORD1
 AudioInputI2S_F32	KEYWORD1
+AudioInputI2SQuad_F32	KEYWORD1
 AudioInputUSB_F32	KEYWORD1
 AudioMixer4_F32		KEYWORD1
 gain			KEYWORD2
@@ -64,6 +65,7 @@ setScale		KEYWORD2
 getScale		KEYWORD2
 
 AudioOutputI2S_F32	KEYWORD1
+AudioOutputI2SQuad_F32	KEYWORD1
 AudioOutputUSB_F32	KEYWORD1
 AudioPlayQueue_F32	KEYWORD1
 AudioRecordQueue_F32	KEYWORD1
@@ -113,6 +115,7 @@ TympanRev		KEYWORD1
 TympanPins		KEYWORD1
 Tympan			KEYWORD1
 TympanBase		KEYWORD1
+beginBothSerial		KEYWORD2
 setAmberLED		KEYWORD2
 setRedLED		KEYWORD2
 readPotentiometer	KEYWORD2

@@ -30,49 +30,55 @@
  *	The F32 conversion is under the MIT License.  Use at your own risk.
  */
  
-#ifndef _input_i2s_f32_h_
-#define _input_i2s_f32_h_
+#ifndef output_i2s_quad_f32_h_
+#define output_i2s_quad_f32_h_
 
 #include "Arduino.h"
 #include "AudioStream_F32.h"
-#include "AudioStream.h"
+//include "AudioStream.h"
 #include "DMAChannel.h"
+#include "output_i2s_f32.h"  //for setI2Sfreq()
 
-class AudioInputI2S_F32 : public AudioStream_F32
+class AudioOutputI2SQuad_F32 : public AudioStream_F32
 {
-//GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
-	AudioInputI2S_F32(void) : AudioStream_F32(0, NULL) { begin(); } //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
-	AudioInputI2S_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { 
+	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { begin(); }
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(4, inputQueueArray)
+	{ 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
-		begin(); 
+		begin(); 	
 	}
 	virtual void update(void);
-	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
-	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
-	static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void);
-	void begin(bool);
-	void sub_begin_i32(void);
-	//void sub_begin_i16(void);
-	int get_isOutOfMemory(void) { return flag_out_of_memory; }
-	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
-	//friend class AudioOutputI2S_F32;
-protected:	
-	AudioInputI2S_F32(int dummy): AudioStream_F32(0, NULL) {} // to be used only inside AudioInputI2Sslave !!
+	friend class AudioInputI2SQuad_F32;
+	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
+	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
+	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
+protected: 
+	static void config_i2s(void);
+	static audio_block_f32_t *block_ch1_1st;
+	static audio_block_f32_t *block_ch2_1st;
+	static audio_block_f32_t *block_ch3_1st;
+	static audio_block_f32_t *block_ch4_1st;
 	static bool update_responsibility;
 	static DMAChannel dma;
-	static void isr_32(void);
+	static void isr(void);
+	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
+	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
 private:
-	static audio_block_f32_t *block_left_f32;
-	static audio_block_f32_t *block_right_f32;
+	static audio_block_f32_t *block_ch1_2nd;
+	static audio_block_f32_t *block_ch2_2nd;
+	static audio_block_f32_t *block_ch3_2nd;
+	static audio_block_f32_t *block_ch4_2nd;
+	static uint32_t ch1_offset;
+	static uint32_t ch2_offset;
+	static uint32_t ch3_offset;
+	static uint32_t ch4_offset;
+	audio_block_f32_t *inputQueueArray[4];
 	static float sample_rate_Hz;
 	static int audio_block_samples;
-	static uint16_t block_offset;
-	static int flag_out_of_memory;
-	unsigned long update_counter=0;
+	volatile uint8_t enabled = 1;
 };
-
 
 #endif

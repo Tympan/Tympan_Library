@@ -30,7 +30,9 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3 };
 
 class TympanPins { //Teensy 3.6 Pin Numbering
 	public:
-		TympanPins(void) {}; //use default pins
+		TympanPins(void) {
+			setTympanRev(TympanRev::D);  //assume RevD is default
+		}; 
 		TympanPins(TympanRev _tympanRev) {
 			setTympanRev(_tympanRev);
 		}
@@ -355,6 +357,10 @@ class TympanBase : public AudioControlAIC3206, public Print
 
 class Tympan : public TympanBase {
 	public:
+		Tympan(void) : TympanBase() {
+			TympanPins myPins;  //assumes defaults set by TympanPins
+			TympanBase::setupPins(myPins);
+		}
 		Tympan(const TympanRev &_myRev) : TympanBase() {
 			//initialize the TympanBase
 			TympanPins myPins(_myRev);
