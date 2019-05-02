@@ -39,7 +39,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		void setTympanRev(TympanRev _tympanRev) {
 			tympanRev = _tympanRev;
 			switch (tympanRev) {
-				case (TympanRev::A) :
+				case (TympanRev::A) :    //Earliest prototypes...like RevC but with errors
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 21;  //PTD6
 					potentiometer = 15;  //PTC0
@@ -51,7 +51,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					reversePot = true;
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
 					break;
-				case (TympanRev::C) :
+				case (TympanRev::C) :   //First released Tympan hardware.  Sold in blue case.
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 21;  //PTD6
 					potentiometer = 15;  //PTC0
@@ -62,7 +62,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 2;  //PTD0
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
 					break;
-				case (TympanRev::D0) : case (TympanRev::D1) :
+				case (TympanRev::D0) : case (TympanRev::D1) :  //RevD development...first with BC127 BT module
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 15; //PTC0
@@ -74,7 +74,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
-				case (TympanRev::D2) :
+				case (TympanRev::D2) :   //RevD development...includes on-board preamp
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 42;	// was 35;  //PTC8
 					potentiometer = 20;	// PTA16	was 15; //PTC0
@@ -87,10 +87,10 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
-				case (TympanRev::D3) : case (TympanRev::D) :
+				case (TympanRev::D3) : case (TympanRev::D) :   //Built for OpenTact
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
-					potentiometer = 39; //A20...this is the only difference from RevD2
+					potentiometer = 39; //A20
 					amberLED = 36; //PTC9
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
@@ -101,6 +101,21 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
 					break;
+				case (TympanRev::D4) :   //RevD release candidate
+					//Teensy 3.6 Pin Numbering
+					resetAIC = 35;  //PTC8
+					potentiometer = 39; //A20
+					amberLED = 36; //PTC9
+					redLED = 10;  //PTC4
+					BT_nReset = 34;  //PTE25, active LOW reset
+					BT_REGEN = 31;  //must pull high to enable BC127
+					BT_PIO0 = 56;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
+					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
+					enableStereoExtMicBias = 20; //PTD5
+					AIC_Shield_enableStereoExtMicBias = 41; 					
+					BT_serial_speed = 9600;
+					Rev_Test = 44;
+					break;					
 			}
 		}
 		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
@@ -119,6 +134,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int Rev_Test = NOT_A_FEATURE;
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
+		int AIC_Shield_enableStereoExtMicBias = NOT_A_FEATURE;
 		usb_serial_class *USB_Serial = &Serial; //true for Rev_A/C/D
 		HardwareSerial *BT_Serial = &Serial1; //true for Rev_A/C/D
 		int BT_serial_speed = 115200; //true for Rev_A/C
