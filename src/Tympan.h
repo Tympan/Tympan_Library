@@ -88,13 +88,13 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 				case (TympanRev::D3) : case (TympanRev::D) :
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
-					potentiometer = 39; //A20...this is the only difference from RevD2
+					potentiometer = 39; //A20...this is the only difference from RevD2 JM: NOT THE ONLY DIFFERENCE
 					amberLED = 36; //PTC9
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
-					BT_PIO0 = A10;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
-					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
+					BT_PIO0 = 56; // JM: was A10;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
+					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: Yes, it's BT_PIO5
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
