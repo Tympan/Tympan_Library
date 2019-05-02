@@ -10,7 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
-enum class TympanRev { A, C, D, D0, D1, D2, D3 };
+enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
 
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (TympanRev::A)
