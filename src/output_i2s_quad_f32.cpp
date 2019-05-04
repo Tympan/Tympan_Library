@@ -184,7 +184,8 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 }
 
 void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
-		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset) //all three of these are changed upon return  
+		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset,
+		audio_block_f32_t *&block_f32_scaled) //all three of these are changed upon return  
 {
 	//Receive the incoming audio blocks
 	audio_block_f32_t *block_f32 = receiveReadOnly_f32(chan); // channel 1
@@ -203,7 +204,7 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 		} 
 	
 		//scale F32 to Int16
-		audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
+		//audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
 		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		//shuffle between the two buffers that the isr() routines looks for
@@ -223,7 +224,7 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		transmit(block_f32,chan); AudioStream_F32::release(block_f32);	
+		AudioStream_F32::transmit(block_f32,chan); AudioStream_F32::release(block_f32);	
 	}
 
 }
@@ -236,11 +237,26 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 //into the DMA that the I2S peripheral pulls from.
 void AudioOutputI2SQuad_F32::update(void)
 {
+	//pre-allocate working memory for each of the four channels...will be released
+	//inside the update_1chan function when it is really free
+	audio_block_f32_t *foo1_f32 = AudioStream_F32::allocate_f32();
+	audio_block_f32_t *foo2_f32 = AudioStream_F32::allocate_f32();
+	audio_block_f32_t *foo3_f32 = AudioStream_F32::allocate_f32();
+	audio_block_f32_t *foo4_f32 = AudioStream_F32::allocate_f32();
+	if ((!foo1_f32) || (!foo2_f32) || (!foo3_f32) || (!foo4_f32)) {
+		//enough mem was not available!  clear out and return
+		if (foo1_f32) AudioStream_F32::release(foo1_f32);
+		if (foo2_f32) AudioStream_F32::release(foo2_f32);
+		if (foo3_f32) AudioStream_F32::release(foo3_f32);
+		if (foo4_f32) AudioStream_F32::release(foo4_f32);
+		return;
+	}
+	
 	//process (shuffle data) for each audio channel
-	update_1chan(0, block_ch1_1st, block_ch1_2nd, ch1_offset);
-	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset);
-	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset);
-	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset);
+	update_1chan(0, block_ch1_1st, block_ch1_2nd, ch1_offset, foo1_f32);
+	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset, foo2_f32);
+	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset, foo3_f32);
+	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset, foo4_f32);
 }
 
 
