@@ -48,6 +48,7 @@ public:
 		audio_block_samples = settings.audio_block_samples;
 		begin(); 
 	}
+	
 	virtual void update(void);
 	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
 	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
@@ -64,6 +65,7 @@ protected:
 	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr_32(void);
+	virtual void update_1chan(int, audio_block_f32_t *&);
 private:
 	static audio_block_f32_t *block_left_f32;
 	static audio_block_f32_t *block_right_f32;

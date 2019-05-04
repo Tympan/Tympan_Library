@@ -474,7 +474,7 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
 	} else {
 		//this branch should never get called, but if it does, let's release the buffer that was never used
 		AudioStream_F32::release(block_f32_scaled);
@@ -503,7 +503,7 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
 	} else {
 		//this branch should never get called, but if it does, let's release the buffer that was never used
 		AudioStream_F32::release(block_f32_scaled);
