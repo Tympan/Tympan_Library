@@ -12,7 +12,7 @@ install:
     - pip install -U platformio
 
 script:
-    - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino --verbose
     - platformio ci --project-conf=platformio.ini examples/01-Basic/BasicGain/BasicGain.ino
     - platformio ci --project-conf=platformio.ini examples/01-Basic/ChangeSampleRate/ChangeSampleRate.ino
     - platformio ci --project-conf=platformio.ini examples/01-Basic/PrintCPUandMemoryUsage/PrintCPUandMemoryUsage.ino
