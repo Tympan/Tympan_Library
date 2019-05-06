@@ -38,6 +38,7 @@ public:
 		enabled = 0;
 	}
 	virtual void update(void);
+	virtual void update(audio_block_f32_t *);
 	bool getOverrun(void) { return overrun; }
 	void clearOverrun(void) { overrun = false; }
 private:

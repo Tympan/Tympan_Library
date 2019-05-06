@@ -161,6 +161,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     
 	void setMaxdB(float32_t _maxdB) { maxdB = _maxdB; }
 	void setKneeCompressor_dBSPL(float32_t _knee) { tk = _knee; }
+	float getKneeCompressor_dBSPL(void) { return tk; }
 	void setCompRatio(float32_t _cr) {cr = _cr; }
 	void setKneeLimiter_dBSPL(float32_t _bolt) { bolt = _bolt; }
 

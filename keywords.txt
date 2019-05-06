@@ -18,7 +18,7 @@ AudioCalcGainWDRC2_F32	KEYWORD1
 AudioCalcEnvelope_F32	KEYWORD1
 AudioCalcLevel_F32	KEYWORD1
 
-AudioControlTLV320AIC3206	KEYWORD1
+AudioControlAIC3206	KEYWORD1
 inputSelect		KEYWORD2
 setMicBias		KEYWORD2
 volume			KEYWORD2
@@ -50,14 +50,16 @@ AudioFilterTimeWeighting_F32	KEYWORD1
 AudioInputI2S_F32	KEYWORD1
 AudioInputUSB_F32	KEYWORD1
 AudioMixer4_F32		KEYWORD1
+gain			KEYWORD2
+mute			KEYWORD2
+switchChannel		KEYWORD2
 AudioMixer8_F32		KEYWORD1
 AudioMathAdd_F32	KEYWORD1
 AudioMathMultiply_F32	KEYWORD1
 AudioMathOffset_F32	KEYWORD1
 setOffset		KEYWORD2
 getOffset		KEYWORD2
-
-AudioMatScale_F32	KEYWORD1
+AudioMathScale_F32	KEYWORD1
 setScale		KEYWORD2
 getScale		KEYWORD2
 
@@ -70,6 +72,10 @@ AudioSettings_F32	KEYWORD1
 sample_rate_Hz		KEYWORD2
 audio_block_samples	KEYWORD2
 
+AudioSwitch4_F32	KEYWORD1
+setChannel		KEYWORD2
+
+
 AudioSynthNoiseWhite_F32	KEYWORD1
 AudioSynthNoisePink_F32	KEYWORD1
 AudioSynthWaveform_F32	KEYWORD1
@@ -79,6 +85,10 @@ AudioSynthWaveformSine_F32	KEYWORD1
 frequency		KEYWORD2
 phase			KEYWORD2
 amplitude		KEYWORD2
+
+AudioSynthToneSweep_F32	KEYWORD1
+play			KEYWORD2
+isPlaying		KEYWORD2
 
 AudioTestSignalGenerator_F32	KEYWORD1
 AudioTestSignalMeasurement_F32	KEYWORD1
@@ -99,16 +109,15 @@ getNBuffBlocks		KEYWORD2
 getFFTObject		KEYWORD2
 IFFT_Overlapped_F32	KEYWORD1
 
+TympanRev		KEYWORD1
 TympanPins		KEYWORD1
-TympanPins_RevC		KEYWORD1
-TympanPins_RevD		KEYWORD1
+Tympan			KEYWORD1
 TympanBase		KEYWORD1
 setAmberLED		KEYWORD2
 setRedLED		KEYWORD2
 readPotentiometer	KEYWORD2
 getTympanRev		KEYWORD2
-TympanRevC		KEYWORD1
-TympanRevD		KEYWORD1
+
 
 
 

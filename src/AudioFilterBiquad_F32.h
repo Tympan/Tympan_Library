@@ -52,7 +52,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	}
 	
 	virtual float32_t getSampleRate_Hz(void) { return sampleRate_Hz; }
-	virtual void setSampleRate_Hz(float _fs_Hz) { sampleRate_Hz = _fs_Hz; }
+	virtual void setSampleRate_Hz(float32_t _fs_Hz) { sampleRate_Hz = _fs_Hz; }
     
     virtual void setBlockDC(void) {
       //https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html#ga8e73b69a788e681a61bccc8959d823c5
@@ -91,8 +91,12 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
       begin(coeff,n_sos);
     }
 	
+	
+	// //////////////////////// From Audio EQ Cookbook
+	
+	//This setCoefficients method sets the coefficients given the equations below from the AudioEQ Cookbook
 	//note: stage is currently ignored
-	virtual void setCoefficients(int stage, float c[]) {
+	virtual void setCoefficients(int stage, float32_t c[]) {
 		if (stage > 0) {
 			if (Serial) {
 				Serial.println(F("AudioFilterBiquad_F32: setCoefficients: *** ERROR ***"));
@@ -105,119 +109,44 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 		coeff[0] = c[0];
 		coeff[1] = c[1];
 		coeff[2] = c[2];
-		coeff[3] = -c[3];
-		coeff[4] = -c[4];
+		coeff[3] = -c[3];  //notice the sign flip!  from Matlab convention to ARM convention
+		coeff[4] = -c[4]; //notice the sign flip!  from Matlab convention to ARM convention
 		begin(coeff);
 	}
 	
-		// Compute common filter functions
+	// Compute common filter functions...all second order filters...all with Matlab convention on a1 and a2 coefficients
 	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
-	//void setLowpass(uint32_t stage, float frequency, float q = 0.7071) {
-	void setLowpass(uint32_t stage, float frequency, float q = 0.7071) {
-		cutoff_Hz = frequency;
-		
-		//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
-		double sinW0 = sin(w0);
-		double alpha = sinW0 / ((double)q * 2.0);
-		double cosW0 = cos(w0);
-		//double scale = 1073741824.0 / (1.0 + alpha);
-		double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
-		/* b0 */ coeff[0] = ((1.0 - cosW0) / 2.0) * scale;
-		/* b1 */ coeff[1] = (1.0 - cosW0) * scale;
-		/* b2 */ coeff[2] = coeff[0];
-		/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;
-		/* a2 */ coeff[4] = (1.0 - alpha) * scale;
-		
-		setCoefficients(stage, coeff);
+	void calcLowpass(float32_t freq_Hz, float32_t q, float32_t *c);
+	void calcHighpass(float32_t freq_Hz, float32_t q, float32_t *c);
+	void calcBandpass(float32_t freq_Hz, float32_t q, float32_t *c);
+	void calcNotch(float32_t freq_Hz, float32_t q, float32_t *c);
+	void calcLowShelf(float32_t freq_Hz, float32_t gain, float32_t slope, float32_t *c);
+	void calcHighShelf(float32_t freq_Hz, float32_t gain, float32_t slope, float32_t *c);
+	
+	//set the filter coefficients without the caller having to explicitly handle the coefficients
+	void setLowpass(uint32_t stage, float32_t freq_Hz, float32_t q = 0.7071) {
+		calcLowpass(freq_Hz, q, coeff);
+		setCoefficients(stage,coeff);
 	}
-	void setHighpass(uint32_t stage, float frequency, float q = 0.7071) {
-		cutoff_Hz = frequency;
-		
-    	//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
-		double sinW0 = sin(w0);
-		double alpha = sinW0 / ((double)q * 2.0);
-		double cosW0 = cos(w0);
-		double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
-		/* b0 */ coeff[0] = ((1.0 + cosW0) / 2.0) * scale;
-		/* b1 */ coeff[1] = -(1.0 + cosW0) * scale;
-		/* b2 */ coeff[2] = coeff[0];
-		/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;
-		/* a2 */ coeff[4] = (1.0 - alpha) * scale;
-		setCoefficients(stage, coeff);
+	void setHighpass(uint32_t stage, float32_t freq_Hz, float32_t q = 0.7071) {
+		calcHighpass(freq_Hz, q, coeff);
+		setCoefficients(stage,coeff);
 	}
-	void setBandpass(uint32_t stage, float frequency, float q = 1.0) {
-		//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
-		double sinW0 = sin(w0);
-		double alpha = sinW0 / ((double)q * 2.0);
-		double cosW0 = cos(w0);
-		double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
-		/* b0 */ coeff[0] = alpha * scale;
-		/* b1 */ coeff[1] = 0;
-		/* b2 */ coeff[2] = (-alpha) * scale;
-		/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;
-		/* a2 */ coeff[4] = (1.0 - alpha) * scale;
-		setCoefficients(stage, coeff);
+	void setBandpass(uint32_t stage, float32_t freq_Hz, float32_t q = 0.7071) {
+		calcBandpass(freq_Hz, q, coeff);
+		setCoefficients(stage,coeff);
 	}
-	void setNotch(uint32_t stage, float frequency, float q = 1.0) {
-		cutoff_Hz = frequency;
-		
-		//int coeff[5];
-		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
-		double sinW0 = sin(w0);
-		double alpha = sinW0 / ((double)q * 2.0);
-		double cosW0 = cos(w0);
-		double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
-		/* b0 */ coeff[0] = scale;
-		/* b1 */ coeff[1] = (-2.0 * cosW0) * scale;
-		/* b2 */ coeff[2] = coeff[0];
-		/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;
-		/* a2 */ coeff[4] = (1.0 - alpha) * scale;
-		setCoefficients(stage, coeff);
+	void setNotch(uint32_t stage, float32_t freq_Hz, float32_t q = 1.0) {
+		calcNotch(freq_Hz, q, coeff);
+		setCoefficients(stage,coeff);
 	}
-	void setLowShelf(uint32_t stage, float frequency, float gain, float slope = 1.0f) {
-		cutoff_Hz = frequency;
-				
-		//int coeff[5];
-		double a = pow(10.0, gain/40.0);
-		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
-		double sinW0 = sin(w0);
-		//double alpha = (sinW0 * sqrt((a+1/a)*(1/slope-1)+2) ) / 2.0;
-		double cosW0 = cos(w0);
-		//generate three helper-values (intermediate results):
-		double sinsq = sinW0 * sqrt( (pow(a,2.0)+1.0)*(1.0/slope-1.0)+2.0*a );
-		double aMinus = (a-1.0)*cosW0;
-		double aPlus = (a+1.0)*cosW0;
-		double scale = 1.0 / ( (a+1.0) + aMinus + sinsq);
-		/* b0 */ coeff[0] =		a *	( (a+1.0) - aMinus + sinsq	) * scale;
-		/* b1 */ coeff[1] =  2.0*a * ( (a-1.0) - aPlus  			) * scale;
-		/* b2 */ coeff[2] =		a * ( (a+1.0) - aMinus - sinsq 	) * scale;
-		/* a1 */ coeff[3] = -2.0*	( (a-1.0) + aPlus			) * scale;
-		/* a2 */ coeff[4] =  		( (a+1.0) + aMinus - sinsq	) * scale;
-		setCoefficients(stage, coeff);
+	void setLowShelf(uint32_t stage, float32_t freq_Hz, float32_t gain, float32_t slope = 1.0f) {
+		calcLowShelf(freq_Hz, gain, slope, coeff);
+		setCoefficients(stage,coeff);
 	}
-	void setHighShelf(uint32_t stage, float frequency, float gain, float slope = 1.0f) {
-		cutoff_Hz = frequency;
-				
-		//int coeff[5];
-		double a = pow(10.0, gain/40.0);
-		double w0 = frequency * (2 * 3.141592654 / sampleRate_Hz);
-		double sinW0 = sin(w0);
-		//double alpha = (sinW0 * sqrt((a+1/a)*(1/slope-1)+2) ) / 2.0;
-		double cosW0 = cos(w0);
-		//generate three helper-values (intermediate results):
-		double sinsq = sinW0 * sqrt( (pow(a,2.0)+1.0)*(1.0/slope-1.0)+2.0*a );
-		double aMinus = (a-1.0)*cosW0;
-		double aPlus = (a+1.0)*cosW0;
-		double scale = 1.0 / ( (a+1.0) - aMinus + sinsq);
-		/* b0 */ coeff[0] =		a *	( (a+1.0) + aMinus + sinsq	) * scale;
-		/* b1 */ coeff[1] = -2.0*a * ( (a-1.0) + aPlus  			) * scale;
-		/* b2 */ coeff[2] =		a * ( (a+1.0) + aMinus - sinsq 	) * scale;
-		/* a1 */ coeff[3] =  2.0*	( (a-1.0) - aPlus			) * scale;
-		/* a2 */ coeff[4] =  		( (a+1.0) - aMinus - sinsq	) * scale;
-		setCoefficients(stage, coeff);
+	void setHighShelf(uint32_t stage, float32_t freq_Hz, float32_t gain, float32_t slope = 1.0f) {
+		calcHighShelf(freq_Hz, gain, slope, coeff);
+		setCoefficients(stage,coeff);
 	}
     
     virtual void update(void);
@@ -226,7 +155,7 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
   protected:
     audio_block_f32_t *inputQueueArray[1];
     float32_t coeff[5 * IIR_MAX_STAGES]; //no filtering. actual filter coeff set later
-	float sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
+	float32_t sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
 	float32_t cutoff_Hz = -999;
   
     // pointer to current coefficients or NULL or FIR_PASSTHRU

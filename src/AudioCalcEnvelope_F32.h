@@ -108,6 +108,8 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
 	
 	void resetStates(void) { state_ppk = 1.0; }
 	float getCurrentLevel(void) { return state_ppk; } 
+	float getAttack_msec(void) { return given_attack_msec; }
+	float getRelease_msec(void) { return given_release_msec; }
   private:
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
 	float32_t sample_rate_Hz;

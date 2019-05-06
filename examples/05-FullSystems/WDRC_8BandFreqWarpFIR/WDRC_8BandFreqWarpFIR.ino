@@ -29,7 +29,7 @@ const int audio_block_samples = 16;  //do not make bigger than AUDIO_BLOCK_SAMPL
 AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-AudioControlTLV320AIC3206       audioHardware;            //controller for the Teensy Audio Board
+Tympan       					audioHardware(TympanRev::D);   //TympanRev::D or TympanRev::C
 AudioInputI2S_F32               i2s_in(audio_settings);        //Digital audio *from* the Teensy Audio Board ADC.
 AudioTestSignalGenerator_F32    audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 AudioFilterFreqWarpAllPassFIR_F32   freqWarpFilterBank(audio_settings);
@@ -41,8 +41,6 @@ AudioEffectCompWDRC_F32        compBroadband;     //here is the broadband compre
 AudioOutputI2S_F32              i2s_out(audio_settings);       //Digital audio *to* the Teensy Audio Board DAC.
 
 //complete the creation of the tester objects
-TympanPins                    tympPins(TYMPAN_REV_C);        //TYMPAN_REV_C or TYMPAN_REV_D
-TympanBase                    audioHardware(tympPins);
 AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_FIR(audio_settings);
 AudioControlTestAmpSweep_F32    ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32   freqSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);

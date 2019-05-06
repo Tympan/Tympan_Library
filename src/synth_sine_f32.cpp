@@ -36,8 +36,8 @@ void AudioSynthWaveformSine_F32::update(void)
 				inc = phase_increment;
 				for (i=0; i < block_length; i++) {
 					index = ph >> 24;
-					val1 = AudioWaveformSine[index];
-					val2 = AudioWaveformSine[index+1];
+					val1 = AudioWaveformSine_tympan[index];
+					val2 = AudioWaveformSine_tympan[index+1];
 					scale = (ph >> 8) & 0xFFFF;
 					val2 *= scale;
 					val1 *= 0x10000 - scale;

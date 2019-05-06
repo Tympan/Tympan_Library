@@ -23,7 +23,11 @@ void AudioCalcLevel_F32::update(void)
 
   //apply filter (from AudioFilterTimeWeighting)
   applyFilterInPlace(block->data, block->length);
-    
+  
+  //save last value
+  cur_value = block->data[(block->length)-1]; //get the last value
+  
+	
   //transmit the data
   AudioStream_F32::transmit(block); // send the IIR output
   AudioStream_F32::release(block);

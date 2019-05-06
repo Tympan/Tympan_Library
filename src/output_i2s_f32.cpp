@@ -33,6 +33,9 @@
 
 //Here's the function to change the sample rate of the system (via changing the clocking of the I2S bus)
 //https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=121365&viewfull=1#post121365
+//
+//And, a post on how to compute the frac and div portions?  I haven't checked the code presented in this post:
+//https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=188812&viewfull=1#post188812
 float setI2SFreq(const float freq_Hz) {
 	int freq = (int)freq_Hz;
   typedef struct {
@@ -436,7 +439,6 @@ void AudioOutputI2S_F32::update(void)
 		//convert F32 to Int16
 		block_f32_scaled = AudioStream_F32::allocate_f32();
 		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		AudioStream_F32::release(block_f32);
 		
 		//now process the data blocks
 		__disable_irq();
@@ -455,6 +457,7 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
+		transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
 	}
 	
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
@@ -462,7 +465,6 @@ void AudioOutputI2S_F32::update(void)
 		//convert F32 to Int16
 		block_f32_scaled = AudioStream_F32::allocate_f32();
 		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		AudioStream_F32::release(block_f32);
 		
 		__disable_irq();
 		if (block_right_1st == NULL) {
@@ -480,6 +482,8 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
+		
+		transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
 	}
 }
 

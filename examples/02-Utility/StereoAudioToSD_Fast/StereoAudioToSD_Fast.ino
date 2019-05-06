@@ -21,7 +21,7 @@
 
 //here are the libraries that we need
 #include "SDAudioWriter_SdFat.h" 
-#include <Tympan_Library.h>  //AudioControlTLV320AIC3206 lives here
+#include <Tympan_Library.h>  
 
 
 #define PRINT_OVERRUN_WARNING 1   //set to 1 to print a warning that the there's been a hiccup in the writing to the SD.
@@ -34,8 +34,7 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-TympanPins                tympPins(TYMPAN_REV_C);        //TYMPAN_REV_C or TYMPAN_REV_D
-TympanBase                audioHardware(tympPins);
+Tympan					  audioHardware(TympanRev::D);  //TympanRev::D or TympanRev::C
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC. 
 AudioRecordQueue_F32      queueLeft(audio_settings);     //gives access to audio data (will use for SD card)
 AudioRecordQueue_F32      queueRight(audio_settings);     //gives access to audio data (will use for SD card)
