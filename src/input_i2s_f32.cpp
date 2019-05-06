@@ -44,6 +44,7 @@ bool AudioInputI2S_F32::update_responsibility = false;
 DMAMEM static int32_t i2s_rx_buffer[2*AUDIO_BLOCK_SAMPLES];//minimum for stereo 32-bit transfers
 DMAChannel AudioInputI2S_F32::dma(false);
 int AudioInputI2S_F32::flag_out_of_memory = 0;
+unsigned long AudioInputI2S_F32::update_counter = 0;
 
 float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
@@ -202,6 +203,7 @@ void AudioInputI2S_F32::sub_begin_i32(void)
 
 void AudioInputI2S_F32::isr_32(void)
 {
+	static bool flag_beenSuccessfullOnce = false;
 	uint32_t daddr, offset;
 	const int32_t *src_i32, *end_i32;
 	//int16_t *dest_left, *dest_right;
@@ -221,6 +223,7 @@ void AudioInputI2S_F32::isr_32(void)
 		//end = (int32_t *)&i2s_rx_buffer_32[AUDIO_BLOCK_SAMPLES*2];
 		src_i32 = (int32_t *)&i2s_rx_buffer[audio_block_samples];	//WEA revised
 		end_i32 = (int32_t *)&i2s_rx_buffer[audio_block_samples*2];	//WEA revised
+		update_counter++; //let's increment the counter here to ensure that we get every ISR resulting in audio
 		if (AudioInputI2S_F32::update_responsibility) AudioStream_F32::update_all();
 		
 	} else {
@@ -252,6 +255,13 @@ void AudioInputI2S_F32::isr_32(void)
 				*dest_right_f32++ = (float32_t) *src_i32++;
 			} while (src_i32 < end_i32);
 		}
+		flag_beenSuccessfullOnce = true;
+	} else {
+		if (flag_beenSuccessfullOnce) {
+			//but we were not successful this time
+			Serial.println("Input I2S: isr_32: WARNING!!! Null memory block.");
+		}
+
 	}
 }
 
@@ -373,6 +383,7 @@ void AudioInputI2S_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, in
  
 void AudioInputI2S_F32::update(void)
 {
+	static bool flag_beenSuccessfullOnce = false;
 	audio_block_f32_t *new_left_f32=NULL, *new_right_f32=NULL, *out_left_f32=NULL, *out_right_f32=NULL;
 
 	// allocate 2 new blocks, but if one fails, allocate neither
@@ -384,7 +395,9 @@ void AudioInputI2S_F32::update(void)
 		if (new_right_f32) AudioStream_F32::release(new_right_f32);
 		new_left_f32 = NULL;  new_right_f32 = NULL;
 		flag_out_of_memory = 1;
-		//return;
+		if (flag_beenSuccessfullOnce) Serial.println("Input I2S: update(): WARNING!!! Out of Memory.");
+	} else {
+		flag_beenSuccessfullOnce = true;
 	}
 
 	__disable_irq();	
@@ -399,7 +412,7 @@ void AudioInputI2S_F32::update(void)
 		block_offset = 0;
 		__enable_irq();
 		
-		update_counter++;
+		//update_counter++; //I chose to update it in the ISR instead.
 		update_1chan(0,out_left_f32);  //uses audio_block_samples and update_counter
 		update_1chan(1,out_right_f32);  //uses audio_block_samples and update_counter
 		

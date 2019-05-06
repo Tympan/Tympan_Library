@@ -73,7 +73,7 @@ private:
 	static int audio_block_samples;
 	static uint16_t block_offset;
 	static int flag_out_of_memory;
-	unsigned long update_counter=0;
+	static unsigned long update_counter;
 };
 
 
