@@ -96,7 +96,8 @@ void SerialManager::respondToByte(char c) {
       myTympan.println("Received: Line-In on Jack");
       setConfiguration(INPUT_LINEIN_JACK);
       setButtonState("configPCB",false);
-      setButtonState("configHeadset",false);     
+      setButtonState("configHeadset",false);
+      break;	  
     case 'p':
       myTympan.println("Received: prepare SD for recording");
       //prepareSDforRecording();
