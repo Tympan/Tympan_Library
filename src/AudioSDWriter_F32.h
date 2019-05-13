@@ -31,7 +31,7 @@ class AudioSDWriter {
     };
     enum class WriteDataType { INT16 }; //in the future, maybe add FLOAT32
     virtual int setNumWriteChannels(int n) {
-      return numWriteChannels = max(1, min(n, 2));  //can be 1 or 2
+      return numWriteChannels = max(1, min(n, 4));  //can be 1, 2 or 4 (3 might work but its behavior is unknown)
     }
     virtual int getNumWriteChannels(void) {
       return numWriteChannels;
@@ -53,7 +53,7 @@ class AudioSDWriter {
 //   of the Teensy/Tympan audio processing paradigm.  For this class, the
 //   audio is given as float32 and written as int16
 class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
-  //GUI: inputs:2, outputs:0 //this line used for automatic generation of GUI node
+  //GUI: inputs:4, outputs:0 //this line used for automatic generation of GUI node
   public:
     AudioSDWriter_F32(void) :
       AudioSDWriter(),
@@ -118,6 +118,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       writeDataType = type;
       if (!buffSDWriter) {
         buffSDWriter = new BufferedSDWriter(serial_ptr, writeSizeBytes);
+		if (buffSDWriter) buffSDWriter->setNChanWAV(numWriteChannels);
         //allocateBuffer(); //use default buffer size...or comment this out and let BufferedSDWrite create it last-minute
       }
     }
@@ -129,6 +130,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       return 0;
     }
     int setNumWriteChannels(int n) {
+		n = AudioSDWriter::setNumWriteChannels(n);
       if (buffSDWriter) return buffSDWriter->setNChanWAV(n);
       return n;
     }
@@ -182,7 +184,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
   unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
 
   protected:
-    audio_block_f32_t *inputQueueArray[2]; //two input channels
+    audio_block_f32_t *inputQueueArray[4]; //two input channels
     BufferedSDWriter *buffSDWriter = 0;
     Print *serial_ptr = &Serial;
     unsigned long t_start_millis = 0;
