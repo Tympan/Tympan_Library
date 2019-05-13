@@ -3,7 +3,9 @@
    
    Created: Chip Audette, OpenAudio, May 2019
    Purpose: Write 4 channels of audio to SD based on serial commands
-      via USB serial or via BT serial
+      via USB serial or via BT serial.
+	  
+	  Writes to a single 4-channel WAV file.  Can be opened in Audacity.
 
    MIT License.  use at your own risk.
 */
