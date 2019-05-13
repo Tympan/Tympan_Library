@@ -43,8 +43,8 @@ AudioSDWriter_F32             audioSDWriter(audio_settings); //this is stereo by
 AudioOutputI2S_F32            i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
 
 //Connect to outputs
-AudioConnection_F32           patchcord1(i2s_in, 0, i2s_out, 0);    //Left mixer to left output
-AudioConnection_F32           patchcord2(i2s_in, 1, i2s_out, 1);    //Right mixer to right output
+AudioConnection_F32           patchcord1(i2s_in, 0, i2s_out, 0);    //Left input to left output
+AudioConnection_F32           patchcord2(i2s_in, 1, i2s_out, 1);    //Right input to right output
 
 //Connect to SD logging
 AudioConnection_F32           patchcord3(i2s_in, 0, audioSDWriter, 0);   //connect Raw audio to left channel of SD writer
