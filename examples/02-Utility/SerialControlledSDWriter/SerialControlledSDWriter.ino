@@ -24,7 +24,7 @@ class State_t {
 #include "SerialManager.h"
 
 //set the sample rate and block size
-const float sample_rate_Hz = 96000.0f ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
+const float sample_rate_Hz = 44117.0f ; //24000 or 44117 or 96000 (or other frequencies in the table in AudioOutputI2S_F32)
 const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
@@ -242,8 +242,8 @@ void serviceSD(void) {
     
     max_bytes_written = max(max_bytes_written, bytes_written);
     max_dT_micros = max((int)max_dT_micros, (int)dT_micros);
-    
-    if (dT_micros > 1000) {  //if the write took a while, print some diagnostic info
+   
+    if (dT_micros > 10000) {  //if the write took a while, print some diagnostic info
       
       max_max_bytes_written = max(max_bytes_written,max_max_bytes_written);
       max_max_dT_micros = max(max_dT_micros, max_max_dT_micros);
