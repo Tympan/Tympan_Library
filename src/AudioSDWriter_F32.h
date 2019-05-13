@@ -57,27 +57,27 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
   public:
     AudioSDWriter_F32(void) :
       AudioSDWriter(),
-      AudioStream_F32(2, inputQueueArray)
+      AudioStream_F32(4, inputQueueArray)
     { 
       setup();
     }
     AudioSDWriter_F32(const AudioSettings_F32 &settings) :
       AudioSDWriter(),
-      AudioStream_F32(2, inputQueueArray)
+      AudioStream_F32(4, inputQueueArray)
     { 
       setup(); 
       setSampleRate_Hz(settings.sample_rate_Hz);
     }
     AudioSDWriter_F32(const AudioSettings_F32 &settings, Print* _serial_ptr) :
       AudioSDWriter(),
-      AudioStream_F32(2, inputQueueArray)
+      AudioStream_F32(4, inputQueueArray)
     { 
       setup(_serial_ptr);
       setSampleRate_Hz(settings.sample_rate_Hz);
     }
     AudioSDWriter_F32(const AudioSettings_F32 &settings, Print* _serial_ptr, const int _writeSizeBytes) :
       AudioSDWriter(),
-      AudioStream_F32(2, inputQueueArray)
+      AudioStream_F32(4, inputQueueArray)
     { 
       setup(_serial_ptr, _writeSizeBytes); 
       setSampleRate_Hz(settings.sample_rate_Hz); 

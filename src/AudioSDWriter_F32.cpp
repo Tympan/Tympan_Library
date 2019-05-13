@@ -119,10 +119,11 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
 	}
   }
   if (any_data == 0) return;  //if there's no data, return;
-  //if (any_data < numChan) { // do we have all the channels?  If not, send error?
-  //  Serial.print("AudioSDWriter: copyToWriteBuffer: only got "); Serial.print(any_data);
-  //  Serial.println(" of ");  Serial.print(numChan);  Serial.println(" channels.");
-  //}
+  if (any_data < numChan) { // do we have all the channels?  If not, send error?
+    Serial.print("AudioSDWriter: copyToWriteBuffer: only got "); Serial.print(any_data);
+    Serial.print(" of ");  Serial.print(numChan);  Serial.println(" channels.");
+	return;
+  }
 
   //check to see if there have been any jumps in the data counters
   for (int Ichan = 0; Ichan < numChan; Ichan++) {
