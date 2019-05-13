@@ -133,6 +133,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       return n;
     }
     float setSampleRate_Hz(float fs_Hz) {
+		if ((fs_Hz > 44116.0) && (fs_Hz < 44118.0)) fs_Hz = 44100.0;  //special case for Teensy...44117 is intended to be 44100
       if (buffSDWriter) return buffSDWriter->setSampleRateWAV(fs_Hz);
       return fs_Hz;
     }
