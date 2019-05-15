@@ -422,6 +422,8 @@ void AudioOutputI2S_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, i
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
 }
 
+//update has to be carefully coded so that, if audio_blocks are not available, the code exits
+//gracefully and won't hang.  That'll cause the whole system to hang, which would be very bad.
 void AudioOutputI2S_F32::update(void)
 {
 	// null audio device: discard all incoming data
@@ -430,7 +432,16 @@ void AudioOutputI2S_F32::update(void)
 	//if (block) release(block);
 
 	audio_block_f32_t *block_f32;
-	audio_block_f32_t *block_f32_scaled;
+	audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
+	audio_block_f32_t *block2_f32_scaled = AudioStream_F32::allocate_f32();
+	if ((!block_f32_scaled) || (!block2_f32_scaled)) {
+		//couldn't get some working memory.  Return.
+		if (block_f32_scaled) AudioStream_F32::release(block_f32_scaled);
+		if (block2_f32_scaled) AudioStream_F32::release(block2_f32_scaled);
+		return;
+	}
+	
+	//now that we have our working memory, proceed with getting the audio data and processing
 	block_f32 = receiveReadOnly_f32(0); // input 0 = left channel
 	if (block_f32) {
 		if (block_f32->length != audio_block_samples) {
@@ -443,7 +454,7 @@ void AudioOutputI2S_F32::update(void)
 		//Serial.println(audio_block_samples);
 	
 		//scale F32 to Int32
-		block_f32_scaled = AudioStream_F32::allocate_f32();
+		//block_f32_scaled = AudioStream_F32::allocate_f32();
 		scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		//now process the data blocks
@@ -463,13 +474,17 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+	} else {
+		//this branch should never get called, but if it does, let's release the buffer that was never used
+		AudioStream_F32::release(block_f32_scaled);
 	}
 	
+	block_f32_scaled = block2_f32_scaled;  //this is simply renaming the pre-allocated buffer
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
 	if (block_f32) {
 		//scale F32 to Int32
-		block_f32_scaled = AudioStream_F32::allocate_f32();
+		//block_f32_scaled = AudioStream_F32::allocate_f32();
 		scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		__disable_irq();
@@ -488,8 +503,10 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		
-		transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+	} else {
+		//this branch should never get called, but if it does, let's release the buffer that was never used
+		AudioStream_F32::release(block_f32_scaled);
 	}
 }
 

@@ -60,6 +60,7 @@ protected:
 	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr(void);
+	virtual void update_1chan(int, audio_block_f32_t *&);
 private:
 	static audio_block_f32_t *block_ch1;
 	static audio_block_f32_t *block_ch2;
