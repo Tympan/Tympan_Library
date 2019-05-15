@@ -91,7 +91,8 @@ public:
 	bool mixInput1toHPout(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
 	bool enableDigitalMicInputs(bool desired_state);
-	
+	void computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff);
+	void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
 protected:
   TwoWire *myWire = &Wire;  //from Wire.h
   void setI2Cbus(int i2cBus);
