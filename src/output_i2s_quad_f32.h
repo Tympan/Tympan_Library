@@ -65,7 +65,7 @@ protected:
 	static DMAChannel dma;
 	static void isr(void);
 	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
-	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
+	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &, audio_block_f32_t *&);
 private:
 	static audio_block_f32_t *block_ch1_2nd;
 	static audio_block_f32_t *block_ch2_2nd;

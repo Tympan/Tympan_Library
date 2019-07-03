@@ -4,10 +4,15 @@
 void AudioSynthWaveform_F32::update(void) {
   audio_block_f32_t *block, *lfo;
 
+   block_counter++;
+	
   //if (_magnitude == 0.0f) return;
+  
 
   block = allocate_f32();
   if (!block) return;
+  
+  
 
   lfo = receiveReadOnly_f32(0);
   switch (_OscillatorMode) {
@@ -70,6 +75,8 @@ void AudioSynthWaveform_F32::update(void) {
   if (lfo) {
     release(lfo);
   }
+  
+  block->id = block_counter;
 
   AudioStream_F32::transmit(block);
   AudioStream_F32::release(block);

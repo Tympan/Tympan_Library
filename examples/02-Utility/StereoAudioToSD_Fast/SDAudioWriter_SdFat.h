@@ -56,6 +56,15 @@ class SDAudioWriter_SdFat
       return 0;
     }
 
+    bool openAsWAV(char *fname) {
+      bool returnVal = open(fname);
+      if (isFileOpen()) { //true if file is open
+        flag__fileIsWAV = true;
+        file.write(wavHeaderInt16(0),WAVheader_bytes); //initialize assuming zero length
+      }
+      return returnVal;
+    }
+
     bool open(char *fname) {
       if (sd.exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
         // The SD library writes new data to the end of the
@@ -75,9 +84,18 @@ class SDAudioWriter_SdFat
 
     int close(void) {
       //file.truncate();
+      if (flag__fileIsWAV) {
+        //re-write the header with the correct file size
+        uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+        file.seekSet(0); //SdFat_Gre_FatLib version of seek();
+        file.write(wavHeaderInt16(fileSize),WAVheader_bytes); //write header with correct length
+        file.seekSet(fileSize);
+      }
       file.close();
+      flag__fileIsWAV = false;
       return 0;
     }
+    
     bool isFileOpen(void) {
       if (file.isOpen()) {
         return true;
@@ -107,6 +125,38 @@ class SDAudioWriter_SdFat
       nBlocksWritten = 0;
     }
 
+    float setSampleRateWAV(float fs_Hz) { return WAV_sampleRate_Hz = fs_Hz; }
+
+   //modified from Walter at https://github.com/WMXZ-EU/microSoundRecorder/blob/master/audio_logger_if.h
+    char * wavHeaderInt16(const uint32_t fsize) { return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize);  }
+    char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
+      //const int fileSize = bytesWritten+44;
+      
+      int fsamp = (int) sampleRate_Hz;
+      int nbits=16;
+      int nbytes=nbits/8;
+      int nsamp=(fileSize-WAVheader_bytes)/(nbytes*nchan);
+      
+      static char wheader[48]; // 44 for wav
+    
+      strcpy(wheader,"RIFF");
+      strcpy(wheader+8,"WAVE");
+      strcpy(wheader+12,"fmt ");
+      strcpy(wheader+36,"data");
+      *(int32_t*)(wheader+16)= 16;// chunk_size
+      *(int16_t*)(wheader+20)= 1; // PCM 
+      *(int16_t*)(wheader+22)=nchan;// numChannels 
+      *(int32_t*)(wheader+24)= fsamp; // sample rate 
+      *(int32_t*)(wheader+28)= fsamp*nbytes; // byte rate
+      *(int16_t*)(wheader+32)=nchan*nbytes; // block align
+      *(int16_t*)(wheader+34)=nbits; // bits per sample 
+      *(int32_t*)(wheader+40)=nsamp*nchan*nbytes; 
+      *(int32_t*)(wheader+4)=36+nsamp*nchan*nbytes; 
+    
+      return wheader;
+    }
+
+
   private:
     //SdFatSdio sd; //slower
     SdFatSdioEX sd; //faster
@@ -115,6 +165,10 @@ class SDAudioWriter_SdFat
     boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
     unsigned long nBlocksWritten = 0;
+    bool flag__fileIsWAV = false;
+    const int WAVheader_bytes = 44;
+    float WAV_sampleRate_Hz = 44100.0;
+    int WAV_nchan = 2;
 
 };
 
