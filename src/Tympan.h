@@ -88,7 +88,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
-				case (TympanRev::D3) : case (TympanRev::D) :   //Built for OpenTact
+				case (TympanRev::D3) :  //Built for OpenTact
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 39; //A20
@@ -102,7 +102,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
 					break;
-				case (TympanRev::D4) :   //RevD release candidate
+				case (TympanRev::D4) :  case (TympanRev::D) :  //RevD release candidate
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 39; //A20
