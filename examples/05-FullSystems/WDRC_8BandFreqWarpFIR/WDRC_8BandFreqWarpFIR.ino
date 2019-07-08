@@ -107,7 +107,7 @@ SerialManager serialManager(N_CHAN,expCompLim,ampSweepTester,freqSweepTester,fre
 
 
 //routine to setup the hardware
-#define POT_PIN A1  //potentiometer is tied to this pin
+#define POT_PIN A20  //potentiometer is tied to this pin
 void setupTympanHardware(void) {
   Serial.println("Setting up Tympan Audio Board...");
   audioHardware.enable(); // activate AIC

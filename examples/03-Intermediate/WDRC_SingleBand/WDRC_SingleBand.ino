@@ -32,7 +32,7 @@ AudioConnection_F32         patchCord4(compWDRC1, 0, i2sAudioOut1, 1);
 // GUItool: end automatically generated code
 
 //I have a potentiometer on the Teensy Audio Board
-#define POT_PIN A1  //potentiometer is tied to this pin
+#define POT_PIN A20  //potentiometer is tied to this pin
 
 //define a function to setup the Teensy Audio Board how I like it
 void setupMyAudioBoard(void) {

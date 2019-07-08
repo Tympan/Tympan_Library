@@ -43,7 +43,7 @@ AudioConnection_F32       patchCord13(audioEffectLowpassFD, 0, i2s_out, 1);  //c
 //AudioConnection_F32       patchCord14(sinewave, 0, usb_out, 0);  //connect the sinewave to the USB Audio Output
 //AudioConnection_F32       patchCord15(audioEffectLowpassFD, 0, usb_out, 1);  //connect processed audio to the USB Audio Output
 
-#define POT_PIN A1  //potentiometer is tied to this pin
+#define POT_PIN A20  //potentiometer is tied to this pin
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 15.0f; //gain on the microphone

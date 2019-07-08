@@ -111,7 +111,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
 					BT_PIO0 = 56;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
-					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
+					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
 					enableStereoExtMicBias = 20; //PTD5
 					AIC_Shield_enableStereoExtMicBias = 41;
 					BT_serial_speed = 9600;
