@@ -41,6 +41,7 @@ AudioEffectCompWDRC_F32        compBroadband;     //here is the broadband compre
 AudioOutputI2S_F32              i2s_out(audio_settings);       //Digital audio *to* the Teensy Audio Board DAC.
 
 //complete the creation of the tester objects
+AudioTestSignalMeasurement_F32  audioTestMeasurement(audio_settings);
 AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_FIR(audio_settings);
 AudioControlTestAmpSweep_F32    ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32   freqSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
