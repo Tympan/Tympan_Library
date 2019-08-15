@@ -33,7 +33,8 @@
 #ifndef output_i2s_quad_f32_h_
 #define output_i2s_quad_f32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <arm_math.h>  //to define float32_t
 #include "AudioStream_F32.h"
 //include "AudioStream.h"
 #include "DMAChannel.h"

@@ -201,8 +201,8 @@ inline bool setSdErrorCode(uint8_t code, uint32_t line) {
 }
 //=============================================================================
 // ISR
-//void sdhc_isr() {
-void gre_sdhc_isr() {	
+void sdhc_isr() {  //this must exist with this name in order to work!!!!
+//void gre_sdhc_isr() {	
   SDHC_IRQSIGEN = 0;
   m_irqstat = SDHC_IRQSTAT;
   SDHC_IRQSTAT = m_irqstat;

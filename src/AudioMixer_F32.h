@@ -18,7 +18,7 @@
 #define AUDIOMIXER_F32_H
 
 #include <arm_math.h> 
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioMixer4_F32 : public AudioStream_F32 {
 //GUI: inputs:4, outputs:1  //this line used for automatic generation of GUI node

@@ -22,8 +22,12 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+ 
+
+ 
 #include "SdSpiDriver.h"
-#if defined(__arm__) && defined(CORE_TEENSY)
+//#if defined(__arm__) && defined(CORE_TEENSY)
+#if defined(__arm__) && defined(CORE_TEENSY) && defined(KINETISK)  //basically, don't compile this if we're other than Teensy 3 (ie, skip if Teensy 4)
 // SPI definitions
 #include "kinetis.h"
 

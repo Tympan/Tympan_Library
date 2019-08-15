@@ -60,9 +60,9 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 	int dest_ind = writeposition;  //inclusive
 	if (dest_ind >= (queue[head]->full_length)) {
 		head++; dest_ind = 0;
-		if (head >= DELAY_QUEUE_SIZE) head = 0;
+		if (head >= DELAY_QUEUE_SIZE_F32) head = 0;
 		if (queue[head] != NULL) {
-			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE) tail = 0; }
+			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE_F32) tail = 0; }
 			AudioStream_F32::release(queue[head]);
 			queue[head]=NULL;
 		}
@@ -98,9 +98,9 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 	//finish writing taking data from the next queue buffer
 	if (src_count < n_copy) { // there's still more input data to copy...but we need to roll-over to a new input queue
 		head++; dest_ind = 0;
-		if (head >= DELAY_QUEUE_SIZE) head = 0;
+		if (head >= DELAY_QUEUE_SIZE_F32) head = 0;
 		if (queue[head] != NULL) {
-			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE) tail = 0; }
+			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE_F32) tail = 0; }
 			AudioStream_F32::release(queue[head]);
 			queue[head]=NULL;
 		}
@@ -136,15 +136,15 @@ void AudioEffectDelay_F32::discardUnneededBlocksFromQueue(void) {
 	if (head >= tail) {
 		count = head - tail;
 	} else {
-		count = DELAY_QUEUE_SIZE + head - tail;
+		count = DELAY_QUEUE_SIZE_F32 + head - tail;
 	}
 /* 	if (head>0) {
-		Serial.print("AudioEffectDelay_F32::discardUnneededBlocksFromQueue: head, tail, count, maxblocks, DELAY_QUEUE_SIZE: ");
+		Serial.print("AudioEffectDelay_F32::discardUnneededBlocksFromQueue: head, tail, count, maxblocks, DELAY_QUEUE_SIZE_F32: ");
 		Serial.print(head); Serial.print(", ");
 		Serial.print(tail); Serial.print(", ");
 		Serial.print(count); Serial.print(", ");
 		Serial.print(maxblocks); Serial.print(", ");
-		Serial.print(DELAY_QUEUE_SIZE); Serial.print(", ");
+		Serial.print(DELAY_QUEUE_SIZE_F32); Serial.print(", ");
 		Serial.println();
 	} */
 	if (count > maxblocks) {
@@ -154,7 +154,7 @@ void AudioEffectDelay_F32::discardUnneededBlocksFromQueue(void) {
 				AudioStream_F32::release(queue[tail]);
 				queue[tail] = NULL;
 			}
-			if (++tail >= DELAY_QUEUE_SIZE) tail = 0;
+			if (++tail >= DELAY_QUEUE_SIZE_F32) tail = 0;
 		} while (--count > 0);
 	}
 	tailindex = tail;
@@ -180,7 +180,7 @@ void AudioEffectDelay_F32::transmitOutgoingData(void) {
 																			  //receiveIncomingData method.  We'll adjust it next
 		uint32_t offset_samp = delay_samps[channel]+output->length;
 		if (ref_samp_long < offset_samp) { //when (ref_samp_long - offset_samp) goes negative, the uint32_t will fail, so we do this logic check
-			ref_samp_long = ref_samp_long + (((uint32_t)(DELAY_QUEUE_SIZE))*((uint32_t)AUDIO_BLOCK_SIZE_F32));
+			ref_samp_long = ref_samp_long + (((uint32_t)(DELAY_QUEUE_SIZE_F32))*((uint32_t)AUDIO_BLOCK_SIZE_F32));
 		}
 		ref_samp_long = ref_samp_long - offset_samp;
 		uint16_t source_queue_ind = (uint16_t)(ref_samp_long / ((uint32_t)AUDIO_BLOCK_SIZE_F32));
@@ -211,7 +211,7 @@ void AudioEffectDelay_F32::transmitOutgoingData(void) {
 			//yes, we need to keep filling the output
 			int Iend = n_output - dest_counter;  //how many more data points do we need
 			source_queue_ind++; source_samp = 0;  //which source block will we draw from (and reset the source sample counter)
-			if (source_queue_ind >= DELAY_QUEUE_SIZE) source_queue_ind = 0;  //wrap around on our source black.
+			if (source_queue_ind >= DELAY_QUEUE_SIZE_F32) source_queue_ind = 0;  //wrap around on our source black.
 			source_block = queue[source_queue_ind];  //get the source block
 			if (source_block == NULL) { //does it have data?
 				//no, it doesn't have data.  fill destination with zeros

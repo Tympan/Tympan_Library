@@ -2,6 +2,8 @@
 #ifndef _AudioSettings_F32_
 #define _AudioSettings_F32_
 
+#include "arm_math.h"  //simply to define float32_t
+
 class AudioSettings_F32 {
 	public:
 		AudioSettings_F32(float fs_Hz, int block_size) :

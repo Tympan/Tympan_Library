@@ -51,8 +51,8 @@ void AudioPlayQueue_F32::update(void)
 		if (++t >= 32) t = 0;
 		block = queue[t];
 		tail = t;
-		transmit(block);
-		release(block);
+		AudioStream_F32::transmit(block);
+		AudioStream_F32::release(block);
 	}
 }
 

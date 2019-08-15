@@ -3,7 +3,7 @@
 #define _AudioConvert_F32_h
 
 #include <Arduino.h>
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioConvert_I16toF32 : public AudioStream_F32 //receive Int and transmits Float
 {

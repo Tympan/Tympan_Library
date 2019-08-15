@@ -13,7 +13,7 @@
 #ifndef synth_sine_f32_h_
 #define synth_sine_f32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "AudioStream_F32.h"
 #include "arm_math.h"
 

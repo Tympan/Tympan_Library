@@ -16,7 +16,7 @@
 #ifndef AUDIOSWITCH_F32_H
 #define AUDIOSWITCH_F32_H
 
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioSwitch4_F32 : public AudioStream_F32 {
 //GUI: inputs:1, outputs:4  //this line used for automatic generation of GUI node

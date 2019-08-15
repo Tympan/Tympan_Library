@@ -2,7 +2,14 @@
 #ifndef _AudioControlTester_h
 #define _AudioControlTester_h
 
-#include <Tympan_Library.h>
+//include <Tympan_Library.h>
+#include <Arduino.h>  //for print()
+#include "AudioStream_F32.h"
+#include "synth_sine_f32.h"
+#include "AudioEffectGain_F32.h"
+#include "record_queue_f32.h"
+
+
 
 #define max_steps 128
 #define max_num_chan 16   //max number of test signal inputs to the AudioTestSignalMeasurementMulti_F32

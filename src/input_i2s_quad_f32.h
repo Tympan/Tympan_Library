@@ -33,7 +33,9 @@
 #ifndef _input_i2s_quad_f32_h_
 #define _input_i2s_quad_f32_h_
 
-#include "Arduino.h"
+
+#include <Arduino.h>
+#include <arm_math.h>
 #include "AudioStream_F32.h"
 #include "AudioStream.h"
 #include "DMAChannel.h"

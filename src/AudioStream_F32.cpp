@@ -1,5 +1,6 @@
 
 #include "AudioStream_F32.h"
+#include <arm_math.h> //ARM DSP extensions.  for speed!
 
 audio_block_f32_t * AudioStream_F32::f32_memory_pool;
 uint32_t AudioStream_F32::f32_memory_pool_available_mask[6];

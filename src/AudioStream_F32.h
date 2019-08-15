@@ -13,11 +13,14 @@
 #ifndef _AudioStream_F32_h
 #define _AudioStream_F32_h
 
-#include <arm_math.h> //ARM DSP extensions.  for speed!
 //include <Audio.h> //Teensy Audio Library
-#include <AudioStream.h>  //needed for AUDIO_BLOCK_SAMPLES
+#include "arm_math.h" //simply to define float32_t
+#include <AudioStream.h> 
 #include "AudioSettings_F32.h"
 
+#if defined(__IMXRT1062__)   //for Teensy 4...this shouldn't be necessary
+extern volatile uint32_t F_CPU_ACTUAL;  
+#endif
 
 // /////////////// class prototypes
 class AudioStream_F32;

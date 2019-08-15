@@ -13,7 +13,7 @@
 #define _AudioEffectGain_F32_h
 
 #include <arm_math.h> //ARM DSP extensions.  for speed!
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioEffectGain_F32 : public AudioStream_F32
 {

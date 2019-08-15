@@ -28,7 +28,7 @@
 #ifndef AudioEffecDelay_F32_h_
 #define AudioEffecDelay_F32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "AudioStream_F32.h"
 #include "utility/dspinst.h"
 
@@ -37,16 +37,16 @@
 
 #if defined(__MK66FX1M0__)
   // 2.41 second maximum on Teensy 3.6
-  #define DELAY_QUEUE_SIZE  (106496 / AUDIO_BLOCK_SIZE_F32)
+  #define DELAY_QUEUE_SIZE_F32  (106496 / AUDIO_BLOCK_SIZE_F32)
 #elif defined(__MK64FX512__)
   // 1.67 second maximum on Teensy 3.5
-  #define DELAY_QUEUE_SIZE  (73728 / AUDIO_BLOCK_SIZE_F32)
+  #define DELAY_QUEUE_SIZE_F32  (73728 / AUDIO_BLOCK_SIZE_F32)
 #elif defined(__MK20DX256__)
   // 0.45 second maximum on Teensy 3.1 & 3.2
-  #define DELAY_QUEUE_SIZE  (19826 / AUDIO_BLOCK_SIZE_F32)
+  #define DELAY_QUEUE_SIZE_F32  (19826 / AUDIO_BLOCK_SIZE_F32)
 #else
   // 0.14 second maximum on Teensy 3.0
-  #define DELAY_QUEUE_SIZE  (6144 / AUDIO_BLOCK_SIZE_F32)
+  #define DELAY_QUEUE_SIZE_F32  (6144 / AUDIO_BLOCK_SIZE_F32)
 #endif
 
 
@@ -79,7 +79,7 @@ public:
 		if (channel >= 8) return;
 		if (milliseconds < 0.0) milliseconds = 0.0;
 		uint32_t n = (milliseconds*(sampleRate_Hz/1000.0))+0.5;
-		uint32_t nmax = AUDIO_BLOCK_SIZE_F32 * (DELAY_QUEUE_SIZE-1);
+		uint32_t nmax = AUDIO_BLOCK_SIZE_F32 * (DELAY_QUEUE_SIZE_F32-1);
 		if (n > nmax) n = nmax;
 		uint32_t blks = (n + (AUDIO_BLOCK_SIZE_F32-1)) / AUDIO_BLOCK_SIZE_F32 + 1;
 		if (!(activemask & (1<<channel))) {
@@ -124,14 +124,14 @@ private:
 	uint16_t headindex;    // head index (incoming) data in queue
 	uint16_t tailindex;    // tail index (outgoing) data from queue
 	uint16_t maxblocks;    // number of blocks needed in queue
-//#if DELAY_QUEUE_SIZE * AUDIO_BLOCK_SAMPLES < 65535
+//#if DELAY_QUEUE_SIZE_F32 * AUDIO_BLOCK_SAMPLES < 65535
 //	uint16_t writeposition;
 //	uint16_t delay_samps[8]; // # of samples to delay for each channel
 //#else
 	int writeposition;	   //position within current head buffer in the queue
 	uint32_t delay_samps[8]; // # of samples to delay for each channel
 //#endif
-	audio_block_f32_t *queue[DELAY_QUEUE_SIZE];
+	audio_block_f32_t *queue[DELAY_QUEUE_SIZE_F32];
 	audio_block_f32_t *inputQueueArray[1];
 	float sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
 	//int audio_block_len_samples = AUDIO_BLOCK_SAMPLES;

@@ -14,10 +14,11 @@
 #ifndef _AudioEffectFeedbackCancel_F32
 #define _AudioEffectFeedbackCancel_F32
 
-#include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
-#include <AudioStream_F32.h>
-#include <BTNRH_WDRC_Types.h> //from Tympan_Library
 #include <Arduino.h>  //for Serial.println()
+#include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
+#include "AudioStream_F32.h"
+#include "BTNRH_WDRC_Types.h" //from Tympan_Library
+
 
 #ifndef MAX_AFC_FILT_LEN
 #define MAX_AFC_FILT_LEN  256  //must be longer than afl

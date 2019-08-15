@@ -12,7 +12,9 @@
 #ifndef AudioConfigFIRFilterBank_F32_h
 #define AudioConfigFIRFilterBank_F32_h
 
-#include <Tympan_Library.h>
+//#include <Tympan_Library.h>
+#include <Arduino.h>  //for calloc() and free()
+#include "AudioSettings_F32.h"
 
 #define fmove(x,y,n)    memmove(x,y,(n)*sizeof(float))
 #define fcopy(x,y,n)    memcpy(x,y,(n)*sizeof(float))

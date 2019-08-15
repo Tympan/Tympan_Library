@@ -51,8 +51,8 @@
 #ifndef _FFT_Overlapped_F32_h
 #define _FFT_Overlapped_F32_h
 
-#include "AudioStream_F32.h"
 #include <arm_math.h>
+#include "AudioStream_F32.h"
 #include "FFT_F32.h"
 //#include "utility/dspinst.h"  //copied from analyze_fft256.cpp.  Do we need this?
 

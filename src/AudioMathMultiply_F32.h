@@ -13,7 +13,7 @@
 #define AUDIOMATHMULTIPLYF32_H
 
 #include <arm_math.h>
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioMathMultiply_F32 : public AudioStream_F32
 {
