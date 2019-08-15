@@ -35,6 +35,7 @@
 #include "memcpy_audio.h"
 #include <arm_math.h>
 
+#if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
 
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
@@ -370,4 +371,5 @@ void AudioOutputI2SQuad_F32::update(void)
 	if (block_f32) release(block_f32);
 }
 
+#endif
 #endif

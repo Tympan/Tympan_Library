@@ -29,6 +29,9 @@
  *  Converted to F32 and to variable audio block length
  *	The F32 conversion is under the MIT License.  Use at your own risk.
  */
+ 
+ #if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
+
 
 #include <Arduino.h>
 #include "input_i2s_quad_f32.h"
@@ -258,7 +261,6 @@ void AudioInputI2SQuad_F32::begin(void)
 {
 }
 
-
-
 #endif
 
+#endif

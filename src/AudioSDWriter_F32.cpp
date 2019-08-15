@@ -1,4 +1,6 @@
 
+#if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
+
 #include "AudioSDWriter_F32.h"
 
 void AudioSDWriter_F32::prepareSDforRecording(void) {
@@ -146,3 +148,5 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
   //now push it into the buffer via the base class BufferedSDWriter
   if (buffSDWriter) buffSDWriter->copyToWriteBuffer(ptr_audio,nsamps,numChan);
 }
+
+#endif

@@ -62,7 +62,7 @@ public:
 	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
 	static float setI2SFreq(const float);
 protected:
-	//AudioOutputI2S_F32(const AudioSettings &settings): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
+	AudioOutputI2S_F32(int dummy): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	static void config_i2s(void);
 	static void config_i2s(bool);
 	static void config_i2s_i16(void);
@@ -73,6 +73,7 @@ protected:
 	static DMAChannel dma;
 	static void isr_16(void);
 	static void isr_32(void);
+	static void isr(void);
 private:
 	static audio_block_f32_t *block_left_2nd;
 	static audio_block_f32_t *block_right_2nd;
@@ -84,6 +85,17 @@ private:
 	volatile uint8_t enabled = 1;
 };
 
+
+class AudioOutputI2Sslave_F32 : public AudioOutputI2S_F32
+{
+public:
+	AudioOutputI2Sslave_F32(void) : AudioOutputI2S_F32(0) { begin(); } ;
+	void begin(void);
+	friend class AudioInputI2Sslave_F32;
+	friend void dma_ch0_isr(void);
+protected:
+	static void config_i2s(void);
+};
 
 
 
