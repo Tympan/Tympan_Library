@@ -34,9 +34,9 @@
 
 #if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
 //include "input_i2s_quad_f32.h"
-#include "SdFat_Gre.h"
-#include "AudioSDWriter_F32.h"
-#include "SDWriter.h"
+//include "SdFat_Gre.h"
+//include "AudioSDWriter_F32.h"
+//include "SDWriter.h"
 //#include "USB_Audio_F32.h"
 //include "output_i2s_quad_f32.h"
 #endif
