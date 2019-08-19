@@ -15,7 +15,7 @@
 
 //include <Audio.h> //Teensy Audio Library
 #include "arm_math.h" //simply to define float32_t
-#include <core_pins.h > //for F_CPU_ACTUAL ??
+#include <core_pins.h> //for F_CPU_ACTUAL ??
 #include <AudioStream.h> 
 #include "AudioSettings_F32.h"
 

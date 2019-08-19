@@ -175,7 +175,7 @@ void AudioInputI2S_F32::begin(bool transferUsing32bit) {
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 }; */
 
-void AudioInputI2S_F32::sub_begin_i32(void)
+/* void AudioInputI2S_F32::sub_begin_i32(void)
 {
 
 	//let's assume that we'll transfer one sample (left or right) each call.  So, it'll transfer 4 bytes (32-bits)
@@ -203,7 +203,7 @@ void AudioInputI2S_F32::sub_begin_i32(void)
 	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 4;  //number of minor loops in a major loop.  I2S_BUFFER_TO_USE_BYTES/NBYTES_MLNO?..should be 4 or 8?   https://forum.pjrc.com/threads/42233-I2S-Input-Question
 	
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-};
+}; */
 
 /* void AudioInputI2S_F32::isr_16(void)
 {

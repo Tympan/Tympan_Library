@@ -36,6 +36,41 @@
 //#include "memcpy_interleave.h"
 #include <arm_math.h>
 
+//taken from Teensy Audio utility/imxrt_hw.h and imxrt_hw.cpp...
+#if defined(__IMXRT1062__)
+#ifndef imxr_hw_h_
+#define imxr_hw_h_
+#define IMXRT_CACHE_ENABLED 2 // 0=disabled, 1=WT, 2= WB
+#include <Arduino.h>
+#include <imxrt.h>
+PROGMEM
+void set_audioClock_tympan(int nfact, int32_t nmult, uint32_t ndiv, bool force = false) // sets PLL4
+{
+	if (!force && (CCM_ANALOG_PLL_AUDIO & CCM_ANALOG_PLL_AUDIO_ENABLE)) return;
+
+	CCM_ANALOG_PLL_AUDIO = CCM_ANALOG_PLL_AUDIO_BYPASS | CCM_ANALOG_PLL_AUDIO_ENABLE
+			     | CCM_ANALOG_PLL_AUDIO_POST_DIV_SELECT(2) // 2: 1/4; 1: 1/2; 0: 1/1
+			     | CCM_ANALOG_PLL_AUDIO_DIV_SELECT(nfact);
+
+	CCM_ANALOG_PLL_AUDIO_NUM   = nmult & CCM_ANALOG_PLL_AUDIO_NUM_MASK;
+	CCM_ANALOG_PLL_AUDIO_DENOM = ndiv & CCM_ANALOG_PLL_AUDIO_DENOM_MASK;
+	
+	CCM_ANALOG_PLL_AUDIO &= ~CCM_ANALOG_PLL_AUDIO_POWERDOWN;//Switch on PLL
+	while (!(CCM_ANALOG_PLL_AUDIO & CCM_ANALOG_PLL_AUDIO_LOCK)) {}; //Wait for pll-lock
+	
+	const int div_post_pll = 1; // other values: 2,4
+	CCM_ANALOG_MISC2 &= ~(CCM_ANALOG_MISC2_DIV_MSB | CCM_ANALOG_MISC2_DIV_LSB);
+	if(div_post_pll>1) CCM_ANALOG_MISC2 |= CCM_ANALOG_MISC2_DIV_LSB;
+	if(div_post_pll>3) CCM_ANALOG_MISC2 |= CCM_ANALOG_MISC2_DIV_MSB;
+	
+	CCM_ANALOG_PLL_AUDIO &= ~CCM_ANALOG_PLL_AUDIO_BYPASS;//Disable Bypass
+}
+#endif
+#else
+//No IMXRT
+#define IMXRT_CACHE_ENABLED 0
+#endif
+
 
 //Here's the function to change the sample rate of the system (via changing the clocking of the I2S bus)
 //https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=121365&viewfull=1#post121365
@@ -99,9 +134,9 @@ DMAChannel AudioOutputI2S_F32::dma(false);
 float AudioOutputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioOutputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
-#if defined(__IMXRT1062__)
-#include "utility/imxrt_hw.h"
-#endif
+//#if defined(__IMXRT1062__)
+//#include "utility/imxrt_hw.h"
+//#endif
 
 //#for 16-bit transfers
 #define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_tx_buffer[0]))
@@ -771,7 +806,8 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {
 	int c0 = C;
 	int c2 = 10000;
 	int c1 = C * c2 - (c0 * c2);
-	set_audioClock(c0, c1, c2);
+	//set_audioClock(c0, c1, c2);
+	set_audioClock_tympan(c0, c1, c2);
 
 	// clear SAI1_CLK register locations
 	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
@@ -836,7 +872,7 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {
 	CORE_PIN11_CONFIG = PORT_PCR_MUX(6); // pin 11, PTC6, I2S0_MCLK	
 } */
 
-void AudioOutputI2S_F32::config_i2s_i16(void)
+/* void AudioOutputI2S_F32::config_i2s_i16(void)
 {
 
 	// enable MCLK output
@@ -897,7 +933,7 @@ void AudioOutputI2S_F32::config_i2s_i32(void)
     | I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
   I2S0_RCR5 = I2S_RCR5_WNW(31) | I2S_RCR5_W0W(31) | I2S_RCR5_FBT(31);
 
-}
+} */
 /******************************************************************/
 
 void AudioOutputI2Sslave_F32::begin(void)
