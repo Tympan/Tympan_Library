@@ -36,7 +36,7 @@
 //#include "memcpy_interleave.h"
 #include <arm_math.h>
 
-//taken from Teensy Audio utility/imxrt_hw.h and imxrt_hw.cpp...
+/* //taken from Teensy Audio utility/imxrt_hw.h and imxrt_hw.cpp...
 #if defined(__IMXRT1062__)
 #ifndef imxr_hw_h_
 #define imxr_hw_h_
@@ -69,7 +69,7 @@ void set_audioClock_tympan(int nfact, int32_t nmult, uint32_t ndiv, bool force =
 #else
 //No IMXRT
 #define IMXRT_CACHE_ENABLED 0
-#endif
+#endif */
 
 
 //Here's the function to change the sample rate of the system (via changing the clocking of the I2S bus)
@@ -77,7 +77,7 @@ void set_audioClock_tympan(int nfact, int32_t nmult, uint32_t ndiv, bool force =
 //
 //And, a post on how to compute the frac and div portions?  I haven't checked the code presented in this post:
 //https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=188812&viewfull=1#post188812
-float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
+/* float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
 #if defined(KINETISK)
 	int freq = (int)freq_Hz;
   typedef struct {
@@ -117,7 +117,7 @@ float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
   }
 #endif
   return 0.0f;
-}
+} */
 
 audio_block_f32_t * AudioOutputI2S_F32::block_left_1st = NULL;
 audio_block_f32_t * AudioOutputI2S_F32::block_right_1st = NULL;
@@ -126,20 +126,20 @@ audio_block_f32_t * AudioOutputI2S_F32::block_right_2nd = NULL;
 uint16_t  AudioOutputI2S_F32::block_left_offset = 0;
 uint16_t  AudioOutputI2S_F32::block_right_offset = 0;
 bool AudioOutputI2S_F32::update_responsibility = false;
-//DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES]; //local audio_block_samples should be no larger than global AUDIO_BLOCK_SAMPLES
+DMAChannel AudioOutputI2S_F32::dma(false);
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
 //DMAMEM static int32_t i2s_tx_buffer[2*AUDIO_BLOCK_SAMPLES]; //2 channels at 32-bits per sample.  Local "audio_block_samples" should be no larger than global "AUDIO_BLOCK_SAMPLES"
-DMAChannel AudioOutputI2S_F32::dma(false);
+
 
 float AudioOutputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioOutputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
-//#if defined(__IMXRT1062__)
-//#include "utility/imxrt_hw.h"
-//#endif
+#if defined(__IMXRT1062__)
+#include <utility/imxrt_hw.h>   //from Teensy Audio library.  For set_audioClock()
+#endif
 
 //#for 16-bit transfers
-#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_tx_buffer[0]))
+//#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_tx_buffer[0]))
 
 //#for 32-bit transfers
 //#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_tx_buffer[0]))
@@ -158,7 +158,7 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 	block_left_1st = NULL;
 	block_right_1st = NULL;
 
-	config_i2s();
+	AudioOutputI2S_F32::config_i2s();
 
 #if defined(KINETISK)
 	CORE_PIN22_CONFIG = PORT_PCR_MUX(6); // pin 22, PTC1, I2S0_TXD0
@@ -203,7 +203,7 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 	dma.enable();
 	
 	// change the I2S frequencies to make the requested sample rate
-	setI2SFreq(AudioOutputI2S_F32::sample_rate_Hz);
+	//setI2SFreq(AudioOutputI2S_F32::sample_rate_Hz);
 	
 	enabled = 1;
 	
@@ -212,16 +212,17 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 
 void AudioOutputI2S_F32::isr(void)
 {
+#if defined(KINETISK) || defined(__IMXRT1062__)
 	int16_t *dest;
 	audio_block_f32_t *blockL, *blockR;
 	uint32_t saddr, offsetL, offsetR;
 
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
-	if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES  / 2) {
+	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)&i2s_tx_buffer[2*(audio_block_samples/2)];
+		dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
 		if (AudioOutputI2S_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
 		// DMA is transmitting the second half of the buffer
@@ -234,43 +235,55 @@ void AudioOutputI2S_F32::isr(void)
 	offsetL = AudioOutputI2S_F32::block_left_offset;
 	offsetR = AudioOutputI2S_F32::block_right_offset;
 
+	/* Original from Teensy Audio library (Teensy 4 compatible)
+	if (blockL && blockR) {
+		memcpy_tointerleaveLR(dest, blockL->data + offsetL, blockR->data + offsetR);
+		offsetL += AUDIO_BLOCK_SAMPLES / 2;
+		offsetR += AUDIO_BLOCK_SAMPLES / 2;
+	} else if (blockL) {
+		memcpy_tointerleaveL(dest, blockL->data + offsetL);
+		offsetL += AUDIO_BLOCK_SAMPLES / 2;
+	} else if (blockR) {
+		memcpy_tointerleaveR(dest, blockR->data + offsetR);
+		offsetR += AUDIO_BLOCK_SAMPLES / 2;
+	} else {
+		memset(dest,0,AUDIO_BLOCK_SAMPLES * 2);
+	}
+	*/
+
+	int16_t *d = dest;
 	if (blockL && blockR) {
 		//memcpy_tointerleaveLR(dest, blockL->data + offsetL, blockR->data + offsetR);
+		//memcpy_tointerleaveLRwLen(dest, blockL->data + offsetL, blockR->data + offsetR, audio_block_samples/2);
 		float32_t *pL = blockL->data + offsetL;
 		float32_t *pR = blockR->data + offsetR;
-		for (int i=0; i < audio_block_samples/2; i++) {	//loop over half of the audio block (this routine gets called every half an audio block)
-			*dest++ = (int16_t) (*pL++); 	
-			*dest++ = (int16_t) (*pR++); //cast and interleave
-		}
-		offsetL += (audio_block_samples / 2);
-		offsetR += (audio_block_samples / 2);
-	} else if (blockL) {
-		//memcpy_tointerleaveL(dest, blockL->data + offsetL);
-		float32_t *pL = blockL->data + offsetL;
-		for (int i=0; i < audio_block_samples /2; i++) { 
-			*dest++ = (int16_t) *pL++;  //cast and interleave
-			*dest++ = 0;
-		}
-		offsetL += (audio_block_samples / 2);
-	} else if (blockR) {
-		//memcpy_tointerleaveR(dest, blockR->data + offsetR);
-		float32_t *pR = blockR->data + offsetR;
-		for (int i=0; i < audio_block_samples /2; i++) { 
-			*dest++ = 0;
-			*dest++ = (int16_t) *pR++;  //cast and interleave
+		for (int i=0; i < audio_block_samples/2; i++) {	
+			*d++ = (int16_t) *pL++; 
+			*d++ = (int16_t) *pR++; //interleave
+			//*d++ = 0;
+			//*d++ = 0;
 		} 
-		offsetR += (audio_block_samples / 2);
+		offsetL += audio_block_samples / 2;
+		offsetR += audio_block_samples / 2;
+	} else if (blockL) {
+		//memcpy_tointerleaveLR(dest, blockL->data + offsetL, blockR->data + offsetR);
+		float32_t *pL = blockL->data + offsetL;
+		for (int i=0; i < audio_block_samples / 2 * 2; i+=2) { *(d+i) = (int16_t) *pL++; } //interleave
+		offsetL += audio_block_samples / 2;
+	} else if (blockR) {
+		float32_t *pR = blockR->data + offsetR;
+		for (int i=0; i < audio_block_samples /2 * 2; i+=2) { *(d+i) = (int16_t) *pR++; } //interleave
+		offsetR += audio_block_samples / 2;
 	} else {
 		//memset(dest,0,AUDIO_BLOCK_SAMPLES * 2);
-		for (int i=0; i < audio_block_samples/2; i++) {	//loop over half of the audio block (this routine gets called every half an audio block)
-			*dest++ = (int16_t) 0; 	
-			*dest++ = (int16_t) 0; 
-		}
+		memset(dest,0,audio_block_samples * 2);
+		return;
 	}
+	
+	
+	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
 
-	arm_dcache_flush_delete(dest, I2S_BUFFER_TO_USE_BYTES  / 2 );
-
-	if (offsetL < (uint16_t)audio_block_samples) {
+	if (offsetL < AUDIO_BLOCK_SAMPLES) {
 		AudioOutputI2S_F32::block_left_offset = offsetL;
 	} else {
 		AudioOutputI2S_F32::block_left_offset = 0;
@@ -278,7 +291,7 @@ void AudioOutputI2S_F32::isr(void)
 		AudioOutputI2S_F32::block_left_1st = AudioOutputI2S_F32::block_left_2nd;
 		AudioOutputI2S_F32::block_left_2nd = NULL;
 	}
-	if (offsetR < (uint16_t)audio_block_samples) {
+	if (offsetR < AUDIO_BLOCK_SAMPLES) {
 		AudioOutputI2S_F32::block_right_offset = offsetR;
 	} else {
 		AudioOutputI2S_F32::block_right_offset = 0;
@@ -286,7 +299,7 @@ void AudioOutputI2S_F32::isr(void)
 		AudioOutputI2S_F32::block_right_1st = AudioOutputI2S_F32::block_right_2nd;
 		AudioOutputI2S_F32::block_right_2nd = NULL;
 	}
-
+#endif
 }
 
 
@@ -591,8 +604,9 @@ void AudioOutputI2S_F32::sub_begin_i32(void) {
 
 }
  */
+#define F32_TO_I16_NORM_FACTOR (32767)   //which is 2^15-1
 void AudioOutputI2S_F32::scale_f32_to_i16(float32_t *p_f32, float32_t *p_i16, int len) {
-	for (int i=0; i<len; i++) { *p_i16++ = max(-32767,min(32767,(*p_f32++) * 32767.f)); }
+	for (int i=0; i<len; i++) { *p_i16++ = max(-F32_TO_I16_NORM_FACTOR,min(F32_TO_I16_NORM_FACTOR,(*p_f32++) * F32_TO_I16_NORM_FACTOR)); }
 }
 #define F32_TO_I24_NORM_FACTOR (8388607)   //which is 2^23-1
 void AudioOutputI2S_F32::scale_f32_to_i24( float32_t *p_f32, float32_t *p_i24, int len) {
@@ -607,6 +621,7 @@ void AudioOutputI2S_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, i
 
 //update has to be carefully coded so that, if audio_blocks are not available, the code exits
 //gracefully and won't hang.  That'll cause the whole system to hang, which would be very bad.
+static int count = 0;
 void AudioOutputI2S_F32::update(void)
 {
 	// null audio device: discard all incoming data
@@ -640,6 +655,16 @@ void AudioOutputI2S_F32::update(void)
 		//block_f32_scaled = AudioStream_F32::allocate_f32();
 		//scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		
+		count++;
+		if (count > 100) {
+			Serial.print("AudioOutputI2S_F32::update() orig, scaled = ");
+			Serial.print(block_f32->data[30]);
+			Serial.print(", ");
+			Serial.println(block_f32_scaled->data[30]);
+			count=0;
+		}
+		
 		
 		//now process the data blocks
 		__disable_irq();
@@ -695,8 +720,6 @@ void AudioOutputI2S_F32::update(void)
 	}
 }
 
-
-
 #if defined(KINETISK) || defined(KINETISL)
 // MCLK needs to be 48e6 / 1088 * 256 = 11.29411765 MHz -> 44.117647 kHz sample rate
 //
@@ -749,7 +772,8 @@ void AudioOutputI2S_F32::update(void)
 
 void AudioOutputI2S_F32::config_i2s(void) {	config_i2s(false); }
 
-void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {
+void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit)
+{
 #if defined(KINETISK) || defined(KINETISL)
 	SIM_SCGC6 |= SIM_SCGC6_I2S;
 	SIM_SCGC7 |= SIM_SCGC7_DMA;
@@ -806,8 +830,7 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {
 	int c0 = C;
 	int c2 = 10000;
 	int c1 = C * c2 - (c0 * c2);
-	//set_audioClock(c0, c1, c2);
-	set_audioClock_tympan(c0, c1, c2);
+	set_audioClock(c0, c1, c2);
 
 	// clear SAI1_CLK register locations
 	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
@@ -850,6 +873,7 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {
 
 #endif
 }
+
 
 /* void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {
 	SIM_SCGC6 |= SIM_SCGC6_I2S;
@@ -982,10 +1006,11 @@ void AudioOutputI2Sslave_F32::begin(void)
 
 	update_responsibility = update_setup();
 	dma.enable();
-	dma.attachInterrupt(isr);
+	dma.attachInterrupt(AudioOutputI2S_F32::isr);
 }
 
-void AudioOutputI2Sslave_F32::config_i2s(void)
+
+ void AudioOutputI2Sslave_F32::config_i2s(void)
 {
 #if defined(KINETISK)
 	SIM_SCGC6 |= SIM_SCGC6_I2S;
@@ -1062,5 +1087,6 @@ void AudioOutputI2Sslave_F32::config_i2s(void)
 	I2S1_RCR5 = I2S_RCR5_WNW(31) | I2S_RCR5_W0W(31) | I2S_RCR5_FBT(31);
 
 #endif
-}
+} 
+
 
