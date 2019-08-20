@@ -33,7 +33,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 	public:
 		TympanPins(void) {
 			setTympanRev(TympanRev::D);  //assume RevD is default
-		}; 
+		};
 		TympanPins(TympanRev _tympanRev) {
 			setTympanRev(_tympanRev);
 		}
@@ -88,7 +88,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					break;
-				case (TympanRev::D3) : case (TympanRev::D) :   //Built for OpenTact
+				case (TympanRev::D3) :  //Built for OpenTact
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 39; //A20
@@ -96,13 +96,13 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					redLED = 10;  //PTC4
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
-					BT_PIO0 = A10;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
-					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
+					BT_PIO0 = 56; // JM: was A10;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
+					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: Yes, it's BT_PIO5
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
 					break;
-				case (TympanRev::D4) :   //RevD release candidate
+				case (TympanRev::D4) :  case (TympanRev::D) :  //RevD release candidate
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
 					potentiometer = 39; //A20
@@ -111,12 +111,12 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
 					BT_PIO0 = 56;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
-					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ???
+					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
 					enableStereoExtMicBias = 20; //PTD5
-					AIC_Shield_enableStereoExtMicBias = 41; 					
+					AIC_Shield_enableStereoExtMicBias = 41;
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
-					break;					
+					break;
 			}
 		}
 		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
