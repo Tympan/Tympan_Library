@@ -41,8 +41,8 @@ audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_right_f32 = NULL;
 uint16_t AudioInputI2S_F32::block_offset = 0;
 bool AudioInputI2S_F32::update_responsibility = false;
-//DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];  //minimum for stereo 16-bit transfers
-DMAMEM static int32_t i2s_rx_buffer[2*AUDIO_BLOCK_SAMPLES];//minimum for stereo 32-bit transfers
+DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];  //minimum for stereo 16-bit transfers
+//DMAMEM static int32_t i2s_rx_buffer[2*AUDIO_BLOCK_SAMPLES];//minimum for stereo 32-bit transfers
 DMAChannel AudioInputI2S_F32::dma(false);
 int AudioInputI2S_F32::flag_out_of_memory = 0;
 unsigned long AudioInputI2S_F32::update_counter = 0;
@@ -55,7 +55,7 @@ int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 //#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
 
 //#for 32-bit transfers
-#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_rx_buffer[0]))
+//#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_rx_buffer[0]))
 
 
 
@@ -112,7 +112,7 @@ void AudioInputI2S_F32::begin(bool transferUsing32bit) {
 #endif
 	update_responsibility = update_setup();
 	dma.enable();
-	dma.attachInterrupt(AudioInputI2S_F32::isr);	
+	dma.attachInterrupt(isr);
 	
 	update_counter = 0;
 }
@@ -308,7 +308,7 @@ void AudioInputI2S_F32::isr(void)
 
 
 
-void AudioInputI2S_F32::isr_32(void)
+/* void AudioInputI2S_F32::isr_32(void)
 {
 	static bool flag_beenSuccessfullOnce = false;
 	uint32_t daddr, offset;
@@ -370,7 +370,7 @@ void AudioInputI2S_F32::isr_32(void)
 		}
 
 	}
-}
+} */
 
 #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
 void AudioInputI2S_F32::scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) {
@@ -476,7 +476,8 @@ void AudioInputI2S_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, in
 	 if (!out_f32) return;
 	 
 	//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
-	scale_i32_to_f32(out_f32->data, out_f32->data, audio_block_samples);
+	//scale_i32_to_f32(out_f32->data, out_f32->data, audio_block_samples);
+	scale_i16_to_f32(out_f32->data, out_f32->data, audio_block_samples);
 
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_f32->id = update_counter;
