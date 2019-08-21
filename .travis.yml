@@ -19,3 +19,28 @@ script:
     - platformio ci --project-conf=platformio.ini examples/01-Basic/PrintCPUandMemoryUsage/PrintCPUandMemoryUsage.ino
     - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost/TrebleBoost.ino
     - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost_wComp/TrebleBoost_wComp.ino
+
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/AudioViaUSB/AudioViaUSB.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerialAndBluetooth/ControlViaSerialAndBluetooth.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/DetectExtMic/DetectExtMic.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/MyAudioAlgorithm/MyAudioAlgorithm.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/OutputToneWithSteppedAmplitude/OutputToneWithSteppedAmplitude.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/RenameTympanBT/RenameTympanBT.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SerialControlledSDWriter/SerialControlledSDWriter.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter/SoundLevelMeter.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter_2Chan/SoundLevelMeter_2Chan.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/StereoAudioToSD_Fast/StereoAudioToSD_Fast.ino
+
+    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_FIR_8Band/WDRC_FIR_8Band.ino
+    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_SingleBand/WDRC_SingleBand.ino
+
+    - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/FormantShifter_FD/FormantShifter_FD.ino
+    - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/LowpassFilter_FD/LowpassFilter_FD.ino
+
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wBT_wAFC/WDRC_3BandIIR_wBT_wAFC.ino
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR_wBT/WDRC_8BandFIR_wBT.ino
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFreqWarpFIR/WDRC_8BandFreqWarpFIR.ino
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wBT/WDRC_8BandIIR_wBT.ino
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wBT_wAFC/WDRC_8BandIIR_wBT_wAFC.ino
