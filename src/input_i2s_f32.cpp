@@ -35,7 +35,7 @@
 #include "output_i2s_f32.h"
 
 
-//audio_block_t * AudioInputI2S_F32::block_left = NULL;
+/* //audio_block_t * AudioInputI2S_F32::block_left = NULL;
 //audio_block_t * AudioInputI2S_F32::block_right = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_right_f32 = NULL;
@@ -43,9 +43,18 @@ uint16_t AudioInputI2S_F32::block_offset = 0;
 bool AudioInputI2S_F32::update_responsibility = false;
 DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];  //minimum for stereo 16-bit transfers
 //DMAMEM static int32_t i2s_rx_buffer[2*AUDIO_BLOCK_SAMPLES];//minimum for stereo 32-bit transfers
+DMAChannel AudioInputI2S_F32::dma(false); */
+
+static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
+audio_block_f32_t * AudioInputI2S_F32::block_right_f32 = NULL;
+uint16_t AudioInputI2S_F32::block_offset = 0;
+bool AudioInputI2S_F32::update_responsibility = false;
 DMAChannel AudioInputI2S_F32::dma(false);
+
 int AudioInputI2S_F32::flag_out_of_memory = 0;
 unsigned long AudioInputI2S_F32::update_counter = 0;
+
 
 float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
@@ -276,23 +285,23 @@ void AudioInputI2S_F32::isr(void)
 	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)&i2s_rx_buffer[audio_block_samples/2];
-		end = (int16_t *)&i2s_rx_buffer[audio_block_samples];
-		if (AudioInputI2S_F32::update_responsibility) AudioStream_F32::update_all();
+		src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+		if (AudioInputI2S_F32::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
 		src = (int16_t *)&i2s_rx_buffer[0];
-		end = (int16_t *)&i2s_rx_buffer[audio_block_samples/2];
+		end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
 	}
 	left_f32 = AudioInputI2S_F32::block_left_f32;
 	right_f32 = AudioInputI2S_F32::block_right_f32;
 	if (left_f32 != NULL && right_f32 != NULL) {
 		offset = AudioInputI2S_F32::block_offset;
-		if (offset <= (uint32_t)(audio_block_samples/2)) {
+		if (offset <= (uint32_t)(AUDIO_BLOCK_SAMPLES/2)) {
 			dest_left_f32 = &(left_f32->data[offset]);
 			dest_right_f32 = &(right_f32->data[offset]);
-			AudioInputI2S_F32::block_offset = offset + audio_block_samples/2;
+			AudioInputI2S_F32::block_offset = offset + AUDIO_BLOCK_SAMPLES/2;
 
 			do {
 				//Serial.println(*src);
@@ -489,7 +498,7 @@ void AudioInputI2S_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, in
 	AudioStream_F32::release(out_f32);
 }
  
-void AudioInputI2S_F32::update(void)
+/* void AudioInputI2S_F32::update(void)
 {
 	static bool flag_beenSuccessfullOnce = false;
 	audio_block_f32_t *new_left_f32=NULL, *new_right_f32=NULL, *out_left_f32=NULL, *out_right_f32=NULL;
@@ -545,8 +554,68 @@ void AudioInputI2S_F32::update(void)
 		// Sadly, there's nothing we can do.
 		__enable_irq();
 	}
-}
+} */
+void AudioInputI2S_F32::update(void)
+{
+	static bool flag_beenSuccessfullOnce = false;
+	audio_block_f32_t *new_left=NULL, *new_right=NULL, *out_left=NULL, *out_right=NULL;
 
+	// allocate 2 new blocks, but if one fails, allocate neither
+	new_left =  AudioStream_F32::allocate_f32();
+	if (new_left != NULL) {
+		new_right = AudioStream_F32::allocate_f32();
+		if (new_right == NULL) {
+			AudioStream_F32::release(new_left);
+			new_left = NULL;
+		} else {
+			flag_beenSuccessfullOnce = true;
+		}
+	}
+	__disable_irq();
+	if (block_offset >= AUDIO_BLOCK_SAMPLES) {
+		// the DMA filled 2 blocks, so grab them and get the
+		// 2 new blocks to the DMA, as quickly as possible
+		out_left = block_left_f32;
+		block_left_f32 = new_left;
+		out_right = block_right_f32;
+		block_right_f32 = new_right;
+		block_offset = 0;
+		__enable_irq();
+		
+		scale_i16_to_f32(out_left->data, out_left->data, AUDIO_BLOCK_SAMPLES);
+		out_left->id = update_counter; 
+		
+		scale_i16_to_f32(out_right->data, out_right->data, AUDIO_BLOCK_SAMPLES);
+		out_right->id = update_counter;
+		
+		// then transmit the DMA's former blocks
+		AudioStream_F32::transmit(out_left, 0);
+		AudioStream_F32::release(out_left);
+		AudioStream_F32::transmit(out_right, 1);
+		AudioStream_F32::release(out_right);
+		//Serial.print(".");
+	} else if (new_left != NULL) {
+		// the DMA didn't fill blocks, but we allocated blocks
+		if (block_left_f32 == NULL) {
+			// the DMA doesn't have any blocks to fill, so
+			// give it the ones we just allocated
+			block_left_f32 = new_left;
+			block_right_f32 = new_right;
+			block_offset = 0;
+			__enable_irq();
+		} else {
+			// the DMA already has blocks, doesn't need these
+			__enable_irq();
+			AudioStream_F32::release(new_left);
+			AudioStream_F32::release(new_right);
+		}
+	} else {
+		// The DMA didn't fill blocks, and we could not allocate
+		// memory... the system is likely starving for memory!
+		// Sadly, there's nothing we can do.
+		__enable_irq();
+	}
+}
 
 /******************************************************************/
 
