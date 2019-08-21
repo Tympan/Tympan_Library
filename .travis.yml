@@ -10,6 +10,7 @@ cache:
 
 install:
     - pip install -U platformio
+    - platformio update
 
 script:
     - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino --verbose
