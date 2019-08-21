@@ -13,5 +13,5 @@ install:
     - platformio update
 
 script:
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino  --project-option="src_dir=examples/02-Utility/ControlViaSerial/"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino  --project-option="include_dir=examples/02-Utility/ControlViaSerial/"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino
