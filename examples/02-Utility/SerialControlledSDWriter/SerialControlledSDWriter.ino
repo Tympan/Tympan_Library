@@ -118,9 +118,9 @@ void setup() {
   setConfiguration(INPUT_MICJACK); //this will also unmute the system
 
   //prepare the SD writer for the format that we want and any error statements
-  audioSDWriter.setSerial(&myTympan);
-  audioSDWriter.setWriteDataType(AudioSDWriter::WriteDataType::INT16);  //this is the built-in the default, but here you could change it to FLOAT32
-  audioSDWriter.setNumWriteChannels(2);             //this is also the defaullt, but you could set it to 2
+  audioSDWriter.setSerial(&myTympan);         //the library will print any error info to this serial stream (note that myTympan is also a serial stream)
+  audioSDWriter.setWriteDataType(AudioSDWriter::WriteDataType::INT16);  //this is the built-in default, but here you could change it to FLOAT32
+  audioSDWriter.setNumWriteChannels(2);       //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
 
   //End of setup
   BOTH_SERIAL.println("Setup: complete."); serialManager.printHelp();
