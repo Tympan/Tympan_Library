@@ -621,7 +621,7 @@ void AudioOutputI2S_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, i
 
 //update has to be carefully coded so that, if audio_blocks are not available, the code exits
 //gracefully and won't hang.  That'll cause the whole system to hang, which would be very bad.
-static int count = 0;
+//static int count = 0;
 void AudioOutputI2S_F32::update(void)
 {
 	// null audio device: discard all incoming data
@@ -656,14 +656,14 @@ void AudioOutputI2S_F32::update(void)
 		//scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
-		count++;
-		if (count > 100) {
-			Serial.print("AudioOutputI2S_F32::update() orig, scaled = ");
-			Serial.print(block_f32->data[30]);
-			Serial.print(", ");
-			Serial.println(block_f32_scaled->data[30]);
-			count=0;
-		}
+		//count++;
+		//if (count > 100) {
+		//	Serial.print("AudioOutputI2S_F32::update() orig, scaled = ");
+		//	Serial.print(block_f32->data[30]);
+		//	Serial.print(", ");
+		//	Serial.println(block_f32_scaled->data[30]);
+		//	count=0;
+		//}
 		
 		
 		//now process the data blocks
