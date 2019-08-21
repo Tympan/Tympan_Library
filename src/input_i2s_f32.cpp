@@ -572,7 +572,7 @@ void AudioInputI2S_F32::update(void)
 		}
 	}
 	__disable_irq();
-	if (block_offset >= AUDIO_BLOCK_SAMPLES) {
+	if (block_offset >= audio_block_samples) {
 		// the DMA filled 2 blocks, so grab them and get the
 		// 2 new blocks to the DMA, as quickly as possible
 		out_left = block_left_f32;
@@ -582,10 +582,10 @@ void AudioInputI2S_F32::update(void)
 		block_offset = 0;
 		__enable_irq();
 		
-		scale_i16_to_f32(out_left->data, out_left->data, AUDIO_BLOCK_SAMPLES);
+		scale_i16_to_f32(out_left->data, out_left->data, audio_block_samples);
 		out_left->id = update_counter; 
 		
-		scale_i16_to_f32(out_right->data, out_right->data, AUDIO_BLOCK_SAMPLES);
+		scale_i16_to_f32(out_right->data, out_right->data, audio_block_samples);
 		out_right->id = update_counter;
 		
 		// then transmit the DMA's former blocks
