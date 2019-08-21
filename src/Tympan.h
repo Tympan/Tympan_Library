@@ -10,7 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
-enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
+enum class TympanRev { A, C, D, D0, D1, D2, D3, D4, E_A };
 
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (TympanRev::A)
@@ -117,6 +117,18 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
 					break;
+				case (TympanRev::E_A) :    //Earliest trials with Tympan 4 with Rev A 
+					//Teensy 4.0 Pin Numbering
+					resetAIC = 5;  //PTD6
+					potentiometer = 15;  //PTC0
+					amberLED = 36;  //PTC9
+					redLED = 35;  //PTC8
+					BT_nReset = 6; //
+					BT_REGEN = NOT_A_FEATURE;
+					BT_PIO4 = 2;  //PTD0
+					reversePot = true;
+					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
+					break;		
 			}
 		}
 		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
