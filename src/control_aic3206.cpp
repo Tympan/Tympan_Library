@@ -80,8 +80,8 @@
 #define NDAC                                                              2
 #define MDAC                                                              8
 
-#define AOSR                                                            128
-#define NADC                                                              2
+#define AOSR                                                             64
+#define NADC                                                              4
 #define MADC                                                              8
 
 // Signal Processing Modes, Playback and Recording.
