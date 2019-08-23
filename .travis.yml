@@ -13,5 +13,5 @@ install:
     - platformio update
 
 script:
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino  --project-option="include_dir=/home/travis/build/Tympan/Tympan_Library/examples/02-Utility/ControlViaSerial/" --verbose
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino  --lib="examples/02-Utility/ControlViaSerial/"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino
