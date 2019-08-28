@@ -93,6 +93,10 @@ public:
 	bool enableDigitalMicInputs(bool desired_state);
 	void computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff);
 	void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
+	void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+	void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+	//void convertCoeff_f32_to_i32(float *coeff_f32, int coeff_i16, int ncoeff);
+	
 protected:
   TwoWire *myWire = &Wire;  //from Wire.h
   void setI2Cbus(int i2cBus);

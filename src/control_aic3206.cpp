@@ -680,11 +680,56 @@ void AudioControlAIC3206::computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs
 	coeff[2] = -coeff[2];  //flip to be TI sign convention
 }
 
+void AudioControlAIC3206::computeBiquadCoeff_LP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
+	//cutoff_Hz = freq_Hz;
+	
+	//int coeff[5];
+	double w0 = freq_Hz * (2.0 * 3.141592654 / sampleRate_Hz);
+	double sinW0 = sin(w0);
+	double alpha = sinW0 / ((double)q * 2.0);
+	double cosW0 = cos(w0);
+	//double scale = 1073741824.0 / (1.0 + alpha);
+	double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
+	/* b0 */ coeff[0] = ((1.0 - cosW0) / 2.0) * scale;
+	/* b1 */ coeff[1] = (1.0 - cosW0) * scale;
+	/* b2 */ coeff[2] = coeff[0];
+	/* a0 = 1.0 in Matlab style */
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;  //do we need to flip the sign on this?
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;   //do we need to flip the sign on this?
+	
+}
+
+void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
+	//cutoff_Hz = freq_Hz;
+	
+	double w0 = freq_Hz * (2 * 3.141592654 / sampleRate_Hz);
+	double sinW0 = sin(w0);
+	double alpha = sinW0 / ((double)q * 2.0);
+	double cosW0 = cos(w0);
+	double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
+	/* b0 */ coeff[0] = ((1.0 + cosW0) / 2.0) * scale;
+	/* b1 */ coeff[1] = -(1.0 + cosW0) * scale;
+	/* b2 */ coeff[2] = coeff[0];
+	/* a0 = 1.0 in Matlab style */
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale; //do we need to flip the sign on this?
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  //do we need to flip the sign on this?
+
+}
+
 #define CONST_2_31_m1  (2147483647)   //2^31 - 1
-void AudioControlAIC3206::computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
-	float coeff_f32[3];
-	computeFirstOrderHPCoeff_f32(cutoff_Hz,fs_Hz,coeff_f32);
-	for (int i=0; i<3; i++) {
+//void AudioControlAIC3206::computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
+//	float coeff_f32[3];
+//	computeFirstOrderHPCoeff_f32(cutoff_Hz,fs_Hz,coeff_f32);
+//	for (int i=0; i<3; i++) {
+//		//scale
+//		coeff_f32[i] *= (float)CONST_2_31_m1;
+//		
+//		//truncate
+//		coeff[i] = (int32_t)coeff_f32[i];
+//	}
+//}
+void AudioControlAIC3206::convertCoeff_f32_to_i32(float *coeff_f32, int *coeff_i32, int ncoeff) {
+	for (int i=0; i< ncoeff; i++) {
 		//scale
 		coeff_f32[i] *= (float)CONST_2_31_m1;
 		
@@ -692,14 +737,24 @@ void AudioControlAIC3206::computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs
 		coeff[i] = (int32_t)coeff_f32[i];
 	}
 }
+
 	
 void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz) { //fs_Hz is sample rate
 	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	uint32_t coeff[3];
 	if (enable) {
-		HP_cutoff_Hz = cutoff_Hz; 
-		sample_rate_Hz = fs_Hz;
-		computeFirstOrderHPCoeff_i32(cutoff_Hz,fs_Hz,(int32_t *)coeff);
+		#if 1
+			//original
+			HP_cutoff_Hz = cutoff_Hz; 
+			sample_rate_Hz = fs_Hz;
+			computeFirstOrderHPCoeff_i32(cutoff_Hz,fs_Hz,(int32_t *)coeff);
+		#else
+			//new
+			float coeff[3];
+			computeFirstOrderHPCoeff_f32(cutoff_Hz, fs_Hz, coeff_f32);
+			convertCoeff_f32_to_i32(coeff_f32, coeff, 3);
+		#endif
+		
 		//Serial.print("enableHPFonADC: coefficients, Hex: ");
 		//Serial.print(coeff[0],HEX);
 		//Serial.print(", ");
