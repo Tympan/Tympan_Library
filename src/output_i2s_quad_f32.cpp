@@ -203,28 +203,31 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 			}
 		} 
 	
-		//scale F32 to Int16
-		//audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
+		//scale F32 to Int16...which fills the audio buffer handed to us as working memory
 		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		//shuffle between the two buffers that the isr() routines looks for
 		__disable_irq();
 		if (block_1st == NULL) {
-			block_1st = block_f32_scaled;
+			block_1st = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
 			ch_offset = 0;
 			__enable_irq();
 		} else if (block_2nd == NULL) {
-			block_2nd = block_f32_scaled;
+			block_2nd = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
 			__enable_irq();
 		} else {
 			audio_block_f32_t *tmp = block_1st;
 			block_1st = block_2nd;
-			block_2nd = block_f32_scaled;
+			block_2nd = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
 			ch_offset = 0;
 			__enable_irq();
-			AudioStream_F32::release(tmp);
+			AudioStream_F32::release(tmp);  //here we are releaseing an older audio buffer used as working memory
 		}
-		AudioStream_F32::transmit(block_f32,chan); AudioStream_F32::release(block_f32);	
+		AudioStream_F32::transmit(block_f32,chan);  //transmit the original audio block that we acquired here via receiveReadOnly_F32()
+		AudioStream_F32::release(block_f32);	 //release the original audio block that we acquired here via receiveReadOnly_F32()
+	} else {
+		//we never used the audio buffer handed to us as working memory, so release it here.
+		AudioStream_F32::release(block_f32_scaled);
 	}
 
 }
