@@ -86,7 +86,7 @@ public:
 	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz);
 	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
-	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
+	void setHpfIIRCoeffOnADC(int chan, uint32_t *coeff);
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
@@ -108,8 +108,8 @@ protected:
   int resetPinAIC = AIC3206_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
   float HP_cutoff_Hz = 0.0f;
   float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
-  void setIIRCoeffOnADC_Left(uint32_t *coeff);
-  void setIIRCoeffOnADC_Right(uint32_t *coeff);
+  void setHpfIIRCoeffOnADC_Left(uint32_t *coeff);
+  void setHpfIIRCoeffOnADC_Right(uint32_t *coeff);
   
 };
 

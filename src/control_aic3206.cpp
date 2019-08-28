@@ -716,31 +716,31 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 		coeff[0] = 0x7FFFFFFF; coeff[1] = 0; coeff[2]=0;
 	}
 	
-	setIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
+	setHpfIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
 }
 
 
 //set first-order IIR filter coefficients on ADC
-void AudioControlAIC3206::setIIRCoeffOnADC(int chan, uint32_t *coeff) {
+void AudioControlAIC3206::setHpfIIRCoeffOnADC(int chan, uint32_t *coeff) {
 
 	//power down the AIC to allow change in coefficients
 	uint32_t prev_state = aic_readPage(0x00,0x51);
 	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
 	
 	if (chan == BOTH_CHAN) {
-		setIIRCoeffOnADC_Left(coeff);
-		setIIRCoeffOnADC_Right(coeff);
+		setHpfIIRCoeffOnADC_Left(coeff);
+		setHpfIIRCoeffOnADC_Right(coeff);
 	} else if (chan == LEFT_CHAN) {
-		setIIRCoeffOnADC_Left(coeff);
+		setHpfIIRCoeffOnADC_Left(coeff);
 	} else {
-		setIIRCoeffOnADC_Right(coeff);
+		setHpfIIRCoeffOnADC_Right(coeff);
 	}
 
 	//power the ADC back up
 	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
 }
 		
-void AudioControlAIC3206::setIIRCoeffOnADC_Left(uint32_t *coeff) {
+void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
 	int page;
 	uint32_t c;
 	
@@ -766,7 +766,7 @@ void AudioControlAIC3206::setIIRCoeffOnADC_Left(uint32_t *coeff) {
 	aic_writePage(page,33,(uint8_t)(c>>16));
 	aic_writePage(page,34,(uint8_t)(c>>9));	
 }
-void AudioControlAIC3206::setIIRCoeffOnADC_Right(uint32_t *coeff) {
+void AudioControlAIC3206::setHpfIIRCoeffOnADC_Right(uint32_t *coeff) {
 	int page;
 	uint32_t c;
 	
