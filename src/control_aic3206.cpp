@@ -743,7 +743,7 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	uint32_t coeff[3];
 	if (enable) {
-		#if 1
+		#if 0
 			//original
 			HP_cutoff_Hz = cutoff_Hz; 
 			sample_rate_Hz = fs_Hz;
