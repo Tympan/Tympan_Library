@@ -31,9 +31,9 @@ public:
 	
     virtual void update(void);
 
-    void setChannel(unsigned int channel) {
-      if (channel >= 4 || channel < 0) return;
-      outputChannel = channel;
+    int setChannel(unsigned int channel) {
+      if (channel >= 4 || channel < 0) return outputChannel;  //invalid!  stick with previous channel
+      return outputChannel = channel;
     }
 
   private:
