@@ -664,23 +664,41 @@ int AudioControlAIC3206::readMicDetect(void) {
 	return curVal;
 }
 
-void AudioControlAIC3206::computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff) {
-	//cutoff_Hz is the cutoff frequency in Hz
-	//fs_Hz is the sample rate in Hz
+
+
+
+float setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chanIndex, int biquadIndex) 
+{
+	//Purpose: Creare biquad filter coefficients to be applied within 3206 hardware, ADC (input) side	
+	//
+	// type is type of filter: 1 = Lowpass, 2=highpass
+	// cutoff_Hz is the cutoff frequency in Hz
+	// chanIndex is 0=both, 1=left, 2=right
+	// biquadIndex is 0-4 for biquad A through biquad B, depending upon ADC mode
 	
-	//First-order Butterworth IIR
-	//From https://www.dsprelated.com/showcode/199.php
-	const float pi = 3.141592653589793;
-	float T = 1.0f/fs_Hz; //sample period
-	float w = cutoff_Hz * 2.0 * pi;
-	float A = 1.0f / (tan( (w*T) / 2.0));
-	coeff[0] = A / (1.0 + A); // first b coefficient
-	coeff[1] = -coeff[0];     // second b coefficient
-	coeff[2] = (1.0 - A) / (1.0 + A);  //second a coefficient (Matlab sign convention)
-	coeff[2] = -coeff[2];  //flip to be TI sign convention
+	const int ncoeff = 5;
+	float coeff_f32[ncoeff];
+	uint32_t coeff_uint32[ncoeff];
+	float q = 0.707;  //assume critically damped (sqrt(2)), which makes this a butterworth filter
+	if (type == 1) {
+		//lowpass
+		computeFirstOrderLPCoeff_f32(cutoff_Hz, sampleRate_Hz, q, *coeff);
+	} else if (type == 2) {
+		//highpass
+		computeFirstOrderHPCoeff_f32(cutoff_Hz, sampleRate_Hz, q, *coeff);
+	} else {
+		//unknown
+		reutrn -1.0;
+	}
+	convertCoeff_f32_to_i32(coeff_f32, coeff_uint32, ncoeff);
+	setBiquadCoeffOnADC(chanIndex, biquadIndex, coeff_uint32); //needs twos-compliment
 }
+	
 
 void AudioControlAIC3206::computeBiquadCoeff_LP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
+	// Compute common filter functions...all second order filters...all with Matlab convention on a1 and a2 coefficients
+	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
+	
 	//cutoff_Hz = freq_Hz;
 	
 	//int coeff[5];
@@ -694,12 +712,19 @@ void AudioControlAIC3206::computeBiquadCoeff_LP_f32(float freq_Hz, float sampleR
 	/* b1 */ coeff[1] = (1.0 - cosW0) * scale;
 	/* b2 */ coeff[2] = coeff[0];
 	/* a0 = 1.0 in Matlab style */
-	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;  //do we need to flip the sign on this?
-	/* a2 */ coeff[4] = (1.0 - alpha) * scale;   //do we need to flip the sign on this?
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;  
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  
 	
+	//flip signs for TI convention...see section 2.3.3.1.10.2 of TI Application Guide http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	coeff[1] = coeff[1]/2.0;
+	coeff[3] = -coeff[3]/2.0;
+	coeff[4] = -coeff[4];	
 }
 
 void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
+	// Compute common filter functions...all second order filters...all with Matlab convention on a1 and a2 coefficients
+	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
+	
 	//cutoff_Hz = freq_Hz;
 	
 	double w0 = freq_Hz * (2 * 3.141592654 / sampleRate_Hz);
@@ -711,8 +736,13 @@ void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleR
 	/* b1 */ coeff[1] = -(1.0 + cosW0) * scale;
 	/* b2 */ coeff[2] = coeff[0];
 	/* a0 = 1.0 in Matlab style */
-	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale; //do we need to flip the sign on this?
-	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  //do we need to flip the sign on this?
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale; 
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  
+	
+	//flip signs and scale for TI convention...see section 2.3.3.1.10.2 of TI Application Guide http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	coeff[1] = coeff[1]/2.0;
+	coeff[3] = -coeff[3]/2.0;
+	coeff[4] = -coeff[4];
 
 }
 
@@ -738,6 +768,62 @@ void AudioControlAIC3206::convertCoeff_f32_to_i32(float *coeff_f32, int *coeff_i
 	}
 }
 
+int setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32) //needs twos-compliment
+{
+	//See TI application guide for the AIC3206 http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	//See section 2.3.3.1.10.2
+		
+	//power down the AIC to allow change in coefficients
+	uint32_t prev_state = aic_readPage(0x00,0x51);
+	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
+	
+	//enter table 2-14 from TI Application Guide
+	
+	switch (chanIndex) {
+		case BOTH_CHAN:
+			break;
+		case LEFT_CHAN:
+			break;
+		case RIGHT_CHAN:
+			break;
+		default:
+			return -1;
+			break;
+	}
+			
+	
+	
+	//power the ADC back up
+	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
+}
+		
+void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
+	int page;
+	uint32_t c;
+	
+	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	
+	//Coeff N0, Coeff C4
+	page = 8;
+	c = coeff[0];
+	aic_writePage(page,24,(uint8_t)(c>>24));
+	aic_writePage(page,25,(uint8_t)(c>>16));
+	aic_writePage(page,26,(uint8_t)(c>>8));
+	//int foo  = aic_readPage(page,24);	Serial.print("setIIRCoeffOnADC: first coefficient: ");  Serial.println(foo);
+
+	//Coeff N1, Coeff C5
+	c = coeff[1];
+	aic_writePage(page,28,(uint8_t)(c>>24));
+	aic_writePage(page,29,(uint8_t)(c>>16));
+	aic_writePage(page,30,(uint8_t)(c>>8));
+	
+	//Coeff N2, Coeff C6
+	c = coeff[2];
+	aic_writePage(page,32,(uint8_t)(c>>24));
+	aic_writePage(page,33,(uint8_t)(c>>16));
+	aic_writePage(page,34,(uint8_t)(c>>9));	
+	
+}
 	
 void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz) { //fs_Hz is sample rate
 	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
@@ -772,6 +858,23 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 	}
 	
 	setHpfIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
+}
+
+
+void AudioControlAIC3206::computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff) {
+	//cutoff_Hz is the cutoff frequency in Hz
+	//fs_Hz is the sample rate in Hz
+	
+	//First-order Butterworth IIR
+	//From https://www.dsprelated.com/showcode/199.php
+	const float pi = 3.141592653589793;
+	float T = 1.0f/fs_Hz; //sample period
+	float w = cutoff_Hz * 2.0 * pi;
+	float A = 1.0f / (tan( (w*T) / 2.0));
+	coeff[0] = A / (1.0 + A); // first b coefficient
+	coeff[1] = -coeff[0];     // second b coefficient
+	coeff[2] = (1.0 - A) / (1.0 + A);  //second a coefficient (Matlab sign convention)
+	coeff[2] = -coeff[2];  //flip to be TI sign convention
 }
 
 
