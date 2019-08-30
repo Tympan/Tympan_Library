@@ -97,19 +97,9 @@ void setup() {
   freqShift.setup(audio_settings, N_FFT); //do after AudioMemory_F32();
 
   //configure the frequency shifting
+  float shiftFreq_Hz = 750.0; //shift audio upward a bit
   float Hz_per_bin = audio_settings.sample_rate_Hz / ((float)N_FFT);
-  float shiftFreq_Hz;
-  int shift_bins;
-  #if 1
-    shiftFreq_Hz = 750.0; //shift audio upward a bit
-  #else
-    shiftFreq_Hz = -37000.0; //or, if you raise the sample rate to 96000, you can bring ultrasound down into audible band!
-  #endif
-  if (shiftFreq_Hz >= 0) {
-    shift_bins = (int)(shiftFreq_Hz / Hz_per_bin + 0.5);  //round to nearest bin
-  } else {
-    shift_bins = (int)(shiftFreq_Hz / Hz_per_bin - 0.5);  //round to nearest bin
-  }
+  int shift_bins = (int)(shiftFreq_Hz / Hz_per_bin + 0.5);  //round to nearest bin
   shiftFreq_Hz = shift_bins * Hz_per_bin;
   Serial.print("Setting shift to "); Serial.print(shiftFreq_Hz); Serial.print(" Hz, which is "); Serial.print(shift_bins); Serial.println(" bins");
   freqShift.setShift_bins(shift_bins); //0 is no ffreq shifting.
