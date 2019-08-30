@@ -7,7 +7,7 @@
  *     WDRC_circuit from CHAPRO from BTNRC: https://github.com/BTNRH/chapro
  *     As of Feb 2017, CHAPRO license is listed as "Creative Commons?"
  *          
- * This processes a single stream fo audio data (ie, it is mono)       
+ * This processes a single stream of audio data (ie, it is mono)       
  *          
  * MIT License.  use at your own risk.
 */

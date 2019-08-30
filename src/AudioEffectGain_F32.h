@@ -2,7 +2,7 @@
  * AudioEffectGain_F32
  * 
  * Created: Chip Audette, November 2016
- * Purpose; Apply digital gain to the audio data.  Assumes floating-point data.
+ * Purpose: Apply digital gain to the audio data.  Assumes floating-point data.
  *          
  * This processes a single stream fo audio data (ie, it is mono)       
  *          

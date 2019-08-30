@@ -52,6 +52,8 @@
 
 class AudioEffectDelay_F32 : public AudioStream_F32
 {
+//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
+//GUI: shortName:delay
 public:
 	AudioEffectDelay_F32() : AudioStream_F32(1, inputQueueArray) {
 		activemask = 0;

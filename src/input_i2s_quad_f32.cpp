@@ -157,14 +157,14 @@ void AudioInputI2SQuad_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
 }
 
-void AudioInputI2SQuad_F32::update_1chan(int chan, audio_block_f32_t *&out_block) {
+void AudioInputI2SQuad_F32::update_1chan(int chan, unsigned long counter, audio_block_f32_t *&out_block) {
 	if (!out_block) return;
 		
 	//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
 	scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples);
 	
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
-	out_block->id = update_counter;
+	out_block->id = counter;
 
 	// then transmit and release the DMA's former blocks
 	AudioStream_F32::transmit(out_block, chan);
@@ -219,10 +219,10 @@ void AudioInputI2SQuad_F32::update(void)
 		
 		//service the data that we just got out of the DMA
 		update_counter++;
-		update_1chan(0, out1); //uses audio_block_samples and update_counter
-		update_1chan(1, out2); //uses audio_block_samples and update_counter
-		update_1chan(2, out3); //uses audio_block_samples and update_counter
-		update_1chan(3, out4); //uses audio_block_samples and update_counter
+		update_1chan(0, update_counter, out1); //uses audio_block_samples and update_counter
+		update_1chan(1, update_counter, out2); //uses audio_block_samples and update_counter
+		update_1chan(2, update_counter, out3); //uses audio_block_samples and update_counter
+		update_1chan(3, update_counter, out4); //uses audio_block_samples and update_counter
 		
 		
 	} else if (new1 != NULL) {
