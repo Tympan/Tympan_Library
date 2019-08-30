@@ -8,7 +8,7 @@
  *      care about).
  * Assumes floating-point data.
  *          
- * This processes a single stream fo audio data (ie, it is mono)       
+ * This processes a single stream of audio data (ie, it is mono)       
  *          
  * MIT License.  use at your own risk.
 */
