@@ -43,6 +43,9 @@ AudioEffectDelay_F32	KEYWORD1
 AudioEffectGain_F32	KEYWORD1
 setGain_dB		KEYWORD2
 
+AudioEffectFreqShiftFD_F32	KEYWORD1
+
+
 AudioFilterBiquad_F32	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1

@@ -8,7 +8,7 @@
  *      care about).
  * Assumes floating-point data.
  *          
- * This processes a single stream fo audio data (ie, it is mono)       
+ * This processes a single stream of audio data (ie, it is mono)       
  *          
  * MIT License.  use at your own risk.
 */
@@ -31,9 +31,9 @@ public:
 	
     virtual void update(void);
 
-    void setChannel(unsigned int channel) {
-      if (channel >= 4 || channel < 0) return;
-      outputChannel = channel;
+    int setChannel(unsigned int channel) {
+      if (channel >= 4 || channel < 0) return outputChannel;  //invalid!  stick with previous channel
+      return outputChannel = channel;
     }
 
   private:

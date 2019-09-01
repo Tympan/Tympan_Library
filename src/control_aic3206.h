@@ -22,9 +22,10 @@
 #define TYMPAN_INPUT_JACK_AS_MIC        4   //uses IN3 analog inputs *and* enables mic bias
 
 //convenience names to use with outputSelect()
-#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1
-#define TYMPAN_OUTPUT_LINE_OUT 2
-#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3
+#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
+#define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
+#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out 
+#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
 
 //names to use with setMicBias() to set the amount of bias voltage to use
 #define TYMPAN_MIC_BIAS_OFF             0
@@ -86,7 +87,7 @@ public:
 	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz);
 	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
-	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
+	void setHpfIIRCoeffOnADC(int chan, uint32_t *coeff);
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
@@ -108,8 +109,8 @@ protected:
   int resetPinAIC = AIC3206_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
   float HP_cutoff_Hz = 0.0f;
   float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
-  void setIIRCoeffOnADC_Left(uint32_t *coeff);
-  void setIIRCoeffOnADC_Right(uint32_t *coeff);
+  void setHpfIIRCoeffOnADC_Left(uint32_t *coeff);
+  void setHpfIIRCoeffOnADC_Right(uint32_t *coeff);
   
 };
 

@@ -13,34 +13,34 @@ install:
     - platformio update
 
 script:
-    - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino
-    - platformio ci --project-conf=platformio.ini examples/01-Basic/BasicGain/BasicGain.ino
-    - platformio ci --project-conf=platformio.ini examples/01-Basic/ChangeSampleRate/ChangeSampleRate.ino
-    - platformio ci --project-conf=platformio.ini examples/01-Basic/PrintCPUandMemoryUsage/PrintCPUandMemoryUsage.ino
-    - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost/TrebleBoost.ino
-    - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost_wComp/TrebleBoost_wComp.ino
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino --lib="examples/01-Basic/AudioPassThru"
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/BasicGain/BasicGain.ino --lib="examples/01-Basic/BasicGain"
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/ChangeSampleRate/ChangeSampleRate.ino --lib="examples/01-Basic/ChangeSampleRate"
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/PrintCPUandMemoryUsage/PrintCPUandMemoryUsage.ino --lib="examples/01-Basic/PrintCPUandMemoryUsage"
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost/TrebleBoost.ino --lib="examples/01-Basic/TrebleBoost"
+    - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost_wComp/TrebleBoost_wComp.ino --lib="examples/01-Basic/TrebleBoost_wComp"
 
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/AudioViaUSB/AudioViaUSB.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerialAndBluetooth/ControlViaSerialAndBluetooth.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/DetectExtMic/DetectExtMic.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/MyAudioAlgorithm/MyAudioAlgorithm.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/OutputToneWithSteppedAmplitude/OutputToneWithSteppedAmplitude.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/RenameTympanBT/RenameTympanBT.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/SerialControlledSDWriter/SerialControlledSDWriter.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter/SoundLevelMeter.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter_2Chan/SoundLevelMeter_2Chan.ino
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/StereoAudioToSD_Fast/StereoAudioToSD_Fast.ino
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/AudioViaUSB/AudioViaUSB.ino --lib="examples/02-Utility/AudioViaUSB"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino --lib="examples/02-Utility/ControlViaSerial"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerialAndBluetooth/ControlViaSerialAndBluetooth.ino --lib="examples/02-Utility/ControlViaSerialAndBluetooth"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/DetectExtMic/DetectExtMic.ino --lib="examples/02-Utility/DetectExtMic"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/MyAudioAlgorithm/MyAudioAlgorithm.ino --lib="examples/02-Utility/MyAudioAlgorithm"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/OutputToneWithSteppedAmplitude/OutputToneWithSteppedAmplitude.ino --lib="examples/02-Utility/OutputToneWithSteppedAmplitude"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/RenameTympanBT/RenameTympanBT.ino --lib="examples/02-Utility/RenameTympanBT"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SerialControlledSDWriter/SerialControlledSDWriter.ino --lib="examples/02-Utility/SerialControlledSDWriter"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter/SoundLevelMeter.ino --lib="examples/02-Utility/SoundLevelMeter"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter_2Chan/SoundLevelMeter_2Chan.ino --lib="examples/02-Utility/SoundLevelMeter_2Chan"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/StereoAudioToSD_Fast/StereoAudioToSD_Fast.ino --lib="examples/02-Utility/StereoAudioToSD_Fast"
 
-    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_FIR_8Band/WDRC_FIR_8Band.ino
-    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_SingleBand/WDRC_SingleBand.ino
+    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_FIR_8Band/WDRC_FIR_8Band.ino --lib="examples/03-Intermediate/WDRC_FIR_8Band"
+    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_SingleBand/WDRC_SingleBand.ino --lib="examples/03-Intermediate/WDRC_SingleBand"
 
-    - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/FormantShifter_FD/FormantShifter_FD.ino
-    - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/LowpassFilter_FD/LowpassFilter_FD.ino
+    - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/FormantShifter_FD/FormantShifter_FD.ino --lib="examples/04-FrequencyDomain/FormantShifter_FD"
+    - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/LowpassFilter_FD/LowpassFilter_FD.ino --lib="examples/04-FrequencyDomain/LowpassFilter_FD"
 
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wBT_wAFC/WDRC_3BandIIR_wBT_wAFC.ino
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR_wBT/WDRC_8BandFIR_wBT.ino
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFreqWarpFIR/WDRC_8BandFreqWarpFIR.ino
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wBT/WDRC_8BandIIR_wBT.ino
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wBT_wAFC/WDRC_8BandIIR_wBT_wAFC.ino
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wBT_wAFC/WDRC_3BandIIR_wBT_wAFC.ino --lib="examples/05-FullSystems/WDRC_3BandIIR_wBT_wAFC"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino --lib="examples/05-FullSystems/WDRC_8BandFIR"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR_wBT/WDRC_8BandFIR_wBT.ino --lib="examples/05-FullSystems/WDRC_8BandFIR_wBT"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFreqWarpFIR/WDRC_8BandFreqWarpFIR.ino --lib="examples/05-FullSystems/WDRC_8BandFreqWarpFIR"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wBT/WDRC_8BandIIR_wBT.ino --lib="examples/05-FullSystems/WDRC_8BandIIR_wBT"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wBT_wAFC/WDRC_8BandIIR_wBT_wAFC.ino --lib="examples/05-FullSystems/WDRC_8BandIIR_wBT_wAFC"
