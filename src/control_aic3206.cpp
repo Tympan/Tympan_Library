@@ -490,6 +490,27 @@ bool AudioControlAIC3206::outputSelect(int n) {
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Headphone Jack and Line out");
 		return true;	
+  } else if (n == TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO) {
+		aic_writePage(1, 12, 0b00001000); // route Left DAC Pos to Headphone Left
+		aic_writePage(1, 13, 0b00010000); // route Left DAC Neg to Headphone Right
+		aic_writePage(1, 14, 0b00010000); // route Right DAC Neg to Lineout Left
+		aic_writePage(1, 15, 0b00001000); // route Right DAC Pos to Lineout Right
+		
+		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
+		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain		
+		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
+		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
+
+		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
+		
+		delay(100);
+		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+
+		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Diff Headphone Jack and Line out");
+		return true;			
   }
   Serial.print("AudioControlAIC3206: ERROR: Unable to Select Output - Value not supported: ");
   Serial.println(n);
