@@ -22,9 +22,10 @@
 #define TYMPAN_INPUT_JACK_AS_MIC        4   //uses IN3 analog inputs *and* enables mic bias
 
 //convenience names to use with outputSelect()
-#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1
-#define TYMPAN_OUTPUT_LINE_OUT 2
-#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3
+#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
+#define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
+#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out 
+#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
 
 //names to use with setMicBias() to set the amount of bias voltage to use
 #define TYMPAN_MIC_BIAS_OFF             0
