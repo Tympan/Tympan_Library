@@ -90,6 +90,7 @@ public:
 	void setHpfIIRCoeffOnADC(int chan, uint32_t *coeff); //alternate way of settings the same 1st-order HP filter
 	float setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chan, int biquadIndex); //lowpass applied within 3206 hardware, ADC (input) side
 	int setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32);
+	void writeBiquadCoeff(uint32_t *coeff_uint32, int *page_reg_table, int table_ncol);
 	
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	bool enableAutoMuteDAC(bool, uint8_t);
@@ -119,7 +120,7 @@ protected:
   //void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
   void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
-  void convertCoeff_f32_to_i32(float *coeff_f32, int coeff_i16, int ncoeff);
+  void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
 	
   
 };

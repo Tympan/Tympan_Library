@@ -688,7 +688,7 @@ int AudioControlAIC3206::readMicDetect(void) {
 
 
 
-float setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chanIndex, int biquadIndex) 
+float AudioControlAIC3206::setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chanIndex, int biquadIndex) 
 {
 	//Purpose: Creare biquad filter coefficients to be applied within 3206 hardware, ADC (input) side	
 	//
@@ -703,16 +703,17 @@ float setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chanInd
 	float q = 0.707;  //assume critically damped (sqrt(2)), which makes this a butterworth filter
 	if (type == 1) {
 		//lowpass
-		computeFirstOrderLPCoeff_f32(cutoff_Hz, sampleRate_Hz, q, *coeff);
+		computeBiquadCoeff_LP_f32(cutoff_Hz, sampleRate_Hz, q, coeff_f32);
 	} else if (type == 2) {
 		//highpass
-		computeFirstOrderHPCoeff_f32(cutoff_Hz, sampleRate_Hz, q, *coeff);
+		computeBiquadCoeff_HP_f32(cutoff_Hz, sampleRate_Hz, q, coeff_f32);
 	} else {
 		//unknown
-		reutrn -1.0;
+		return -1.0;
 	}
-	convertCoeff_f32_to_i32(coeff_f32, coeff_uint32, ncoeff);
+	convertCoeff_f32_to_i32(coeff_f32, (int32_t *)coeff_uint32, ncoeff);
 	setBiquadCoeffOnADC(chanIndex, biquadIndex, coeff_uint32); //needs twos-compliment
+	return cutoff_Hz;
 }
 	
 
@@ -779,17 +780,17 @@ void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleR
 //		coeff[i] = (int32_t)coeff_f32[i];
 //	}
 //}
-void AudioControlAIC3206::convertCoeff_f32_to_i32(float *coeff_f32, int *coeff_i32, int ncoeff) {
+void AudioControlAIC3206::convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff) {
 	for (int i=0; i< ncoeff; i++) {
 		//scale
 		coeff_f32[i] *= (float)CONST_2_31_m1;
 		
 		//truncate
-		coeff[i] = (int32_t)coeff_f32[i];
+		coeff_i32[i] = (int32_t)coeff_f32[i];
 	}
 }
 
-int setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32) //needs twos-compliment
+int AudioControlAIC3206::setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32) //needs twos-compliment
 {
 	//See TI application guide for the AIC3206 http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	//See section 2.3.3.1.10.2
@@ -798,53 +799,78 @@ int setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32) 
 	uint32_t prev_state = aic_readPage(0x00,0x51);
 	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
 	
-	//enter table 2-14 from TI Application Guide
+	//use table 2-14 from TI Application Guide...
+	int page_reg_table[]={ 
+		8, 36, 9, 44,   // N0, start of Biquad A
+		8, 40, 9, 48,   // N1
+		8, 44, 9, 52,   // N2
+		8, 48, 9, 56,   // D1
+		8, 52, 8, 64,   // D2
+		8, 56, 9, 64,    // start of biquad B
+		8, 60, 9, 68, 
+		8, 64, 9, 72, 
+		8, 68, 9, 76, 
+		8, 72, 9, 80, 
+		8, 76, 9, 84,   // start of Biquad C
+		8, 80, 9, 88, 
+		8, 84, 9, 92, 
+		8, 88, 9, 96, 
+		8, 92, 9, 100, 
+		8, 96, 9, 104,   // start of Biquad D
+		8, 100, 9, 108,
+		8, 104, 9, 112, 
+		8, 108, 9, 116, 
+		8, 112, 9, 120, 
+		8, 116, 9, 124,  //start of Biquad E
+		8, 120, 10, 8, 
+		8, 124, 10, 12, 
+		9, 8, 10, 16, 
+	    9, 12, 10, 20 
+	};
+		
+	const int rows_per_biquad = 5;
+	const int table_ncol = 4;
+	int chan_offset;
 	
 	switch (chanIndex) {
 		case BOTH_CHAN:
+			chan_offset = 0;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);		
+			chan_offset = 1;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
 			break;
 		case LEFT_CHAN:
+			chan_offset = 0;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
 			break;
 		case RIGHT_CHAN:
+			chan_offset = 1;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
 			break;
 		default:
 			return -1;
 			break;
-	}
-			
-	
+	}	
 	
 	//power the ADC back up
 	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
+	return 0;
 }
-		
-void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
-	int page;
-	uint32_t c;
-	
-	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
-	
-	//Coeff N0, Coeff C4
-	page = 8;
-	c = coeff[0];
-	aic_writePage(page,24,(uint8_t)(c>>24));
-	aic_writePage(page,25,(uint8_t)(c>>16));
-	aic_writePage(page,26,(uint8_t)(c>>8));
-	//int foo  = aic_readPage(page,24);	Serial.print("setIIRCoeffOnADC: first coefficient: ");  Serial.println(foo);
 
-	//Coeff N1, Coeff C5
-	c = coeff[1];
-	aic_writePage(page,28,(uint8_t)(c>>24));
-	aic_writePage(page,29,(uint8_t)(c>>16));
-	aic_writePage(page,30,(uint8_t)(c>>8));
-	
-	//Coeff N2, Coeff C6
-	c = coeff[2];
-	aic_writePage(page,32,(uint8_t)(c>>24));
-	aic_writePage(page,33,(uint8_t)(c>>16));
-	aic_writePage(page,34,(uint8_t)(c>>9));	
-	
-}
+void AudioControlAIC3206::writeBiquadCoeff(uint32_t *coeff_uint32, int *page_reg_table, int table_ncol) {
+	int page, reg;
+	uint32_t c;
+	for (int i = 0; i < 5; i++) {
+		page = page_reg_table[i*table_ncol];
+		reg = page_reg_table[i*table_ncol+1];
+		c = coeff_uint32[i];
+		aic_writePage(page,reg,(uint8_t)(c>>24));
+		aic_writePage(page,reg+1,(uint8_t)(c>>16));
+		aic_writePage(page,reg+2,(uint8_t)(c>>8));	
+	}
+	return;
+}	
+
 	
 void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz) { //fs_Hz is sample rate
 	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
@@ -857,9 +883,9 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 			computeFirstOrderHPCoeff_i32(cutoff_Hz,fs_Hz,(int32_t *)coeff);
 		#else
 			//new
-			float coeff[3];
+			float coeff_f32[3];
 			computeFirstOrderHPCoeff_f32(cutoff_Hz, fs_Hz, coeff_f32);
-			convertCoeff_f32_to_i32(coeff_f32, coeff, 3);
+			convertCoeff_f32_to_i32(coeff_f32, (int32_t *)coeff, 3);
 		#endif
 		
 		//Serial.print("enableHPFonADC: coefficients, Hex: ");
