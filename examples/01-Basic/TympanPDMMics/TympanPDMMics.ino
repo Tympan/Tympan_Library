@@ -8,6 +8,7 @@
 //  -Select from PCB mic, line in, or digital PDM mic 
 //  -Pass thru audio
 //  -SD recording
+//  -Control heaphone output volume 
 
 // Setup: Breakout board for the PDM mic (S2GO MEMSMIC IM69D) wired to a Tympan RevC 
 
@@ -272,6 +273,12 @@ void incrementInputGain(float increment_dB) {
   audioHardware.setInputGain_dB(input_gain_dB);
 }
 
+//Increment Headphone Output Volume
+void incrementHeadphoneVol(float increment_dB) {
+  vol_knob_gain_dB += increment_dB;
+  audioHardware.volume_dB(vol_knob_gain_dB);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+}
+
 
 void printCPUandMemory(unsigned long curTime_millis) {
   static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
@@ -346,5 +353,3 @@ void serviceSD(void) {
       queueRight.clearOverrun();
       i2s_in.clear_isOutOfMemory();
     }
-  }
-}

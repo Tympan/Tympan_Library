@@ -18,7 +18,8 @@ class SerialManager {
     void respondToByte(char c);
     void printHelp(void); 
     void printGainSettings(void);
-    float gainIncrement_dB = 2.5f;  
+    const float INCREMENT_INPUT_GAIN_DB = 2.5f;  
+    const float INCREMENT_HEADPHONE_GAIN_DB = 2.5f;  
 
   private:
     TympanBase &audioHardware;
@@ -33,8 +34,8 @@ void SerialManager::printHelp(void) {
   audioHardware.println("   r: begin recording");
   audioHardware.println("   s: stop recording");
   audioHardware.println("   b/n/m/v/d: Switch between (b) on-PCB mic; (n) line-input (single-ended); (m) mic jack; (d) digital PDM mic");
-  audioHardware.print  ("   o: Increase the volume by "); audioHardware.print(gainIncrement_dB); audioHardware.println(" dB");
-  audioHardware.print  ("   i: Decrease the volume by "); audioHardware.print(gainIncrement_dB); audioHardware.println(" dB");
+  audioHardware.print  ("   i/o: Decrease/Increase the Input Gain by "); audioHardware.print(INCREMENT_INPUT_GAIN_DB); audioHardware.println(" dB");
+  audioHardware.print  ("   j/k: Decrease/Increase the Headphone Volume by "); audioHardware.print(INCREMENT_HEADPHONE_GAIN_DB); audioHardware.println(" dB");
    audioHardware.println("   C: Toggle printing of CPU and Memory usage");
 
   audioHardware.println();
@@ -47,6 +48,8 @@ extern void togglePrintMemoryAndCPU(void);
 extern void beginRecordingProcess(void);
 extern void stopRecording(void);
 extern void incrementInputGain(float);
+extern void incrementHeadphoneVol(float);
+
 
 //Extern variables
 extern float vol_knob_gain_dB;
@@ -68,11 +71,19 @@ void SerialManager::respondToByte(char c) {
       audioHardware.println("Command Received: toggle printing of memory and CPU usage.");
       togglePrintMemoryAndCPU(); break;
     case 'o':
-      incrementInputGain(gainIncrement_dB);
+      incrementInputGain(INCREMENT_INPUT_GAIN_DB);
       printGainSettings();
       break;
     case 'i':   //which is "shift i"
-      incrementInputGain(-gainIncrement_dB);
+      incrementInputGain(-INCREMENT_INPUT_GAIN_DB);
+      printGainSettings();  
+      break;
+    case 'k':
+      incrementHeadphoneVol(INCREMENT_HEADPHONE_GAIN_DB);
+      printGainSettings();
+      break;
+    case 'j':   //which is "shift i"
+      incrementHeadphoneVol(-INCREMENT_HEADPHONE_GAIN_DB);
       printGainSettings();  
       break;
     case 'b':
