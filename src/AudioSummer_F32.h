@@ -54,7 +54,7 @@ class AudioSummer8_F32 : public AudioStream_F32 {
 //GUI: inputs:8, outputs:1  //this line used for automatic generation of GUI node
 //GUI: shortName:Summer4
 public:
-    AudioSummer8_F32() : AudioStream_F32(4, inputQueueArray) { setDefaultValues(); }
+    AudioSummer8_F32() : AudioStream_F32(8, inputQueueArray) { setDefaultValues(); }
 	AudioSummer8_F32(const AudioSettings_F32 &settings) : AudioStream_F32(8, inputQueueArray) { setDefaultValues(); }
 	
 	void setDefaultValues(void) {
