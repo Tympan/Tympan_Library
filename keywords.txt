@@ -83,6 +83,8 @@ stopRecording		KEYWORD2
 SDWriter		KEYWORD1
 BufferedSDWriter	KEYWORD1
 
+AudioSummer_F32		KEYWORD1
+enableChannel		KEYWORD2
 AudioSwitch4_F32	KEYWORD1
 setChannel		KEYWORD2
 

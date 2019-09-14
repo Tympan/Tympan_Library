@@ -25,6 +25,7 @@
 #include "AudioMathScale_F32.h"
 #include "AudioSettings_F32.h"
 #include "AudioSDWriter_F32.h"
+#include "AudioSummer_F32.h"
 #include "AudioSwitch_F32.h"
 #include "FFT_F32.h"
 #include "FFT_Overlapped_F32.h"
