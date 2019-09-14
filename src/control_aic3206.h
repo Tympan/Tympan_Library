@@ -84,16 +84,20 @@ public:
 	bool debugToSerial;
     unsigned int aic_readPage(uint8_t page, uint8_t reg);
     bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
-	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz);
+	
+	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz); //first-order HP applied within this 3206 hardware, ADC (input) side
 	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
+	void setHpfIIRCoeffOnADC(int chan, uint32_t *coeff); //alternate way of settings the same 1st-order HP filter
+	float setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chan, int biquadIndex); //lowpass applied within 3206 hardware, ADC (input) side
+	int setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32);
+	void writeBiquadCoeff(uint32_t *coeff_uint32, int *page_reg_table, int table_ncol);
+	
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
-	void setHpfIIRCoeffOnADC(int chan, uint32_t *coeff);
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
 	bool enableDigitalMicInputs(bool desired_state);
-	void computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff);
-	void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
+	
 protected:
   TwoWire *myWire = &Wire;  //from Wire.h
   void setI2Cbus(int i2cBus);
@@ -111,6 +115,13 @@ protected:
   float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
   void setHpfIIRCoeffOnADC_Left(uint32_t *coeff);
   void setHpfIIRCoeffOnADC_Right(uint32_t *coeff);
+
+  void computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff);
+  //void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
+  void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+  void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+  void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
+	
   
 };
 

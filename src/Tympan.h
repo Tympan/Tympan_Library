@@ -167,8 +167,13 @@ class TympanBase : public AudioControlAIC3206, public Print
 			pinMode(pins.redLED,OUTPUT); digitalWrite(pins.redLED,LOW);
 			if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
 				pinMode(pins.enableStereoExtMicBias,OUTPUT);
-				setEnableStereoExtMicBias(false); //enable stereo external mics (REV_D)
+				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
 			}
+			if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
+				pinMode(pins.AIC_Shield_enableStereoExtMicBias,OUTPUT);
+				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
+			}
+			
 
 			//get the comm pins and setup the regen and reset pins
 			USB_Serial = pins.getUSBSerial();
@@ -219,6 +224,14 @@ class TympanBase : public AudioControlAIC3206, public Print
 				return pins.enableStereoExtMicBias;
 			}
 		}
+		int setEnableStereoExtMicBiasAIC(int new_state) {
+			if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
+				digitalWrite(pins.AIC_Shield_enableStereoExtMicBias,new_state);
+				return new_state;
+			} else {
+				return pins.AIC_Shield_enableStereoExtMicBias;
+			}
+		}		
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
 		usb_serial_class *getUSBSerial(void) { return USB_Serial; }
