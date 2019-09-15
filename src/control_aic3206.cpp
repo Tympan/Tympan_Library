@@ -325,7 +325,7 @@ void AudioControlAIC3206::aic_initADC() {
 }
 
 // set MICPGA volume, 0-47.5dB in 0.5dB setps
-bool AudioControlAIC3206::setInputGain_dB(float volume) {
+float AudioControlAIC3206::setInputGain_dB(float volume) {
   if (volume < 0.0) {
     volume = 0.0; // 0.0 dB
     Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
@@ -334,7 +334,8 @@ bool AudioControlAIC3206::setInputGain_dB(float volume) {
     volume = 47.5; // 47.5 dB
     Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
   }
-
+  float vol_dB = volume;
+  
   volume = volume * 2.0; // convert to value map (0.5 dB steps)
   int8_t volume_int = (int8_t) (round(volume)); // round
 
@@ -347,7 +348,7 @@ bool AudioControlAIC3206::setInputGain_dB(float volume) {
 
   aic_writeAddress(TYMPAN_MICPGA_LEFT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Left MicPGA, set gain to 0 dB
   aic_writeAddress(TYMPAN_MICPGA_RIGHT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Right MicPGA, set gain to 0 dB
-  return true;
+  return vol_dB;
 }
 
 //******************* OUTPUT DEFINITIONS *****************************//
@@ -391,6 +392,7 @@ float AudioControlAIC3206::volume_dB(float volume) {
     volume = -63.5;
     Serial.println("AudioControlAIC3206: WARNING: Attempting to set DAC Volume outside range");
   }
+  float vol_dB = volume;
 
   volume = volume * 2.0; // convert to value map (0.5 dB steps)
   int8_t volume_int = (int8_t) (round(volume)); // round
@@ -404,7 +406,7 @@ float AudioControlAIC3206::volume_dB(float volume) {
 
   aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, volume_int);
   aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG, volume_int);
-  return volume;
+  return vol_dB;
 }
 
 void AudioControlAIC3206::aic_initDAC() {
