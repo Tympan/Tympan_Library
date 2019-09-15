@@ -171,7 +171,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 			}
 			if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
 				pinMode(pins.AIC_Shield_enableStereoExtMicBias,OUTPUT);
-				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
+				setEnableStereoExtMicBiasAIC(true); //enable stereo external mics (REV_D)
 			}
 			
 
