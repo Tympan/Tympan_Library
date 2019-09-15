@@ -152,7 +152,7 @@ void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
   }
 }
 bool AudioControlAIC3206::enable(void) {
-  delay(100);
+  delay(10);
   myWire->begin();
   delay(5);
 
@@ -165,10 +165,10 @@ bool AudioControlAIC3206::enable(void) {
   digitalWrite(RESET_PIN,LOW);delay(50);  //reset
   digitalWrite(RESET_PIN,HIGH);delay(50);//not reset
 	
-  aic_reset(); delay(100);  //soft reset
-  aic_init(); delay(100);
-  aic_initADC(); delay(100);
-  aic_initDAC(); delay(100);
+  aic_reset(); //delay(50);  //soft reset
+  aic_init(); //delay(10);
+  aic_initADC(); //delay(10);
+  aic_initDAC(); //delay(10);
 
   aic_readPage(0, 27); // check a specific register - a register read test
 
@@ -380,7 +380,7 @@ bool AudioControlAIC3206::enableAutoMuteDAC(bool enable, uint8_t mute_delay_code
 }
 
 // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
-bool AudioControlAIC3206::volume_dB(float volume) {
+float AudioControlAIC3206::volume_dB(float volume) {
 
   // Constrain to limits
   if (volume > 24.0) {
@@ -404,7 +404,7 @@ bool AudioControlAIC3206::volume_dB(float volume) {
 
   aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, volume_int);
   aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG, volume_int);
-  return true;
+  return volume;
 }
 
 void AudioControlAIC3206::aic_initDAC() {
@@ -446,7 +446,7 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
 		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
 		aic_writePage(1, 9, 0x30); // Power up HPL/HPR drivers  0b00110000
-		delay(100);
+		delay(50);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -462,7 +462,7 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
 		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain
 		aic_writePage(1, 9, 0b00001100); // Power up LOL/LOR drivers
-		delay(100);
+		delay(50);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -483,7 +483,7 @@ bool AudioControlAIC3206::outputSelect(int n) {
 
 		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
 		
-		delay(100);
+		delay(50);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -504,7 +504,7 @@ bool AudioControlAIC3206::outputSelect(int n) {
 
 		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
 		
-		delay(100);
+		delay(50);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
