@@ -25,10 +25,6 @@ void AudioEffectFreqShiftFD_F32::update(void)
   int fftSize = myFFT.getNFFT();
   int N_2 = fftSize / 2 + 1;
   int source_ind; // neg_dest_ind;
-  //float source_ind_float, interp_fac;
-  //float new_mag, scale;
-  //float orig_mag[N_2];
-  //int max_source_ind = (int)(((float)N_2) * (10000.0 / (48000.0 / 2.0))); //highest frequency bin to grab from (Assuming 48kHz sample rate)
 
 
   if (shift_bins < 0) {

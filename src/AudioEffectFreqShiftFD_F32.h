@@ -79,8 +79,6 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
       return N_FFT;
     }
 
-    //void setLowpassFreq_Hz(float freq_Hz) { lowpass_freq_Hz = freq_Hz;  }
-    //float getLowpassFreq_Hz(void) {   return lowpass_freq_Hz; }
     int setShift_bins(int _shift_bins) {
       return shift_bins = _shift_bins;
     }
@@ -96,7 +94,6 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
-    float lowpass_freq_Hz = 1000.f;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
 
     int shift_bins = 0; //how much to shift the frequency
