@@ -73,7 +73,7 @@ public:
 	bool disable(void);
 	bool outputSelect(int n);
 	bool volume(float n);
-	bool volume_dB(float n);
+	float volume_dB(float n);
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
 	bool inputSelect(int n);
 	bool setInputGain_dB(float n);
