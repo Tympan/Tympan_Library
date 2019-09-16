@@ -141,8 +141,8 @@ void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
   switch (i2cBusIndex) {
 	case 0:
 		myWire = &Wire; break;
-	//case 1:
-	//	myWire = &Wire1; break;  //defined in WireKinetis.h via Teensy's 
+	case 1:
+		myWire = &Wire1; break;  //defined in WireKinetis.h via Teensy's 
 	case 2:
 		myWire = &Wire2; break; //defined in WireKinetis.h via Teensy's Wire.h
 	//case 3:
