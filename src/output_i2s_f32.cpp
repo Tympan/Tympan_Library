@@ -77,7 +77,7 @@
 	end
 */
 float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
-	int freq = (int)freq_Hz;
+	int freq = (int)(freq_Hz+0.5);
   typedef struct {
     uint8_t mult;
     uint16_t div;
