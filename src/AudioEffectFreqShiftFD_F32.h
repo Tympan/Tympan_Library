@@ -42,7 +42,6 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
 
     int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
       sample_rate_Hz = settings.sample_rate_Hz;
-      int N_FFT;
 
       //setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
       N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
@@ -85,7 +84,13 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
     int getShift_bins(void) {
       return shift_bins;
     }
-
+	float getShift_Hz(void) {
+		return getFrequencyOfBin(shift_bins);
+	}
+	float getFrequencyOfBin(int bin) { //"bin" should be zero to (N_FFT-1)
+		return sample_rate_Hz * ((float)bin) / ((float) N_FFT);
+	}
+	
     virtual void update(void);
 
   private:
@@ -95,6 +100,7 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
+	int N_FFT = -1;
 
     int shift_bins = 0; //how much to shift the frequency
 };
