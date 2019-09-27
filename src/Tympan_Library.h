@@ -38,6 +38,7 @@
 #include "synth_pinknoise_f32.h"
 #include "synth_waveform_F32.h"
 #include "synth_whitenoise_f32.h"
+#include "synth_silence_f32.h"
 #include "synth_sine_f32.h"
 #include "synth_tonesweep_F32.h"
 #include "Tympan.h"

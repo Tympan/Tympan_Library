@@ -92,6 +92,8 @@ setChannel		KEYWORD2
 
 AudioSynthNoiseWhite_F32	KEYWORD1
 AudioSynthNoisePink_F32	KEYWORD1
+AudioSynthSilence_F32	KEYWORD1
+
 AudioSynthWaveform_F32	KEYWORD1
 
 
