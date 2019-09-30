@@ -48,6 +48,7 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
       if (N_FFT < 1) return N_FFT;
       N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
       if (N_FFT < 1) return N_FFT;
+	  
 
       //decide windowing
       //Serial.println("AudioEffectFreqShiftFD_F32: setting myFFT to use hanning...");
@@ -59,6 +60,26 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
         }
       #endif
 
+ 	  //decide how much overlap is happening
+	  switch (myIFFT.getNBuffBlocks()) {
+		  case 0:
+			//should never happen
+			break;
+		  case 1:
+		    overlap_amount = NONE;
+			break;
+		  case 2:
+		    overlap_amount = HALF;
+			break;
+		  case 3:
+			//to do...need to add phase shifting logic to the update() function to support this case
+			break;
+		  case 4:
+		    //to do...need to add phase shifting logic to the update() function to support this case
+			break;
+	  }
+			
+	  
 	  #if 0
       //print info about setup
       Serial.println("AudioEffectFreqShiftFD_F32: FFT parameters...");
@@ -101,7 +122,10 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
     IFFT_Overlapped_F32 myIFFT;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
 	int N_FFT = -1;
-
+	enum OVERLAP_OPTIONS {NONE, HALF};  //evenutally extend to THREE_QUARTERS
+	int overlap_amount = NONE;
+	int overlap_block_counter = 0;
+	
     int shift_bins = 0; //how much to shift the frequency
 };
 
