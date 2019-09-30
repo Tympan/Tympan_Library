@@ -75,6 +75,7 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
 			//to do...need to add phase shifting logic to the update() function to support this case
 			break;
 		  case 4:
+			overlap_amount = THREE_QUARTERS;
 		    //to do...need to add phase shifting logic to the update() function to support this case
 			break;
 	  }
@@ -122,7 +123,7 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
     IFFT_Overlapped_F32 myIFFT;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
 	int N_FFT = -1;
-	enum OVERLAP_OPTIONS {NONE, HALF};  //evenutally extend to THREE_QUARTERS
+	enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to THREE_QUARTERS
 	int overlap_amount = NONE;
 	int overlap_block_counter = 0;
 	
