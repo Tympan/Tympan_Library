@@ -77,7 +77,7 @@
 // PB25 - RC = 12.  Use M8, N2
 
 
-#if 1
+#if 0
 	//standard setup for 44 kHz
 	#define DOSR                                                            128
 	#define NDAC                                                              2
