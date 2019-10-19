@@ -76,18 +76,38 @@
 // PB1 - RC = 8.  Use M8, N2
 // PB25 - RC = 12.  Use M8, N2
 
-#define DOSR                                                            128
-#define NDAC                                                              2
-#define MDAC                                                              8
 
-#define AOSR                                                            128
-#define NADC                                                              2
-#define MADC                                                              8
+#if 1
+	//standard setup for 44 kHz
+	#define DOSR                                                            128
+	#define NDAC                                                              2
+	#define MDAC                                                              8
 
-// Signal Processing Modes, Playback and Recording.
-#define PRB_P                                                             1
-#define PRB_R                                                             1
+	#define AOSR                                                            128
+	#define NADC                                                              2
+	#define MADC                                                              8
 
+	// Signal Processing Modes, Playback and Recording....for standard operation (AOSR 128)
+	#define PRB_P                                                             1
+	#define PRB_R                                                             1
+
+#else
+	//low latency setup
+	//standard setup for 44 kHz
+	#define DOSR                                                            32
+	#define NDAC                                                              (2*4)
+	#define MDAC                                                              8
+
+	#define AOSR                                                            32
+	#define NADC                                                              (2*4)
+	#define MADC                                                              8
+
+	// Signal Processing Modes, Playback and Recording....for low-latency operation (AOSR 32)
+	#define PRB_P                                                             17    //DAC
+	#define PRB_R                                                             13    //ADC
+
+#endif  //for standard vs low-latency setup
+	
 #endif // end fs if block
 
 //**************************** Chip Setup **********************************//
