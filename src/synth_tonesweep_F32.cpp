@@ -46,55 +46,57 @@
 
 
 boolean AudioSynthToneSweep_F32::play(float t_amp,float t_lo,float t_hi,float t_time) {
-	return play(t_amp, t_lo, t_hi, t_time, (float)AUDIO_SAMPLE_RATE_EXACT);
+
+	float tone_tmp;
+  
+	if(0) {
+	  Serial.print("AudioSynthToneSweep.begin(tone_amp = ");
+	  Serial.print(t_amp);
+	  Serial.print(", tone_lo = ");
+	  Serial.print(t_lo);
+	  Serial.print(", tone_hi = ");
+	  Serial.print(t_hi);
+	  Serial.print(", tone_time = ");
+	  Serial.print(t_time,1);
+	  Serial.println(")");
+	}
+	tone_amp = 0.f;
+	if(t_amp < 0.0)return false;
+	if(t_amp > 1.0)return false;
+	if(t_lo < 1.0)return false;
+	if(t_hi < 1.0)return false;
+	if(t_hi >= (int) fs_Hz / 2.0)return false;
+	if(t_lo >= (int) fs_Hz / 2.0)return false;
+	if(t_time <= 0.0)return false;
+	tone_lo = t_lo;
+	tone_hi = t_hi;
+	tone_phase = 0.0;
+
+	//tone_amp = t_amp * 32767.0;
+	tone_amp = t_amp;
+
+	//tone_freq = tone_lo*0x100000000LL;
+	tone_freq = tone_lo;
+	if (tone_hi >= tone_lo) {
+		tone_tmp = tone_hi - tone_lo;
+		tone_sign = 1;
+	} else {
+		tone_sign = -1;
+		tone_tmp = tone_lo - tone_hi;
+	}
+	tone_tmp = tone_tmp / t_time / fs_Hz;
+	//tone_incr = (tone_tmp * 0x100000000LL);
+	tone_incr = tone_tmp;
+	sweep_busy = 1;
+	return(true);
 }
 
 //fs_Hz is the sample rate
 boolean AudioSynthToneSweep_F32::play(float t_amp,float t_lo,float t_hi,float t_time,float _fs_Hz)
 {
-  float tone_tmp;
   fs_Hz = _fs_Hz;
+  return play(t_amp, t_lo, t_hi, t_time);
   
-if(0) {
-  Serial.print("AudioSynthToneSweep.begin(tone_amp = ");
-  Serial.print(t_amp);
-  Serial.print(", tone_lo = ");
-  Serial.print(t_lo);
-  Serial.print(", tone_hi = ");
-  Serial.print(t_hi);
-  Serial.print(", tone_time = ");
-  Serial.print(t_time,1);
-  Serial.println(")");
-}
-  tone_amp = 0.f;
-  if(t_amp < 0.0)return false;
-  if(t_amp > 1.0)return false;
-  if(t_lo < 1.0)return false;
-  if(t_hi < 1.0)return false;
-  if(t_hi >= (int) fs_Hz / 2.0)return false;
-  if(t_lo >= (int) fs_Hz / 2.0)return false;
-  if(t_time <= 0.0)return false;
-  tone_lo = t_lo;
-  tone_hi = t_hi;
-  tone_phase = 0.0;
-
-  //tone_amp = t_amp * 32767.0;
-  tone_amp = t_amp;
-
-  //tone_freq = tone_lo*0x100000000LL;
-  tone_freq = tone_lo;
-  if (tone_hi >= tone_lo) {
-    tone_tmp = tone_hi - tone_lo;
-    tone_sign = 1;
-  } else {
-    tone_sign = -1;
-    tone_tmp = tone_lo - tone_hi;
-  }
-  tone_tmp = tone_tmp / t_time / fs_Hz;
-  //tone_incr = (tone_tmp * 0x100000000LL);
-  tone_incr = tone_tmp;
-  sweep_busy = 1;
-  return(true);
 }
 
 
@@ -121,15 +123,14 @@ void AudioSynthToneSweep_F32::update(void)
     //uint32_t tmp  = tone_freq >> 32; 
     //uint64_t tone_tmp = (0x400000000000LL * (int)(tmp&0x7fffffff)) / (int) AUDIO_SAMPLE_RATE_EXACT;
 	float tone_tmp = tone_freq / fs_Hz;
+	const float two_pi_div_fs_Hz = two_pi / fs_Hz;
     // Generate the sweep
     for(i = 0;i < block->length;i++) {
       //*bp++ = (short)(( (short)(arm_sin_q31((uint32_t)((tone_phase >> 15)&0x7fffffff))>>16) *tone_amp) >> 15);
 	  *bp++  = arm_sin_f32(tone_phase) * tone_amp;
 	  
-      tone_phase +=  tone_tmp;
+      //tone_phase +=  tone_tmp;
 	  //if(tone_phase & 0x800000000000LL)tone_phase &= 0x7fffffffffffLL;
-	  if (tone_phase > two_pi) tone_phase -= two_pi;
-      
 
       if(tone_sign > 0) {
         if(tone_freq > tone_hi) {
@@ -137,14 +138,17 @@ void AudioSynthToneSweep_F32::update(void)
           break;
         }
         tone_freq += tone_incr;
+		tone_phase += (tone_freq * two_pi_div_fs_Hz);
       } else {
         if(tone_freq < tone_hi || tone_freq < tone_incr) {
           sweep_busy = 0;
 
           break;
         }
-        tone_freq -= tone_incr;        
+        tone_freq -= tone_incr;  
+		tone_phase += (tone_freq * two_pi_div_fs_Hz);		
       }
+	  if (tone_phase > two_pi) tone_phase -= two_pi;
     }
     while(i < block->length) {
       *bp++ = 0;
