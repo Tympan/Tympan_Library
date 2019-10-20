@@ -95,12 +95,12 @@
 	//low latency setup
 	//standard setup for 44 kHz
 	#define DOSR                                                            32
-	#define NDAC                                                              (2*4)
-	#define MDAC                                                              8
+	#define NDAC                                                              (2*4/2)
+	#define MDAC                                                              4
 
 	#define AOSR                                                            32
-	#define NADC                                                              (2*4)
-	#define MADC                                                              8
+	#define NADC                                                              (2*4/2)
+	#define MADC                                                              4
 
 	// Signal Processing Modes, Playback and Recording....for low-latency operation (AOSR 32)
 	#define PRB_P                                                             17    //DAC
