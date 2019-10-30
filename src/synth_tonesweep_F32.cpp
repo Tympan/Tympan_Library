@@ -122,7 +122,7 @@ void AudioSynthToneSweep_F32::update(void)
     bp = block->data;
     //uint32_t tmp  = tone_freq >> 32; 
     //uint64_t tone_tmp = (0x400000000000LL * (int)(tmp&0x7fffffff)) / (int) AUDIO_SAMPLE_RATE_EXACT;
-	float tone_tmp = tone_freq / fs_Hz;
+	//float tone_tmp = tone_freq / fs_Hz;
 	const float two_pi_div_fs_Hz = two_pi / fs_Hz;
     // Generate the sweep
     for(i = 0;i < block->length;i++) {
