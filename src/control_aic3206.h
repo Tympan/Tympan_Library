@@ -16,10 +16,12 @@
 
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
-#define TYMPAN_INPUT_LINE_IN            1   //uses IN1
-#define TYMPAN_INPUT_ON_BOARD_MIC       2   //uses IN2 analog inputs
-#define TYMPAN_INPUT_JACK_AS_LINEIN     3   //uses IN3 analog inputs
-#define TYMPAN_INPUT_JACK_AS_MIC        4   //uses IN3 analog inputs *and* enables mic bias
+#define TYMPAN_INPUT_LINE_IN            1   //uses IN1, on female Arduino-style headers (shared with BT Audio)
+#define TYMPAN_INPUT_BT_AUDIO	        1   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
+#define TYMPAN_INPUT_ON_BOARD_MIC       2   //uses IN2, for analog signals from microphones on PCB
+#define TYMPAN_INPUT_JACK_AS_LINEIN     3   //uses IN3, for analog signals from mic jack, no mic bias 
+#define TYMPAN_INPUT_JACK_AS_MIC        4   //uses IN3, for analog signals from mic jack, with mic bias
+
 
 //convenience names to use with outputSelect()
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
