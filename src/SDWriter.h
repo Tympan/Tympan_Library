@@ -75,7 +75,10 @@ class SDWriter : public Print
       return isFileOpen();
     }
 
-
+	bool exists(char *fname) {
+		return sd.exists(fname);
+	}
+	
     int close(void) {
       //file.truncate(); 
       if (flag__fileIsWAV) {

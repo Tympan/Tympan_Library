@@ -11,7 +11,7 @@ void AudioSDWriter_F32::prepareSDforRecording(void) {
   }
 }
 
-int AudioSDWriter_F32::startRecording(void) {
+/* int AudioSDWriter_F32::startRecording(void) {
   int return_val = 0;
 
   //check to see if the SD has been initialized
@@ -40,6 +40,54 @@ int AudioSDWriter_F32::startRecording(void) {
 	return_val = -1;
   }
   return return_val;
+} */
+
+//int AudioSDWriter_F32::startRecording_noOverwrite(void) {
+int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRecording"
+	int return_val = 0;
+
+	//check to see if the SD has been initialized
+	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+
+	//check to see if SD is ready
+	if (current_SD_state == STATE::STOPPED) {
+		bool done = false;
+		while ((!done) && (recording_count < 998)) {
+			
+			recording_count++;
+			if (recording_count < 1000) {
+				//make file name
+				char fname[] = "AUDIOxxx.WAV";
+				int hundreds = recording_count / 100;
+				fname[5] = hundreds + '0';  //stupid way to convert the number to a character
+				int tens = (recording_count - (hundreds*100)) / 10;  //truncates
+				fname[6] = tens + '0';  //stupid way to convert the number to a character
+				int ones = recording_count - (tens * 10) - (hundreds*100);
+				fname[7] = ones + '0';  //stupid way to convert the number to a character
+
+				//does the file exist?
+				if (buffSDWriter->exists(fname)) {
+					//loop around again
+					done = false;
+				} else {
+					//open the file
+					return_val = startRecording(fname);
+					done = true;
+				}
+			} else {
+				if (serial_ptr) serial_ptr->println("AudioSDWriter: start: Cannot do more than 999 files.");
+				done = true; //don't loop again
+			} //close if (recording_count)
+				
+		} //close the while loop
+
+	} else {
+		//SD subsystem is in the wrong state to start recording
+		if (serial_ptr) serial_ptr->println("AudioSDWriter: start: not in correct state to start.");
+		return_val = -1;
+	}
+	
+	return return_val;
 }
 
 int AudioSDWriter_F32::startRecording(char* fname) {

@@ -40,6 +40,7 @@ class AudioSDWriter {
     virtual void prepareSDforRecording(void) = 0;
     virtual int startRecording(void) = 0;
     virtual int startRecording(char *) = 0;
+	//virtual int startRecording_noOverwrite(void) = 0;
     virtual void stopRecording(void) = 0;
 
   protected:
@@ -155,6 +156,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     void prepareSDforRecording(void); //you can call this explicitly, or startRecording() will call it automatcally
     int startRecording(void);    //call this to start a WAV recording...automatically generates a filename
     int startRecording(char* fname); //or call this to specify your own filename.
+	//int startRecording_noOverwrite(void);
     void stopRecording(void);    //call this to stop recording
 
     //update is called by the Audio processing ISR.  This update function should
