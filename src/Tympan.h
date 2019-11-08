@@ -224,7 +224,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 				return pins.enableStereoExtMicBias;
 			}
 		}
-		int setEnableStereoExtMicBiasAIC(int new_state) {
+		int setEnableStereoExtMicBiasAIC(int new_state) {  //for AIC Shield
 			if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
 				digitalWrite(pins.AIC_Shield_enableStereoExtMicBias,new_state);
 				return new_state;
