@@ -23,6 +23,7 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
 #define TYMPAN_REV_D (TympanRev::D)
 
 //the Tympan is a Teensy audio library "control" object
+//include <usb_desc.h>  //to know if we're using native or emulated USB serial
 #include "control_aic3206.h"  //see in here for more #define statements that are very relevant!
 #include <Arduino.h>  //for the Serial objects
 #include <Print.h>
@@ -119,7 +120,11 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					break;
 			}
 		}
-		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
+		//#if defined(SEREMU_INTERFACE)
+		//	usb_seremu_class * getUSBSerial(void) { return USB_Serial; }
+		//#else
+			usb_serial_class * getUSBSerial(void) { return USB_Serial; }
+		//#endif
 		HardwareSerial * getBTSerial(void) { return BT_Serial; }
 
 		//Defaults (Teensy 3.6 Pin Numbering), assuming Rev C
@@ -136,7 +141,11 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
 		int AIC_Shield_enableStereoExtMicBias = NOT_A_FEATURE;
-		usb_serial_class *USB_Serial = &Serial; //true for Rev_A/C/D
+		//#if defined(SEREMU_INTERFACE)
+		//	usb_seremu_class *USB_Serial = &Serial;
+		//#else
+			usb_serial_class *USB_Serial = &Serial; //true for Rev_A/C/D
+		//#endif
 		HardwareSerial *BT_Serial = &Serial1; //true for Rev_A/C/D
 		int BT_serial_speed = 115200; //true for Rev_A/C
 };
@@ -234,7 +243,11 @@ class TympanBase : public AudioControlAIC3206, public Print
 		}		
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
-		usb_serial_class *getUSBSerial(void) { return USB_Serial; }
+		//#if defined(SEREMU_INTERFACE)
+		//	usb_seremu_class *getUSBSerial(void) { return USB_Serial; }
+		//#else
+			usb_serial_class *getUSBSerial(void) { return USB_Serial; }
+		//#endif
 		HardwareSerial *getBTSerial(void) { return BT_Serial; }
 		void beginBothSerial(void) { beginBothSerial(115200, pins.BT_serial_speed); }
 		void beginBothSerial(int USB_speed, int BT_speed) {
@@ -376,8 +389,11 @@ class TympanBase : public AudioControlAIC3206, public Print
 		//virtual size_t print(const char *s) { return write(s); }  //should use the faster write
 		//virtual size_t println(const char *s) { return print(s) + println(); }  //should use the faster write
 		//virtual size_t println(void) { 	uint8_t buf[2]={'\r', '\n'}; return write(buf, 2); }
-
-		usb_serial_class *USB_Serial;
+		#if defined(SEREMU_INTERFACE)
+			usb_seremu_class *USB_Serial;
+		#else
+			usb_serial_class *USB_Serial;
+		#endif
 		HardwareSerial *BT_Serial;
 
 	protected:
