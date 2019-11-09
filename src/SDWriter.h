@@ -78,6 +78,9 @@ class SDWriter : public Print
 	bool exists(char *fname) {
 		return sd.exists(fname);
 	}
+	bool remove(char *fname) {
+		return sd.remove(fname);
+	}
 	
     int close(void) {
       //file.truncate(); 

@@ -158,6 +158,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     int startRecording(char* fname); //or call this to specify your own filename.
 	//int startRecording_noOverwrite(void);
     void stopRecording(void);    //call this to stop recording
+	int deleteAllRecordings(void);  //clears all AUDIOxxx.wav files from the SD card
 
     //update is called by the Audio processing ISR.  This update function should
     //only service the recording queues so as to buffer the audio data.

@@ -11,36 +11,56 @@ void AudioSDWriter_F32::prepareSDforRecording(void) {
   }
 }
 
-/* int AudioSDWriter_F32::startRecording(void) {
-  int return_val = 0;
+int AudioSDWriter_F32::deleteAllRecordings(void) {
+	//loop through all file names and erase if existing
+	int return_val = 0;
 
-  //check to see if the SD has been initialized
-  if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+	//check to see if the SD has been initialized
+	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
 
-  //check to see if SD is ready
-  if (current_SD_state == STATE::STOPPED) {
-	recording_count++;
-	if (recording_count < 1000) {
-	  //make file name
-	  char fname[] = "AUDIOxxx.WAV";
-	  int hundreds = recording_count / 100;
-	  fname[5] = hundreds + '0';  //stupid way to convert the number to a character
-	  int tens = (recording_count - (hundreds*100)) / 10;  //truncates
-	  fname[6] = tens + '0';  //stupid way to convert the number to a character
-	  int ones = recording_count - (tens * 10) - (hundreds*100);
-	  fname[7] = ones + '0';  //stupid way to convert the number to a character
+	//check to see if SD is ready
+	if (current_SD_state == STATE::STOPPED) {
+		bool done = false;
+		
+		recording_count = 0; //restart at first recording
+		while ((!done) && (recording_count < 998)) {
+			//increment file counter
+			recording_count++;
+	
+			//make file name
+			char fname[] = "AUDIOxxx.WAV";
+			int hundreds = recording_count / 100;
+			fname[5] = hundreds + '0';  //stupid way to convert the number to a character
+			int tens = (recording_count - (hundreds*100)) / 10;  //truncates
+			fname[6] = tens + '0';  //stupid way to convert the number to a character
+			int ones = recording_count - (tens * 10) - (hundreds*100);
+			fname[7] = ones + '0';  //stupid way to convert the number to a character
 
-	  //open the file
-	  return_val = startRecording(fname);
+			//does the file exist?
+			if (buffSDWriter->exists(fname)) {
+				//remove the file
+				if (serial_ptr) serial_ptr->print("AudioSDWriter: removing ");
+				if (serial_ptr) serial_ptr->println(fname);
+				buffSDWriter->remove(fname);
+			} else {
+				//do nothing
+				//done = true; //stop stepping through the files
+			}
+		}
+			
+		//set recording counter to start from zero
+		recording_count = 0; 
+		
 	} else {
-	  if (serial_ptr) serial_ptr->println("AudioSDWriter: start: Cannot do more than 999 files.");
+		//SD subsystem is in the wrong state to start recording
+		if (serial_ptr) serial_ptr->println("AudioSDWriter: clear: not in correct state to start.");
+		return_val = -1;
 	}
-  } else {
-	if (serial_ptr) serial_ptr->println("AudioSDWriter: start: not in correct state to start.");
-	return_val = -1;
-  }
-  return return_val;
-} */
+	
+
+	return return_val;
+		
+}
 
 //int AudioSDWriter_F32::startRecording_noOverwrite(void) {
 int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRecording"
