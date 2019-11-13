@@ -27,6 +27,8 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
 #include "control_aic3206.h"  //see in here for more #define statements that are very relevant!
 #include <Arduino.h>  //for the Serial objects
 #include <Print.h>
+#include "AudioStream_F32.h"
+#include "AudioSettings_F32.h"
 
 #define NOT_A_FEATURE (-9999)
 
@@ -152,10 +154,6 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 
 //This code works for Teensy 3.x (ie, Tympan Rev C and Rev D)
 extern "C" char* sbrk(int incr);
-int FreeRam() {
-  char top; //this new variable is, in effect, the mem location of the edge of the heap
-  return &top - reinterpret_cast<char*>(sbrk(0));
-}
 //End of code specific to Teensy 3.x
 
 class TympanBase : public AudioControlAIC3206, public Print
@@ -169,9 +167,20 @@ class TympanBase : public AudioControlAIC3206, public Print
 		TympanBase(const TympanPins &_pins, bool _debugToSerial) : AudioControlAIC3206(_debugToSerial) {
 			setupPins(_pins);
 		}
-
+		TympanBase(const AudioSettings_F32 &_as) : AudioControlAIC3206() {
+			setAudioSettings(_as);
+		}
+		TympanBase(const TympanPins &_pins, const AudioSettings_F32 &_as) : AudioControlAIC3206() {
+			setupPins(_pins);
+			setAudioSettings(_as);
+		}
+		TympanBase(const TympanPins &_pins, const AudioSettings_F32 &_as, bool _debugToSerial) : AudioControlAIC3206(_debugToSerial) {
+			setupPins(_pins);
+			setAudioSettings(_as);
+		}
 
 		void setupPins(const TympanPins &_pins);
+		void setAudioSettings(const AudioSettings_F32 &_aud_set) { audio_settings = _aud_set; }  //shallow copy
 		void forceBTtoDataMode(bool state);
 
 		//TympanPins getTympanPins(void) { return &pins; }
@@ -204,32 +213,6 @@ class TympanBase : public AudioControlAIC3206, public Print
 		void beginBluetoothSerial(void) { beginBluetoothSerial(pins.BT_serial_speed); }
 		void beginBluetoothSerial(int BT_speed);
 		void clearAndConfigureBTSerialRevD(void);
-		
-		void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis = 3000) {
-			//static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
-			static unsigned long lastUpdate_millis = 0;
-
-			//has enough time passed to update everything?
-			if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-			if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-				printCPUandMemoryMessage();
-				lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-			}
-		}
-		void printCPUandMemoryMessage(void) {
-		  myTympan.print("CPU Cur/Pk: ");
-		  myTympan.print(audio_settings.processorUsage(), 1);
-		  myTympan.print("%/");
-		  myTympan.print(audio_settings.processorUsageMax(), 1);
-		  myTympan.print("%, ");
-		  myTympan.print("MEM Cur/Pk: ");
-		  myTympan.print(AudioMemoryUsage_F32());
-		  myTympan.print("/");
-		  myTympan.print(AudioMemoryUsageMax_F32());
-		  myTympan.print(", FreeRAM(B) ");
-		  myTympan.print(FreeRam());
-		  myTympan.println();
-		}
 
 		bool mixBTAudioWithOutput(bool state) { return mixInput1toHPout(state); } //bluetooth audio is on Input1
 		void echoIncomingBTSerial(void) {
@@ -271,6 +254,38 @@ class TympanBase : public AudioControlAIC3206, public Print
 		//virtual size_t print(const char *s) { return write(s); }  //should use the faster write
 		//virtual size_t println(const char *s) { return print(s) + println(); }  //should use the faster write
 		//virtual size_t println(void) { 	uint8_t buf[2]={'\r', '\n'}; return write(buf, 2); }
+		
+		void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis = 3000) {
+			//static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
+			static unsigned long lastUpdate_millis = 0;
+
+			//has enough time passed to update everything?
+			if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+			if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+				printCPUandMemoryMessage();
+				lastUpdate_millis = curTime_millis; //we will use this value the next time around.
+			}
+		}
+		
+		int FreeRam() {
+		  char top; //this new variable is, in effect, the mem location of the edge of the heap
+		  return &top - reinterpret_cast<char*>(sbrk(0));
+		}
+		void printCPUandMemoryMessage(void) {
+		  print("CPU Cur/Pk: ");
+		  print(audio_settings.processorUsage(), 1);
+		  print("%/");
+		  print(audio_settings.processorUsageMax(), 1);
+		  print("%, ");
+		  print("MEM Cur/Pk: ");
+		  print(AudioMemoryUsage_F32());
+		  print("/");
+		  print(AudioMemoryUsageMax_F32());
+		  print(", FreeRAM(B) ");
+		  print(FreeRam());
+		  println();
+		}
+		
 		#if defined(SEREMU_INTERFACE)
 			usb_seremu_class *USB_Serial;
 		#else
@@ -280,6 +295,8 @@ class TympanBase : public AudioControlAIC3206, public Print
 
 	protected:
 		TympanPins pins;
+		AudioSettings_F32 audio_settings;
+		
 
 };
 
@@ -298,6 +315,18 @@ class Tympan : public TympanBase {
 			//initialize the TympanBase
 			TympanPins myPins(_myRev);
 			TympanBase::setupPins(myPins);
+		}
+		Tympan(const TympanRev &_myRev, const AudioSettings_F32 &_as) : TympanBase() {
+			//initialize the TympanBase
+			TympanPins myPins(_myRev);
+			TympanBase::setupPins(myPins);
+			TympanBase::setAudioSettings(_as);
+		}
+		Tympan(const TympanRev &_myRev, const AudioSettings_F32 &_as, bool _debugToSerial) : TympanBase(_debugToSerial) {
+			//initialize the TympanBase
+			TympanPins myPins(_myRev);
+			TympanBase::setupPins(myPins);
+			TympanBase::setAudioSettings(_as);
 		}
 };
 
