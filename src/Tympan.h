@@ -150,7 +150,14 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int BT_serial_speed = 115200; //true for Rev_A/C
 };
 
-//include "utility/TympanPrint.h"
+//This code works for Teensy 3.x (ie, Tympan Rev C and Rev D)
+extern "C" char* sbrk(int incr);
+int FreeRam() {
+  char top; //this new variable is, in effect, the mem location of the edge of the heap
+  return &top - reinterpret_cast<char*>(sbrk(0));
+}
+//End of code specific to Teensy 3.x
+
 class TympanBase : public AudioControlAIC3206, public Print
 {
 	public:
@@ -164,57 +171,8 @@ class TympanBase : public AudioControlAIC3206, public Print
 		}
 
 
-		void setupPins(const TympanPins &_pins) {
-			AudioControlAIC3206::setResetPin(_pins.resetAIC);
-			pins = _pins; //shallow copy to local version
-
-			//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: ");
-			//Serial.print(_pins.potentiometer); Serial.print(" / "); Serial.println(pins.potentiometer);
-
-			pinMode(pins.potentiometer,INPUT);
-			pinMode(pins.amberLED,OUTPUT); digitalWrite(pins.amberLED,LOW);
-			pinMode(pins.redLED,OUTPUT); digitalWrite(pins.redLED,LOW);
-			if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
-				pinMode(pins.enableStereoExtMicBias,OUTPUT);
-				setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
-			}
-			if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
-				pinMode(pins.AIC_Shield_enableStereoExtMicBias,OUTPUT);
-				setEnableStereoExtMicBiasAIC(true); //enable stereo external mics (REV_D)
-			}
-			
-
-			//get the comm pins and setup the regen and reset pins
-			USB_Serial = pins.getUSBSerial();
-			BT_Serial = pins.getBTSerial();
-			if (pins.BT_REGEN != NOT_A_FEATURE) {
-				pinMode(pins.BT_REGEN,OUTPUT);digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
-				delay(10);  digitalWrite(pins.BT_REGEN,LOW); //hold at least 5 msec, then return low
-
-			}
-			if (pins.BT_nReset != NOT_A_FEATURE) {
-				pinMode(pins.BT_nReset,OUTPUT);
-				digitalWrite(pins.BT_nReset,LOW);delay(10); //reset the device
-				digitalWrite(pins.BT_nReset,HIGH);  //normal operation.
-			}
-			if (pins.BT_PIO0 != NOT_A_FEATURE) {
-				pinMode(pins.BT_PIO0,INPUT);
-			}
-
-			forceBTtoDataMode(true);
-		};
-		void forceBTtoDataMode(bool state) {
- 			if (pins.BT_PIO4 != NOT_A_FEATURE) {
-				if (state == true) {
-					pinMode(pins.BT_PIO4,OUTPUT);
-					digitalWrite(pins.BT_PIO4,HIGH);
-				} else {
-					//pinMode(pins.BT_PIO4,INPUT);  //go high-impedance (ie disable this pin)
-					pinMode(pins.BT_PIO4,OUTPUT);
-					digitalWrite(pins.BT_PIO4,LOW);
-				}
-			}
-		}
+		void setupPins(const TympanPins &_pins);
+		void forceBTtoDataMode(bool state);
 
 		//TympanPins getTympanPins(void) { return &pins; }
 		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
@@ -225,22 +183,9 @@ class TympanBase : public AudioControlAIC3206, public Print
 			if (pins.reversePot) val = 1023 - val;
 			return val;
 		};
-		int setEnableStereoExtMicBias(int new_state) {
-			if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
-				digitalWrite(pins.enableStereoExtMicBias,new_state);
-				return new_state;
-			} else {
-				return pins.enableStereoExtMicBias;
-			}
-		}
-		int setEnableStereoExtMicBiasAIC(int new_state) {  //for AIC Shield
-			if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
-				digitalWrite(pins.AIC_Shield_enableStereoExtMicBias,new_state);
-				return new_state;
-			} else {
-				return pins.AIC_Shield_enableStereoExtMicBias;
-			}
-		}		
+		int setEnableStereoExtMicBias(int new_state);  //use for base Tympan board (not the AIC shield)
+		int setEnableStereoExtMicBiasAIC(int new_state);  //use for AIC Shield
+	
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
 		//#if defined(SEREMU_INTERFACE)
@@ -257,103 +202,40 @@ class TympanBase : public AudioControlAIC3206, public Print
 		int USB_dtr() { return USB_Serial->dtr(); }
 
 		void beginBluetoothSerial(void) { beginBluetoothSerial(pins.BT_serial_speed); }
-		void beginBluetoothSerial(int BT_speed) {
-			BT_Serial->begin(BT_speed);
+		void beginBluetoothSerial(int BT_speed);
+		void clearAndConfigureBTSerialRevD(void);
+		
+		void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis = 3000) {
+			//static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
+			static unsigned long lastUpdate_millis = 0;
 
-			switch (getTympanRev()) {
-				case (TYMPAN_REV_D) : case (TYMPAN_REV_D0) : case (TYMPAN_REV_D1) : case (TYMPAN_REV_D2) : case (TYMPAN_REV_D3) :
-					clearAndConfigureBTSerialRevD();
-					break;
-				default:
-					delay(50);
-					break;
+			//has enough time passed to update everything?
+			if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+			if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+				printCPUandMemoryMessage();
+				lastUpdate_millis = curTime_millis; //we will use this value the next time around.
 			}
 		}
-		void clearAndConfigureBTSerialRevD(void) {
-		   //clear out any text that is waiting
-			//Serial.println("Clearing BT serial buffer...");
-			delay(500);
-			while(BT_Serial->available()) {
-			  //Serial.print((char)BT_SERIAL.read());
-			  BT_Serial->read(); delay(5);
-			}
-
-			//transition to data mode
-			//Serial.println("Transition BT to data mode");
-			BT_Serial->print("ENTER_DATA");BT_Serial->write(0x0D); //enter data mode.  Finish with carraige return
-			delay(100);
-			int count = 0;
-			while ((count < 3) & (BT_Serial->available())) { //we should receive on "OK"
-			  //Serial.print((char)BT_SERIAL.read());
-			  BT_Serial->read(); count++;  delay(5);
-			}
-			//Serial.println("BT Should be ready.");
+		void printCPUandMemoryMessage(void) {
+		  myTympan.print("CPU Cur/Pk: ");
+		  myTympan.print(audio_settings.processorUsage(), 1);
+		  myTympan.print("%/");
+		  myTympan.print(audio_settings.processorUsageMax(), 1);
+		  myTympan.print("%, ");
+		  myTympan.print("MEM Cur/Pk: ");
+		  myTympan.print(AudioMemoryUsage_F32());
+		  myTympan.print("/");
+		  myTympan.print(AudioMemoryUsageMax_F32());
+		  myTympan.print(", FreeRAM(B) ");
+		  myTympan.print(FreeRam());
+		  myTympan.println();
 		}
 
 		bool mixBTAudioWithOutput(bool state) { return mixInput1toHPout(state); } //bluetooth audio is on Input1
 		void echoIncomingBTSerial(void) {
 			while (BT_Serial->available()) USB_Serial->write(BT_Serial->read());//echo messages from BT serial over to USB Serial
 		}
-		void setBTAudioVolume(int vol) {  //only works when you are connected via Bluetooth!!!!
-			//vol is 0 (min) to 15 (max)
-			if (pins.tympanRev >= TYMPAN_REV_D0) {   //This is only for the BC127 BT module
-					//get into command mode
-					USB_Serial->println("*** Changing BT into command mode...");
-					forceBTtoDataMode(false); //un-forcing (via hardware pin) the BT device to be in data mode
-					delay(500);
-					BT_Serial->print("$");  delay(400);
-					BT_Serial->print("$$$");  delay(400);
-					delay(2000);
-					echoIncomingBTSerial();
-
-					// clear the buffer by forcing an error
-					USB_Serial->println("*** Clearing buffers.  Sending carraige return.");
-					BT_Serial->print('\r'); delay(500);
-					echoIncomingBTSerial();
-					USB_Serial->println("*** Should have gotten 'ERROR', which is fine here.");
-
-					//check A2DP volume
-					USB_Serial->println("*** Check A2DP and HFP Volume...");
-					BT_Serial->print("VOLUME A2DP"); BT_Serial->print('\r');
-					delay(1000);
-					echoIncomingBTSerial();
-					BT_Serial->print("VOLUME HFP"); BT_Serial->print('\r');
-					delay(1000);
-					echoIncomingBTSerial();
-
-					//change volume
-					USB_Serial->println("*** Setting A2DP Volume...");
-					BT_Serial->print("VOLUME A2DP="); BT_Serial->print(vol); BT_Serial->print('\r');
-					delay(1000);
-					echoIncomingBTSerial();
-					BT_Serial->print("VOLUME HFP="); BT_Serial->print(vol); BT_Serial->print('\r');
-					delay(1000);
-					echoIncomingBTSerial();
-
-					//check A2DP volume again
-					USB_Serial->println("*** Check A2DP and HFP Volume again...");
-					BT_Serial->print("VOLUME A2DP"); BT_Serial->print('\r');
-					delay(1000);
-					echoIncomingBTSerial();
-					BT_Serial->print("VOLUME HFP"); BT_Serial->print('\r');
-					delay(1000);
-					echoIncomingBTSerial();
-
-					//confirm GPIO State
-					USB_Serial->println("*** Setting GPIOCONTROL Mode...");
-					BT_Serial->print("SET GPIOCONTROL=OFF");BT_Serial->print('\r'); delay(500);
-					echoIncomingBTSerial();
-
-					//save
-					USB_Serial->println("*** Saving Settings...");
-					BT_Serial->print("WRITE"); BT_Serial->print('\r'); delay(500);
-
-					USB_Serial->println("*** Changing into transparanet data mode...");
-					BT_Serial->print("ENTER_DATA");BT_Serial->print('\r'); delay(500);
-					echoIncomingBTSerial();
-					forceBTtoDataMode(true); //forcing (via hardware pin) the BT device to be in data mode
-				}
-		}
+		void setBTAudioVolume(int vol); //vol is 0 (min) to 15 (max).  Only Rev D.  Only works when you are connected via Bluetooth!!!!
 
 
 		//I want to enable an easy way to print to both USB and BT serial with one call.
