@@ -4,7 +4,7 @@
  * Created: Chip Audette, OpenAudio, Jan/Feb 2017
  * Purpose: Demonstrate basic audio pass-thru using the Tympan Audio Board,
  *
- * Uses Teensy Audio default sample rate of 44100 Hz with Block Size of 128
+ * Uses default sample rate of 44100 Hz with Block Size of 128
  *
  * License: MIT License, Use At Your Own Risk
  *

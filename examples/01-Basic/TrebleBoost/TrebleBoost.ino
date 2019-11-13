@@ -4,7 +4,6 @@
 *   Created: Chip Audette, OpenAudio, Apr 2017
 *   Purpose: Process audio by applying a high-pass filter followed by gain
 *
-*   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
 *
 *   MIT License.  use at your own risk.

@@ -2,12 +2,11 @@
 *   BasicGain
 *
 *   Created: Chip Audette, Nov 2016
-*   Purpose: Process audio by applying gain.
+*   Purpose: Process audio using Tympan by applying gain.
 *
-*   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the audio signal.
 *
-*   Uses Teensy Audio default sample rate of 44100 Hz with Block Size of 128
+*   Uses default sample rate of 44100 Hz with Block Size of 128
 *
 *   MIT License.  use at your own risk.
 */

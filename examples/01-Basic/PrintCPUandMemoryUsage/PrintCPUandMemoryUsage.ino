@@ -4,7 +4,6 @@
 *   Created: Chip Audette, Apr 2017
 *   Purpose: BasicGain plus changes sample rate plus prints the CPU and Memory usage
 *
-*   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the audio signal.
 *
 *   MIT License.  use at your own risk.

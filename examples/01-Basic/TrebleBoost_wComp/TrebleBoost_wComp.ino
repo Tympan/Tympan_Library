@@ -5,7 +5,6 @@
 *   Purpose: Process audio by applying a high-pass filter followed by gain followed
 *            by a dynamic range compressor.
 *
-*   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
 *
 *   MIT License.  use at your own risk.
