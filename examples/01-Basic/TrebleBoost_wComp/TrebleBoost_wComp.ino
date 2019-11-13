@@ -111,7 +111,7 @@ void loop() {
   servicePotentiometer(millis(),100); //update every 100 msec
 
   //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),6000); //print every 3000 msec
+  printCPUandMemory(millis(),3000); //print every 3000 msec
 
   //periodically print the gain status
   printGainStatus(millis(),2000); //update every 4000 msec
@@ -154,8 +154,6 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
 } //end servicePotentiometer();
 
 
-
-//This routine prints the current and maximum CPU usage and the current usage of the AudioMemory that has been allocated
 void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
   //static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
   static unsigned long lastUpdate_millis = 0;
@@ -163,20 +161,32 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("CPU Cur/Peak: ");
-    Serial.print(audio_settings.processorUsage());
-    Serial.print("%/");
-    Serial.print(audio_settings.processorUsageMax());
-    Serial.print("%, ");
-    Serial.print("MEM Cur/Peak: ");
-    Serial.print(AudioMemoryUsage_F32());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax_F32());
-    Serial.println();
-
+    printCPUandMemoryMessage();
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
 }
+
+extern "C" char* sbrk(int incr);
+int FreeRam() {
+  char top; //this new variable is, in effect, the mem location of the edge of the heap
+  return &top - reinterpret_cast<char*>(sbrk(0));
+}
+void printCPUandMemoryMessage(void) {
+  BOTH_SERIAL.print("CPU Cur/Pk: ");
+  BOTH_SERIAL.print(audio_settings.processorUsage(), 1);
+  BOTH_SERIAL.print("%/");
+  BOTH_SERIAL.print(audio_settings.processorUsageMax(), 1);
+  BOTH_SERIAL.print("%, ");
+  BOTH_SERIAL.print("MEM Cur/Pk: ");
+  BOTH_SERIAL.print(AudioMemoryUsage_F32());
+  BOTH_SERIAL.print("/");
+  BOTH_SERIAL.print(AudioMemoryUsageMax_F32());
+  BOTH_SERIAL.print(", FreeRAM(B) ");
+  BOTH_SERIAL.print(FreeRam());
+  BOTH_SERIAL.println();
+}
+
+
 
 //This routine plots the current gain settings, including the dynamically changing gains
 //of the compressors
