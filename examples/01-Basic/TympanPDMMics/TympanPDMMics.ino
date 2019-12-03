@@ -37,8 +37,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 
 //setup the  Tympan using the default settings
-TympanPins                    tympPins(TYMPAN_REV_C);        //TYMPAN_REV_C or TYMPAN_REV_D
-TympanBase                    audioHardware(tympPins);
+Tympan                    audioHardware(TympanRev::D);     //do TympanRev::C or TympanRev::D
 
 // Define audio objects
 AudioInputI2S_F32             i2s_in(audio_settings);       //This is the Teensy Audio library's built-in 4-channel I2S class
@@ -58,6 +57,7 @@ AudioConnection_F32           patchcord6(i2s_in, 1, i2s_out, 1);    //echo audio
 
 // Create variables to decide how long to record to SD
 SDAudioWriter_SdFat my_SD_writer;
+
 
 String overall_name = String("Tympan: PDM Mic");
 
@@ -353,3 +353,5 @@ void serviceSD(void) {
       queueRight.clearOverrun();
       i2s_in.clear_isOutOfMemory();
     }
+  }
+}
