@@ -16,15 +16,18 @@
 
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
-#define TYMPAN_INPUT_LINE_IN            1   //uses IN1
-#define TYMPAN_INPUT_ON_BOARD_MIC       2   //uses IN2 analog inputs
-#define TYMPAN_INPUT_JACK_AS_LINEIN     3   //uses IN3 analog inputs
-#define TYMPAN_INPUT_JACK_AS_MIC        4   //uses IN3 analog inputs *and* enables mic bias
+#define TYMPAN_INPUT_LINE_IN            1   //uses IN1, on female Arduino-style headers (shared with BT Audio)
+#define TYMPAN_INPUT_BT_AUDIO	        1   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
+#define TYMPAN_INPUT_ON_BOARD_MIC       2   //uses IN2, for analog signals from microphones on PCB
+#define TYMPAN_INPUT_JACK_AS_LINEIN     3   //uses IN3, for analog signals from mic jack, no mic bias 
+#define TYMPAN_INPUT_JACK_AS_MIC        4   //uses IN3, for analog signals from mic jack, with mic bias
+
 
 //convenience names to use with outputSelect()
-#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1
-#define TYMPAN_OUTPUT_LINE_OUT 2
-#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3
+#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
+#define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
+#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out 
+#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
 
 //names to use with setMicBias() to set the amount of bias voltage to use
 #define TYMPAN_MIC_BIAS_OFF             0
@@ -72,10 +75,10 @@ public:
 	bool disable(void);
 	bool outputSelect(int n);
 	bool volume(float n);
-	bool volume_dB(float n);
+	float volume_dB(float n);
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
 	bool inputSelect(int n);
-	bool setInputGain_dB(float n);
+	float setInputGain_dB(float n);
 	bool setMicBias(int n);
 	bool updateInputBasedOnMicDetect(int setting = TYMPAN_INPUT_JACK_AS_MIC);
 	bool enableMicDetect(bool);
@@ -83,10 +86,15 @@ public:
 	bool debugToSerial;
     unsigned int aic_readPage(uint8_t page, uint8_t reg);
     bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
-	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz);
+	
+	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz); //first-order HP applied within this 3206 hardware, ADC (input) side
 	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
+	void setHpfIIRCoeffOnADC(int chan, uint32_t *coeff); //alternate way of settings the same 1st-order HP filter
+	float setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chan, int biquadIndex); //lowpass applied within 3206 hardware, ADC (input) side
+	int setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32);
+	void writeBiquadCoeff(uint32_t *coeff_uint32, int *page_reg_table, int table_ncol);
+	
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
-	void setIIRCoeffOnADC(int chan, uint32_t *coeff);
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
@@ -107,8 +115,15 @@ protected:
   int resetPinAIC = AIC3206_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
   float HP_cutoff_Hz = 0.0f;
   float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
-  void setIIRCoeffOnADC_Left(uint32_t *coeff);
-  void setIIRCoeffOnADC_Right(uint32_t *coeff);
+  void setHpfIIRCoeffOnADC_Left(uint32_t *coeff);
+  void setHpfIIRCoeffOnADC_Right(uint32_t *coeff);
+
+  void computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff);
+  //void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
+  void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+  void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+  void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
+	
   
 };
 

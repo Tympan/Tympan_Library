@@ -19,7 +19,7 @@
 #  define AIC_FS                                                     44100UL
 #endif
 
-//define AIC_BITS                                                        16
+//#define AIC_BITS                                                        16
 #define AIC_BITS                                                        32
 
 #define AIC_I2S_SLAVE                                                     1
@@ -76,18 +76,55 @@
 // PB1 - RC = 8.  Use M8, N2
 // PB25 - RC = 12.  Use M8, N2
 
-#define DOSR                                                            128
-#define NDAC                                                              2
-#define MDAC                                                              8
+#define MODE_STANDARD	(1)
+#define MODE_LOWLATENCY (2)
+#define MODE_PDM	(3)
+#define ADC_DAC_MODE    (MODE_PDM)
 
-#define AOSR                                                             64
-#define NADC                                                              4
-#define MADC                                                              8
+#if (ADC_DAC_MODE == MODE_STANDARD)
+	//standard setup for 44 kHz
+	#define DOSR                                                            128
+	#define NDAC                                                              2
+	#define MDAC                                                              8
 
-// Signal Processing Modes, Playback and Recording.
-#define PRB_P                                                             1
-#define PRB_R                                                             1
+	#define AOSR                                                            128
+	#define NADC                                                              2
+	#define MADC                                                              8
 
+	// Signal Processing Modes, Playback and Recording....for standard operation (AOSR 128)
+	#define PRB_P                                                             1
+	#define PRB_R                                                             1
+
+#elif (ADC_DAC_MODE == MODE_LOWLATENCY)
+	//low latency setup
+	//standard setup for 44 kHz
+	#define DOSR                                                            32
+	#define NDAC                                                              (2*4/2)
+	#define MDAC                                                              4
+
+	#define AOSR                                                            32
+	#define NADC                                                              (2*4/2)
+	#define MADC                                                              4
+
+	// Signal Processing Modes, Playback and Recording....for low-latency operation (AOSR 32)
+	#define PRB_P                                                             17    //DAC
+	#define PRB_R                                                             13    //ADC
+
+#elif (ADC_DAC_MODE == MODE_PDM)
+	#define DOSR                                                            128
+	#define NDAC                                                              2
+	#define MDAC                                                              8
+
+	#define AOSR                                                             64
+	#define NADC                                                              4
+	#define MADC                                                              8
+
+	// Signal Processing Modes, Playback and Recording.
+	#define PRB_P                                                             1
+	#define PRB_R                                                             1
+
+#endif  //for standard vs low-latency vs PDM setup
+	
 #endif // end fs if block
 
 //**************************** Chip Setup **********************************//
@@ -152,7 +189,7 @@ void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
   }
 }
 bool AudioControlAIC3206::enable(void) {
-  delay(100);
+  delay(10);
   myWire->begin();
   delay(5);
 
@@ -165,10 +202,10 @@ bool AudioControlAIC3206::enable(void) {
   digitalWrite(RESET_PIN,LOW);delay(50);  //reset
   digitalWrite(RESET_PIN,HIGH);delay(50);//not reset
 	
-  aic_reset(); delay(100);  //soft reset
-  aic_init(); delay(100);
-  aic_initADC(); delay(100);
-  aic_initDAC(); delay(100);
+  aic_reset(); //delay(50);  //soft reset
+  aic_init(); //delay(10);
+  aic_initADC(); //delay(10);
+  aic_initDAC(); //delay(10);
 
   aic_readPage(0, 27); // check a specific register - a register read test
 
@@ -188,7 +225,7 @@ bool AudioControlAIC3206::inputLevel(float volume) {
 }
 
 bool AudioControlAIC3206::inputSelect(int n) {
-  if (n == TYMPAN_INPUT_LINE_IN) {
+  if ( (n == TYMPAN_INPUT_LINE_IN) || (n == TYMPAN_INPUT_BT_AUDIO) ) {
     // USE LINE IN SOLDER PADS
     aic_writeAddress(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN1 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeAddress(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -325,7 +362,7 @@ void AudioControlAIC3206::aic_initADC() {
 }
 
 // set MICPGA volume, 0-47.5dB in 0.5dB setps
-bool AudioControlAIC3206::setInputGain_dB(float volume) {
+float AudioControlAIC3206::setInputGain_dB(float volume) {
   if (volume < 0.0) {
     volume = 0.0; // 0.0 dB
     Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
@@ -334,7 +371,8 @@ bool AudioControlAIC3206::setInputGain_dB(float volume) {
     volume = 47.5; // 47.5 dB
     Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
   }
-
+  float vol_dB = volume;
+  
   volume = volume * 2.0; // convert to value map (0.5 dB steps)
   int8_t volume_int = (int8_t) (round(volume)); // round
 
@@ -347,7 +385,7 @@ bool AudioControlAIC3206::setInputGain_dB(float volume) {
 
   aic_writeAddress(TYMPAN_MICPGA_LEFT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Left MicPGA, set gain to 0 dB
   aic_writeAddress(TYMPAN_MICPGA_RIGHT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Right MicPGA, set gain to 0 dB
-  return true;
+  return vol_dB;
 }
 
 //******************* OUTPUT DEFINITIONS *****************************//
@@ -380,7 +418,7 @@ bool AudioControlAIC3206::enableAutoMuteDAC(bool enable, uint8_t mute_delay_code
 }
 
 // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
-bool AudioControlAIC3206::volume_dB(float volume) {
+float AudioControlAIC3206::volume_dB(float volume) {
 
   // Constrain to limits
   if (volume > 24.0) {
@@ -391,6 +429,7 @@ bool AudioControlAIC3206::volume_dB(float volume) {
     volume = -63.5;
     Serial.println("AudioControlAIC3206: WARNING: Attempting to set DAC Volume outside range");
   }
+  float vol_dB = volume;
 
   volume = volume * 2.0; // convert to value map (0.5 dB steps)
   int8_t volume_int = (int8_t) (round(volume)); // round
@@ -404,7 +443,7 @@ bool AudioControlAIC3206::volume_dB(float volume) {
 
   aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, volume_int);
   aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG, volume_int);
-  return true;
+  return vol_dB;
 }
 
 void AudioControlAIC3206::aic_initDAC() {
@@ -446,7 +485,7 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
 		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
 		aic_writePage(1, 9, 0x30); // Power up HPL/HPR drivers  0b00110000
-		delay(100);
+		delay(50);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -462,7 +501,7 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
 		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain
 		aic_writePage(1, 9, 0b00001100); // Power up LOL/LOR drivers
-		delay(100);
+		delay(50);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -483,13 +522,34 @@ bool AudioControlAIC3206::outputSelect(int n) {
 
 		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
 		
-		delay(100);
+		delay(50);
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Headphone Jack and Line out");
 		return true;	
+  } else if (n == TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO) {
+		aic_writePage(1, 12, 0b00001000); // route Left DAC Pos to Headphone Left
+		aic_writePage(1, 13, 0b00010000); // route Left DAC Neg to Headphone Right
+		aic_writePage(1, 14, 0b00010000); // route Right DAC Neg to Lineout Left
+		aic_writePage(1, 15, 0b00001000); // route Right DAC Pos to Lineout Right
+		
+		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
+		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain		
+		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
+		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
+
+		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
+		
+		delay(50);
+		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+
+		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Diff Headphone Jack and Line out");
+		return true;			
   }
   Serial.print("AudioControlAIC3206: ERROR: Unable to Select Output - Value not supported: ");
   Serial.println(n);
@@ -664,41 +724,209 @@ int AudioControlAIC3206::readMicDetect(void) {
 	return curVal;
 }
 
-void computeFirstOrderHPCoeff_F32(float cutoff_Hz, float fs_Hz, float *coeff) {
-	//cutoff_Hz is the cutoff frequency in Hz
-	//fs_Hz is the sample rate in Hz
+
+
+
+float AudioControlAIC3206::setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chanIndex, int biquadIndex) 
+{
+	//Purpose: Creare biquad filter coefficients to be applied within 3206 hardware, ADC (input) side	
+	//
+	// type is type of filter: 1 = Lowpass, 2=highpass
+	// cutoff_Hz is the cutoff frequency in Hz
+	// chanIndex is 0=both, 1=left, 2=right
+	// biquadIndex is 0-4 for biquad A through biquad B, depending upon ADC mode
 	
-	//First-order Butterworth IIR
-	//From https://www.dsprelated.com/showcode/199.php
-	const float pi = 3.141592653589793;
-	float T = 1.0f/fs_Hz; //sample period
-	float w = cutoff_Hz * 2.0 * pi;
-	float A = 1.0f / (tan( (w*T) / 2.0));
-	coeff[0] = A / (1.0 + A); // first b coefficient
-	coeff[1] = -coeff[0];     // second b coefficient
-	coeff[2] = (1.0 - A) / (1.0 + A);  //second a coefficient (Matlab sign convention)
-	coeff[2] = -coeff[2];  //flip to be TI sign convention
+	const int ncoeff = 5;
+	float coeff_f32[ncoeff];
+	uint32_t coeff_uint32[ncoeff];
+	float q = 0.707;  //assume critically damped (sqrt(2)), which makes this a butterworth filter
+	if (type == 1) {
+		//lowpass
+		computeBiquadCoeff_LP_f32(cutoff_Hz, sampleRate_Hz, q, coeff_f32);
+	} else if (type == 2) {
+		//highpass
+		computeBiquadCoeff_HP_f32(cutoff_Hz, sampleRate_Hz, q, coeff_f32);
+	} else {
+		//unknown
+		return -1.0;
+	}
+	convertCoeff_f32_to_i32(coeff_f32, (int32_t *)coeff_uint32, ncoeff);
+	setBiquadCoeffOnADC(chanIndex, biquadIndex, coeff_uint32); //needs twos-compliment
+	return cutoff_Hz;
 }
+	
+
+void AudioControlAIC3206::computeBiquadCoeff_LP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
+	// Compute common filter functions...all second order filters...all with Matlab convention on a1 and a2 coefficients
+	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
+	
+	//cutoff_Hz = freq_Hz;
+	
+	//int coeff[5];
+	double w0 = freq_Hz * (2.0 * 3.141592654 / sampleRate_Hz);
+	double sinW0 = sin(w0);
+	double alpha = sinW0 / ((double)q * 2.0);
+	double cosW0 = cos(w0);
+	//double scale = 1073741824.0 / (1.0 + alpha);
+	double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
+	/* b0 */ coeff[0] = ((1.0 - cosW0) / 2.0) * scale;
+	/* b1 */ coeff[1] = (1.0 - cosW0) * scale;
+	/* b2 */ coeff[2] = coeff[0];
+	/* a0 = 1.0 in Matlab style */
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;  
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  
+	
+	//flip signs for TI convention...see section 2.3.3.1.10.2 of TI Application Guide http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	coeff[1] = coeff[1]/2.0;
+	coeff[3] = -coeff[3]/2.0;
+	coeff[4] = -coeff[4];	
+}
+
+void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
+	// Compute common filter functions...all second order filters...all with Matlab convention on a1 and a2 coefficients
+	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
+	
+	//cutoff_Hz = freq_Hz;
+	
+	double w0 = freq_Hz * (2 * 3.141592654 / sampleRate_Hz);
+	double sinW0 = sin(w0);
+	double alpha = sinW0 / ((double)q * 2.0);
+	double cosW0 = cos(w0);
+	double scale = 1.0 / (1.0+alpha); // which is equal to 1.0 / a0
+	/* b0 */ coeff[0] = ((1.0 + cosW0) / 2.0) * scale;
+	/* b1 */ coeff[1] = -(1.0 + cosW0) * scale;
+	/* b2 */ coeff[2] = coeff[0];
+	/* a0 = 1.0 in Matlab style */
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale; 
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  
+	
+	//flip signs and scale for TI convention...see section 2.3.3.1.10.2 of TI Application Guide http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	coeff[1] = coeff[1]/2.0;
+	coeff[3] = -coeff[3]/2.0;
+	coeff[4] = -coeff[4];
+
+}
+
 #define CONST_2_31_m1  (2147483647)   //2^31 - 1
-void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
-	float coeff_f32[3];
-	computeFirstOrderHPCoeff_F32(cutoff_Hz,fs_Hz,coeff_f32);
-	for (int i=0; i<3; i++) {
+//void AudioControlAIC3206::computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff) {
+//	float coeff_f32[3];
+//	computeFirstOrderHPCoeff_f32(cutoff_Hz,fs_Hz,coeff_f32);
+//	for (int i=0; i<3; i++) {
+//		//scale
+//		coeff_f32[i] *= (float)CONST_2_31_m1;
+//		
+//		//truncate
+//		coeff[i] = (int32_t)coeff_f32[i];
+//	}
+//}
+void AudioControlAIC3206::convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff) {
+	for (int i=0; i< ncoeff; i++) {
 		//scale
 		coeff_f32[i] *= (float)CONST_2_31_m1;
 		
 		//truncate
-		coeff[i] = (int32_t)coeff_f32[i];
+		coeff_i32[i] = (int32_t)coeff_f32[i];
 	}
 }
+
+int AudioControlAIC3206::setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32) //needs twos-compliment
+{
+	//See TI application guide for the AIC3206 http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+	//See section 2.3.3.1.10.2
+		
+	//power down the AIC to allow change in coefficients
+	uint32_t prev_state = aic_readPage(0x00,0x51);
+	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
+	
+	//use table 2-14 from TI Application Guide...
+	int page_reg_table[]={ 
+		8, 36, 9, 44,   // N0, start of Biquad A
+		8, 40, 9, 48,   // N1
+		8, 44, 9, 52,   // N2
+		8, 48, 9, 56,   // D1
+		8, 52, 8, 64,   // D2
+		8, 56, 9, 64,    // start of biquad B
+		8, 60, 9, 68, 
+		8, 64, 9, 72, 
+		8, 68, 9, 76, 
+		8, 72, 9, 80, 
+		8, 76, 9, 84,   // start of Biquad C
+		8, 80, 9, 88, 
+		8, 84, 9, 92, 
+		8, 88, 9, 96, 
+		8, 92, 9, 100, 
+		8, 96, 9, 104,   // start of Biquad D
+		8, 100, 9, 108,
+		8, 104, 9, 112, 
+		8, 108, 9, 116, 
+		8, 112, 9, 120, 
+		8, 116, 9, 124,  //start of Biquad E
+		8, 120, 10, 8, 
+		8, 124, 10, 12, 
+		9, 8, 10, 16, 
+	    9, 12, 10, 20 
+	};
+		
+	const int rows_per_biquad = 5;
+	const int table_ncol = 4;
+	int chan_offset;
+	
+	switch (chanIndex) {
+		case BOTH_CHAN:
+			chan_offset = 0;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);		
+			chan_offset = 1;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
+			break;
+		case LEFT_CHAN:
+			chan_offset = 0;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
+			break;
+		case RIGHT_CHAN:
+			chan_offset = 1;
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
+			break;
+		default:
+			return -1;
+			break;
+	}	
+	
+	//power the ADC back up
+	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
+	return 0;
+}
+
+void AudioControlAIC3206::writeBiquadCoeff(uint32_t *coeff_uint32, int *page_reg_table, int table_ncol) {
+	int page, reg;
+	uint32_t c;
+	for (int i = 0; i < 5; i++) {
+		page = page_reg_table[i*table_ncol];
+		reg = page_reg_table[i*table_ncol+1];
+		c = coeff_uint32[i];
+		aic_writePage(page,reg,(uint8_t)(c>>24));
+		aic_writePage(page,reg+1,(uint8_t)(c>>16));
+		aic_writePage(page,reg+2,(uint8_t)(c>>8));	
+	}
+	return;
+}	
+
 	
 void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz) { //fs_Hz is sample rate
 	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	uint32_t coeff[3];
 	if (enable) {
 		HP_cutoff_Hz = cutoff_Hz; 
-		sample_rate_Hz = fs_Hz;
-		computeFirstOrderHPCoeff_i32(cutoff_Hz,fs_Hz,(int32_t *)coeff);
+		#if 0
+			//original
+			sample_rate_Hz = fs_Hz;
+			computeFirstOrderHPCoeff_i32(cutoff_Hz,fs_Hz,(int32_t *)coeff);
+		#else
+			//new
+			float coeff_f32[3];
+			computeFirstOrderHPCoeff_f32(cutoff_Hz, fs_Hz, coeff_f32);
+			convertCoeff_f32_to_i32(coeff_f32, (int32_t *)coeff, 3);
+		#endif
+		
 		//Serial.print("enableHPFonADC: coefficients, Hex: ");
 		//Serial.print(coeff[0],HEX);
 		//Serial.print(", ");
@@ -715,31 +943,48 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 		coeff[0] = 0x7FFFFFFF; coeff[1] = 0; coeff[2]=0;
 	}
 	
-	setIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
+	setHpfIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
+}
+
+
+void AudioControlAIC3206::computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff) {
+	//cutoff_Hz is the cutoff frequency in Hz
+	//fs_Hz is the sample rate in Hz
+	
+	//First-order Butterworth IIR
+	//From https://www.dsprelated.com/showcode/199.php
+	const float pi = 3.141592653589793;
+	float T = 1.0f/fs_Hz; //sample period
+	float w = cutoff_Hz * 2.0 * pi;
+	float A = 1.0f / (tan( (w*T) / 2.0));
+	coeff[0] = A / (1.0 + A); // first b coefficient
+	coeff[1] = -coeff[0];     // second b coefficient
+	coeff[2] = (1.0 - A) / (1.0 + A);  //second a coefficient (Matlab sign convention)
+	coeff[2] = -coeff[2];  //flip to be TI sign convention
 }
 
 
 //set first-order IIR filter coefficients on ADC
-void AudioControlAIC3206::setIIRCoeffOnADC(int chan, uint32_t *coeff) {
+void AudioControlAIC3206::setHpfIIRCoeffOnADC(int chan, uint32_t *coeff) {
 
 	//power down the AIC to allow change in coefficients
 	uint32_t prev_state = aic_readPage(0x00,0x51);
 	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
 	
 	if (chan == BOTH_CHAN) {
-		setIIRCoeffOnADC_Left(coeff);
-		setIIRCoeffOnADC_Right(coeff);
+		setHpfIIRCoeffOnADC_Left(coeff);
+		setHpfIIRCoeffOnADC_Right(coeff);
 	} else if (chan == LEFT_CHAN) {
-		setIIRCoeffOnADC_Left(coeff);
+		setHpfIIRCoeffOnADC_Left(coeff);
 	} else {
-		setIIRCoeffOnADC_Right(coeff);
+		setHpfIIRCoeffOnADC_Right(coeff);
 	}
 
 	//power the ADC back up
 	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
 }
 		
-void AudioControlAIC3206::setIIRCoeffOnADC_Left(uint32_t *coeff) {
+void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
 	int page;
 	uint32_t c;
 	
@@ -765,7 +1010,7 @@ void AudioControlAIC3206::setIIRCoeffOnADC_Left(uint32_t *coeff) {
 	aic_writePage(page,33,(uint8_t)(c>>16));
 	aic_writePage(page,34,(uint8_t)(c>>9));	
 }
-void AudioControlAIC3206::setIIRCoeffOnADC_Right(uint32_t *coeff) {
+void AudioControlAIC3206::setHpfIIRCoeffOnADC_Right(uint32_t *coeff) {
 	int page;
 	uint32_t c;
 	

@@ -6,7 +6,7 @@
 *
 *   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the audio signal.
-*   Built on example "BasicGain.ino". 
+*   Built on example "BasicGain.ino".
 *   Adds code to detect if external mic is inserted into jack.
 *   Automatically switches the input to the external mic (and back) as it is plugged or unplugged.
 *
@@ -31,7 +31,7 @@ AudioConnection_F32       patchCord11(gain1, 0, i2s_out, 0);  //connect the Left
 AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Right gain to the Right output
 
 //I have a potentiometer on the Teensy Audio Board
-#define POT_PIN A1  //potentiometer is tied to this pin
+#define POT_PIN A20  //potentiometer is tied to this pin
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 20.0f; //gain on the microphone

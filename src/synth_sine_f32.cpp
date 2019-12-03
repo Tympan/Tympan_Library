@@ -52,7 +52,8 @@ void AudioSynthWaveformSine_F32::update(void)
 				}
 				phase_accumulator = ph;
 				
-				
+				block_counter++;
+				block->id = block_counter;
 				
 				AudioStream_F32::transmit(block);
 				AudioStream_F32::release(block);

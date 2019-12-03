@@ -7,7 +7,7 @@
 
   Purpose: Implements 8-band compressor.  The BTNRH version was implemented the
     filters in the frequency-domain, whereas I implemented them in the time-domain.
-    
+
 
   Uses Teensy Audio Adapter ro the Tympan Audio Board
       For Teensy Audio Board, assumes microphones (or whatever) are attached to the
@@ -114,7 +114,7 @@ AudioConnection_F32     patchCord45(compBroadband[1], 0, i2s_out, 1);    //Right
 #define BT_SERIAL Serial1
 
 //I have a potentiometer on the Teensy Audio Board
-#define POT_PIN A1  //potentiometer is tied to this pin
+#define POT_PIN A20  //potentiometer is tied to this pin
 
 // define functions to setup the hardware
 void setupAudioHardware(void) {
@@ -205,7 +205,7 @@ void setup() {
 
   //check the potentiometer
   servicePotentiometer(millis());
-  
+
   //setup sine wave as test signal..if the sine input
   testSignal.amplitude(0.01);
   testSignal.frequency(500.0f);

@@ -23,7 +23,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+ 
+ /* 
+ *  Extended by Chip Audette, OpenAudio, May 2019
+ *  Converted to F32 and to variable audio block length
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
+ */
+ 
 #include "input_i2s_f32.h"
 #include "output_i2s_f32.h"
 #include <arm_math.h>
@@ -38,6 +44,7 @@ bool AudioInputI2S_F32::update_responsibility = false;
 DMAMEM static int32_t i2s_rx_buffer[2*AUDIO_BLOCK_SAMPLES];//minimum for stereo 32-bit transfers
 DMAChannel AudioInputI2S_F32::dma(false);
 int AudioInputI2S_F32::flag_out_of_memory = 0;
+unsigned long AudioInputI2S_F32::update_counter = 0;
 
 float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
@@ -58,8 +65,8 @@ void AudioInputI2S_F32::begin(void) {
 void AudioInputI2S_F32::begin(bool transferUsing32bit) {
 	dma.begin(true); // Allocate the DMA channel first
 	
-	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz;
-	AudioOutputI2S_F32::audio_block_samples = audio_block_samples;
+	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz; //these were given in the AudioSettings in the contructor
+	AudioOutputI2S_F32::audio_block_samples = audio_block_samples;//these were given in the AudioSettings in the contructor
 	
 	//setup I2S parameters
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit);
@@ -196,6 +203,7 @@ void AudioInputI2S_F32::sub_begin_i32(void)
 
 void AudioInputI2S_F32::isr_32(void)
 {
+	static bool flag_beenSuccessfullOnce = false;
 	uint32_t daddr, offset;
 	const int32_t *src_i32, *end_i32;
 	//int16_t *dest_left, *dest_right;
@@ -215,6 +223,7 @@ void AudioInputI2S_F32::isr_32(void)
 		//end = (int32_t *)&i2s_rx_buffer_32[AUDIO_BLOCK_SAMPLES*2];
 		src_i32 = (int32_t *)&i2s_rx_buffer[audio_block_samples];	//WEA revised
 		end_i32 = (int32_t *)&i2s_rx_buffer[audio_block_samples*2];	//WEA revised
+		update_counter++; //let's increment the counter here to ensure that we get every ISR resulting in audio
 		if (AudioInputI2S_F32::update_responsibility) AudioStream_F32::update_all();
 		
 	} else {
@@ -230,7 +239,7 @@ void AudioInputI2S_F32::isr_32(void)
     // OLD COMMENT: there will be two buffers with each having "AUDIO_BLOCK_SAMPLES" samples
 	left_f32 = AudioInputI2S_F32::block_left_f32;
 	right_f32 = AudioInputI2S_F32::block_right_f32;
-	if (left_f32 != NULL && right_f32 != NULL) {
+	if ((left_f32 != NULL) && (right_f32 != NULL)) {
 		offset = AudioInputI2S_F32::block_offset;
 		//if (offset <= AUDIO_BLOCK_SAMPLES/2) {	//original
 		if (offset <= ((uint32_t) audio_block_samples/2)) {
@@ -246,19 +255,26 @@ void AudioInputI2S_F32::isr_32(void)
 				*dest_right_f32++ = (float32_t) *src_i32++;
 			} while (src_i32 < end_i32);
 		}
+		flag_beenSuccessfullOnce = true;
+	} else {
+		if (flag_beenSuccessfullOnce) {
+			//but we were not successful this time
+			Serial.println("Input I2S: isr_32: WARNING!!! Null memory block.");
+		}
+
 	}
 }
 
 #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
-void AudioInputI2S_F32::convert_i16_to_f32( int16_t *p_i16, float32_t *p_f32, int len) {
-	for (int i=0; i<len; i++) { *p_f32++ = ((float32_t)(*p_i16++)) * I16_TO_F32_NORM_FACTOR; }
+void AudioInputI2S_F32::scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) {
+	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i16++) * I16_TO_F32_NORM_FACTOR); }
 }
 #define I24_TO_F32_NORM_FACTOR (1.192093037616377e-07)   //which is 1/(2^23 - 1)
-void AudioInputI2S_F32::convert_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
+void AudioInputI2S_F32::scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i24++) * I24_TO_F32_NORM_FACTOR); }
 }
 #define I32_TO_F32_NORM_FACTOR (4.656612875245797e-10)   //which is 1/(2^31 - 1)
-void AudioInputI2S_F32::convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
+void AudioInputI2S_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
 }
 
@@ -308,8 +324,8 @@ void AudioInputI2S_F32::convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, 
 		}
 		if (out_left_f32 != NULL) {
 			//convert int16 to float 32
-			convert_i16_to_f32(out_left->data, out_left_f32->data, audio_block_samples);
-			convert_i16_to_f32(out_right->data, out_right_f32->data, audio_block_samples);
+			scale_i16_to_f32(out_left->data, out_left_f32->data, audio_block_samples);
+			scale_i16_to_f32(out_right->data, out_right_f32->data, audio_block_samples);
 			
 			//prepare to transmit
 			update_counter++;
@@ -349,21 +365,39 @@ void AudioInputI2S_F32::convert_i32_to_f32( float32_t *p_i32, float32_t *p_f32, 
 }
  */
  
+ void AudioInputI2S_F32::update_1chan(int chan, audio_block_f32_t *&out_f32) {
+	 if (!out_f32) return;
+	 
+	//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
+	scale_i32_to_f32(out_f32->data, out_f32->data, audio_block_samples);
+
+	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
+	out_f32->id = update_counter;
+		
+	//transmit the f32 data!
+	AudioStream_F32::transmit(out_f32,chan);
+
+	//release the memory blocks
+	AudioStream_F32::release(out_f32);
+}
+ 
 void AudioInputI2S_F32::update(void)
 {
+	static bool flag_beenSuccessfullOnce = false;
 	audio_block_f32_t *new_left_f32=NULL, *new_right_f32=NULL, *out_left_f32=NULL, *out_right_f32=NULL;
 
 	// allocate 2 new blocks, but if one fails, allocate neither
 	new_left_f32 = AudioStream_F32::allocate_f32();
-	if (new_left_f32 != NULL) {
-		new_right_f32 = AudioStream_F32::allocate_f32();
-		if (new_right_f32 == NULL) {
-			flag_out_of_memory = 1;
-			AudioStream_F32::release(new_left_f32);
-			new_left_f32 = NULL;
-		}
-	} else {
+	new_right_f32 = AudioStream_F32::allocate_f32();
+	if ((!new_left_f32) || (!new_right_f32)) {
+		//ran out of memory.  Clear and return!
+		if (new_left_f32) AudioStream_F32::release(new_left_f32);
+		if (new_right_f32) AudioStream_F32::release(new_right_f32);
+		new_left_f32 = NULL;  new_right_f32 = NULL;
 		flag_out_of_memory = 1;
+		if (flag_beenSuccessfullOnce) Serial.println("Input I2S: update(): WARNING!!! Out of Memory.");
+	} else {
+		flag_beenSuccessfullOnce = true;
 	}
 
 	__disable_irq();	
@@ -378,31 +412,10 @@ void AudioInputI2S_F32::update(void)
 		block_offset = 0;
 		__enable_irq();
 		
-		//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
-		convert_i32_to_f32(out_left_f32->data, out_left_f32->data, audio_block_samples);
-		convert_i32_to_f32(out_right_f32->data, out_right_f32->data,audio_block_samples);
-		//float32_t *foo_left = &(out_left_f32->data[0]);
-		//float32_t *foo_right = &(out_right_f32->data[0]);
-		//for (int i=0; i<audio_block_samples; i++) {
-		//	//out_left_f32->data[i] *= I24_TO_F32_NORM_FACTOR;
-		//	//out_right_f32->data[i] *= I24_TO_F32_NORM_FACTOR;
-		//	(*foo_left++) *= I24_TO_F32_NORM_FACTOR;
-		//	(*foo_right++) *= I24_TO_F32_NORM_FACTOR;
-		//}
-	
-		//prepare to transmit
-		update_counter++;
-		out_left_f32->id = update_counter;
-		out_right_f32->id = update_counter;
-			
-		//transmit the f32 data!
-		AudioStream_F32::transmit(out_left_f32,0);
-		AudioStream_F32::transmit(out_right_f32,1);
+		//update_counter++; //I chose to update it in the ISR instead.
+		update_1chan(0,out_left_f32);  //uses audio_block_samples and update_counter
+		update_1chan(1,out_right_f32);  //uses audio_block_samples and update_counter
 		
-		//release the memory blocks
-		AudioStream_F32::release(out_left_f32);
-		AudioStream_F32::release(out_right_f32);
-
 	} else if (new_left_f32 != NULL) {
 		// the DMA didn't fill blocks, but we allocated blocks
 		if (block_left_f32 == NULL) {

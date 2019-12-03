@@ -159,11 +159,16 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
 	float getCurrentGain(void) { return last_gain; }
 	float getCurrentGain_dB(void) { return db2(getCurrentGain()); }
     
-	void setMaxdB(float32_t _maxdB) { maxdB = _maxdB; }
-	void setKneeCompressor_dBSPL(float32_t _knee) { tk = _knee; }
+	float setMaxdB(float32_t _maxdB) { return maxdB = _maxdB; }
+	float setKneeExpansion_dBSPL(float32_t _knee) { return exp_end_knee = _knee; }
+	float getKneeExpansion_dBSPL(void) { return exp_end_knee; }
+	float setExpansionCompRatio(float32_t _cr) { return exp_cr = _cr; }
+	float getExpansionCompRatio(void) { return exp_cr; }
+	float setKneeCompressor_dBSPL(float32_t _knee) { return tk = _knee; }
 	float getKneeCompressor_dBSPL(void) { return tk; }
-	void setCompRatio(float32_t _cr) {cr = _cr; }
-	void setKneeLimiter_dBSPL(float32_t _bolt) { bolt = _bolt; }
+	float setCompRatio(float32_t _cr) { return cr = _cr; }
+	float setKneeLimiter_dBSPL(float32_t _bolt) { return bolt = _bolt; }
+	float getKneeLimiter_dBSPL(void) { return bolt; }
 
     //dB functions.  Feed it the envelope amplitude (not squared) and it computes 20*log10(x) or it does 10.^(x/20)
     static float undb2(const float &x)  { return expf(0.11512925464970228420089957273422f*x); } //faster:  exp(log(10.0f)*x/20);  this is exact

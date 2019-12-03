@@ -37,6 +37,9 @@
 #include "AudioStream.h"
 #include "AudioStream_F32.h"
 #include "utility/dspinst.h"
+#include "AudioConvert_F32.h" //for convert_i16_to_f32
+
+
 
 class AudioSynthNoisePink_F32 : public AudioStream_F32
 {

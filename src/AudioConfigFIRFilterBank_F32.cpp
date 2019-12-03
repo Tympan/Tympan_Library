@@ -37,7 +37,7 @@ void AudioConfigFIRFilterBank_F32::fir_filterbank(float *bb, float *cf, const in
             if (wt == 0) {
                 w = 0.54 + 0.46 * cos(p);                   // Hamming
             } else if (wt==1) {
-                w = (1 - a + cos(p) + a * cos(2 * p)) / 2;  // Blackman
+                w = (1.0 - a + cos(p) + a * cos(2.0 * p)) / 2.0;  // Blackman
             } else {
 				//win = (1 - cos(2*pi*[1:N]/(N+1)))/2;  //WEA's matlab call, indexing starts from 1, not zero
 				w = (1.0 - cosf(2.0*M_PI*((float)(j))/((float)(nw_orig-1))))/2.0; 
@@ -49,14 +49,14 @@ void AudioConfigFIRFilterBank_F32::fir_filterbank(float *bb, float *cf, const in
         // frequency bands...add the DC-facing band and add the Nyquist-facing band
         be[0] = 0;
         for (k = 1; k < nc; k++) {
-            kk = round(nf * cf[k - 1] * (2 / sr)); //original
+            kk = round(nf * cf[k - 1] * (2.0 / sr)); //original
             be[k] = (kk > nf) ? nf : kk;
         }
         be[nc] = nf;
         
         // channel tranfer functions
         fzero(xx, ns);
-        xx[nw_orig / 2] = 1; //make a single-sample impulse centered on our eventual window
+        xx[nw_orig / 2] = 1.0; //make a single-sample impulse centered on our eventual window
         BTNRH_FFT::cha_fft_rc(xx, nt);
         for (k = 0; k < nc; k++) {
             fzero(yy, ns); //zero the temporary output

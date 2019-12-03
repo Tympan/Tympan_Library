@@ -34,11 +34,18 @@ public:
     virtual void update(void);
 
     void gain(unsigned int channel, float gain) {
-      if (channel >= 4 || channel < 0) return;
+      if ((channel >= 4) || (channel < 0)) return;
       multiplier[channel] = gain;
     }
 	void mute(void) { for (int i=0; i < 4; i++) gain(i,0.0); };  //mute all channels
-	void switchChannel(unsigned int channel) { mute(); gain(channel,1.0); } //mute all channels except the given one.  Set the given one to 1.0.
+	
+	int switchChannel(unsigned int channel) { 
+		//mute all channels except the given one.  Set the given one to 1.0.
+		if ((channel >= 4) || (channel < 0)) return -1;
+		mute(); 
+		gain(channel,1.0);
+		return channel;
+	} 
 
   private:
     audio_block_f32_t *inputQueueArray[4];
@@ -59,12 +66,17 @@ public:
     virtual void update(void);
 
     void gain(unsigned int channel, float gain) {
-      if (channel >= 8 || channel < 0) return;
+      if ((channel >= 8) || (channel < 0)) return;
       multiplier[channel] = gain;
     }
 	void mute(void) { for (int i=0; i < 8; i++) gain(i,0.0); };  //mute all channels
-	void switchChannel(unsigned int channel) { mute(); gain(channel,1.0); } //mute all channels except the given one.  Set the given one to 1.0.
-
+	int switchChannel(unsigned int channel) { 
+		//mute all channels except the given one.  Set the given one to 1.0.
+		if ((channel >= 8) || (channel < 0)) return -1;
+		mute(); 
+		gain(channel,1.0);
+		return channel;
+	} 
 
   private:
     audio_block_f32_t *inputQueueArray[8];

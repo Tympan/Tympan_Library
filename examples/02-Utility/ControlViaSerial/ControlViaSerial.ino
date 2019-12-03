@@ -51,7 +51,7 @@ SerialManager serialManager;
 
 
 //I have a potentiometer on the Teensy Audio Board
-#define POT_PIN A1  //potentiometer is tied to this pin
+#define POT_PIN control_aic3206  //potentiometer is tied to this pin
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 20.0f; //gain on the microphone

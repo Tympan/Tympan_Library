@@ -23,47 +23,87 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+ 
+ /* 
+ *  Extended by Chip Audette, OpenAudio, May 2019
+ *  Converted to F32 and to variable audio block length
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
+ */
+ 
 #include "output_i2s_f32.h"
 //#include "input_i2s_f32.h"
 //include "memcpy_audio.h"
 //#include "memcpy_interleave.h"
 #include <arm_math.h>
 
-
+////////////
+//
+// Changing the sample rate based on changing the I2S bus freuqency
+//
 //Here's the function to change the sample rate of the system (via changing the clocking of the I2S bus)
 //https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=121365&viewfull=1#post121365
 //
 //And, a post on how to compute the frac and div portions?  I haven't checked the code presented in this post:
 //https://forum.pjrc.com/threads/38753-Discussion-about-a-simple-way-to-change-the-sample-rate?p=188812&viewfull=1#post188812
-float setI2SFreq(const float freq_Hz) {
-	int freq = (int)freq_Hz;
+//
+//Finally, here is my own Matlab code for computing the mult and div values...
+/*
+	%choose the sample rates that you are hoping to hit
+	targ_fs_Hz =  [2000, 8000, 11025, 16000, 22050, 24000, 32000, 44100, floor(44117.64706) , ...
+		48000, 88200, floor(44117.64706 * 2), (37000/256*662), 96000, 176400, floor(44117.64706 * 4), 192000];
+
+	F_PLL = 180e6;  %choose the clock rate used for this calculation
+	PLL_div = 256;
+
+	all_n=[];all_d=[];
+	for Itarg=1:length(targ_fs_Hz)
+		if (0)
+			[best_d,best_n]=rat((F_PLL/PLL_div)/targ_fs_Hz(Itarg));
+		else
+			best_n = 1; best_d = 1; best_err = 1e10;
+			for n=1:255
+				d = [1:4095];
+				act_fs_Hz = F_PLL / PLL_div * n ./ d;
+				[err,I] = min(abs(act_fs_Hz - targ_fs_Hz(Itarg)));
+				if err < best_err
+					best_n = n; best_d = d(I);
+					best_err = err;
+				end
+			end
+		end
+		all_n(Itarg) = best_n;
+		all_d(Itarg) = best_d;
+		disp(['fs = ' num2str(targ_fs_Hz(Itarg)) ', n = ' num2str(best_n) ', d = ' num2str(best_d) ', true = ' num2str(F_PLL/PLL_div * best_n / best_d)])
+	end
+*/
+float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
+	int freq = (int)(freq_Hz+0.5);
   typedef struct {
     uint8_t mult;
     uint16_t div;
   } __attribute__((__packed__)) tmclk;
 
-  const int numfreqs = 16;
-  const int samplefreqs[numfreqs] = { 2000, 8000, 11025, 16000, 22050, 24000, 32000, 44100, (int)44117.64706 , 48000, 88200, (int)(44117.64706 * 2), 96000, 176400, (int)(44117.64706 * 4), 192000};
+  const int numfreqs = 17;
+  const int samplefreqs[numfreqs] = { 2000, 8000, 11025, 16000, 22050, 24000, 32000, 44100, (int)44117.64706 , 48000, 88200, (int)(44117.64706 * 2), (int)(95679.69+0.5), 96000, 176400, (int)(44117.64706 * 4), 192000};
 
 #if (F_PLL==16000000)
-  const tmclk clkArr[numfreqs] = {{4, 125}, {16, 125}, {148, 839}, {32, 125}, {145, 411}, {48, 125}, {64, 125}, {151, 214}, {12, 17}, {96, 125}, {151, 107}, {24, 17}, {192, 125}, {127, 45}, {48, 17}, {255, 83} };
+  const tmclk clkArr[numfreqs] = {{4, 125}, {16, 125}, {148, 839}, {32, 125}, {145, 411}, {48, 125}, {64, 125}, {151, 214}, {12, 17}, {96, 125}, {151, 107}, {24, 17}, {124,81}, {192, 125}, {127, 45}, {48, 17}, {255, 83} };
 #elif (F_PLL==72000000)
-  const tmclk clkArr[numfreqs] = {{832, 1125}, {32, 1125}, {49, 1250}, {64, 1125}, {49, 625}, {32, 375}, {128, 1125}, {98, 625}, {8, 51}, {64, 375}, {196, 625}, {16, 51}, {128, 375}, {249, 397}, {32, 51}, {185, 271} };
+  const tmclk clkArr[numfreqs] = {{832, 1125}, {32, 1125}, {49, 1250}, {64, 1125}, {49, 625}, {32, 375}, {128, 1125}, {98, 625}, {8, 51}, {64, 375}, {196, 625}, {16, 51}, {248,729}, {128, 375}, {249, 397}, {32, 51}, {185, 271} };
 #elif (F_PLL==96000000)
-  const tmclk clkArr[numfreqs] = {{2, 375},{8, 375}, {73, 2483}, {16, 375}, {147, 2500}, {8, 125},  {32, 375}, {147, 1250}, {2, 17}, {16, 125}, {147, 625}, {4, 17}, {32, 125}, {151, 321}, {8, 17}, {64, 125} };
+  const tmclk clkArr[numfreqs] = {{2, 375},{8, 375}, {73, 2483}, {16, 375}, {147, 2500}, {8, 125},  {32, 375}, {147, 1250}, {2, 17}, {16, 125}, {147, 625}, {4, 17}, {62,243},{32, 125}, {151, 321}, {8, 17}, {64, 125} };
 #elif (F_PLL==120000000)
-  const tmclk clkArr[numfreqs] = {{8, 1875},{32, 1875}, {89, 3784}, {64, 1875}, {147, 3125}, {32, 625},  {128, 1875}, {205, 2179}, {8, 85}, {64, 625}, {89, 473}, {16, 85}, {128, 625}, {178, 473}, {32, 85}, {145, 354} };
+  const tmclk clkArr[numfreqs] = {{8, 1875},{32, 1875}, {89, 3784}, {64, 1875}, {147, 3125}, {32, 625},  {128, 1875}, {205, 2179}, {8, 85}, {64, 625}, {89, 473}, {16, 85}, {119,583}, {128, 625}, {178, 473}, {32, 85}, {145, 354} };
 #elif (F_PLL==144000000)
-  const tmclk clkArr[numfreqs] = {{4, 1125},{16, 1125}, {49, 2500}, {32, 1125}, {49, 1250}, {16, 375},  {64, 1125}, {49, 625}, {4, 51}, {32, 375}, {98, 625}, {8, 51}, {64, 375}, {196, 625}, {16, 51}, {128, 375} };
+  const tmclk clkArr[numfreqs] = {{4, 1125},{16, 1125}, {49, 2500}, {32, 1125}, {49, 1250}, {16, 375},  {64, 1125}, {49, 625}, {4, 51}, {32, 375}, {98, 625}, {8, 51}, {157,923}, {64, 375}, {196, 625}, {16, 51}, {128, 375} };
 #elif (F_PLL==180000000)
-  const tmclk clkArr[numfreqs] = {{23, 8086}, {46, 4043}, {49, 3125}, {73, 3208}, {98, 3125}, {37, 1084},  {183, 4021}, {196, 3125}, {16, 255}, {128, 1875}, {107, 853}, {32, 255}, {219, 1604}, {214, 853}, {64, 255}, {219, 802} };
+  const tmclk clkArr[numfreqs] = {{9, 3164}, {46, 4043}, {49, 3125}, {73, 3208}, {98, 3125}, {64, 1875},  {183, 4021}, {196, 3125}, {16, 255}, {128, 1875}, {107, 853}, {32, 255}, {238,1749}, {219, 1604}, {214, 853}, {64, 255}, {219, 802} };
 #elif (F_PLL==192000000)
-  const tmclk clkArr[numfreqs] = {{1, 375}, {4, 375}, {37, 2517}, {8, 375}, {73, 2483}, {4, 125}, {16, 375}, {147, 2500}, {1, 17}, {8, 125}, {147, 1250}, {2, 17}, {16, 125}, {147, 625}, {4, 17}, {32, 125} };
+  const tmclk clkArr[numfreqs] = {{1, 375}, {4, 375}, {37, 2517}, {8, 375}, {73, 2483}, {4, 125}, {16, 375}, {147, 2500}, {1, 17}, {8, 125}, {147, 1250}, {2, 17}, {31,243}, {16, 125}, {147, 625}, {4, 17}, {32, 125} };
 #elif (F_PLL==216000000)
-  const tmclk clkArr[numfreqs] = {{8, 3375}, {32, 3375}, {49, 3750}, {64, 3375}, {49, 1875}, {32, 1125},  {128, 3375}, {98, 1875}, {8, 153}, {64, 1125}, {196, 1875}, {16, 153}, {128, 1125}, {226, 1081}, {32, 153}, {147, 646} };
+  const tmclk clkArr[numfreqs] = {{8, 3375}, {32, 3375}, {49, 3750}, {64, 3375}, {49, 1875}, {32, 1125},  {128, 3375}, {98, 1875}, {8, 153}, {64, 1125}, {196, 1875}, {16, 153}, {248,2187}, {128, 1125}, {226, 1081}, {32, 153}, {147, 646} };
 #elif (F_PLL==240000000)
-  const tmclk clkArr[numfreqs] = {{4, 1875}, {16, 1875}, {29, 2466}, {32, 1875}, {89, 3784}, {16, 625}, {64, 1875}, {147, 3125}, {4, 85}, {32, 625}, {205, 2179}, {8, 85}, {64, 625}, {89, 473}, {16, 85}, {128, 625} };
+  const tmclk clkArr[numfreqs] = {{4, 1875}, {16, 1875}, {29, 2466}, {32, 1875}, {89, 3784}, {16, 625}, {64, 1875}, {147, 3125}, {4, 85}, {32, 625}, {205, 2179}, {8, 85}, {119,1166}, {64, 625}, {89, 473}, {16, 85}, {128, 625} };
 #endif
 
   for (int f = 0; f < numfreqs; f++) {
@@ -318,7 +358,7 @@ void AudioOutputI2S_F32::sub_begin_i32(void) {
 
 void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio block
 {
-	int32_t *dest;
+	int32_t *dest;  //int32 is the data type being sent to the audio codec
 	audio_block_f32_t *blockL, *blockR;
 	uint32_t saddr; 
 	uint32_t offsetL, offsetR;
@@ -402,20 +442,22 @@ void AudioOutputI2S_F32::isr_32(void)  //should be called every half of an audio
 
 }
 
-void AudioOutputI2S_F32::convert_f32_to_i16(float32_t *p_f32, int16_t *p_i16, int len) {
-	for (int i=0; i<len; i++) { *p_i16++ = max(-32768,min(32768,(int16_t)((*p_f32++) * 32768.f))); }
+void AudioOutputI2S_F32::scale_f32_to_i16(float32_t *p_f32, float32_t *p_i16, int len) {
+	for (int i=0; i<len; i++) { *p_i16++ = max(-32767,min(32767,(*p_f32++) * 32767.f)); }
 }
 #define F32_TO_I24_NORM_FACTOR (8388607)   //which is 2^23-1
-void AudioOutputI2S_F32::convert_f32_to_i24( float32_t *p_f32, float32_t *p_i24, int len) {
+void AudioOutputI2S_F32::scale_f32_to_i24( float32_t *p_f32, float32_t *p_i24, int len) {
 	for (int i=0; i<len; i++) { *p_i24++ = max(-F32_TO_I24_NORM_FACTOR,min(F32_TO_I24_NORM_FACTOR,(*p_f32++) * F32_TO_I24_NORM_FACTOR)); }
 }
 #define F32_TO_I32_NORM_FACTOR (2147483647)   //which is 2^31-1
 //define F32_TO_I32_NORM_FACTOR (8388607)   //which is 2^23-1
-void AudioOutputI2S_F32::convert_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) {
+void AudioOutputI2S_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) {
 	for (int i=0; i<len; i++) { *p_i32++ = max(-F32_TO_I32_NORM_FACTOR,min(F32_TO_I32_NORM_FACTOR,(*p_f32++) * F32_TO_I32_NORM_FACTOR)); }
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
 }
 
+//update has to be carefully coded so that, if audio_blocks are not available, the code exits
+//gracefully and won't hang.  That'll cause the whole system to hang, which would be very bad.
 void AudioOutputI2S_F32::update(void)
 {
 	// null audio device: discard all incoming data
@@ -424,7 +466,16 @@ void AudioOutputI2S_F32::update(void)
 	//if (block) release(block);
 
 	audio_block_f32_t *block_f32;
-	audio_block_f32_t *block_f32_scaled;
+	audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
+	audio_block_f32_t *block2_f32_scaled = AudioStream_F32::allocate_f32();
+	if ((!block_f32_scaled) || (!block2_f32_scaled)) {
+		//couldn't get some working memory.  Return.
+		if (block_f32_scaled) AudioStream_F32::release(block_f32_scaled);
+		if (block2_f32_scaled) AudioStream_F32::release(block2_f32_scaled);
+		return;
+	}
+	
+	//now that we have our working memory, proceed with getting the audio data and processing
 	block_f32 = receiveReadOnly_f32(0); // input 0 = left channel
 	if (block_f32) {
 		if (block_f32->length != audio_block_samples) {
@@ -436,9 +487,9 @@ void AudioOutputI2S_F32::update(void)
 		//Serial.print("AudioOutputI2S_F32: audio_block_samples = ");
 		//Serial.println(audio_block_samples);
 	
-		//convert F32 to Int16
-		block_f32_scaled = AudioStream_F32::allocate_f32();
-		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		//scale F32 to Int32
+		//block_f32_scaled = AudioStream_F32::allocate_f32();
+		scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		//now process the data blocks
 		__disable_irq();
@@ -457,14 +508,18 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+	} else {
+		//this branch should never get called, but if it does, let's release the buffer that was never used
+		AudioStream_F32::release(block_f32_scaled);
 	}
 	
+	block_f32_scaled = block2_f32_scaled;  //this is simply renaming the pre-allocated buffer
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
 	if (block_f32) {
-		//convert F32 to Int16
-		block_f32_scaled = AudioStream_F32::allocate_f32();
-		convert_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		//scale F32 to Int32
+		//block_f32_scaled = AudioStream_F32::allocate_f32();
+		scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		
 		__disable_irq();
 		if (block_right_1st == NULL) {
@@ -482,8 +537,10 @@ void AudioOutputI2S_F32::update(void)
 			__enable_irq();
 			AudioStream_F32::release(tmp);
 		}
-		
-		transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+	} else {
+		//this branch should never get called, but if it does, let's release the buffer that was never used
+		AudioStream_F32::release(block_f32_scaled);
 	}
 }
 

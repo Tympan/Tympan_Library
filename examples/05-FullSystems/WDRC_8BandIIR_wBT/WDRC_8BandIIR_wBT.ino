@@ -121,7 +121,7 @@ SerialManager serialManager_USB(&Serial,N_CHAN,expCompLim,ampSweepTester,freqSwe
 #endif
 
 //routine to setup the hardware
-#define POT_PIN A1  //potentiometer is tied to this pin
+#define POT_PIN A20  //potentiometer is tied to this pin
 void setupTympanHardware(void) {
   Serial.println("Setting up Tympan Audio Board...");
   #if (USE_BT_SERIAL)
@@ -200,7 +200,7 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::C
   }
 
   //setup the per-channel delays
-  for (int i=0; i<N_CHAN; i++) { 
+  for (int i=0; i<N_CHAN; i++) {
     postFiltDelay[i].setSampleRate_Hz(audio_settings.sample_rate_Hz);
     postFiltDelay[i].delay(0,all_matlab_sos_delay_msec[i]);  //from filter_coeff_sos.h.  milliseconds!!!
   }

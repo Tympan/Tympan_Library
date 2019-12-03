@@ -13,6 +13,7 @@
 
 #include <arm_math.h>
 #include <AudioStream_F32.h>
+#include "AudioConvert_F32.h" //for convert_i16_to_f32
 
 class AudioSynthWaveform_F32 : public AudioStream_F32
 {
@@ -148,6 +149,7 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
     uint8_t _NotesPlaying;
 
     audio_block_f32_t *inputQueueArray_f32[1];
+	unsigned int block_counter=0;
 };
 
 #endif

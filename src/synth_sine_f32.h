@@ -66,6 +66,7 @@ private:
 	volatile uint8_t enabled = 1;
 	float32_t frequency_Hz;
 	const float magnitude_scale_factor = 65536.0f;
+	unsigned int block_counter=0;
 };
 
 
