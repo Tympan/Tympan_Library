@@ -39,8 +39,8 @@ const float input_gain_dB = 20.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void setup() {
   //begin the serial comms (for debugging)
-  Serial.begin(115200);  delay(500);
-  Serial.println("TrebleBoost: Starting setup()...");
+  myTympan.beginBothSerial(); delay(1000); //let's use the print functions in "myTympan" so it goes to BT, too!
+  myTympan.println("TrebleBoost: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10,audio_settings); 
@@ -59,25 +59,25 @@ void setup() {
 
   //Set the cutoff frequency for the highpassfilter
   float cutoff_Hz = 1000.f;  //frequencies below this will be attenuated
-  Serial.print("Highpass filter cutoff at ");Serial.print(cutoff_Hz);Serial.println(" Hz");
+  myTympan.print("Highpass filter cutoff at ");myTympan.print(cutoff_Hz);myTympan.println(" Hz");
   hp_filt1.setHighpass(0, cutoff_Hz); //biquad IIR filter.  left channel
   hp_filt2.setHighpass(0, cutoff_Hz); //biquad IIR filter.  right channel
 
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
 
-  Serial.println("Setup complete.");
+  myTympan.println("Setup complete.");
 } //end setup()
 
 
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
 
-  //check the potentiometer
+  //periodicallly check the potentiometer
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
-  //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),3000); //print every 3000 msec
+  //periodically print the CPU and Memory Usage
+  myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
 } //end loop();
 
@@ -96,7 +96,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(myTympan.readPotentiometer()) / 1024.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //send the potentiometer value to your algorithm as a control parameter
@@ -110,41 +110,10 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
       //command the new gain setting
       gain1.setGain_dB(vol_knob_gain_dB);  //set the gain of the Left-channel gain processor
       gain2.setGain_dB(vol_knob_gain_dB);  //set the gain of the Right-channel gain processor
-      Serial.print("servicePotentiometer: Digital Gain dB = "); Serial.println(vol_knob_gain_dB); //print text to Serial port for debugging
+      myTympan.print("servicePotentiometer: Digital Gain dB = "); myTympan.println(vol_knob_gain_dB); //print text to Serial port for debugging
     }
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
 
 
-void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  //static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
-  static unsigned long lastUpdate_millis = 0;
-
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    printCPUandMemoryMessage();
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }
-}
-
-extern "C" char* sbrk(int incr);
-int FreeRam() {
-  char top; //this new variable is, in effect, the mem location of the edge of the heap
-  return &top - reinterpret_cast<char*>(sbrk(0));
-}
-void printCPUandMemoryMessage(void) {
-  BOTH_SERIAL.print("CPU Cur/Pk: ");
-  BOTH_SERIAL.print(audio_settings.processorUsage(), 1);
-  BOTH_SERIAL.print("%/");
-  BOTH_SERIAL.print(audio_settings.processorUsageMax(), 1);
-  BOTH_SERIAL.print("%, ");
-  BOTH_SERIAL.print("MEM Cur/Pk: ");
-  BOTH_SERIAL.print(AudioMemoryUsage_F32());
-  BOTH_SERIAL.print("/");
-  BOTH_SERIAL.print(AudioMemoryUsageMax_F32());
-  BOTH_SERIAL.print(", FreeRAM(B) ");
-  BOTH_SERIAL.print(FreeRam());
-  BOTH_SERIAL.println();
-}
