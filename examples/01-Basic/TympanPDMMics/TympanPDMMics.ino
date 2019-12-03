@@ -1,6 +1,6 @@
 // TmpanPDMMics
 //
-// Created: Chip Audette (OpenAudio), December 2018
+// Created: Eric, Sept 2019
 //
 // This example code is in the public domain.
 
