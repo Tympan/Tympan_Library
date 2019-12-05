@@ -65,16 +65,16 @@ AudioFilterBiquad_F32      preFilter(audio_settings);   //remove low frequencies
 #endif
 AudioFilterBiquad_F32       bpFilt[N_CHAN_MAX];         //here are the filters to break up the audio into multiple bands
 AudioEffectDelay_F32        postFiltDelay[N_CHAN_MAX];  //Here are the delay modules that we'll use to time-align the output of the filters
-AudioEffectCompWDRC_F32    expCompLim[N_CHAN_MAX];     //here are the per-band compressors
+AudioEffectCompWDRC_F32     expCompLim[N_CHAN_MAX];     //here are the per-band compressors
 AudioMixer8_F32             mixer1;                     //mixer to reconstruct the broadband audio
-AudioEffectCompWDRC_F32    compBroadband;              //broad band compressor
+AudioEffectCompWDRC_F32     compBroadband;              //broad band compressor
 AudioEffectFeedbackCancel_LoopBack_F32 feedbackLoopBack(audio_settings);
 AudioOutputI2S_F32          i2s_out(audio_settings);    //Digital audio output to the DAC.  Should be last.
 
 //complete the creation of the tester objects
-AudioTestSignalMeasurement_F32  audioTestMeasurement(audio_settings);
+AudioTestSignalMeasurement_F32   audioTestMeasurement(audio_settings);
 AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_filterbank(audio_settings);
-AudioControlTestAmpSweep_F32    ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
+AudioControlTestAmpSweep_F32     ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32    freqSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32    freqSweepTester_FIR(audio_settings,audioTestGenerator,audioTestMeasurement_filterbank);
 
@@ -309,7 +309,7 @@ void setup() {
 
 
   // Audio connections require memory
-  AudioMemory_F32_wSettings(200,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
+  AudioMemory_F32(200,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
 
   // Enable the audio shield, select input, and enable output
   setupTympanHardware();
@@ -318,7 +318,7 @@ void setup() {
   setupAudioProcessing();
 
   //update the potentiometer settings
-	if (USE_VOLUME_KNOB) servicePotentiometer(millis());
+  if (USE_VOLUME_KNOB) servicePotentiometer(millis());
 
   //End of setup
   printGainSettings();myTympan.println("Setup complete.");
