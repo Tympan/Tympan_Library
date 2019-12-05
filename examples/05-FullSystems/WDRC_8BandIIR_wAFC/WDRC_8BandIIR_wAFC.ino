@@ -208,7 +208,7 @@ void setupFromDSLandGHAandAFC(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_W
   configurePerBandWDRCs(N_CHAN, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
 
   //setup the broad band compressor (limiter)
-  configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, vol_knob_gain_dB, compBroadband);
+  configureBroadbandWDRC(settings.sample_rate_Hz, this_gha, vol_knob_gain_dB, &compBroadband);
 
   //overwrite the one-point calibration based on the dsl data structure
   overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
@@ -228,8 +228,8 @@ void incrementDSLConfiguration(void) {
   }
 }
 
-void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &this_gha,
-      float vol_knob_gain_dB, AudioEffectCompWDRC_F32 &WDRC)
+void configureBroadbandWDRC(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &this_gha,
+      float vol_knob_gain_dB, AudioEffectCompWDRC_F32 *WDRC)
 {
   //assume all broadband compressors are the same
   //for (int i=0; i< ncompressors; i++) {
@@ -251,14 +251,14 @@ void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &this_gha,
     //set the compressor's parameters
     //WDRCs[i].setSampleRate_Hz(fs);
     //WDRCs[i].setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
-    WDRC.setSampleRate_Hz(fs);
-    WDRC.setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain + vol_knob_gain_dB, comp_ratio, tk, bolt);
+    WDRC->setSampleRate_Hz(fs);
+    WDRC->setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain + vol_knob_gain_dB, comp_ratio, tk, bolt);
  // }
 }
 
 void configurePerBandWDRCs(int nchan, float fs_Hz,
     const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
-    AudioEffectCompWDRC_F32 *WDRCs)
+    AudioEffectCompWDRC_F32 WDRCs[])
 {
   if (nchan > this_dsl.nchannel) {
     myTympan.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
