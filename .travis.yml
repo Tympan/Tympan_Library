@@ -13,6 +13,10 @@ install:
     - platformio update
 
 script:
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wAFC/WDRC_3BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_3BandIIR_wAFC"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino --lib="examples/05-FullSystems/WDRC_8BandFIR"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wAFC/WDRC_8BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_8BandIIR_wAFC"
+
     - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino --lib="examples/01-Basic/AudioPassThru"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/BasicGain/BasicGain.ino --lib="examples/01-Basic/BasicGain"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/ChangeSampleRate/ChangeSampleRate.ino --lib="examples/01-Basic/ChangeSampleRate"
@@ -37,7 +41,4 @@ script:
     - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/FormantShifter_FD/FormantShifter_FD.ino --lib="examples/04-FrequencyDomain/FormantShifter_FD"
     - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/LowpassFilter_FD/LowpassFilter_FD.ino --lib="examples/04-FrequencyDomain/LowpassFilter_FD"
 
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wAFC/WDRC_3BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_3BandIIR_wAFC"
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino --lib="examples/05-FullSystems/WDRC_8BandFIR"
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wAFC/WDRC_8BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_8BandIIR_wAFC"
-
+  
