@@ -1,5 +1,5 @@
 /*
-   SerialControlledSDWriter
+   SDWriting_02_RemoteControlled
    
    Created: Chip Audette, OpenAudio, May 2019
    Purpose: Write audio to SD based on serial commands
@@ -29,7 +29,7 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Define the overall setup
-String overall_name = String("Tympan: SD Audio Writer Tester");
+String overall_name = String("Tympan: SDWriting_02_RemoteControlled");
 float default_input_gain_dB = 5.0f; //gain on the microphone
 float input_gain_dB = default_input_gain_dB;
 #define MAX_AUDIO_MEM 60
@@ -254,5 +254,3 @@ void incrementInputGain(float increment_dB) {
   }
   myTympan.setInputGain_dB(input_gain_dB);
 }
-
-
