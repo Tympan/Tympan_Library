@@ -1,5 +1,5 @@
 /*
-  WDRC_8BandFIR
+  WDRC_8BandFIR_wBT
 
   Created: Chip Audette (OpenAudio), Feb 2017
     Primarly built upon CHAPRO "Generic Hearing Aid" from
@@ -8,7 +8,7 @@
   Purpose: Implements 8-band WDRC compressor.  The BTNRH version was implemented the
     filters in the frequency-domain, whereas I implemented them as FIR filters
 	in the time-domain. I've also added an expansion stage to manage noise at very
-	low SPL.
+	low SPL.  Communicates via USB Serial and via Bluetooth Serial
 
   User Controls:
     Potentiometer on Tympan controls the algorithm gain
@@ -17,9 +17,13 @@
 */
 
 
-// Include the of the needed libraries
+// Include all the of the needed libraries
 #include <Tympan_Library.h>
 #include "SerialManager.h"
+
+//Bluetooth parameters...if used
+#define USE_BT_SERIAL 1   //set to zero to disable bluetooth
+#define BT_SERIAL Serial1
 
 // Define the overall setup
 String overall_name = String("Tympan: WDRC Expander-Compressor-Limiter with Overall Limiter");
@@ -37,7 +41,7 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 Tympan                        audioHardware(TympanRev::D);     //do TympanRev::C or TympanRev::D
-AudioInputI2S_F32             i2s_in(audio_settings);	//Digital audio input from the ADC
+AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
@@ -45,7 +49,7 @@ AudioFilterFIR_F32          firFilt[N_CHAN];        //here are the filters to br
 AudioEffectCompWDRC_F32    expCompLim[N_CHAN];     //here are the per-band compressors
 AudioMixer8_F32             mixer1;                 //mixer to reconstruct the broadband audio
 AudioEffectCompWDRC_F32    compBroadband;          //broad band compressor
-AudioOutputI2S_F32          i2s_out(audio_settings);   //Digital audio output to the DAC.  Should be last.
+AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio output to the DAC.  Should be last.
 
 //complete the creation of the tester objects
 AudioTestSignalMeasurement_F32  audioTestMeasurement(audio_settings);
@@ -92,21 +96,25 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   return count;
 }
 
-//Bluetooth parameters...if used
-//define USE_BT_SERIAL 0  //set to zero to disable bluetooth
-#define BT_SERIAL Serial1
+
 
 //control display and serial interaction
 bool enable_printCPUandMemory = false;
 void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPUandMemory; }; //"extern" let's be it accessible outside
 bool enable_printAveSignalLevels = false, printAveSignalLevels_as_dBSPL = false;
 void togglePrintAveSignalLevels(bool as_dBSPL) { enable_printAveSignalLevels = !enable_printAveSignalLevels; printAveSignalLevels_as_dBSPL = as_dBSPL;};
-SerialManager serialManager(N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
+SerialManager serialManager_USB(&Serial,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
+#if (USE_BT_SERIAL)
+  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR); //this instance will handle the Bluetooth Serial link
+#endif
 
 //routine to setup the hardware
 #define POT_PIN A20  //potentiometer is tied to this pin
 void setupTympanHardware(void) {
   Serial.println("Setting up Tympan Audio Board...");
+  #if (USE_BT_SERIAL)
+    BT_SERIAL.println("Setting up Tympan Audio Board...");
+  #endif
   audioHardware.enable(); // activate AIC
 
   //choose input
@@ -266,13 +274,19 @@ void configurePerBandWDRCs(int nchan, float fs_Hz,
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
   Serial.begin(115200);   //Open USB Serial link...for debugging
-  //if (USE_BT_SERIAL) BT_SERIAL.begin(115200);  //Open BT link
+  #if (USE_BT_SERIAL)
+    BT_SERIAL.begin(115200); //Open BT serial link
+  #endif
   delay(500);
 
   Serial.print(overall_name);Serial.println(": setup():...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
-  //if (USE_BT_SERIAL) BT_SERIAL.print(overall_name);BT_SERIAL.println(": setup():...");
+  #if (USE_BT_SERIAL)
+    BT_SERIAL.print(overall_name);BT_SERIAL.println(": setup():...");
+    BT_SERIAL.print("Sample Rate (Hz): "); BT_SERIAL.println(audio_settings.sample_rate_Hz);
+    BT_SERIAL.print("Audio Block Size (samples): "); BT_SERIAL.println(audio_settings.audio_block_samples);
+  #endif
 
   // Audio connections require memory
   AudioMemory(10);      //allocate Int16 audio data blocks (need a few for under-the-hood stuff)
@@ -285,12 +299,14 @@ void setup() {
   setupAudioProcessing();
 
   //update the potentiometer settings
-  if (USE_VOLUME_KNOB) servicePotentiometer(millis());
+	if (USE_VOLUME_KNOB) servicePotentiometer(millis());
 
   //End of setup
-  printGainSettings();
-  Serial.println("Setup complete.");
-  serialManager.printHelp();
+  printGainSettings(&Serial);Serial.println("Setup complete.");serialManager_USB.printHelp();
+  #if (USE_BT_SERIAL)
+    printGainSettings(&BT_SERIAL); BT_SERIAL.println("Setup complete.");  serialManager_BT.printHelp();
+  #endif
+
 } //end setup()
 
 
@@ -300,9 +316,10 @@ void loop() {
   asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
 
   //respond to Serial commands
-  while (Serial.available()) {
-    serialManager.respondToByte((char)Serial.read());
-  }
+  while (Serial.available()) serialManager_USB.respondToByte((char)Serial.read());
+  #if (USE_BT_SERIAL)
+    while (BT_SERIAL.available()) serialManager_BT.respondToByte((char)BT_SERIAL.read());
+  #endif
 
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
@@ -346,16 +363,22 @@ void servicePotentiometer(unsigned long curTime_millis) {
 } //end servicePotentiometer();
 
 
-extern void printGainSettings(void) { //"extern" to make it available to other files, such as SerialManager.h
-  Serial.print("Gain (dB): ");
-  Serial.print("Vol Knob = "); Serial.print(vol_knob_gain_dB,1);
-  Serial.print(", Input PGA = "); Serial.print(input_gain_dB,1);
-  Serial.print(", Per-Channel = ");
+void printGainSettings(void) {
+  printGainSettings(&Serial);
+  #if (USE_BT_SERIAL)
+    printGainSettings(&BT_SERIAL);
+  #endif
+}
+void printGainSettings(Stream *s) {
+  s->print("Gain (dB): ");
+  s->print("Vol Knob = "); s->print(vol_knob_gain_dB,1);
+  s->print(", Input PGA = "); s->print(input_gain_dB,1);
+  s->print(", Per-Channel = ");
   for (int i=0; i<N_CHAN; i++) {
-    Serial.print(expCompLim[i].getGain_dB()-vol_knob_gain_dB,1);
-    Serial.print(", ");
+    s->print(expCompLim[i].getGain_dB()-vol_knob_gain_dB,1);
+    s->print(", ");
   }
-  Serial.println();
+  s->println();
 }
 
 extern void incrementKnobGain(float increment_dB) { //"extern" to make it available to other files, such as SerialManager.h
@@ -382,26 +405,31 @@ void printCPUandMemory(unsigned long curTime_millis) {
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("CPU Cur/Peak: ");
-    Serial.print(audio_settings.processorUsage());
-    //Serial.print(AudioProcessorUsage());
-    Serial.print("%/");
-    Serial.print(audio_settings.processorUsageMax());
-    //Serial.print(AudioProcessorUsageMax());
-    Serial.print("%,   ");
-    Serial.print("Dyn MEM Int16 Cur/Peak: ");
-    Serial.print(AudioMemoryUsage());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax());
-    Serial.print(",   ");
-    Serial.print("Dyn MEM Float32 Cur/Peak: ");
-    Serial.print(AudioMemoryUsage_F32());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax_F32());
-    Serial.println();
-
+    printCPUandMemoryMessage(&Serial);  //USB Serial
+    #if (USE_BT_SERIAL)
+      printCPUandMemoryMessage(&BT_SERIAL); //Bluetooth Serial
+    #endif
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
+}
+void printCPUandMemoryMessage(Stream *s) {
+    s->print("CPU Cur/Peak: ");
+    s->print(audio_settings.processorUsage());
+    //s->print(AudioProcessorUsage());
+    s->print("%/");
+    s->print(audio_settings.processorUsageMax());
+    //s->print(AudioProcessorUsageMax());
+    s->print("%,   ");
+    s->print("Dyn MEM Int16 Cur/Peak: ");
+    s->print(AudioMemoryUsage());
+    s->print("/");
+    s->print(AudioMemoryUsageMax());
+    s->print(",   ");
+    s->print("Dyn MEM Float32 Cur/Peak: ");
+    s->print(AudioMemoryUsage_F32());
+    s->print("/");
+    s->print(AudioMemoryUsageMax_F32());
+    s->println();
 }
 
 float aveSignalLevels_dBFS[N_CHAN];
@@ -423,20 +451,24 @@ void printAveSignalLevels(unsigned long curTime_millis, bool as_dBSPL) {
   static unsigned long updatePeriod_millis = 3000; //how often to print the levels to the screen
   static unsigned long lastUpdate_millis = 0;
 
+  //is it time to print to the screen
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+    printAveSignalLevelsMessage(&Serial,as_dBSPL);
+    #if (USE_BT_SERIAL)
+      printAveSignalLevelsMessage(&BT_SERIAL,as_dBSPL);
+    #endif
+    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
+  }
+}
+void printAveSignalLevelsMessage(Stream *s, bool as_dBSPL) {
   float offset_dB = 0.0f;
   String units_txt = String("dBFS");
   if (as_dBSPL) {
     offset_dB = overall_cal_dBSPL_at0dBFS;
     units_txt = String("dBSPL, approx");
   }
-
-  //is it time to print to the screen
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("Ave Input Level (");Serial.print(units_txt); Serial.print("), Per-Band = ");
-    for (int i=0; i<N_CHAN; i++) { Serial.print(aveSignalLevels_dBFS[i]+offset_dB,1);  Serial.print(", ");  }
-    Serial.println();
-
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }
+  s->print("Ave Input Level (");s->print(units_txt); s->print("), Per-Band = ");
+  for (int i=0; i<N_CHAN; i++) { s->print(aveSignalLevels_dBFS[i]+offset_dB,1);  s->print(", ");  }
+  s->println();
 }

@@ -4,7 +4,7 @@
 
 #include "AudioEffectFeedbackCancel_F32.h"
 
-//Purpose: Make an AFC class that is closer to what BTNRH originall wrote
+//Purpose: Make an AFC class that is closer to what BTNRH originally wrote
 //Author: Chip Audette  2018-06-08
 
 class AudioEffectAFC_BTNRH_F32 : public AudioEffectFeedbackCancel_F32 {
@@ -137,4 +137,3 @@ class AudioEffectAFC_BTNRH_F32 : public AudioEffectFeedbackCancel_F32 {
 };
 
 #endif
-

@@ -45,6 +45,3 @@ BTNRH_WDRC::CHA_AFC afc = {
   0.9, //rho, smoothing factor for how fast the audio's envelope is tracked (bigger is a longer average)
   0.008 //eps, when estimating the audio envelope, this is the minimum allowed level (helps avoid divide-by-zero)
 };
-
-
-
