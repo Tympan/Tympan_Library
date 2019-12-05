@@ -118,7 +118,14 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       calcGain.setParams_from_CHA_WDRC(gha);
     }
 
-    //set all of the user parameters for the compressor
+    //set all of the user parameters for the compressor...assuming no expansion regime
+    //assumes that the sample rate has already been set!!!
+	void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt) {
+		float exp_cr = 1.0, exp_end_knee = -200.0;  //this should disable the exansion regime
+		setParams(attack_ms, release_ms, maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
+	}
+
+    //set all of the user parameters for the compressor...assumes that there is an expansion regime
     //assumes that the sample rate has already been set!!!
     void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt) {
       
