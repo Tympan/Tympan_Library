@@ -13,6 +13,8 @@ install:
     - platformio update
 
 script:
+    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_FIR_8Band/WDRC_FIR_8Band.ino --lib="examples/03-Intermediate/WDRC_FIR_8Band"
+    
     - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wAFC/WDRC_3BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_3BandIIR_wAFC"
     - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino --lib="examples/05-FullSystems/WDRC_8BandFIR"
     - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wAFC/WDRC_8BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_8BandIIR_wAFC"
@@ -35,8 +37,7 @@ script:
     - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter_2Chan/SoundLevelMeter_2Chan.ino --lib="examples/02-Utility/SoundLevelMeter_2Chan"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/StereoAudioToSD_Fast/StereoAudioToSD_Fast.ino --lib="examples/02-Utility/StereoAudioToSD_Fast"
 
-    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_FIR_8Band/WDRC_FIR_8Band.ino --lib="examples/03-Intermediate/WDRC_FIR_8Band"
-    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_SingleBand/WDRC_SingleBand.ino --lib="examples/03-Intermediate/WDRC_SingleBand"
+     - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_SingleBand/WDRC_SingleBand.ino --lib="examples/03-Intermediate/WDRC_SingleBand"
 
     - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/FormantShifter_FD/FormantShifter_FD.ino --lib="examples/04-FrequencyDomain/FormantShifter_FD"
     - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/LowpassFilter_FD/LowpassFilter_FD.ino --lib="examples/04-FrequencyDomain/LowpassFilter_FD"
