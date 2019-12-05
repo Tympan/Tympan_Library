@@ -39,11 +39,10 @@ AudioOutputI2S_F32          i2s_out(audio_settings);        //Digital audio *to*
 
 //create audio objects for the algorithm
 AudioEffectGain_F32     preGain;
-#define N_BBCOMP 2      //number of broadband compressors
-AudioEffectCompWDRC_F32  compBroadband[N_BBCOMP]; //here are the broad band compressors
 #define N_CHAN 8        //number of channels to use for multi-band compression
 AudioFilterFIR_F32      firFilt[N_CHAN];  //here are the filters to break up the audio into multipel bands
 AudioEffectCompWDRC_F32  compPerBand[N_CHAN]; //here are the per-band compressors
+AudioEffectCompWDRC_F32  compBroadband; //here is the broad band compressors
 AudioMixer8_F32         mixer1; //mixer to reconstruct the broadband audio
 
 //choose the input audio source
@@ -53,18 +52,16 @@ AudioMixer8_F32         mixer1; //mixer to reconstruct the broadband audio
   AudioConnection_F32       patchCord1(i2s_in, 0, preGain, 0);   //#8 wants left, #3 wants right. //connect the Left input to the Left Int->Float converter
 #endif
 
-//apply the first broadband compressor
-AudioConnection_F32     patchCord5(preGain, 0, compBroadband[0], 0);
 
 //connect to each of the filters to make the sub-bands
-AudioConnection_F32     patchCord11(compBroadband[0], 0, firFilt[0], 0);
-AudioConnection_F32     patchCord12(compBroadband[0], 0, firFilt[1], 0);
-AudioConnection_F32     patchCord13(compBroadband[0], 0, firFilt[2], 0);
-AudioConnection_F32     patchCord14(compBroadband[0], 0, firFilt[3], 0);
-AudioConnection_F32     patchCord15(compBroadband[0], 0, firFilt[4], 0);
-AudioConnection_F32     patchCord16(compBroadband[0], 0, firFilt[5], 0);
-AudioConnection_F32     patchCord17(compBroadband[0], 0, firFilt[6], 0);
-AudioConnection_F32     patchCord18(compBroadband[0], 0, firFilt[7], 0);
+AudioConnection_F32     patchCord11(preGain, 0, firFilt[0], 0);
+AudioConnection_F32     patchCord12(preGain, 0, firFilt[1], 0);
+AudioConnection_F32     patchCord13(preGain, 0, firFilt[2], 0);
+AudioConnection_F32     patchCord14(preGain, 0, firFilt[3], 0);
+AudioConnection_F32     patchCord15(preGain, 0, firFilt[4], 0);
+AudioConnection_F32     patchCord16(preGain, 0, firFilt[5], 0);
+AudioConnection_F32     patchCord17(preGain, 0, firFilt[6], 0);
+AudioConnection_F32     patchCord18(preGain, 0, firFilt[7], 0);
 
 //connect each filter to its corresponding per-band compressor
 AudioConnection_F32     patchCord21(firFilt[0], 0, compPerBand[0], 0);
@@ -88,11 +85,11 @@ AudioConnection_F32     patchCord38(compPerBand[7], 0, mixer1, 7);
 
 
 //connect the output of the mixers to the final broadband compressor
-AudioConnection_F32     patchCord43(mixer1, 0, compBroadband[1], 0);
+AudioConnection_F32     patchCord43(mixer1, 0, compBroadband, 0);
 
 //send the audio out
-AudioConnection_F32     patchCord44(compBroadband[1], 0, i2s_out, 0);    //Left.  makes Float connections between objects
-AudioConnection_F32     patchCord45(compBroadband[1], 0, i2s_out, 1);    //Right.  makes Float connections between objects
+AudioConnection_F32     patchCord44(compBroadband, 0, i2s_out, 0);    //Left.  makes Float connections between objects
+AudioConnection_F32     patchCord45(compBroadband, 0, i2s_out, 1);    //Right.  makes Float connections between objects
 
 
 void setupTympanHardware(void) {
@@ -134,7 +131,7 @@ void setupAudioProcessing(void) {
   for (int i=0; i< N_CHAN; i++) firFilt[i].begin(firCoeff[i], N_FIR, audio_settings.audio_block_samples);
 
   //setup all of the the compressors
-  configureBroadbandWDRCs(N_BBCOMP, audio_settings.sample_rate_Hz, &gha, compBroadband);
+  configureBroadbandWDRCs(audio_settings.sample_rate_Hz, &gha, &compBroadband);
   configurePerBandWDRCs(N_CHAN, audio_settings.sample_rate_Hz, &dsl, &gha, compPerBand);
 }
 
@@ -233,13 +230,12 @@ void printCompressorState(unsigned long curTime_millis, unsigned long updatePeri
 
       myTympan.print("Gain Processing: Pre-Gain (dB) = ");
       myTympan.print(preGain.getGain_dB());
-      myTympan.print(", BB1 Level (dB) = "); myTympan.print(compBroadband[0].getCurrentLevel_dB());
       myTympan.print(". Per-Chan Level (dB) = ");
       for (int Ichan = 0; Ichan < N_CHAN; Ichan++ ) {
         myTympan.print(compPerBand[Ichan].getCurrentLevel_dB());
         if (Ichan < (N_CHAN-1)) myTympan.print(", ");
       }
-      myTympan.print(". BB2 Level (dB) = "); myTympan.print(compBroadband[1].getCurrentLevel_dB());
+      myTympan.print(". BB Level (dB) = "); myTympan.print(compBroadband.getCurrentLevel_dB());
       myTympan.println();
 
       lastUpdate_millis = curTime_millis; //we will use this value the next time around.
@@ -247,31 +243,29 @@ void printCompressorState(unsigned long curTime_millis, unsigned long updatePeri
 };
 
 
-static void configureBroadbandWDRCs(int ncompressors, float fs_Hz, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRCs) {
-  //assume all broadband compressors are the same
-  for (int i=0; i< ncompressors; i++) {
-    //logic and values are extracted from from CHAPRO repo agc_prepare.c...the part setting CHA_DVAR
+static void configureBroadbandWDRCs(float fs_Hz, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRC) {
+  //logic and values are extracted from from CHAPRO repo agc_prepare.c...the part setting CHA_DVAR
 
-    //extract the parameters
-    float atk = (float)gha->attack;  //milliseconds!
-    float rel = (float)gha->release; //milliseconds!
-    //float fs = gha->fs;
-    float fs = (float)fs_Hz; // WEA override...not taken from gha
-    float maxdB = (float) gha->maxdB;
-    float exp_cr = (float)gha->exp_cr;
-    float exp_end_knee = (float)gha->exp_end_knee;
-    float tk = (float) gha->tk;
-    float comp_ratio = (float) gha->cr;
-    float tkgain = (float) gha->tkgain;
-    float bolt = (float) gha->bolt;
+  //extract the parameters
+  float atk = (float)gha->attack;  //milliseconds!
+  float rel = (float)gha->release; //milliseconds!
+  //float fs = gha->fs;
+  float fs = (float)fs_Hz; // WEA override...not taken from gha
+  float maxdB = (float) gha->maxdB;
+  float exp_cr = (float)gha->exp_cr;
+  float exp_end_knee = (float)gha->exp_end_knee;
+  float tk = (float) gha->tk;
+  float comp_ratio = (float) gha->cr;
+  float tkgain = (float) gha->tkgain;
+  float bolt = (float) gha->bolt;
 
-    //set the compressor's parameters
-    WDRCs[i].setSampleRate_Hz(fs);
-    WDRCs[i].setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
-  }
+  //set the compressor's parameters
+  WDRC->setSampleRate_Hz(fs);
+  WDRC->setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
+
 }
 
-static void configurePerBandWDRCs(int nchan, float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRCs) {
+static void configurePerBandWDRCs(int nchan, float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 WDRCs[]) {
   if (nchan > dsl->nchannel) {
     myTympan.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
     myTympan.print(F("    : nchan = ")); myTympan.println(nchan);
