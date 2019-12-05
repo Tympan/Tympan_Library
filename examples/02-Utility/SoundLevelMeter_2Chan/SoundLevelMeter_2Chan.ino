@@ -23,7 +23,7 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                          audioHardware(TympanRev::D);   //use TympanRev::D or TympanRev::C
+Tympan                          myTympan(TympanRev::D);   //use TympanRev::D or TympanRev::C
 AudioInputI2S_F32               i2s_in(audio_settings);       //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterFreqWeighting_F32    freqWeight1(audio_settings),freqWeight2(audio_settings);  //A-weighting filter (optionally C-weighting)
 AudioCalcLevel_F32              calcLevel1(audio_settings),calcLevel2(audio_settings);    //use this to square the signal
@@ -54,7 +54,6 @@ float32_t mic1_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f + 9.2175;  //PCB Mic base
 float32_t mic2_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f + 9.2175;  //PCB Mic baseline with manually tested adjustment.   Baseline:  http://openaudio.blogspot.com/search/label/Microphone
 
 //other variables
-#define BOTH_SERIAL audioHardware
 float32_t cur_audio_pow[2] = {-99.9f, -99.9f};   //initialize to any number less than zero
 float32_t max_audio_pow[2] = {0.0f, 0.0f};     //initilize to zero (or some small number)  
 
@@ -67,7 +66,7 @@ void enablePrintLoudnessLevels(bool _enable) {
   max_audio_pow[0] = cur_audio_pow[0];  //reset the max loudness state, too
   max_audio_pow[1] = cur_audio_pow[1];  //reset the max loudness state, too
 };
-SerialManager serialManager(audioHardware);
+SerialManager serialManager;
 
 
 // define the setup() function, the function that is called once when the device is booting
@@ -75,49 +74,49 @@ const float input_gain_dB = 15.0f; //gain on the microphone
 void setup() {
   //begin the serial comms (for debugging)
   //Serial.begin(115200);  delay(500);
-  audioHardware.beginBothSerial(); delay(500);
-  BOTH_SERIAL.println("SoundLevelMeter: Starting setup()...");
+  myTympan.beginBothSerial(); delay(500);
+  myTympan.println("SoundLevelMeter: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(40,audio_settings); 
 
   //Enable the Tympan to start the audio flowing!
-  audioHardware.enable(); // activate AIC
+  myTympan.enable(); // activate AIC
  
   //Choose the desired input
-  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones
-  //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);    // use the microphone jack - defaults to mic bias 2.5V
-  //audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);    // use the microphone jack - defaults to mic bias 2.5V
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
-  audioHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
-  audioHardware.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
+  myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
 
   //define the sound level meter processing
   if (1) {
     freqWeight1.setWeightingType(A_WEIGHT);        //A_WEIGHT or C_WEIGHT
     freqWeight2.setWeightingType(A_WEIGHT);        //A_WEIGHT or C_WEIGHT
-    BOTH_SERIAL.println("Frequency Weighting: A_WEIGHT");
+    myTympan.println("Frequency Weighting: A_WEIGHT");
   } else {
     freqWeight1.setWeightingType(C_WEIGHT);        //A_WEIGHT or C_WEIGHT
     freqWeight2.setWeightingType(C_WEIGHT);        //A_WEIGHT or C_WEIGHT
-    BOTH_SERIAL.println("Frequency Weighting: C_WEIGHT");
+    myTympan.println("Frequency Weighting: C_WEIGHT");
   }
   if (1) {
     calcLevel1.setTimeConst_sec(TIME_CONST_SLOW); //TIME_CONST_SLOW or TIME_CONST_FAST or use a value (seconds)
     calcLevel2.setTimeConst_sec(TIME_CONST_SLOW); //TIME_CONST_SLOW or TIME_CONST_FAST or use a value (seconds)
-    BOTH_SERIAL.println("Time Weighting: SLOW");
+    myTympan.println("Time Weighting: SLOW");
   } else {
     calcLevel1.setTimeConst_sec(TIME_CONST_FAST); //TIME_CONST_SLOW or TIME_CONST_FAST or use a value (seconds)
     calcLevel2.setTimeConst_sec(TIME_CONST_FAST); //TIME_CONST_SLOW or TIME_CONST_FAST or use a value (seconds)
-    BOTH_SERIAL.println("Time Weighting: FAST");
+    myTympan.println("Time Weighting: FAST");
   }
 
   //enable any of the other algorithm elements
   audioQueue1.begin();
   audioQueue2.begin();
 
-  BOTH_SERIAL.println("Setup complete.");
+  myTympan.println("Setup complete.");
   serialManager.printHelp();
   
 } //end setup()
@@ -126,7 +125,7 @@ void setup() {
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
   //choose to sleep ("wait for interrupt") instead of spinning our wheels doing nothing but consuming power
-  asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
+  //asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
 
   //service record queue
   serviceAudioQueue();
@@ -137,9 +136,6 @@ void loop() {
   
   //printing of sound level
   if (enable_printLoudnessLevels) printLoudnessLevels(millis(),250);  //print a value every 250 msec
-
-  //check the potentiometer
-  //servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
   //check to see whether to print the CPU and Memory Usage
   if (enable_printCPUandMemory) printCPUandMemory(millis(),3000); //print every 3000 msec
@@ -179,7 +175,7 @@ void printLoudnessLevels(unsigned long curTime_millis, unsigned long updatePerio
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
     if (firstTime) {
-      BOTH_SERIAL.println("Printing: current Left SPL (dB), max Left SPL (dB), current Right SPL (dB), max Right SPL (dB), ");
+      myTympan.println("Printing: current Left SPL (dB), max Left SPL (dB), current Right SPL (dB), max Right SPL (dB), ");
       firstTime = false;
     }
     Serial1.print("E "); //send only out the bluetooth link (for plotting by bluetooth app)
@@ -188,21 +184,21 @@ void printLoudnessLevels(unsigned long curTime_millis, unsigned long updatePerio
     float32_t cal_factor1_dB = -mic1_cal_dBFS_at94dBSPL_at_0dB_gain + 94.0f - input_gain_dB;
     float32_t cur_SPL1_dB = 10.0f*log10f(cur_audio_pow[0]) + cal_factor1_dB;
     float32_t max_SPL1_dB = 10.0f*log10f(max_audio_pow[0]) + cal_factor1_dB;
-    BOTH_SERIAL.print(cur_SPL1_dB);
-    BOTH_SERIAL.print(", ");
-    BOTH_SERIAL.print(max_SPL1_dB);
+    myTympan.print(cur_SPL1_dB);
+    myTympan.print(", ");
+    myTympan.print(max_SPL1_dB);
 
     //channel 2
     float32_t cal_factor2_dB = -mic2_cal_dBFS_at94dBSPL_at_0dB_gain + 94.0f - input_gain_dB;
     float32_t cur_SPL2_dB = 10.0f*log10f(cur_audio_pow[1]) + cal_factor2_dB;
     float32_t max_SPL2_dB = 10.0f*log10f(max_audio_pow[1]) + cal_factor2_dB;  
-    BOTH_SERIAL.print(", ");    
-    BOTH_SERIAL.print(cur_SPL2_dB);
-    BOTH_SERIAL.print(", ");
-    BOTH_SERIAL.print(max_SPL2_dB);
+    myTympan.print(", ");    
+    myTympan.print(cur_SPL2_dB);
+    myTympan.print(", ");
+    myTympan.print(max_SPL2_dB);
     
     //finish up
-    BOTH_SERIAL.println();
+    myTympan.println();
     
     max_audio_pow[0] = 0.0;  //recent for next block
     max_audio_pow[1] = 0.0;  //recent for next block
@@ -217,21 +213,18 @@ void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    BOTH_SERIAL.print("printCPUandMemory: ");
-    BOTH_SERIAL.print("CPU Cur/Peak: ");
-    BOTH_SERIAL.print(audio_settings.processorUsage());
-    //BOTH_SERIAL.print(AudioProcessorUsage()); //if not using AudioSettings_F32
-    BOTH_SERIAL.print("%/");
-    BOTH_SERIAL.print(audio_settings.processorUsageMax());
-    //BOTH_SERIAL.print(AudioProcessorUsageMax());  //if not using AudioSettings_F32
-    BOTH_SERIAL.print("%,   ");
-    BOTH_SERIAL.print("Dyn MEM Float32 Cur/Peak: ");
-    BOTH_SERIAL.print(AudioMemoryUsage_F32());
-    BOTH_SERIAL.print("/");
-    BOTH_SERIAL.print(AudioMemoryUsageMax_F32());
-    BOTH_SERIAL.println();
+    //myTympan.print("printCPUandMemory: ");
+    myTympan.print("CPU Cur/Peak: ");
+    myTympan.print(audio_settings.processorUsage());
+    myTympan.print("%/");
+    myTympan.print(audio_settings.processorUsageMax());
+    myTympan.print("%,   ");
+    myTympan.print("Dyn MEM Float32 Cur/Peak: ");
+    myTympan.print(AudioMemoryUsage_F32());
+    myTympan.print("/");
+    myTympan.print(AudioMemoryUsageMax_F32());
+    myTympan.println();
 
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
 }
-
