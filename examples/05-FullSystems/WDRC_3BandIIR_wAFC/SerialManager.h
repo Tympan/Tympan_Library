@@ -10,8 +10,6 @@ extern bool enable_printCPUandMemory; //defined in main *.ino file
 //functions in the main sketch that I want to call from here
 extern void incrementKnobGain(float);
 extern void printGainSettings(void);
-extern void printGainSettings(void);
-extern void togglePrintMemoryAndCPU(void);
 extern void togglePrintAveSignalLevels(bool);
 extern void incrementDSLConfiguration(void);
 

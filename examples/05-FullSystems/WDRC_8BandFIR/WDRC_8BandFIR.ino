@@ -1,5 +1,5 @@
 /*
-  WDRC_8BandFIR_wBT
+  WDRC_8BandFIR
 
   Created: Chip Audette (OpenAudio), Feb 2017
     Primarly built upon CHAPRO "Generic Hearing Aid" from
@@ -21,13 +21,10 @@
 #include <Tympan_Library.h>
 #include "SerialManager.h"
 
-//Bluetooth parameters...if used
-#define USE_BT_SERIAL 1   //set to zero to disable bluetooth
-#define BT_SERIAL Serial1
-
 // Define the overall setup
 String overall_name = String("Tympan: WDRC Expander-Compressor-Limiter with Overall Limiter");
-const int N_CHAN = 8;  //number of frequency bands (channels)
+const int N_CHAN_MAX = 8;  //number of frequency bands (channels)
+int N_CHAN = N_CHAN_MAX;  //will be changed to user-selected number of channels later
 const float input_gain_dB = 15.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0; //will be overridden by volume knob
 
@@ -40,21 +37,21 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-Tympan                        audioHardware(TympanRev::D);     //do TympanRev::C or TympanRev::D
+Tympan                        myTympan(TympanRev::D,audio_settings);     //do TympanRev::C or TympanRev::D
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
-AudioFilterFIR_F32          firFilt[N_CHAN];        //here are the filters to break up the audio into multipel bands
-AudioEffectCompWDRC_F32    expCompLim[N_CHAN];     //here are the per-band compressors
-AudioMixer8_F32             mixer1;                 //mixer to reconstruct the broadband audio
-AudioEffectCompWDRC_F32    compBroadband;          //broad band compressor
+AudioFilterFIR_F32          firFilt[N_CHAN_MAX];      //here are the filters to break up the audio into multiple bands
+AudioEffectCompWDRC_F32     expCompLim[N_CHAN_MAX];   //here are the per-band compressors
+AudioMixer8_F32             mixer1;                   //mixer to reconstruct the broadband audio
+AudioEffectCompWDRC_F32     compBroadband;            //broadband compressor
 AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio output to the DAC.  Should be last.
 
 //complete the creation of the tester objects
-AudioTestSignalMeasurement_F32  audioTestMeasurement(audio_settings);
+AudioTestSignalMeasurement_F32   audioTestMeasurement(audio_settings);
 AudioTestSignalMeasurementMulti_F32  audioTestMeasurement_FIR(audio_settings);
-AudioControlTestAmpSweep_F32    ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
+AudioControlTestAmpSweep_F32     ampSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32    freqSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32    freqSweepTester_FIR(audio_settings,audioTestGenerator,audioTestMeasurement_FIR);
 
@@ -65,7 +62,7 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   int count=0;
 
   //connect input
-  patchCord[count++] = new AudioConnection_F32(i2s_in, 0, audioTestGenerator, 0); //#8 wants left, #3 wants right. //connect the Left input to the Left Int->Float converter
+  patchCord[count++] = new AudioConnection_F32(i2s_in, 0, audioTestGenerator, 0); 
 
   //make the connection for the audio test measurements
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
@@ -100,47 +97,31 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
 
 //control display and serial interaction
 bool enable_printCPUandMemory = false;
-void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPUandMemory; }; //"extern" let's be it accessible outside
 bool enable_printAveSignalLevels = false, printAveSignalLevels_as_dBSPL = false;
 void togglePrintAveSignalLevels(bool as_dBSPL) { enable_printAveSignalLevels = !enable_printAveSignalLevels; printAveSignalLevels_as_dBSPL = as_dBSPL;};
-SerialManager serialManager_USB(&Serial,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
-#if (USE_BT_SERIAL)
-  SerialManager serialManager_BT(&BT_SERIAL,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR); //this instance will handle the Bluetooth Serial link
-#endif
+SerialManager serialManager(N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
+
 
 //routine to setup the hardware
-#define POT_PIN A20  //potentiometer is tied to this pin
 void setupTympanHardware(void) {
-  Serial.println("Setting up Tympan Audio Board...");
-  #if (USE_BT_SERIAL)
-    BT_SERIAL.println("Setting up Tympan Audio Board...");
-  #endif
-  audioHardware.enable(); // activate AIC
+  myTympan.println("Setting up Tympan Audio Board...");
+  myTympan.enable(); // activate AIC
 
-  //choose input
-  switch (1) {
-    case 1:
-      //choose on-board mics
-      audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-      break;
-    case 2:
-      //choose external input, as a line in
-      audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); //
-      break;
-    case 3:
-      //choose external mic plus the desired bias level
-      audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack
-      int myBiasLevel = TYMPAN_MIC_BIAS_2_5;  //choices: TYMPAN_MIC_BIAS_2_5, TYMPAN_MIC_BIAS_1_7, TYMPAN_MIC_BIAS_1_25, TYMPAN_MIC_BIAS_VSUPPLY
-      audioHardware.setMicBias(myBiasLevel); // set mic bias to 2.5 // default
-      break;
-  }
+  //enable the Tympman to detect whether something was plugged inot the pink mic jack
+  myTympan.enableMicDetect(true);
+
+  //setup DC-blocking highpass filter running in the ADC hardware itself
+  float cutoff_Hz = 40.0;  //set the default cutoff frequency for the highpass filter
+  myTympan.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
+
+  //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop() 
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board micropphones
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //set volumes
-  audioHardware.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
-  audioHardware.setInputGain_dB(input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
-
-  //setup pin for potentiometer
-  pinMode(POT_PIN, INPUT); //set the potentiometer's input pin as an INPUT
+  myTympan.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
+  myTympan.setInputGain_dB(input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
 }
 
 
@@ -155,7 +136,7 @@ float overall_cal_dBSPL_at0dBFS; //will be set later
 
 //define the filterbank size
 #define N_FIR 96
-float firCoeff[N_CHAN][N_FIR];
+float firCoeff[N_CHAN_MAX][N_FIR];
 
 void setupAudioProcessing(void) {
   //make all of the audio connections
@@ -163,9 +144,9 @@ void setupAudioProcessing(void) {
 
   //setup processing based on the DSL and GHA prescriptions
   if (current_dsl_config == DSL_NORMAL) {
-    setupFromDSLandGHA(dsl, gha, N_CHAN, N_FIR, audio_settings);
+    setupFromDSLandGHA(dsl, gha, N_CHAN_MAX, N_FIR, audio_settings);
   } else if (current_dsl_config == DSL_FULLON) {
-    setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FIR, audio_settings);
+    setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN_MAX, N_FIR, audio_settings);
   }
 }
 
@@ -191,16 +172,16 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::C
 
 }
 
-void incrementDSLConfiguration(Stream *s) {
+void incrementDSLConfiguration(void) {
   current_dsl_config++;
   if (current_dsl_config==2) current_dsl_config=0;
   switch (current_dsl_config) {
     case (DSL_NORMAL):
-      if (s) s->println("incrementDSLConfiguration: changing to NORMAL dsl configuration");
-      setupFromDSLandGHA(dsl, gha, N_CHAN, N_FIR, audio_settings);  break;
+      myTympan.println("incrementDSLConfiguration: changing to NORMAL dsl configuration");
+      setupFromDSLandGHA(dsl, gha, N_CHAN_MAX, N_FIR, audio_settings);  break;
     case (DSL_FULLON):
-      if (s) s->println("incrementDSLConfiguration: changing to FULL-ON dsl configuration");
-      setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FIR, audio_settings); break;
+      myTympan.println("incrementDSLConfiguration: changing to FULL-ON dsl configuration");
+      setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN_MAX, N_FIR, audio_settings); break;
   }
 }
 
@@ -237,9 +218,9 @@ void configurePerBandWDRCs(int nchan, float fs_Hz,
     AudioEffectCompWDRC_F32 *WDRCs)
 {
   if (nchan > this_dsl.nchannel) {
-    Serial.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
-    Serial.print(F("    : nchan = ")); Serial.println(nchan);
-    Serial.print(F("    : dsl.nchannel = ")); Serial.println(dsl.nchannel);
+    myTympan.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
+    myTympan.print(F("    : nchan = ")); myTympan.println(nchan);
+    myTympan.print(F("    : dsl.nchannel = ")); myTympan.println(dsl.nchannel);
   }
 
   //now, loop over each channel
@@ -273,24 +254,13 @@ void configurePerBandWDRCs(int nchan, float fs_Hz,
 
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
-  Serial.begin(115200);   //Open USB Serial link...for debugging
-  #if (USE_BT_SERIAL)
-    BT_SERIAL.begin(115200); //Open BT serial link
-  #endif
-  delay(500);
-
-  Serial.print(overall_name);Serial.println(": setup():...");
-  Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
-  Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
-  #if (USE_BT_SERIAL)
-    BT_SERIAL.print(overall_name);BT_SERIAL.println(": setup():...");
-    BT_SERIAL.print("Sample Rate (Hz): "); BT_SERIAL.println(audio_settings.sample_rate_Hz);
-    BT_SERIAL.print("Audio Block Size (samples): "); BT_SERIAL.println(audio_settings.audio_block_samples);
-  #endif
+  myTympan.beginBothSerial(); delay(1000);
+  myTympan.print(overall_name);myTympan.println(": setup():...");
+  myTympan.print("Sample Rate (Hz): "); myTympan.println(audio_settings.sample_rate_Hz);
+  myTympan.print("Audio Block Size (samples): "); myTympan.println(audio_settings.audio_block_samples);
 
   // Audio connections require memory
-  AudioMemory(10);      //allocate Int16 audio data blocks (need a few for under-the-hood stuff)
-  AudioMemory_F32_wSettings(40,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
+  AudioMemory_F32(40,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
 
   // Enable the audio shield, select input, and enable output
   setupTympanHardware();
@@ -302,10 +272,9 @@ void setup() {
 	if (USE_VOLUME_KNOB) servicePotentiometer(millis());
 
   //End of setup
-  printGainSettings(&Serial);Serial.println("Setup complete.");serialManager_USB.printHelp();
-  #if (USE_BT_SERIAL)
-    printGainSettings(&BT_SERIAL); BT_SERIAL.println("Setup complete.");  serialManager_BT.printHelp();
-  #endif
+  printGainSettings();
+  myTympan.println("Setup complete.");
+  serialManager.printHelp();
 
 } //end setup()
 
@@ -313,19 +282,20 @@ void setup() {
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
   //choose to sleep ("wait for interrupt") instead of spinning our wheels doing nothing but consuming power
-  asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
+  //asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
 
   //respond to Serial commands
-  while (Serial.available()) serialManager_USB.respondToByte((char)Serial.read());
-  #if (USE_BT_SERIAL)
-    while (BT_SERIAL.available()) serialManager_BT.respondToByte((char)BT_SERIAL.read());
-  #endif
+  while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB
+  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //Bluetooth
 
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
 
+  //check the mic_detect signal
+  serviceMicDetect(millis(),500);
+
   //update the memory and CPU usage...if enough time has passed
-  if (enable_printCPUandMemory) printCPUandMemory(millis());
+  if (enable_printCPUandMemory) myTympan.printCPUandMemory(millis(),3000);  //print every 3000 msec
 
   //print info about the signal processing
   updateAveSignalLevels(millis());
@@ -348,7 +318,7 @@ void servicePotentiometer(unsigned long curTime_millis) {
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(analogRead(POT_PIN)) / 1024.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //send the potentiometer value to your algorithm as a control parameter
@@ -364,21 +334,15 @@ void servicePotentiometer(unsigned long curTime_millis) {
 
 
 void printGainSettings(void) {
-  printGainSettings(&Serial);
-  #if (USE_BT_SERIAL)
-    printGainSettings(&BT_SERIAL);
-  #endif
-}
-void printGainSettings(Stream *s) {
-  s->print("Gain (dB): ");
-  s->print("Vol Knob = "); s->print(vol_knob_gain_dB,1);
-  s->print(", Input PGA = "); s->print(input_gain_dB,1);
-  s->print(", Per-Channel = ");
+  myTympan.print("Gain (dB): ");
+  myTympan.print("Vol Knob = "); myTympan.print(vol_knob_gain_dB,1);
+  myTympan.print(", Input PGA = "); myTympan.print(input_gain_dB,1);
+  myTympan.print(", Per-Channel = ");
   for (int i=0; i<N_CHAN; i++) {
-    s->print(expCompLim[i].getGain_dB()-vol_knob_gain_dB,1);
-    s->print(", ");
+    myTympan.print(expCompLim[i].getGain_dB()-vol_knob_gain_dB,1);
+    myTympan.print(", ");
   }
-  s->println();
+  myTympan.println();
 }
 
 extern void incrementKnobGain(float increment_dB) { //"extern" to make it available to other files, such as SerialManager.h
@@ -397,42 +361,30 @@ void setVolKnobGain_dB(float gain_dB) {
 }
 
 
-
-void printCPUandMemory(unsigned long curTime_millis) {
-  static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
+void serviceMicDetect(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
   static unsigned long lastUpdate_millis = 0;
+  static unsigned int prev_val = 1111; //some sort of weird value
+  unsigned int cur_val = 0;
 
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    printCPUandMemoryMessage(&Serial);  //USB Serial
-    #if (USE_BT_SERIAL)
-      printCPUandMemoryMessage(&BT_SERIAL); //Bluetooth Serial
-    #endif
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
+
+    cur_val = myTympan.updateInputBasedOnMicDetect(); //if mic is plugged in, defaults to TYMPAN_INPUT_JACK_AS_MIC
+    if (cur_val != prev_val) {
+      if (cur_val) {
+        myTympan.println("serviceMicDetect: detected plug-in microphone!  External mic now active.");
+      } else {
+        myTympan.println("serviceMicDetect: detected removal of plug-in microphone. On-board PCB mics now active.");
+      }
+    }
+    prev_val = cur_val;
+    lastUpdate_millis = curTime_millis;
   }
 }
-void printCPUandMemoryMessage(Stream *s) {
-    s->print("CPU Cur/Peak: ");
-    s->print(audio_settings.processorUsage());
-    //s->print(AudioProcessorUsage());
-    s->print("%/");
-    s->print(audio_settings.processorUsageMax());
-    //s->print(AudioProcessorUsageMax());
-    s->print("%,   ");
-    s->print("Dyn MEM Int16 Cur/Peak: ");
-    s->print(AudioMemoryUsage());
-    s->print("/");
-    s->print(AudioMemoryUsageMax());
-    s->print(",   ");
-    s->print("Dyn MEM Float32 Cur/Peak: ");
-    s->print(AudioMemoryUsage_F32());
-    s->print("/");
-    s->print(AudioMemoryUsageMax_F32());
-    s->println();
-}
 
-float aveSignalLevels_dBFS[N_CHAN];
+
+float aveSignalLevels_dBFS[N_CHAN_MAX];
 void updateAveSignalLevels(unsigned long curTime_millis) {
   static unsigned long updatePeriod_millis = 100; //how often to perform the averaging
   static unsigned long lastUpdate_millis = 0;
@@ -441,7 +393,7 @@ void updateAveSignalLevels(unsigned long curTime_millis) {
   //is it time to update the calculations
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    for (int i=0; i<N_CHAN; i++) { //loop over each band
+    for (int i=0; i<N_CHAN_MAX; i++) { //loop over each band
       aveSignalLevels_dBFS[i] = (1.0-update_coeff)*aveSignalLevels_dBFS[i] + update_coeff*expCompLim[i].getCurrentLevel_dB(); //running average
     }
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
@@ -454,21 +406,18 @@ void printAveSignalLevels(unsigned long curTime_millis, bool as_dBSPL) {
   //is it time to print to the screen
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    printAveSignalLevelsMessage(&Serial,as_dBSPL);
-    #if (USE_BT_SERIAL)
-      printAveSignalLevelsMessage(&BT_SERIAL,as_dBSPL);
-    #endif
+    printAveSignalLevelsMessage(as_dBSPL);
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
 }
-void printAveSignalLevelsMessage(Stream *s, bool as_dBSPL) {
+void printAveSignalLevelsMessage(bool as_dBSPL) {
   float offset_dB = 0.0f;
   String units_txt = String("dBFS");
   if (as_dBSPL) {
     offset_dB = overall_cal_dBSPL_at0dBFS;
     units_txt = String("dBSPL, approx");
   }
-  s->print("Ave Input Level (");s->print(units_txt); s->print("), Per-Band = ");
-  for (int i=0; i<N_CHAN; i++) { s->print(aveSignalLevels_dBFS[i]+offset_dB,1);  s->print(", ");  }
-  s->println();
+  myTympan.print("Ave Input Level (");myTympan.print(units_txt); myTympan.print("), Per-Band = ");
+  for (int i=0; i<N_CHAN; i++) { myTympan.print(aveSignalLevels_dBFS[i]+offset_dB,1);  myTympan.print(", ");  }
+  myTympan.println();
 }

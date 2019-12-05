@@ -1,5 +1,5 @@
 /*
-  WDRC_3BandIIR_wAFC
+  WDRC_8BandIIR_wAFC
 
   Created: Chip Audette (OpenAudio), 2018
     Primarly built upon CHAPRO "Generic Hearing Aid" from
@@ -80,7 +80,7 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   int count=0;
 
   //connect input
-  patchCord[count++] = new AudioConnection_F32(i2s_in, 0, audioTestGenerator, 0); //#8 wants left, #3 wants right. //connect the Left input to the Left Int->Float converter
+  patchCord[count++] = new AudioConnection_F32(i2s_in, 0, audioTestGenerator, 0); 
 
   //make the connection for the audio test measurements
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement, 0);
@@ -138,8 +138,8 @@ void setupTympanHardware(void) {
   myTympan.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
 
   //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop() 
-  //myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board micropphones
-  myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board micropphones
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //set volumes
@@ -328,9 +328,9 @@ void loop() {
   //choose to sleep ("wait for interrupt") instead of spinning our wheels doing nothing but consuming power
   //asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
 
-  //respond to myTympan. commands
-  while (Serial.available()) serialManager.respondToByte((char)Serial.read());
-  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read());
+  //respond to Serial commands
+  while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB
+  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //Bluetooth
 
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
