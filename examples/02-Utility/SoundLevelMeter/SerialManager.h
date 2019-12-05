@@ -4,33 +4,27 @@
 
 #include <Tympan_Library.h>
 
+extern Tympan myTympan;
+
 //now, define the Serial Manager class
 class SerialManager {
   public:
-    SerialManager(
-      Tympan &_audioHardware //,
-      //AudioControlTestFreqSweep_F32 &_freqSweepTester,
-    )
-      : audioHardware(_audioHardware)//,
-        //freqSweepTester(_freqSweepTester),
-    { };
-
+    SerialManager(void) {};
     void respondToByte(char c);
     void printHelp(void);
 
   private:
-    Tympan &audioHardware;
-    //AudioControlTestFreqSweep_F32 &freqSweepTester;
+
 };
 
 void SerialManager::printHelp(void) {
-  audioHardware.println();
-  audioHardware.println("SerialManager Help: Available Commands:");
-  audioHardware.println("   h: Print this help");
-  audioHardware.println("   c,C: Enable/Disable printing of CPU and Memory usage");
-  //audioHardware.println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
-  audioHardware.println("   l,L: Enable/Disable printing of loudness level");
-  audioHardware.println();
+  myTympan.println();
+  myTympan.println("SerialManager Help: Available Commands:");
+  myTympan.println("   h: Print this help");
+  myTympan.println("   c,C: Enable/Disable printing of CPU and Memory usage");
+  //myTympan.println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
+  myTympan.println("   l,L: Enable/Disable printing of loudness level");
+  myTympan.println();
 }
 
 //functions in the main sketch that I want to call from here
@@ -45,11 +39,11 @@ void SerialManager::respondToByte(char c) {
     case 'h': case '?':
       printHelp(); break;
     case 'c':
-      audioHardware.println("Command Received: enable printing of memory and CPU usage.");
+      myTympan.println("Command Received: enable printing of memory and CPU usage.");
       enablePrintMemoryAndCPU(true);
       break;
     case 'C':
-      audioHardware.println("Command Received: disable printing of memory and CPU usage.");
+      myTympan.println("Command Received: disable printing of memory and CPU usage.");
       enablePrintMemoryAndCPU(false);
       break;
     //    case 'f':
@@ -60,17 +54,17 @@ void SerialManager::respondToByte(char c) {
     //        freqSweepTester_filterbank.setStepPattern(start_freq_Hz, end_freq_Hz, step_octave);
     //        freqSweepTester_filterbank.setTargetDurPerStep_sec(0.5);
     //      }
-    //      audioHardware.println("Command Received: starting test using frequency sweep.  Filterbank assessment...");
+    //      myTympan.println("Command Received: starting test using frequency sweep.  Filterbank assessment...");
     //      freqSweepTester_filterbank.begin();
     //      while (!freqSweepTester_filterbank.available()) {delay(100);};
-    //      audioHardware.println("Press 'h' for help...");
+    //      myTympan.println("Press 'h' for help...");
     //      break;
     case 'l':
-      audioHardware.println("Command Received: enable printing of loudness levels.");
+      myTympan.println("Command Received: enable printing of loudness levels.");
       enablePrintLoudnessLevels(true);
       break;
     case 'L':
-      audioHardware.println("Command Received: disable printing of loudness levels.");
+      myTympan.println("Command Received: disable printing of loudness levels.");
       enablePrintLoudnessLevels(false);
       break;
 
@@ -79,4 +73,3 @@ void SerialManager::respondToByte(char c) {
 
 
 #endif
-
