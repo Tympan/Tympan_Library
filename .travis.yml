@@ -20,7 +20,6 @@ script:
     - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost/TrebleBoost.ino --lib="examples/01-Basic/TrebleBoost"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost_wComp/TrebleBoost_wComp.ino --lib="examples/01-Basic/TrebleBoost_wComp"
 
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/AudioViaUSB/AudioViaUSB.ino --lib="examples/02-Utility/AudioViaUSB"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino --lib="examples/02-Utility/ControlViaSerial"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerialAndBluetooth/ControlViaSerialAndBluetooth.ino --lib="examples/02-Utility/ControlViaSerialAndBluetooth"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/DetectExtMic/DetectExtMic.ino --lib="examples/02-Utility/DetectExtMic"
