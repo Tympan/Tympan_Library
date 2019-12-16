@@ -79,6 +79,12 @@ AudioSettings_F32	KEYWORD1
 sample_rate_Hz		KEYWORD2
 audio_block_samples	KEYWORD2
 
+AudioSDPlayer_F32	KEYWORD1
+begin			KEYWORD2
+play			KEYWORD2
+stop			KEYWORD2
+isPlaying		KEYWORD2
+
 AudioSDWriter_F32	KEYWORD1
 startRecording		KEYWORD2
 stopRecording		KEYWORD2
