@@ -2,7 +2,7 @@
 *   SoundLevelMeter_2Chan
 *
 *   Created: Chip Audette, OpenAudio 
-*   Original: SoundLevelMeter (1 channel), June 2018
+*   Original: SoundLevelMeter (which was 1 channel), June 2018
 *   Updated: Expanded to two channel, running at 96 kHz, March 2019
 *   
 *   Purpose: Compute the current sound level, dBA-Fast or whatever
