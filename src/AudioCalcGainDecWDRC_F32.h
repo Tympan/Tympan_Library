@@ -1,8 +1,11 @@
 /*
  * AudioCalcGainWDRC_F32
  * 
- * Created: Chip Audette, Feb 2017
+ * Created: Chip Audette, Jan 2019
  * Purpose: This module calculates the gain needed for wide dynamic range compression.
+ *     Note: the calculations are decimated, meaning that the calcs are only performed
+ *     every X samples.  This saves significant CPU.
+ * Derived from AudioCalcGainWDRC_F32
  * Derived From: Core algorithm is from "WDRC_circuit"
  *     WDRC_circuit from CHAPRO from BTNRC: https://github.com/BTNRH/chapro
  *     As of Feb 2017, CHAPRO license is listed as "Creative Commons?"

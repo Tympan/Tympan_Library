@@ -1,7 +1,10 @@
 /*
- * AudioCalcGainWDRC_F32: Wide Dynamic Rnage Compressor
+ * AudioCalcGainDecWDRC_F32: Wide Dynamic Rnage Compressor
+ *     Note: the calculations are decimated, meaning that the calcs are only performed
+ *     every X samples.  This saves significant CPU.
  * 
- * Created: Chip Audette (OpenAudio) Feb 2017
+ * Created: Chip Audette (OpenAudio) Jan2019
+ * Dervied from AudioCalcGainWDRC_F32
  * Derived From: WDRC_circuit from CHAPRO from BTNRC: https://github.com/BTNRH/chapro
  *     As of Feb 2017, CHAPRO license is listed as "Creative Commons?"
  * 
