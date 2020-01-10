@@ -77,7 +77,7 @@
 // PB25 - RC = 12.  Use M8, N2
 
 
-#if 0
+#if 1
 	//standard setup for 44 kHz
 	#define DOSR                                                            128
 	#define NDAC                                                              2
@@ -345,30 +345,44 @@ void AudioControlAIC3206::aic_initADC() {
 }
 
 // set MICPGA volume, 0-47.5dB in 0.5dB setps
-float AudioControlAIC3206::setInputGain_dB(float volume) {
-  if (volume < 0.0) {
-    volume = 0.0; // 0.0 dB
-    Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
+float AudioControlAIC3206::applyLimitsOnInputGainSetting(float gain_dB) {
+  if (gain_dB < 0.0) {
+    gain_dB = 0.0; // 0.0 dB
+    //Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
   }
-  if (volume > 47.5) {
-    volume = 47.5; // 47.5 dB
-    Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
+  if (gain_dB > 47.5) {
+    gain_dB = 47.5; // 47.5 dB
+    //Serial.println("AudioControlAIC3206: WARNING: Attempting to set MIC volume outside range");
   }
-  float vol_dB = volume;
-  
-  volume = volume * 2.0; // convert to value map (0.5 dB steps)
-  int8_t volume_int = (int8_t) (round(volume)); // round
+  return gain_dB;
+}
+float AudioControlAIC3206::setInputGain_dB(float orig_gain_dB, int Ichan) {
+	float gain_dB = applyLimitsOnInputGainSetting(orig_gain_dB);
+	if (abs(gain_dB - orig_gain_dB) > 0.01) {
+		Serial.println("AudioControlAIC3206: WARNING: Attempting to set input gain outside allowed range");
+	}
 
-  if (debugToSerial) {
-	Serial.print("INFO: Setting MIC volume to ");
-	Serial.print(volume, 1);
-	Serial.print(".  Converted to volume map => ");
-	Serial.println(volume_int);
-  }
+	//convert to proper coded value for the AIC3206
+	float volume = gain_dB * 2.0; // convert to value map (0.5 dB steps)
+	int8_t volume_int = (int8_t) (round(volume)); // round
 
-  aic_writeAddress(TYMPAN_MICPGA_LEFT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Left MicPGA, set gain to 0 dB
-  aic_writeAddress(TYMPAN_MICPGA_RIGHT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Right MicPGA, set gain to 0 dB
-  return vol_dB;
+	if (debugToSerial) {
+		Serial.print("AIC3206: Setting Input volume to ");
+		Serial.print(gain_dB, 1);
+		Serial.print(".  Converted to volume map => ");
+		Serial.println(volume_int);
+	}
+
+	if (Ichan == 0) {
+		aic_writeAddress(TYMPAN_MICPGA_LEFT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Left MicPGA 
+	} else {
+		aic_writeAddress(TYMPAN_MICPGA_RIGHT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Right MicPGA
+	}
+	return gain_dB;
+}
+float AudioControlAIC3206::setInputGain_dB(float gain_dB) {
+	gain_dB = setInputGain_dB(gain_dB,0); //left channel
+	return setInputGain_dB(gain_dB,1); //right channel
 }
 
 //******************* OUTPUT DEFINITIONS *****************************//
@@ -401,32 +415,45 @@ bool AudioControlAIC3206::enableAutoMuteDAC(bool enable, uint8_t mute_delay_code
 }
 
 // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
-float AudioControlAIC3206::volume_dB(float volume) {
+float AudioControlAIC3206::applyLimitsOnVolumeSetting(float vol_dB) {
+	// Constrain to limits
+	if (vol_dB > 24.0) {
+		vol_dB = 24.0;
+		//Serial.println("AudioControlAIC3206: WARNING: Attempting to set DAC Volume outside range");
+	}
+	if (vol_dB < -63.5) {
+		vol_dB = -63.5;
+		//Serial.println("AudioControlAIC3206: WARNING: Attempting to set DAC Volume outside range");
+	}
+	return vol_dB;
+}
+float AudioControlAIC3206::volume_dB(float orig_vol_dB, int Ichan) {  // 0 = Left; 1 = right;
+	float vol_dB = applyLimitsOnVolumeSetting(orig_vol_dB);
+	if (abs(vol_dB - orig_vol_dB) > 0.01) {
+		Serial.println("AudioControlAIC3206: WARNING: Attempting to set DAC Volume outside range");
+	}
+	int8_t volume_int = (int8_t) (round(vol_dB * 2.0)); // round to nearest 0.5 dB step and convert to int
 
-  // Constrain to limits
-  if (volume > 24.0) {
-    volume = 24.0;
-    Serial.println("AudioControlAIC3206: WARNING: Attempting to set DAC Volume outside range");
-  }
-  if (volume < -63.5) {
-    volume = -63.5;
-    Serial.println("AudioControlAIC3206: WARNING: Attempting to set DAC Volume outside range");
-  }
-  float vol_dB = volume;
+	if (debugToSerial) {
+		Serial.print("AudioControlAIC3206: Setting DAC"); Serial.print(Ichan);
+		Serial.print(" volume to "); Serial.print(vol_dB, 1);
+		Serial.print(".  Converted to volume map => "); Serial.println(volume_int);
+	}
 
-  volume = volume * 2.0; // convert to value map (0.5 dB steps)
-  int8_t volume_int = (int8_t) (round(volume)); // round
-
-  if (debugToSerial) {
-	Serial.print("AudioControlAIC3206: Setting DAC volume to ");
-	Serial.print(volume, 1);
-	Serial.print(".  Converted to volume map => ");
-	Serial.println(volume_int);
-  }
-
-  aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, volume_int);
-  aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG, volume_int);
-  return vol_dB;
+	if (Ichan == 0) {
+		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG, volume_int);
+	} else {
+		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, volume_int);
+	}
+	return vol_dB;
+}
+float AudioControlAIC3206::volume_dB(float vol_left_dB, float vol_right_dB) {
+	volume_dB(vol_right_dB, 1);       //set right channel
+	return volume_dB(vol_left_dB, 0); //set left channel
+}
+float AudioControlAIC3206::volume_dB(float vol_dB) {
+	vol_dB = volume_dB(vol_dB, 1);  //set right channel
+	return volume_dB(vol_dB, 0);    //set left channel
 }
 
 void AudioControlAIC3206::aic_initDAC() {

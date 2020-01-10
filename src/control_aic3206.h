@@ -75,10 +75,15 @@ public:
 	bool disable(void);
 	bool outputSelect(int n);
 	bool volume(float n);
-	float volume_dB(float n);
+	static float applyLimitsOnVolumeSetting(float vol_dB);
+	float volume_dB(float vol_dB);  //set both channels to the same volume
+	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels, but to their own values
+	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
 	bool inputSelect(int n);
-	float setInputGain_dB(float n);
+	float applyLimitsOnInputGainSetting(float gain_dB);  
+	float setInputGain_dB(float gain_dB);   //set both channels to the same gain
+	float setInputGain_dB(float gain_dB, int chan); //set each channel seperately (0 = left; 1 = right)
 	bool setMicBias(int n);
 	bool updateInputBasedOnMicDetect(int setting = TYMPAN_INPUT_JACK_AS_MIC);
 	bool enableMicDetect(bool);
@@ -123,7 +128,7 @@ protected:
   void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
-	
+
   
 };
 
