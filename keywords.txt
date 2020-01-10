@@ -14,7 +14,7 @@ AudioMemoryUsageMaxReset_F32	KEYWORD1
 AudioConnection_F32	KEYWORD1
 
 AudioCalcGainWDRC_F32	KEYWORD1
-AudioCalcGainWDRC2_F32	KEYWORD1
+AudioCalcGainDecWDRC_F32	KEYWORD1
 AudioCalcEnvelope_F32	KEYWORD1
 AudioCalcLevel_F32	KEYWORD1
 
@@ -36,7 +36,7 @@ AudioConvert_F32toI16	KEYWORD1
 
 AudioEffectCompressor_F32	KEYWORD1
 AudioEffectCompWDRC_F32	KEYWORD1
-AudioEffectCompWDRC2_F32	KEYWORD1
+AudioEffectCompDecWDRC_F32	KEYWORD1
 
 AudioEffectDelay_F32	KEYWORD1
 

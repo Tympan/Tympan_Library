@@ -12,21 +12,21 @@
  * MIT License.  use at your own risk.
 */
 
-#ifndef _AudioCalcGainWDRC_F32_h
-#define _AudioCalcGainWDRC_F32_h
+#ifndef _AudioCalcGainDecWDRC_F32_h
+#define _AudioCalcGainDecWDRC_F32_h
 
 #include <arm_math.h> //ARM DSP extensions.  for speed!
 #include "AudioStream_F32.h"
 #include "BTNRH_WDRC_Types.h"
 
-class AudioCalcGainWDRC_F32 : public AudioStream_F32
+class AudioCalcGainDecWDRC_F32 : public AudioStream_F32
 {
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
   //GUI: shortName:calc_WDRCGain2
   public:
     //default constructor
-    AudioCalcGainWDRC_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
-	AudioCalcGainWDRC_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
+    AudioCalcGainDecWDRC_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
+	AudioCalcGainDecWDRC_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
 
     //here's the method that does all the work
     void update(void) {
@@ -60,8 +60,27 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       if (!env_dB_block) return;
   
       //convert to dB and calibrate (via maxdB)
-      for (int k=0; k < n; k++) env_dB_block->data[k] = maxdB + db2(env[k]); //maxdb in the private section 
+      //for (int k=0; k < n; k ++) env_dB_block->data[k] = maxdB + db2(env[k]); //maxdb in the private section 
       
+	  
+	  env_dB_block->data[0] = maxdB + db2(env[0]); //maxdb in the private section 
+	  int subcounter = 1; int index_last_computed = 0;  //these are to effect the decimation so that it conly computes every decimate_factor points
+	  float temp_sum = 0.0;
+	  for (int k=1; k < n; k++) {
+		  temp_sum += env[k];
+		  if (subcounter == 0) {
+			//env_dB_block->data[k] = maxdB + db2(env[k]); //maxdb in the private section 
+			env_dB_block->data[k] = maxdB + db2(temp_sum / ((float)decimate_factor)); //maxdb in the private section 
+			temp_sum = 0.0;  //reset temp_sum to build up a new average value next time
+			index_last_computed = k;
+		  } else {
+			env_dB_block->data[k] = env_dB_block->data[index_last_computed];
+		  }
+		  
+		  //increment the subcounter (and wrap as necessary) to handle the decimation
+		  subcounter++; if (subcounter >= decimate_factor) subcounter = 0;
+	  }
+		  
       // apply wide-dynamic range compression
       WDRC_circuit_gain(env_dB_block->data, gain_out, n, exp_cr, exp_end_knee, tkgn, tk, cr, bolt);
       AudioStream_F32::release(env_dB_block);
@@ -101,19 +120,31 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       }
 
       float exp_cr_const = 1.f-max(0.01f,exp_cr);
+      //for (k = 0; k < n; k++) {  //loop over each sample
+	  int subcounter = 0; int index_last_computed = 0;  //these are to effect the decimation so that it conly computes every decimate_factor points
       for (k = 0; k < n; k++) {  //loop over each sample
-        if (pdb[k] < exp_end_knee) {  //if below the expansion threshold, do expansion
-          //expansion region.
-          gdb = gain_at_exp_end_knee - ((exp_end_knee-pdb[k])*exp_cr_const); //reduce gain the farther down you are from the end of the expansion region
-        } else if ((pdb[k] < tk_tmp) && (cr >= 1.0f)) {  //if below the compression threshold, go linear
-            gdb = tkgn;  //we're in the linear region.  Apply linear gain.
-        } else if (pdb[k] > pblt) { //we're beyond the compression region into the limitting region
-            gdb = bolt + ((pdb[k] - pblt) / 10.0f) - pdb[k]; //10:1 limiting!
-        } else {
-            gdb = cr_const * pdb[k] + tkgo; 
-        }
-        gain_out[k] = undb2(gdb);
-        //y[k] = x[k] * undb2(gdb); //apply the gain
+		if (subcounter == 0) {
+			if (pdb[k] < exp_end_knee) {  //if below the expansion threshold, do expansion
+			  //expansion region.
+			  gdb = gain_at_exp_end_knee - ((exp_end_knee-pdb[k])*exp_cr_const); //reduce gain the farther down you are from the end of the expansion region
+			} else if ((pdb[k] < tk_tmp) && (cr >= 1.0f)) {  //if below the compression threshold, go linear
+				gdb = tkgn;  //we're in the linear region.  Apply linear gain.
+			} else if (pdb[k] > pblt) { //we're beyond the compression region into the limitting region
+				gdb = bolt + ((pdb[k] - pblt) / 10.0f) - pdb[k]; //10:1 limiting!
+			} else {
+				gdb = cr_const * pdb[k] + tkgo; 
+			}
+			gain_out[k] = undb2(gdb);
+			//y[k] = x[k] * undb2(gdb); //apply the gain
+			
+			index_last_computed = k;
+		} else {
+			//use previously computed value
+			gain_out[k] = gain_out[index_last_computed];
+		}
+		
+		//increment the subcounter and wrap around as needed
+		subcounter++;  if (subcounter >= decimate_factor) subcounter = 0;
       }
       last_gain = gain_out[n-1];  //hold this value, in case the user asks for it later (not needed for the algorithm)
     }
@@ -160,6 +191,13 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
 	float getCurrentGain(void) { return last_gain; }
 	float getCurrentGain_dB(void) { return db2(getCurrentGain()); }
     
+	int setDecimationFactor(int dec) {
+		dec = max(1, dec);
+		dec = min(dec, 16);
+		return decimate_factor = dec;
+		
+	}
+	
 	float setMaxdB(float32_t _maxdB) { return maxdB = _maxdB; }
 	float setKneeExpansion_dBSPL(float32_t _knee) { return exp_end_knee = _knee; }
 	float getKneeExpansion_dBSPL(void) { return exp_end_knee; }
@@ -209,6 +247,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
     float maxdB, exp_cr, exp_end_knee, tkgn, tk, cr, bolt;
 	float last_gain = 1.0;  //what was the last gain value computed for the signal
+	int decimate_factor = 1; //decimate_factor = 1 is no decimation
 };
 
 #endif
