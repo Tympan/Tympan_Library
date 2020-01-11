@@ -732,39 +732,41 @@ bool AudioControlAIC3206::aic_writeAddress(uint16_t address, uint8_t val) {
 }
 
 bool AudioControlAIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) {
-  if (debugToSerial) {
-	Serial.print("AudioControlAIC3206: Write Page.  Page: ");Serial.print(page);
-	Serial.print(" Reg: ");Serial.print(reg);
-	Serial.print(" Val: ");Serial.println(val);
-  }
-  if (aic_goToPage(page)) {
-    myWire->beginTransmission(AIC3206_I2C_ADDR);
-    myWire->write(reg); //delay(10);
-    myWire->write(val); //delay(10);
-    uint8_t result = myWire->endTransmission();
-    if (result == 0) return true;
-    else {
-      Serial.print("AudioControlAIC3206: Received Error During writePage(): Error = ");
-      Serial.println(result);
-    }
-  }
-  return false;
+	if (debugToSerial) {
+		Serial.print("AudioControlAIC3206: Write Page.  Page: ");Serial.print(page);
+		Serial.print(" Reg: ");Serial.print(reg);
+		Serial.print(" Val: ");Serial.println(val);
+	}
+	if (aic_goToPage(page)) {
+		//myWire->beginTransmission(AIC3206_I2C_ADDR);
+		//myWire->write(reg); //delay(10);
+		//myWire->write(val); //delay(10);
+		//uint8_t result = myWire->endTransmission();
+		//if (result == 0) return true;
+		return aic_writeRegister(reg, val);
+	} else {
+		//Serial.print("AudioControlAIC3206: Received Error During aic_goToPage()");
+	}
+	return false;
 }
 bool AudioControlAIC3206::aic_writeRegister(uint8_t reg, uint8_t val) {  //assumes page has already been set
 	myWire->beginTransmission(AIC3206_I2C_ADDR);
-	myWire->write(reg); //delay(10); //was delay(10)
-	myWire->write(val); //delay(10); //was delay(10)
+	myWire->write(reg); //delay(1); //delay(10); //was delay(10)
+	myWire->write(val); //delay(1);//delay(10); //was delay(10)
 	uint8_t result = myWire->endTransmission();
-	
-	if (result == 0) return true;
-
+	if (result == 0) {
+		return true;
+	} else {
+		Serial.print("AudioControlAIC3206: Received Error During writeRegister(): Error = ");
+		Serial.println(result);
+	}
 	return false;
 }
 
 bool AudioControlAIC3206::aic_goToPage(byte page) {
   myWire->beginTransmission(AIC3206_I2C_ADDR);
-  myWire->write(0x00); delay(10);// page register  //was delay(10) from BPF
-  myWire->write(page); delay(10);// go to page   //was delay(10) from BPF
+  myWire->write(0x00); //delay(1); //delay(10);// page register  //was delay(10) from BPF
+  myWire->write(page); //delay(1); //delay(10);// go to page   //was delay(10) from BPF
   byte result = myWire->endTransmission();
   if (result != 0) {
     Serial.print("AudioControlAIC3206: Received Error During goToPage(): Error = ");
