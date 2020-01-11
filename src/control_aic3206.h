@@ -73,7 +73,7 @@ public:
 	}
 	bool enable(void);
 	bool disable(void);
-	bool outputSelect(int n);
+	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster. 
 	bool volume(float n);
 	static float applyLimitsOnVolumeSetting(float vol_dB);
 	float volume_dB(float vol_dB);  //set both channels to the same volume
@@ -102,6 +102,7 @@ public:
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
+	void muteLineOut(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
 	bool enableDigitalMicInputs(bool desired_state);
 	

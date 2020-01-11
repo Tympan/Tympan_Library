@@ -461,28 +461,36 @@ void AudioControlAIC3206::aic_initDAC() {
 	outputSelect(TYMPAN_OUTPUT_HEADPHONE_JACK_OUT); //default
 }
 
-bool AudioControlAIC3206::outputSelect(int n) {
+bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
+	static bool firstTime = true;
+	if (firstTime) {
+		flag_full = true;  //always do a full reconfiguration the first time through.
+		firstTime = false;
+	}
+	
 	// PLAYBACK SETUP: 
 	//	HPL/HPR are headphone output left and right
 	//	LOL/LOR are line output left and right
 	
-	aic_writeAddress(TYMPAN_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
+	if (flag_full) {
+		aic_writeAddress(TYMPAN_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
 
-	//mute, disable, then power-down everything
-	aic_writePage(1, 16, 0b01000000); // mute HPL Driver, 0 gain
-	aic_writePage(1, 17, 0b01000000); // mute HPR Driver, 0 gain
-	aic_writePage(1, 18, 0b01000000); // mute LOL Driver, 0 gain
-	aic_writePage(1, 19, 0b01000000); // mute LOR Driver, 0 gain
-	aic_writePage(0, 63, 0); //disable LDAC/RDAC
-	aic_writePage(1, 9, 0); // Power down HPL/HPR and LOL/LOR drivers
+		//mute, disable, then power-down everything
+		aic_writePage(1, 16, 0b01000000); // mute HPL Driver, 0 gain
+		aic_writePage(1, 17, 0b01000000); // mute HPR Driver, 0 gain
+		aic_writePage(1, 18, 0b01000000); // mute LOL Driver, 0 gain
+		aic_writePage(1, 19, 0b01000000); // mute LOR Driver, 0 gain
+		aic_writePage(0, 63, 0); //disable LDAC/RDAC
+		aic_writePage(1, 9, 0); // Power down HPL/HPR and LOL/LOR drivers
+		
+		aic_writePage(1,12,0); //unroute from HPL
+		aic_writePage(1,13,0); //unroute from HPR
+		aic_writePage(1,14,0); //unroute from LOL
+		aic_writePage(1,15,0); //unroute from LOR	
 	
-	aic_writePage(1,12,0); //unroute from HPL
-	aic_writePage(1,13,0); //unroute from HPR
-	aic_writePage(1,14,0); //unroute from LOL
-	aic_writePage(1,15,0); //unroute from LOR	
-	
-	//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
-	aic_writePage(1, 20, 0b10100101);  //soft routing step is 200ms, 5.0 time constants, assume 6K resistance
+		//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
+		aic_writePage(1, 20, 0b10100101);  //soft routing step is 200ms, 5.0 time constants, assume 6K resistance
+	}
 
 	if (n == TYMPAN_OUTPUT_HEADPHONE_JACK_OUT) {
 
@@ -491,14 +499,16 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		//aic_writePage(1, 13, 8); // route LDAC/RDAC to HPL/HPR
 		aic_writePage(1, 12, 0b00001000); // route LDAC/RDAC to HPL/HPR
 		aic_writePage(1, 13, 0b00001000); // route LDAC/RDAC to HPL/HPR
-		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
 		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
 		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
-		aic_writePage(1, 9, 0x30); // Power up HPL/HPR drivers  0b00110000
-		delay(50);
-		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		if (flag_full) {
+			aic_writePage(1, 9, 0x30); // Power up HPL/HPR drivers  0b00110000
+			delay(50);
+			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		}
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Headphone Jack");
 		return true;
@@ -507,14 +517,16 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		//aic_writePage(1, 20, 0x25); // 0x14 De-Pop
 		aic_writePage(1, 14, 0b00001000); // route LDAC/RDAC to LOL/LOR
 		aic_writePage(1, 15, 0b00001000); // route LDAC/RDAC to LOL/LOR
-		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC		
+		if (flag_full)	aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC		
 		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
 		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain
-		aic_writePage(1, 9, 0b00001100); // Power up LOL/LOR drivers
-		delay(50);
-		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		if (flag_full) {
+			aic_writePage(1, 9, 0b00001100); // Power up LOL/LOR drivers
+			delay(50);
+			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		}
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Line Out");
 		return true;
@@ -524,18 +536,20 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		aic_writePage(1, 14, 0b00001000); // route LDAC/RDAC to LOL/LOR
 		aic_writePage(1, 15, 0b00001000); // route LDAC/RDAC to LOL/LOR
 		
-		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
 		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
 		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain		
 		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
 		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
 
-		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
-		
-		delay(50);
-		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		if (flag_full) {
+			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
+			
+			delay(50);
+			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		}
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Headphone Jack and Line out");
 		return true;	
@@ -545,18 +559,20 @@ bool AudioControlAIC3206::outputSelect(int n) {
 		aic_writePage(1, 14, 0b00010000); // route Right DAC Neg to Lineout Left
 		aic_writePage(1, 15, 0b00001000); // route Right DAC Pos to Lineout Right
 		
-		aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
 		aic_writePage(1, 18, 0); // unmute LOL Driver, 0 gain
 		aic_writePage(1, 19, 0); // unmute LOR Driver, 0 gain		
 		aic_writePage(1, 16, 0); // unmute HPL Driver, 0 gain
 		aic_writePage(1, 17, 0); // unmute HPR Driver, 0 gain
 
-		aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
-		
-		delay(50);
-		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-		aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-		aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		if (flag_full) {
+			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
+			
+			delay(50);
+			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		}
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Diff Headphone Jack and Line out");
 		return true;			
@@ -566,6 +582,44 @@ bool AudioControlAIC3206::outputSelect(int n) {
   return false;
 }
 
+void AudioControlAIC3206::muteLineOut(bool flag) {
+
+	byte curValL = aic_readPage(1,18);
+	byte curValR = aic_readPage(1,19);
+
+	if (flag == true) {
+		//mute
+		if (!(curValL & 0b01000000))  { //is this bit low?
+			//already muted
+		} else {
+			//mute
+			aic_writePage(1,18,curValL & 0b10111111); //mute LOL driver, same gain as before
+		}		
+		//unmute
+		if (!(curValR & 0b01000000))  { //is this bit low?
+			//already muted
+		} else {
+			//mute
+			aic_writePage(1,19,curValR & 0b10111111); //mute LOR driver, same gain as before
+		}	
+	
+	} else {
+		//unmute
+		if (curValL & 0b01000000)  {   //is this bit high?
+			//already active
+		} else {
+			//unmute
+			aic_writePage(1,18,curValL | 0b0100000000); //unmute LOL driver, same gain as before
+		}		
+		//unmute
+		if (curValR & 0b01000000)  { //is this bit high?
+			//already active
+		} else {
+			//unmute
+			aic_writePage(1,19,curValR | 0b0100000000); //unmute LOR driver, same gain as before
+		}			
+	}
+}
 
 void AudioControlAIC3206::aic_init() {
   if (debugToSerial) Serial.println("AudioControlAIC3206: Initializing AIC");
