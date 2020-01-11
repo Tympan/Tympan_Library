@@ -117,6 +117,7 @@ protected:
   
   bool aic_writeAddress(uint16_t address, uint8_t val);
   bool aic_goToPage(uint8_t page);
+  bool aic_writeRegister(uint8_t reg, uint8_t val);  //assumes page has already been set
   int prevMicDetVal = -1;
   int resetPinAIC = AIC3206_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
   float HP_cutoff_Hz = 0.0f;
