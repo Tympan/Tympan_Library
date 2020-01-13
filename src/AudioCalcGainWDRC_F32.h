@@ -41,7 +41,9 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       
       // ////////////////////// do the processing here!
       calcGainFromEnvelope(in_block->data, out_block->data, in_block->length);
-      out_block->length = in_block->length; out_block->fs_Hz = in_block->fs_Hz;
+      out_block->length = in_block->length; 
+	  out_block->fs_Hz = in_block->fs_Hz;
+	  out_block->id = in_block->id;
       
       //transmit the block and be done
       AudioStream_F32::transmit(out_block);

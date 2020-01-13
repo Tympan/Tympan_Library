@@ -84,6 +84,7 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 		return;
 	}
 	int n_copy = input->length;
+	last_received_block_id = input->id;
 
 	
 	
@@ -227,6 +228,10 @@ void AudioEffectDelay_F32::transmitOutgoingData(void) {
 			}
 		}
 	
+		//add the id of the last received audio block
+		output->id = last_received_block_id;
+		
+		//transmit and release
 		AudioStream_F32::transmit(output, channel);
 		AudioStream_F32::release(output);
 	}

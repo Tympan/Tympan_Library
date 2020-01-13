@@ -49,6 +49,9 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       
       //do the algorithm
       cha_agc_channel(block->data, out_block->data, block->length);
+	  
+	  //copy the audio_block id
+	  out_block->id = block->id;
       
       // transmit the block and release memory
       AudioStream_F32::transmit(out_block); // send the FIR output
