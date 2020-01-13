@@ -19,6 +19,9 @@
 //variables to control printing of warnings and timings and whatnot
 #define PRINT_FULL_SD_TIMING 0    //set to 1 to print timing information of *every* write operation.  Great for logging to file.  Bad for real-time human reading.
 
+//how many channels do we want to allow for?
+#define AUDIOSDWRITER_MAX_CHAN 4
+
 //AudioSDWriter: A class to write data from audio blocks as part of the 
 //   Teensy/Tympan audio processing paradigm.  The AudioSDWriter class is 
 //   just a virtual Base class.  Use AudioSDWriter_F32 further down.
@@ -31,7 +34,7 @@ class AudioSDWriter {
     };
     enum class WriteDataType { INT16 }; //in the future, maybe add FLOAT32
     virtual int setNumWriteChannels(int n) {
-      return numWriteChannels = max(1, min(n, 4));  //can be 1, 2 or 4 (3 might work but its behavior is unknown)
+      return numWriteChannels = max(1, min(n, AUDIOSDWRITER_MAX_CHAN));  //can be 1, 2 or 4 (3 might work but its behavior is unknown)
     }
     virtual int getNumWriteChannels(void) {
       return numWriteChannels;
@@ -58,27 +61,27 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
   public:
     AudioSDWriter_F32(void) :
       AudioSDWriter(),
-      AudioStream_F32(4, inputQueueArray)
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
     { 
       setup();
     }
     AudioSDWriter_F32(const AudioSettings_F32 &settings) :
       AudioSDWriter(),
-      AudioStream_F32(4, inputQueueArray)
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
     { 
       setup(); 
       setSampleRate_Hz(settings.sample_rate_Hz);
     }
     AudioSDWriter_F32(const AudioSettings_F32 &settings, Print* _serial_ptr) :
       AudioSDWriter(),
-      AudioStream_F32(4, inputQueueArray)
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
     { 
       setup(_serial_ptr);
       setSampleRate_Hz(settings.sample_rate_Hz);
     }
     AudioSDWriter_F32(const AudioSettings_F32 &settings, Print* _serial_ptr, const int _writeSizeBytes) :
       AudioSDWriter(),
-      AudioStream_F32(4, inputQueueArray)
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
     { 
       setup(_serial_ptr, _writeSizeBytes); 
       setSampleRate_Hz(settings.sample_rate_Hz); 
@@ -187,7 +190,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
   unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
 
   protected:
-    audio_block_f32_t *inputQueueArray[4]; //up to four input channels
+    audio_block_f32_t *inputQueueArray[AUDIOSDWRITER_MAX_CHAN]; //up to four input channels
     BufferedSDWriter *buffSDWriter = 0;
     Print *serial_ptr = &Serial;
     unsigned long t_start_millis = 0;
