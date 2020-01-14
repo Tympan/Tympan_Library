@@ -156,17 +156,17 @@ void AudioSDWriter_F32::stopRecording(void) {
 //only service the recording queues so as to buffer the audio data.
 //The acutal SD writing should occur in the loop() as invoked by a service routine
 void AudioSDWriter_F32::update(void) {
-  audio_block_f32_t *audio_blocks[AUDIOSDWRITER_MAX_CHAN];
-  //bool data_present[AUDIOSDWRITER_MAX_CHAN];
-  bool any_data_present = false;
-  
-  //get the audio
-  for (int Ichan=0; Ichan < numWriteChannels; Ichan++) {
-	  audio_blocks[Ichan] = receiveReadOnly_f32(Ichan); //get the data block
-	  
-	  //did we get any audio for this channel?
-	  if (audio_blocks[Ichan]) any_data_present = true;
-  }
+	audio_block_f32_t *audio_blocks[AUDIOSDWRITER_MAX_CHAN];
+	//bool data_present[AUDIOSDWRITER_MAX_CHAN];
+	bool any_data_present = false;
+
+	//get the audio
+	for (int Ichan=0; Ichan < numWriteChannels; Ichan++) {
+		audio_blocks[Ichan] = receiveReadOnly_f32(Ichan); //get the data block
+
+		//did we get any audio for this channel?
+		if (audio_blocks[Ichan]) any_data_present = true;
+	}
   
 	//fill in any missing data blocks
 	if (any_data_present) {  //only fill in missing data channels if there is any data at all in any of the channels
