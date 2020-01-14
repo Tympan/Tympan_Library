@@ -13,12 +13,6 @@ install:
     - platformio update
 
 script:
-    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_FIR_8Band/WDRC_FIR_8Band.ino --lib="examples/03-Intermediate/WDRC_FIR_8Band"
-    
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wAFC/WDRC_3BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_3BandIIR_wAFC"
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino --lib="examples/05-FullSystems/WDRC_8BandFIR"
-    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wAFC/WDRC_8BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_8BandIIR_wAFC"
-
     - platformio ci --project-conf=platformio.ini examples/01-Basic/AudioPassThru/AudioPassThru.ino --lib="examples/01-Basic/AudioPassThru"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/BasicGain/BasicGain.ino --lib="examples/01-Basic/BasicGain"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/ChangeSampleRate/ChangeSampleRate.ino --lib="examples/01-Basic/ChangeSampleRate"
@@ -26,20 +20,27 @@ script:
     - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost/TrebleBoost.ino --lib="examples/01-Basic/TrebleBoost"
     - platformio ci --project-conf=platformio.ini examples/01-Basic/TrebleBoost_wComp/TrebleBoost_wComp.ino --lib="examples/01-Basic/TrebleBoost_wComp"
 
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/BluetoothAudio_PassThru/BluetoothAudio_PassThru.ino --lib="examples/02-Utility/BluetoothAudio_PassThru"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerial/ControlViaSerial.ino --lib="examples/02-Utility/ControlViaSerial"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/ControlViaSerialAndBluetooth/ControlViaSerialAndBluetooth.ino --lib="examples/02-Utility/ControlViaSerialAndBluetooth"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/DetectExtMic/DetectExtMic.ino --lib="examples/02-Utility/DetectExtMic"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/MyAudioAlgorithm/MyAudioAlgorithm.ino --lib="examples/02-Utility/MyAudioAlgorithm"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/OutputToneWithSteppedAmplitude/OutputToneWithSteppedAmplitude.ino --lib="examples/02-Utility/OutputToneWithSteppedAmplitude"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/RenameTympanBT/RenameTympanBT.ino --lib="examples/02-Utility/RenameTympanBT"
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/SerialControlledSDWriter/SerialControlledSDWriter.ino --lib="examples/02-Utility/SerialControlledSDWriter"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SDWavPlayer/SDWavPlayer.ino --lib="examples/02-Utility/SDWavPlayer"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SDWriting_01_StereoAudio/SDWriting_01_StereoAudio.ino --lib="examples/02-Utility/SDWriting_01_StereoAudio"
+    - platformio ci --project-conf=platformio.ini examples/02-Utility/SDWriting_02_RemoteControlled/SDWriting_02_RemoteControlled.ino --lib="examples/02-Utility/SDWriting_02_RemoteControlled"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter/SoundLevelMeter.ino --lib="examples/02-Utility/SoundLevelMeter"
     - platformio ci --project-conf=platformio.ini examples/02-Utility/SoundLevelMeter_2Chan/SoundLevelMeter_2Chan.ino --lib="examples/02-Utility/SoundLevelMeter_2Chan"
-    - platformio ci --project-conf=platformio.ini examples/02-Utility/StereoAudioToSD_Fast/StereoAudioToSD_Fast.ino --lib="examples/02-Utility/StereoAudioToSD_Fast"
 
-     - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_SingleBand/WDRC_SingleBand.ino --lib="examples/03-Intermediate/WDRC_SingleBand"
-
+    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_SingleBand/WDRC_SingleBand.ino --lib="examples/03-Intermediate/WDRC_SingleBand"
+    - platformio ci --project-conf=platformio.ini examples/03-Intermediate/WDRC_FIR_8Band/WDRC_FIR_8Band.ino --lib="examples/03-Intermediate/WDRC_FIR_8Band"
+   
     - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/FormantShifter_FD/FormantShifter_FD.ino --lib="examples/04-FrequencyDomain/FormantShifter_FD"
     - platformio ci --project-conf=platformio.ini examples/04-FrequencyDomain/LowpassFilter_FD/LowpassFilter_FD.ino --lib="examples/04-FrequencyDomain/LowpassFilter_FD"
 
-  
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_3BandIIR_wAFC/WDRC_3BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_3BandIIR_wAFC"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandFIR/WDRC_8BandFIR.ino --lib="examples/05-FullSystems/WDRC_8BandFIR"
+    - platformio ci --project-conf=platformio.ini examples/05-FullSystems/WDRC_8BandIIR_wAFC/WDRC_8BandIIR_wAFC.ino --lib="examples/05-FullSystems/WDRC_8BandIIR_wAFC"
+
+
