@@ -138,52 +138,6 @@ float overall_cal_dBSPL_at0dBFS; //will be set later
 #define N_FIR 96
 float firCoeff[N_CHAN_MAX][N_FIR];
 
-void setupAudioProcessing(void) {
-  //make all of the audio connections
-  makeAudioConnections();
-
-  //setup processing based on the DSL and GHA prescriptions
-  if (current_dsl_config == DSL_NORMAL) {
-    setupFromDSLandGHA(dsl, gha, N_CHAN_MAX, N_FIR, audio_settings);
-  } else if (current_dsl_config == DSL_FULLON) {
-    setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN_MAX, N_FIR, audio_settings);
-  }
-}
-
-void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
-     const int n_chan_max, const int n_fir, const AudioSettings_F32 &settings)
-{
-  int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
-
-  //compute the per-channel filter coefficients
-  AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
-
-  //set the coefficients (if we lower n_chan, we should be sure to clean out the ones that aren't set)
-  for (int i=0; i< n_chan; i++) firFilt[i].begin(firCoeff[i], n_fir, settings.audio_block_samples);
-
-  //setup all of the per-channel compressors
-  configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
-
-  //setup the broad band compressor (limiter)
-  configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, vol_knob_gain_dB, compBroadband);
-
-  //overwrite the one-point calibration based on the dsl data structure
-  overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
-
-}
-
-void incrementDSLConfiguration(void) {
-  current_dsl_config++;
-  if (current_dsl_config==2) current_dsl_config=0;
-  switch (current_dsl_config) {
-    case (DSL_NORMAL):
-      myTympan.println("incrementDSLConfiguration: changing to NORMAL dsl configuration");
-      setupFromDSLandGHA(dsl, gha, N_CHAN_MAX, N_FIR, audio_settings);  break;
-    case (DSL_FULLON):
-      myTympan.println("incrementDSLConfiguration: changing to FULL-ON dsl configuration");
-      setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN_MAX, N_FIR, audio_settings); break;
-  }
-}
 
 void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &this_gha,
       float vol_knob_gain_dB, AudioEffectCompWDRC_F32 &WDRC)
@@ -247,6 +201,54 @@ void configurePerBandWDRCs(int nchan, float fs_Hz,
     //set the compressor's parameters
     WDRCs[i].setSampleRate_Hz(fs);
     WDRCs[i].setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
+  }
+}
+
+void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
+     const int n_chan_max, const int n_fir, const AudioSettings_F32 &settings)
+{
+  int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
+
+  //compute the per-channel filter coefficients
+  AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
+
+  //set the coefficients (if we lower n_chan, we should be sure to clean out the ones that aren't set)
+  for (int i=0; i< n_chan; i++) firFilt[i].begin(firCoeff[i], n_fir, settings.audio_block_samples);
+
+  //setup all of the per-channel compressors
+  configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
+
+  //setup the broad band compressor (limiter)
+  configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, vol_knob_gain_dB, compBroadband);
+
+  //overwrite the one-point calibration based on the dsl data structure
+  overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
+
+}
+
+
+void setupAudioProcessing(void) {
+  //make all of the audio connections
+  makeAudioConnections();
+
+  //setup processing based on the DSL and GHA prescriptions
+  if (current_dsl_config == DSL_NORMAL) {
+    setupFromDSLandGHA(dsl, gha, N_CHAN_MAX, N_FIR, audio_settings);
+  } else if (current_dsl_config == DSL_FULLON) {
+    setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN_MAX, N_FIR, audio_settings);
+  }
+}
+
+void incrementDSLConfiguration(void) {
+  current_dsl_config++;
+  if (current_dsl_config==2) current_dsl_config=0;
+  switch (current_dsl_config) {
+    case (DSL_NORMAL):
+      myTympan.println("incrementDSLConfiguration: changing to NORMAL dsl configuration");
+      setupFromDSLandGHA(dsl, gha, N_CHAN_MAX, N_FIR, audio_settings);  break;
+    case (DSL_FULLON):
+      myTympan.println("incrementDSLConfiguration: changing to FULL-ON dsl configuration");
+      setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN_MAX, N_FIR, audio_settings); break;
   }
 }
 

@@ -163,75 +163,6 @@ void setupTympanHardware(void) {
 int current_dsl_config = DSL_NORMAL; //used to select one of the configurations above for startup
 float overall_cal_dBSPL_at0dBFS; //will be set later
 
-void setupAudioProcessing(void) {
-  //make all of the audio connections
-  makeAudioConnections();
-
-  //set the DC-blocking higpass filter cutoff
-  preFilter.setHighpass(0,40.0);
-
-  //setup processing based on the DSL and GHA prescriptions
-  if (current_dsl_config == DSL_NORMAL) {
-    setupFromDSLandGHAandAFC(dsl, gha, afc, N_CHAN_MAX, audio_settings);
-  } else if (current_dsl_config == DSL_FULLON) {
-    setupFromDSLandGHAandAFC(dsl_fullon, gha_fullon, afc_fullon, N_CHAN_MAX, audio_settings);
-  }
-}
-
-void setupFromDSLandGHAandAFC(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
-     const BTNRH_WDRC::CHA_AFC &this_afc, const int n_chan_max, const AudioSettings_F32 &settings)
-{
-  //int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
-  N_CHAN = max(1,min(n_chan_max, this_dsl.nchannel));
-
-  // //compute the per-channel filter coefficients
-  //AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
-
-  //give the pre-computed coefficients to the IIR filters
-  for (int i=0; i< n_chan_max; i++) {
-    if (i < N_CHAN) {
-      bpFilt[i].setFilterCoeff_Matlab_sos(&(all_matlab_sos[i][0]),SOS_N_BIQUADS_PER_FILTER);   //from filter_coeff_sos.h.  Also calls begin().
-    } else {
-      bpFilt[i].end();
-    }
-  }
-
-  //setup the per-channel delays
-  for (int i=0; i<n_chan_max; i++) { 
-    postFiltDelay[i].setSampleRate_Hz(audio_settings.sample_rate_Hz);
-    if (i < N_CHAN) {
-      postFiltDelay[i].delay(0,all_matlab_sos_delay_msec[i]);  //from filter_coeff_sos.h.  milliseconds!!!
-    } else {
-      postFiltDelay[i].delay(0,0);  //from filter_coeff_sos.h.  milliseconds!!!
-    }
-  }
-
-  //setup the AFC
-  feedbackCancel.setParams(this_afc);
-
-  //setup all of the per-channel compressors
-  configurePerBandWDRCs(N_CHAN, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
-
-  //setup the broad band compressor (limiter)
-  configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, vol_knob_gain_dB, compBroadband);
-
-  //overwrite the one-point calibration based on the dsl data structure
-  overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
-
-}
-
-void incrementDSLConfiguration(void) {
-  current_dsl_config++;
-  if (current_dsl_config==2) current_dsl_config=0;
-  switch (current_dsl_config) {
-    case (DSL_NORMAL):
-      myTympan.println("incrementDSLConfiguration: changing to NORMAL dsl configuration");
-      setupFromDSLandGHAandAFC(dsl, gha, afc, N_CHAN_MAX, audio_settings);  break;
-    case (DSL_FULLON):
-      myTympan.println("incrementDSLConfiguration: changing to FULL-ON dsl configuration");
-      setupFromDSLandGHAandAFC(dsl_fullon, gha_fullon, afc_fullon, N_CHAN_MAX, audio_settings); break;
-  }
-}
 
 void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &this_gha,
       float vol_knob_gain_dB, AudioEffectCompWDRC_F32 &WDRC)
@@ -297,6 +228,78 @@ void configurePerBandWDRCs(int nchan, float fs_Hz,
     WDRCs[i].setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
   }
 }
+
+void setupFromDSLandGHAandAFC(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
+     const BTNRH_WDRC::CHA_AFC &this_afc, const int n_chan_max, const AudioSettings_F32 &settings)
+{
+  //int n_chan = n_chan_max;  //maybe change this to be the value in the DSL itself.  other logic would need to change, too.
+  N_CHAN = max(1,min(n_chan_max, this_dsl.nchannel));
+
+  // //compute the per-channel filter coefficients
+  //AudioConfigFIRFilterBank_F32 makeFIRcoeffs(n_chan, n_fir, settings.sample_rate_Hz, (float *)this_dsl.cross_freq, (float *)firCoeff);
+
+  //give the pre-computed coefficients to the IIR filters
+  for (int i=0; i< n_chan_max; i++) {
+    if (i < N_CHAN) {
+      bpFilt[i].setFilterCoeff_Matlab_sos(&(all_matlab_sos[i][0]),SOS_N_BIQUADS_PER_FILTER);   //from filter_coeff_sos.h.  Also calls begin().
+    } else {
+      bpFilt[i].end();
+    }
+  }
+
+  //setup the per-channel delays
+  for (int i=0; i<n_chan_max; i++) { 
+    postFiltDelay[i].setSampleRate_Hz(audio_settings.sample_rate_Hz);
+    if (i < N_CHAN) {
+      postFiltDelay[i].delay(0,all_matlab_sos_delay_msec[i]);  //from filter_coeff_sos.h.  milliseconds!!!
+    } else {
+      postFiltDelay[i].delay(0,0);  //from filter_coeff_sos.h.  milliseconds!!!
+    }
+  }
+
+  //setup the AFC
+  feedbackCancel.setParams(this_afc);
+
+  //setup all of the per-channel compressors
+  configurePerBandWDRCs(N_CHAN, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
+
+  //setup the broad band compressor (limiter)
+  configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, vol_knob_gain_dB, compBroadband);
+
+  //overwrite the one-point calibration based on the dsl data structure
+  overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
+
+}
+
+
+void setupAudioProcessing(void) {
+  //make all of the audio connections
+  makeAudioConnections();
+
+  //set the DC-blocking higpass filter cutoff
+  preFilter.setHighpass(0,40.0);
+
+  //setup processing based on the DSL and GHA prescriptions
+  if (current_dsl_config == DSL_NORMAL) {
+    setupFromDSLandGHAandAFC(dsl, gha, afc, N_CHAN_MAX, audio_settings);
+  } else if (current_dsl_config == DSL_FULLON) {
+    setupFromDSLandGHAandAFC(dsl_fullon, gha_fullon, afc_fullon, N_CHAN_MAX, audio_settings);
+  }
+}
+
+void incrementDSLConfiguration(void) {
+  current_dsl_config++;
+  if (current_dsl_config==2) current_dsl_config=0;
+  switch (current_dsl_config) {
+    case (DSL_NORMAL):
+      myTympan.println("incrementDSLConfiguration: changing to NORMAL dsl configuration");
+      setupFromDSLandGHAandAFC(dsl, gha, afc, N_CHAN_MAX, audio_settings);  break;
+    case (DSL_FULLON):
+      myTympan.println("incrementDSLConfiguration: changing to FULL-ON dsl configuration");
+      setupFromDSLandGHAandAFC(dsl_fullon, gha_fullon, afc_fullon, N_CHAN_MAX, audio_settings); break;
+  }
+}
+
 
 // ///////////////// Main setup() and loop() as required for all Arduino programs
 
