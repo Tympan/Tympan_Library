@@ -22,7 +22,6 @@
 //Use test tone as input (set to 1)?  Or, use live audio (set to zero)
 #define USE_TEST_TONE_INPUT 0
 
-
 // Include all the of the needed libraries
 #include <Tympan_Library.h>
 
@@ -38,12 +37,12 @@ AudioInputI2S_F32           i2s_in(audio_settings);          //Digital audio *fr
 AudioOutputI2S_F32          i2s_out(audio_settings);        //Digital audio *to* the Teensy Audio Board DAC.  Expects Int16.  Stereo
 
 //create audio objects for the algorithm
-AudioEffectGain_F32     preGain;
-#define N_CHAN 8        //number of channels to use for multi-band compression
-AudioFilterFIR_F32      firFilt[N_CHAN];  //here are the filters to break up the audio into multipel bands
+#define N_CHAN 8         //number of channels to use for multi-band compression
+AudioEffectGain_F32      preGain;
+AudioFilterFIR_F32       firFilt[N_CHAN];  //here are the filters to break up the audio into multipel bands
 AudioEffectCompWDRC_F32  compPerBand[N_CHAN]; //here are the per-band compressors
 AudioEffectCompWDRC_F32  compBroadband; //here is the broad band compressors
-AudioMixer8_F32         mixer1; //mixer to reconstruct the broadband audio
+AudioMixer8_F32          mixer1; //mixer to reconstruct the broadband audio
 
 //choose the input audio source
 #if (USE_TEST_TONE_INPUT == 1)
@@ -83,7 +82,6 @@ AudioConnection_F32     patchCord36(compPerBand[5], 0, mixer1, 5);
 AudioConnection_F32     patchCord37(compPerBand[6], 0, mixer1, 6);
 AudioConnection_F32     patchCord38(compPerBand[7], 0, mixer1, 7);
 
-
 //connect the output of the mixers to the final broadband compressor
 AudioConnection_F32     patchCord43(mixer1, 0, compBroadband, 0);
 
@@ -118,6 +116,63 @@ void setupTympanHardware(void) {
   myTympan.setInputGain_dB(15.f); // set MICPGA volume, 0-47.5dB in 0.5dB setps
 }
 
+
+static void configureBroadbandWDRCs(float fs_Hz, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRC) {
+  //logic and values are extracted from from CHAPRO repo agc_prepare.c...the part setting CHA_DVAR
+
+  //extract the parameters
+  float atk = (float)gha->attack;  //milliseconds!
+  float rel = (float)gha->release; //milliseconds!
+  //float fs = gha->fs;
+  float fs = (float)fs_Hz; // WEA override...not taken from gha
+  float maxdB = (float) gha->maxdB;
+  float exp_cr = (float)gha->exp_cr;
+  float exp_end_knee = (float)gha->exp_end_knee;
+  float tk = (float) gha->tk;
+  float comp_ratio = (float) gha->cr;
+  float tkgain = (float) gha->tkgain;
+  float bolt = (float) gha->bolt;
+
+  //set the compressor's parameters
+  WDRC->setSampleRate_Hz(fs);
+  WDRC->setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
+
+}
+
+static void configurePerBandWDRCs(int nchan, float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 WDRCs[]) {
+  if (nchan > dsl->nchannel) {
+    myTympan.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
+    myTympan.print(F("    : nchan = ")); myTympan.println(nchan);
+    myTympan.print(F("    : dsl.nchannel = ")); myTympan.println(dsl->nchannel);
+  }
+
+  //now, loop over each channel
+  for (int i=0; i < nchan; i++) {
+
+    //logic and values are extracted from from CHAPRO repo agc_prepare.c
+    float atk = (float)dsl->attack;   //milliseconds!
+    float rel = (float)dsl->release;  //milliseconds!
+    float fs = (float) fs_Hz; // WEA override
+    float maxdB = (float) dsl->maxdB;
+    float exp_cr = (float) dsl->exp_cr[i];
+    float exp_end_knee = (float) dsl->exp_end_knee[i];    
+    float tk = (float) dsl->tk[i];
+    float comp_ratio = (float) dsl->cr[i];
+    float tkgain = (float) dsl->tkgain[i];
+    float bolt = (float) dsl->bolt[i];
+
+    // adjust BOLT
+    float cltk = (float)gha->tk;
+    if (bolt > cltk) bolt = cltk;
+    if (tkgain < 0) bolt = bolt + tkgain;
+
+    //set the compressor's parameters
+    WDRCs[i].setSampleRate_Hz(fs);
+    WDRCs[i].setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
+    
+  }
+}
+
 //define functions to setup the audio processing parameters
 #define N_FIR 96
 float firCoeff[N_CHAN][N_FIR];
@@ -134,6 +189,15 @@ void setupAudioProcessing(void) {
   configureBroadbandWDRCs(audio_settings.sample_rate_Hz, &gha, &compBroadband);
   configurePerBandWDRCs(N_CHAN, audio_settings.sample_rate_Hz, &dsl, &gha, compPerBand);
 }
+
+
+//static void configureMultiBandWDRCasGHA(float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha,
+//    int nBB, AudioEffectCompWDRC_F32 *broadbandWDRCs,
+//    int nchan, AudioEffectCompWDRC_F32 *perBandWDRCs) {
+//
+//  configureBroadbandWDRCs(nBB, fs_Hz, gha, broadbandWDRCs);
+//  configurePerBandWDRCs(nchan, fs_Hz, dsl, gha, perBandWDRCs);
+//}
 
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
@@ -241,68 +305,3 @@ void printCompressorState(unsigned long curTime_millis, unsigned long updatePeri
       lastUpdate_millis = curTime_millis; //we will use this value the next time around.
     }
 };
-
-
-static void configureBroadbandWDRCs(float fs_Hz, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 *WDRC) {
-  //logic and values are extracted from from CHAPRO repo agc_prepare.c...the part setting CHA_DVAR
-
-  //extract the parameters
-  float atk = (float)gha->attack;  //milliseconds!
-  float rel = (float)gha->release; //milliseconds!
-  //float fs = gha->fs;
-  float fs = (float)fs_Hz; // WEA override...not taken from gha
-  float maxdB = (float) gha->maxdB;
-  float exp_cr = (float)gha->exp_cr;
-  float exp_end_knee = (float)gha->exp_end_knee;
-  float tk = (float) gha->tk;
-  float comp_ratio = (float) gha->cr;
-  float tkgain = (float) gha->tkgain;
-  float bolt = (float) gha->bolt;
-
-  //set the compressor's parameters
-  WDRC->setSampleRate_Hz(fs);
-  WDRC->setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
-
-}
-
-static void configurePerBandWDRCs(int nchan, float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha, AudioEffectCompWDRC_F32 WDRCs[]) {
-  if (nchan > dsl->nchannel) {
-    myTympan.println(F("configureWDRC.configure: *** ERROR ***: nchan > dsl.nchannel"));
-    myTympan.print(F("    : nchan = ")); myTympan.println(nchan);
-    myTympan.print(F("    : dsl.nchannel = ")); myTympan.println(dsl->nchannel);
-  }
-
-  //now, loop over each channel
-  for (int i=0; i < nchan; i++) {
-
-    //logic and values are extracted from from CHAPRO repo agc_prepare.c
-    float atk = (float)dsl->attack;   //milliseconds!
-    float rel = (float)dsl->release;  //milliseconds!
-    float fs = (float) fs_Hz; // WEA override
-    float maxdB = (float) dsl->maxdB;
-    float exp_cr = (float) dsl->exp_cr[i];
-    float exp_end_knee = (float) dsl->exp_end_knee[i];    
-    float tk = (float) dsl->tk[i];
-    float comp_ratio = (float) dsl->cr[i];
-    float tkgain = (float) dsl->tkgain[i];
-    float bolt = (float) dsl->bolt[i];
-
-    // adjust BOLT
-    float cltk = (float)gha->tk;
-    if (bolt > cltk) bolt = cltk;
-    if (tkgain < 0) bolt = bolt + tkgain;
-
-    //set the compressor's parameters
-    WDRCs[i].setSampleRate_Hz(fs);
-    WDRCs[i].setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
-    
-  }
-}
-
-//static void configureMultiBandWDRCasGHA(float fs_Hz, BTNRH_WDRC::CHA_DSL *dsl, BTNRH_WDRC::CHA_WDRC *gha,
-//    int nBB, AudioEffectCompWDRC_F32 *broadbandWDRCs,
-//    int nchan, AudioEffectCompWDRC_F32 *perBandWDRCs) {
-//
-//  configureBroadbandWDRCs(nBB, fs_Hz, gha, broadbandWDRCs);
-//  configurePerBandWDRCs(nchan, fs_Hz, dsl, gha, perBandWDRCs);
-//}
