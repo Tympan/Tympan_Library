@@ -20,6 +20,7 @@ AudioCalcLevel_F32	KEYWORD1
 
 AudioControlAIC3206	KEYWORD1
 inputSelect		KEYWORD2
+outputSelect	KEYWORD2
 setMicBias		KEYWORD2
 volume			KEYWORD2
 volume_dB		KEYWORD2
@@ -134,9 +135,3 @@ setAmberLED		KEYWORD2
 setRedLED		KEYWORD2
 readPotentiometer	KEYWORD2
 getTympanRev		KEYWORD2
-
-
-
-
-
-
