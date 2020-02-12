@@ -5,7 +5,7 @@
  * Purpose: Demonstrate basic audio pass-thru from the Bluetooth module
  *
  * Uses Teensy Audio default sample rate of 44100 Hz with Block Size of 128
- * Requires Tympan Rev D
+ * Bluetooth Audio Requires Tympan Rev D
  *
  * License: MIT License, Use At Your Own Risk
  *

@@ -14,7 +14,7 @@ AudioMemoryUsageMaxReset_F32	KEYWORD1
 AudioConnection_F32	KEYWORD1
 
 AudioCalcGainWDRC_F32	KEYWORD1
-AudioCalcGainWDRC2_F32	KEYWORD1
+AudioCalcGainDecWDRC_F32	KEYWORD1
 AudioCalcEnvelope_F32	KEYWORD1
 AudioCalcLevel_F32	KEYWORD1
 
@@ -37,13 +37,15 @@ AudioConvert_F32toI16	KEYWORD1
 
 AudioEffectCompressor_F32	KEYWORD1
 AudioEffectCompWDRC_F32	KEYWORD1
-AudioEffectCompWDRC2_F32	KEYWORD1
+AudioEffectCompDecWDRC_F32	KEYWORD1
 
 AudioEffectDelay_F32	KEYWORD1
 
 AudioEffectGain_F32	KEYWORD1
 setGain_dB		KEYWORD2
 
+AudioEffectFeedbackCancel_F32	KEYWORD1
+AudioEffectFeedbackCancel_LoopBack_F32	KEYWORD1
 AudioEffectFreqShiftFD_F32	KEYWORD1
 
 
@@ -77,6 +79,12 @@ AudioRecordQueue_F32	KEYWORD1
 AudioSettings_F32	KEYWORD1
 sample_rate_Hz		KEYWORD2
 audio_block_samples	KEYWORD2
+
+AudioSDPlayer_F32	KEYWORD1
+begin			KEYWORD2
+play			KEYWORD2
+stop			KEYWORD2
+isPlaying		KEYWORD2
 
 AudioSDWriter_F32	KEYWORD1
 startRecording		KEYWORD2

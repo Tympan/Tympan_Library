@@ -1,5 +1,5 @@
 /*
-   SerialControlledSDWriter
+   SDWriting_02_RemoteControlled
    
    Created: Chip Audette, OpenAudio, May 2019
    Purpose: Write audio to SD based on serial commands
@@ -29,7 +29,7 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Define the overall setup
-String overall_name = String("Tympan: SD Audio Writer Tester");
+String overall_name = String("Tympan: SDWriting_02_RemoteControlled");
 float default_input_gain_dB = 5.0f; //gain on the microphone
 float input_gain_dB = default_input_gain_dB;
 #define MAX_AUDIO_MEM 60
@@ -56,7 +56,6 @@ bool enable_printCPUandMemory = false;
 void togglePrintMemoryAndCPU(void) {  enable_printCPUandMemory = !enable_printCPUandMemory; }; 
 void setPrintMemoryAndCPU(bool state) { enable_printCPUandMemory = state;};
 SerialManager serialManager;
-#define BOTH_SERIAL myTympan
 
 //keep track of state
 State_t myState;
@@ -102,9 +101,9 @@ void setConfiguration(int config) {
 void setup() {
   delay(100);
   myTympan.beginBothSerial(); delay(1000);
-  BOTH_SERIAL.print(overall_name); BOTH_SERIAL.println(": setup():...");
-  BOTH_SERIAL.print("Sample Rate (Hz): "); BOTH_SERIAL.println(audio_settings.sample_rate_Hz);
-  BOTH_SERIAL.print("Audio Block Size (samples): "); BOTH_SERIAL.println(audio_settings.audio_block_samples);
+  myTympan.print(overall_name); myTympan.println(": setup():...");
+  myTympan.print("Sample Rate (Hz): "); myTympan.println(audio_settings.sample_rate_Hz);
+  myTympan.print("Audio Block Size (samples): "); myTympan.println(audio_settings.audio_block_samples);
 
   //allocate the dynamically re-allocatable audio memory
   AudioMemory_F32(MAX_AUDIO_MEM, audio_settings); 
@@ -114,7 +113,7 @@ void setup() {
   myTympan.volume_dB(0.0);  // output amp: -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
 
   //Configure for Tympan PCB mics
-  BOTH_SERIAL.println("Setup: Using Mic Jack with Mic Bias.");
+  myTympan.println("Setup: Using Mic Jack with Mic Bias.");
   setConfiguration(INPUT_MICJACK); //this will also unmute the system
 
   //prepare the SD writer for the format that we want and any error statements
@@ -123,7 +122,7 @@ void setup() {
   audioSDWriter.setNumWriteChannels(2);       //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
 
   //End of setup
-  BOTH_SERIAL.println("Setup: complete."); serialManager.printHelp();
+  myTympan.println("Setup: complete."); serialManager.printHelp();
 
 } //end setup()
 
@@ -138,7 +137,7 @@ void loop() {
   serviceSD();
 
   //update the memory and CPU usage...if enough time has passed
-  if (enable_printCPUandMemory) printCPUandMemory(millis());
+  if (enable_printCPUandMemory) myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
   //service the LEDs
   serviceLEDs();
@@ -148,38 +147,6 @@ void loop() {
 
 
 // ///////////////// Servicing routines
-
-void printCPUandMemory(unsigned long curTime_millis) {
-  static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
-  static unsigned long lastUpdate_millis = 0;
-
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    printCPUandMemoryMessage();
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }
-}
-
-extern "C" char* sbrk(int incr);
-int FreeRam() {
-  char top; //this new variable is, in effect, the mem location of the edge of the heap
-  return &top - reinterpret_cast<char*>(sbrk(0));
-}
-void printCPUandMemoryMessage(void) {
-  BOTH_SERIAL.print("CPU Cur/Pk: ");
-  BOTH_SERIAL.print(audio_settings.processorUsage(), 1);
-  BOTH_SERIAL.print("%/");
-  BOTH_SERIAL.print(audio_settings.processorUsageMax(), 1);
-  BOTH_SERIAL.print("%, ");
-  BOTH_SERIAL.print("MEM Cur/Pk: ");
-  BOTH_SERIAL.print(AudioMemoryUsage_F32());
-  BOTH_SERIAL.print("/");
-  BOTH_SERIAL.print(AudioMemoryUsageMax_F32());
-  BOTH_SERIAL.print(", FreeRAM(B) ");
-  BOTH_SERIAL.print(FreeRam());
-  BOTH_SERIAL.println();
-}
 
 
 void serviceLEDs(void) {
@@ -267,8 +234,8 @@ void serviceSD(void) {
       if (i2s_in.get_isOutOfMemory()) {
         float approx_time_sec = ((float)(millis()-audioSDWriter.getStartTimeMillis()))/1000.0;
         if (approx_time_sec > 0.1) {
-          BOTH_SERIAL.print("SD Write Warning: there was a hiccup in the writing.");//  Approx Time (sec): ");
-          BOTH_SERIAL.println(approx_time_sec );
+          myTympan.print("SD Write Warning: there was a hiccup in the writing.");//  Approx Time (sec): ");
+          myTympan.println(approx_time_sec );
         }
       }
     }
@@ -281,11 +248,9 @@ void serviceSD(void) {
 void incrementInputGain(float increment_dB) {
   input_gain_dB += increment_dB;
   if (input_gain_dB < 0.0) {
-    BOTH_SERIAL.println("Error: cannot set input gain less than 0 dB.");
-    BOTH_SERIAL.println("Setting input gain to 0 dB.");
+    myTympan.println("Error: cannot set input gain less than 0 dB.");
+    myTympan.println("Setting input gain to 0 dB.");
     input_gain_dB = 0.0;
   }
   myTympan.setInputGain_dB(input_gain_dB);
 }
-
-
