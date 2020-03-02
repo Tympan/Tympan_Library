@@ -73,12 +73,17 @@ public:
 	}
 	bool enable(void);
 	bool disable(void);
-	bool outputSelect(int n);
+	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster. 
 	bool volume(float n);
-	float volume_dB(float n);
+	static float applyLimitsOnVolumeSetting(float vol_dB);
+	float volume_dB(float vol_dB);  //set both channels to the same volume
+	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels, but to their own values
+	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
 	bool inputSelect(int n);
-	float setInputGain_dB(float n);
+	float applyLimitsOnInputGainSetting(float gain_dB);  
+	float setInputGain_dB(float gain_dB);   //set both channels to the same gain
+	float setInputGain_dB(float gain_dB, int chan); //set each channel seperately (0 = left; 1 = right)
 	bool setMicBias(int n);
 	bool updateInputBasedOnMicDetect(int setting = TYMPAN_INPUT_JACK_AS_MIC);
 	bool enableMicDetect(bool);
@@ -97,6 +102,7 @@ public:
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
+	void muteLineOut(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
 	bool enableDigitalMicInputs(bool desired_state);
 	
@@ -111,6 +117,7 @@ protected:
   
   bool aic_writeAddress(uint16_t address, uint8_t val);
   bool aic_goToPage(uint8_t page);
+  bool aic_writeRegister(uint8_t reg, uint8_t val);  //assumes page has already been set
   int prevMicDetVal = -1;
   int resetPinAIC = AIC3206_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
   float HP_cutoff_Hz = 0.0f;
@@ -123,7 +130,7 @@ protected:
   void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
-	
+
   
 };
 

@@ -11,18 +11,15 @@ typedef AudioEffectCompWDRC_F32 GainAlgorithm_t; //change this if you change the
 //now, define the Serial Manager class
 class SerialManager {
   public:
-    SerialManager(Stream *_s, int n, GainAlgorithm_t *gain_algs, 
+    SerialManager(int n, GainAlgorithm_t *gain_algs, 
           AudioControlTestAmpSweep_F32 &_ampSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester,
           AudioControlTestFreqSweep_F32 &_freqSweepTester_FIR)
-      : gain_algorithms(gain_algs), 
+      : N_CHAN(n), 
+        gain_algorithms(gain_algs), 
         ampSweepTester(_ampSweepTester), 
         freqSweepTester(_freqSweepTester),
-        freqSweepTester_FIR(_freqSweepTester_FIR)  
-        {
-          s = _s;
-          N_CHAN = n;
-        };
+        freqSweepTester_FIR(_freqSweepTester_FIR) {};
       
     void respondToByte(char c);
     void printHelp(void);
@@ -32,7 +29,6 @@ class SerialManager {
     float channelGainIncrement_dB = 2.5f;  
     int N_CHAN;
   private:
-    Stream *s;
     GainAlgorithm_t *gain_algorithms;  //point to first element in array of expanders
     AudioControlTestAmpSweep_F32 &ampSweepTester;
     AudioControlTestFreqSweep_F32 &freqSweepTester;
@@ -40,28 +36,27 @@ class SerialManager {
 };
 
 void SerialManager::printHelp(void) {
-  s->println();
-  s->println("SerialManager Help: Available Commands:");
-  s->println("   h: Print this help");
-  s->println("   g: Print the gain settings of the device.");
-  s->println("   C: Toggle printing of CPU and Memory usage");
-  s->println("   l: Toggle printing of pre-gain per-channel signal levels (dBFS)");
-  s->println("   L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')");
-  s->println("   A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement.");
-  s->println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
-  s->println("   f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
-  s->print("   k: Increase the gain of all channels (ie, knob gain) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   K: Decrease the gain of all channels (ie, knob gain) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   1,2,3,4,5,6,7,8: Increase linear gain of given channel (1-8) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->print("   !,@,#,$,%,^,&,*: Decrease linear gain of given channel (1-8) by "); s->print(channelGainIncrement_dB); s->println(" dB");
-  s->println("   D: Toggle between DSL configurations: NORMAL vs FULL-ON");
-  s->println();
+  Serial.println();
+  Serial.println("SerialManager Help: Available Commands:");
+  Serial.println("   h: Print this help");
+  Serial.println("   g: Print the gain settings of the device.");
+  Serial.println("   C: Toggle printing of CPU and Memory usage");
+  Serial.println("   l: Toggle printing of pre-gain per-channel signal levels (dBFS)");
+  Serial.println("   L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')");
+  Serial.println("   A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement.");
+  Serial.println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
+  Serial.println("   f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
+  Serial.print("   k: Increase the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.print("   K: Decrease the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.print("   1,2,3,4,5,6,7,8: Increase linear gain of given channel (1-8) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.print("   !,@,#,$,%,^,&,*: Decrease linear gain of given channel (1-8) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.println("   D: Toggle between DSL configurations: NORMAL vs FULL-ON");
+  Serial.println();
 }
 
 //functions in the main sketch that I want to call from here
 extern void incrementKnobGain(float);
 extern void printGainSettings(void);
-extern void printGainSettings(Stream *);
 extern void togglePrintMemoryAndCPU(void);
 extern void togglePrintAveSignalLevels(bool);
 extern void incrementDSLConfiguration(Stream *);
@@ -117,17 +112,17 @@ void SerialManager::respondToByte(char c) {
         ampSweepTester.setStepPattern(start_amp_dB, end_amp_dB, step_amp_dB);
         ampSweepTester.setTargetDurPerStep_sec(1.0);
       }
-      s->println("Command Received: starting test using amplitude sweep...");
+      Serial.println("Command Received: starting test using amplitude sweep...");
       ampSweepTester.begin();
       while (!ampSweepTester.available()) {delay(100);};
-      s->println("Press 'h' for help...");
+      Serial.println("Press 'h' for help...");
       break;
     case 'C': case 'c':
-      s->println("Command Received: toggle printing of memory and CPU usage.");
+      Serial.println("Command Received: toggle printing of memory and CPU usage.");
       togglePrintMemoryAndCPU(); break;
     case 'D':
-      s->println("Command Received: changing DSL configuration...you will lose any custom gain values...");
-      incrementDSLConfiguration(s);
+      Serial.println("Command Received: changing DSL configuration...you will lose any custom gain values...");
+      incrementDSLConfiguration(&Serial);
       break;
     case 'F':
       //frequency sweep test...end-to-end
@@ -137,10 +132,10 @@ void SerialManager::respondToByte(char c) {
         freqSweepTester.setStepPattern(start_freq_Hz, end_freq_Hz, step_octave);
         freqSweepTester.setTargetDurPerStep_sec(1.0);
       }
-      s->println("Command Received: starting test using frequency sweep, end-to-end assessment...");
+      Serial.println("Command Received: starting test using frequency sweep, end-to-end assessment...");
       freqSweepTester.begin();
       while (!freqSweepTester.available()) {delay(100);};
-      s->println("Press 'h' for help...");
+      Serial.println("Press 'h' for help...");
       break; 
     case 'f':
       //frequency sweep test
@@ -150,17 +145,17 @@ void SerialManager::respondToByte(char c) {
         freqSweepTester_FIR.setStepPattern(start_freq_Hz, end_freq_Hz, step_octave);
         freqSweepTester_FIR.setTargetDurPerStep_sec(0.5);
       }
-      s->println("Command Received: starting test using frequency sweep.  Filterbank assessment...");
+      Serial.println("Command Received: starting test using frequency sweep.  Filterbank assessment...");
       freqSweepTester_FIR.begin();
       while (!freqSweepTester_FIR.available()) {delay(100);};
-      s->println("Press 'h' for help...");
+      Serial.println("Press 'h' for help...");
       break;      
     case 'l':
-      s->println("Command Received: toggle printing of per-band ave signal levels.");
+      Serial.println("Command Received: toggle printing of per-band ave signal levels.");
       { bool as_dBSPL = false; togglePrintAveSignalLevels(as_dBSPL); }
       break;
     case 'L':
-      s->println("Command Received: toggle printing of per-band ave signal levels.");
+      Serial.println("Command Received: toggle printing of per-band ave signal levels.");
       { bool as_dBSPL = true; togglePrintAveSignalLevels(as_dBSPL); }
       break;
   }
@@ -169,8 +164,8 @@ void SerialManager::respondToByte(char c) {
 void SerialManager::incrementChannelGain(int chan, float change_dB) {
   if (chan < N_CHAN) {
     gain_algorithms[chan].incrementGain_dB(change_dB);
-    //s->print("Incrementing gain on channel ");s->print(chan);
-    //s->print(" by "); s->print(change_dB); s->println(" dB");
+    //Serial.print("Incrementing gain on channel ");Serial.print(chan);
+    //Serial.print(" by "); Serial.print(change_dB); Serial.println(" dB");
     printGainSettings();  //in main sketch file
   }
 }

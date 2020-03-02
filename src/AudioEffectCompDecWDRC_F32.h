@@ -1,7 +1,10 @@
 /*
- * AudioCalcGainWDRC_F32: Wide Dynamic Rnage Compressor
+ * AudioCalcGainDecWDRC_F32: Wide Dynamic Rnage Compressor
+ *     Note: the calculations are decimated, meaning that the calcs are only performed
+ *     every X samples.  This saves significant CPU.
  * 
- * Created: Chip Audette (OpenAudio) Feb 2017
+ * Created: Chip Audette (OpenAudio) Jan2019
+ * Dervied from AudioCalcGainWDRC_F32
  * Derived From: WDRC_circuit from CHAPRO from BTNRC: https://github.com/BTNRH/chapro
  *     As of Feb 2017, CHAPRO license is listed as "Creative Commons?"
  * 
@@ -9,8 +12,8 @@
  * 
  */
 
-#ifndef _AudioEffectCompWDRC_F32
-#define _AudioEffectCompWDRC_F32
+#ifndef _AudioEffectCompDecWDRC_F32
+#define _AudioEffectCompDecWDRC_F32
 
 class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later header file, but I need this here to avoid circularity
 
@@ -18,21 +21,21 @@ class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later hea
 #include "AudioStream_F32.h"
 #include <arm_math.h>
 #include "AudioCalcEnvelope_F32.h"
-#include "AudioCalcGainWDRC_F32.h"  //has definition of CHA_WDRC
+#include "AudioCalcGainDecWDRC_F32.h"  //has definition of CHA_WDRC
 #include "BTNRH_WDRC_Types.h"
 
 
-class AudioEffectCompWDRC_F32 : public AudioStream_F32
+class AudioEffectCompDecWDRC_F32 : public AudioStream_F32
 {
 	//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
 	//GUI: shortName: CompressWDRC
   public:
-    AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+    AudioEffectCompDecWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
       setSampleRate_Hz(AUDIO_SAMPLE_RATE);
       setDefaultValues();
     }
 
-    AudioEffectCompWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+    AudioEffectCompDecWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
       setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
@@ -139,11 +142,23 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       calcGain.setParams(maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
     }
 
-    void setSampleRate_Hz(const float _fs_Hz) {
+    float setSampleRate_Hz(const float _fs_Hz) {
       //pass this data on to its components that care
       given_sample_rate_Hz = _fs_Hz;
       calcEnvelope.setSampleRate_Hz(_fs_Hz);
+	  return given_sample_rate_Hz;
     }
+	
+	//set the decimation factor for internal calculations...a factor of 1 is no decimation.  2 is half the number of points.  3 is one-third.  Etc.
+	int setDecimationFactor(int dec) {
+		dec = max(1,dec);
+		dec = min(dec,16);
+		decimate_factor = dec;
+		
+		decimate_factor = calcGain.setDecimationFactor(decimate_factor);
+		//calcEnvelope.setSampleRate_Hz(given_sample_rate_Hz / ((float)decimate_factor));
+		return decimate_factor;
+	}
 
     float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 
@@ -178,11 +193,12 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float getRelease_msec(void) { return calcEnvelope.getRelease_msec(); }
 	
     AudioCalcEnvelope_F32 calcEnvelope;
-    AudioCalcGainWDRC_F32 calcGain;
+    AudioCalcGainDecWDRC_F32 calcGain;
     
   private:
     audio_block_f32_t *inputQueueArray[1];
     float given_sample_rate_Hz;
+	int decimate_factor = 1;  //decimate_factor = 1 is no decimation
 };
 
 

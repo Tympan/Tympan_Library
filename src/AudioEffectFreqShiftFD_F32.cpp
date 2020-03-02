@@ -17,6 +17,7 @@ void AudioEffectFreqShiftFD_F32::update(void)
 
 	//convert to frequency domain
 	myFFT.execute(in_audio_block, complex_2N_buffer); //FFT is in complex_2N_buffer, interleaved real, imaginary, real, imaginary, etc
+	unsigned long incoming_id = in_audio_block->id;
 	AudioStream_F32::release(in_audio_block);  //We just passed ownership of in_audio_block to myFFT, so we can release it here as we won't use it here again.
 
 	// ////////////// Do your processing here!!!
@@ -123,7 +124,9 @@ void AudioEffectFreqShiftFD_F32::update(void)
 
 	//call the IFFT
 	audio_block_f32_t *out_audio_block = myIFFT.execute(complex_2N_buffer); //out_block is pre-allocated in here.
-
+	
+	//update the block number to match the incoming one
+	out_audio_block->id = incoming_id;
 
 	//send the returned audio block.  Don't issue the release command here because myIFFT will re-use it
 	AudioStream_F32::transmit(out_audio_block); //don't release this buffer because myIFFT re-uses it within its own code
