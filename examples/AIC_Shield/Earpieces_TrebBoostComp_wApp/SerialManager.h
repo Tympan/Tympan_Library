@@ -1,14 +1,13 @@
-    
 #ifndef _SerialManager_h
 #define _SerialManager_h
 
 #include <Tympan_Library.h>
 
-
 #define MAX_DATASTREAM_LENGTH 1024
 #define DATASTREAM_START_CHAR (char)0x02
 #define DATASTREAM_SEPARATOR (char)0x03
 #define DATASTREAM_END_CHAR (char)0x04
+
 enum read_state_options {
   SINGLE_CHAR,
   STREAM_LENGTH,
@@ -24,12 +23,15 @@ extern State myState;
 //Extern Functions
 extern void setInputSource(int);
 extern void setInputMixer(int);
+extern void setOutputAIC(int);
 extern float incrementHPCutoffFreq_Hz(float);
 extern float incrementExpKnee_dBSPL(float);
+extern float incrementLinearGain_dB(float);
 extern float incrementCompKnee_dBSPL(float);
+extern float incrementCompRatio(float);
 extern float incrementLimiterKnee_dBSPL(float);
-extern float incrementInputGain(float);
-extern float incrementKnobGain(float);
+extern void incrementInputGain(float);
+extern void incrementKnobGain(float);
 
 
 //now, define the Serial Manager class
@@ -46,8 +48,14 @@ class SerialManager {
     void printHelp(void); 
     const float INCREMENT_INPUTGAIN_DB = 2.5f;  
     const float INCREMENT_HEADPHONE_GAIN_DB = 2.5f;  
-    float gainIncrement_dB = 2.5f;
-    float freqIncrementFactor = sqrt(2.0); //move half an octave with each step
+    float gainIncrement_dB = 2.5f;    
+    float freqIncrementFactor = powf(2.0,1.0/3.0); //move 1/3 octave with each step    
+    float compRatioIncrement = 0.25;
+    
+    int serial_read_state; // Are we reading one character at a time, or a stream?
+    char stream_data[MAX_DATASTREAM_LENGTH];
+    int stream_length;
+    int stream_chars_received;
 
     void printTympanRemoteLayout(void);
     void setFullGUIState(void);
@@ -55,38 +63,40 @@ class SerialManager {
     void setMicConfigButtons(bool disableAll= false);
     void setInputGainButtons(void);
     void setOutputGainButtons(void);
-    void setSDRecordingButtons(void);
+    void setSDRecordingButtons(void);    
+    void setOutputConfigButtons(void);
     void setButtonState(String btnId, bool newState);
     void setButtonText(String btnId, String text);
-
-    int serial_read_state; // Are we reading one character at a time, or a stream?
-    char stream_data[MAX_DATASTREAM_LENGTH];
-    int stream_length;
-    int stream_chars_received;
-
+    void setButtonText(String btnId, float val, int nplaces);
 };
 
 void SerialManager::printHelp(void) {
   myTympan.println();
   myTympan.println("SerialManager Help: Available Commands:");
   myTympan.println("  h: Print this help");
-  myTympan.println("  g: Print the gain settings of the device.");
-  myTympan.println("  c/C: Enablel/Disable printing of CPU and Memory usage");
-  myTympan.println("  w: Inputs: Use PCB Mics");
-  myTympan.println("  d: Inputs: Use PDM Mics as input");
-  myTympan.println("  W: Inputs: Use Mic on Mic Jack");
-  myTympan.println("  e: Inputs: Use LineIn on Mic Jack");
-  myTympan.println("  E: Inputs: Use BTAudio as input");
-  myTympan.println("  9/(: Mic Mix: Use front or rear mic");
-  myTympan.println("  0/): Mic Mix: Use both, inphase or inverted");
-  myTympan.print  ("  i/I: Increase/Decrease Input Gain by "); myTympan.print(INCREMENT_INPUTGAIN_DB); myTympan.println(" dB");
-  myTympan.print  ("  f/F: Raise/Lower the highpass filter cutoff frequency by "); myTympan.print((freqIncrementFactor-1.0)*100.0,0); myTympan.println("%");  
-  myTympan.print  ("  x,X: Comp: Raise/Lower Exp Knee by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
-  myTympan.print  ("  z,Z: Comp: Raise/Lower Comp Knee by ");  myTympan.print(gainIncrement_dB); myTympan.println(" dB");
-  myTympan.print  ("  l,L: Comp: Raise/Lower Lim Knee by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
-  myTympan.print  ("  k/K: Increase/Decrease Headphone Volume by "); myTympan.print(INCREMENT_HEADPHONE_GAIN_DB); myTympan.println(" dB");
+  myTympan.println("  c/C: Enablel/Disable printing of CPU and Memory usage");  
+  myTympan.println("  w: Inputs: PCB Mics");
+  myTympan.println("  d: Inputs: Digital PDM Mics");
+  //myTympan.println("  W: Inputs: Mic on Mic Jack");
+  //myTympan.println("  e: Inputs: LineIn on Mic Jack");
+//  myTympan.println("  E: Inputs: BT Audio");
+
+  myTympan.println("  -/9/(: Mic Mix: Mute, use front, or use rear mic");
+  myTympan.println("  0/): Mic Mix: Use both, inphase or inverted"); 
+
+//  myTympan.print  ("  i/I: Increase/Decrease Input Gain by "); myTympan.print(INCREMENT_INPUTGAIN_DB); myTympan.println(" dB");
+//  myTympan.print  ("  k/K: Increase/Decrease Headphone Volume by "); myTympan.print(INCREMENT_HEADPHONE_GAIN_DB); myTympan.println(" dB");
+
+//  myTympan.print  ("  f/F: Raise/Lower the highpass filter cutoff frequency by "); myTympan.print((freqIncrementFactor-1.0)*100.0,0); myTympan.println("%");  
+//  myTympan.print  ("  x,X: Comp: Raise/Lower Exp Knee by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
+//  myTympan.print  ("  a,A: Comp: Incr/Decr Linear Gain by ");  myTympan.print(gainIncrement_dB); myTympan.println(" dB");
+//  myTympan.print  ("  z,Z: Comp: Raise/Lower Comp Knee by ");  myTympan.print(gainIncrement_dB); myTympan.println(" dB");
+//  myTympan.print  ("  v,V: Comp: Raise/Lower Comp Ratio by ");  myTympan.print(compRatioIncrement); myTympan.println();
+//  myTympan.print  ("  l,L: Comp: Raise/Lower Lim Knee by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
+  myTympan.println("  u,U,o,O: Output AIC: Both, Top, Bottom, None");
+  myTympan.println("  ]: Toggle sending of data to plot");
   myTympan.println("  r,s,|: SD: begin/stop/deleteAll recording");
-  myTympan.println();
+    
 }
 
 
@@ -150,11 +160,11 @@ void SerialManager::respondToByte(char c) {
 
 //switch yard to determine the desired action
 void SerialManager::processSingleCharacter(char c) {
+  float val=0.0;
+  
   switch (c) {
     case 'h': case '?':
       printHelp(); break;
-   case 'g': case 'G':
-      myState.printGainSettings(); break;
     case 'c':
       Serial.println("Recvd: printing memory and CPU.");
       myState.flag_printCPUandMemory = true;
@@ -164,28 +174,20 @@ void SerialManager::processSingleCharacter(char c) {
       Serial.println("Recvd: stopping printing memory and CPU.");
       myState.flag_printCPUandMemory = false;
       setButtonState("cpuStart",myState.flag_printCPUandMemory);
-      break;
+      break;      
     case 'i':
       incrementInputGain(INCREMENT_INPUTGAIN_DB);
-      setInputGainButtons();
-      myState.printGainSettings();
       break;
     case 'I':  
       incrementInputGain(-INCREMENT_INPUTGAIN_DB);
-      setInputGainButtons();
-      myState.printGainSettings();  
       break;
     case 'k':
       incrementKnobGain(INCREMENT_HEADPHONE_GAIN_DB);
-      //setOutputGainButtons(); //button state is already being updated by setOutputVolume_dB()
-      myState.printGainSettings();
       break;
     case 'K':   
       incrementKnobGain(-INCREMENT_HEADPHONE_GAIN_DB);
-      //setOutputGainButtons();  //button state is already being updated by setOutputVolume_dB()
-      myState.printGainSettings();  
       break;
-    case 'w':
+   case 'w':
       myTympan.println("Received: Listen to PCB mics");
       setInputSource(State::INPUT_PCBMICS);
       setInputMixer(State::MIC_AIC0_LR);  //PCB Mics are only on the main Tympan board
@@ -215,41 +217,28 @@ void SerialManager::processSingleCharacter(char c) {
       setInputMixer(myState.analog_mic_config);
       setFullGUIState();
       break;
-    case 'f':
-      incrementHPCutoffFreq_Hz(freqIncrementFactor); break;
-    case 'F':
-      incrementHPCutoffFreq_Hz(1.0/freqIncrementFactor); break;     
-    case 'x':
-      val = incrementExpKnee_dBSPL(gainIncrement_dB);
-      setButtonText("V_expKnee",val);
-      //printCompSettings();
+    case 'r':
+      myTympan.println("Received: begin SD recording");
+      audioSDWriter.startRecording();
+      setSDRecordingButtons();
       break;
-    case 'X': 
-      val = incrementExpKnee_dBSPL(-gainIncrement_dB);
-      setButtonText("V_expKnee",val);
-      //printCompSettings();         
-    case 'z':
-      val = incrementCompKnee_dBSPL(gainIncrement_dB);
-      setButtonText("V_compKnee",val);
-      //printCompSettings();
+    case 's':
+      myTympan.println("Received: stop SD recording");
+      audioSDWriter.stopRecording();
+      setSDRecordingButtons();      
       break;
-    case 'Z': 
-      val = incrementCompKnee_dBSPL(-gainIncrement_dB);
-      setButtonText("V_compKnee",val);
-      //printCompSettings();
-      break;       
-    case 'l':
-      val = incrementLimiterKnee_dBSPL(gainIncrement_dB);
-      setButtonText("V_limKnee",val);
-      //printCompSettings();
+    case '|':
+      myTympan.println("Recieved: delete all SD recordings.");
+      audioSDWriter.deleteAllRecordings();
+      myTympan.println("Delete all SD recordings complete.");
       break;
-    case 'L': 
-      val = incrementLimiterKnee_dBSPL(-gainIncrement_dB);
-      setButtonText("V_limKnee",val);
-      //printCompSettings();
-      break;            
-       
-    case '9':
+
+  case '-':
+      myTympan.println("Received: Mute mics");
+      setInputMixer(State::MIC_MUTE);
+      setMicConfigButtons();
+      break;
+  case '9':
       myTympan.println("Received: Use front mics");
       setInputMixer(State::MIC_FRONT);
       setMicConfigButtons();
@@ -268,42 +257,89 @@ void SerialManager::processSingleCharacter(char c) {
       myTympan.println("Received: Use both mics (inverted)");
       setInputMixer(State::MIC_BOTH_INVERTED);
       setMicConfigButtons();
+      break;      
+
+   case 'f':
+      val=incrementHPCutoffFreq_Hz(freqIncrementFactor);
+      setButtonText("hp_Hz",val,0);
       break;
-     case '-':
-      myTympan.println("Received: Use Tympan Board");
-      setInputMixer(State::MIC_AIC0_LR);
-      setMicConfigButtons();
+    case 'F':
+      val=incrementHPCutoffFreq_Hz(1.0/freqIncrementFactor);
+      setButtonText("hp_Hz",val,0);
       break;
-    case '_':
-      myTympan.println("Received: Use Earpiece Board");
-      setInputMixer(State::MIC_AIC1_LR);
-      setMicConfigButtons();
+    case 'x':
+      val = incrementExpKnee_dBSPL(gainIncrement_dB);
+      setButtonText("V_expKnee",val),1;
+      //printCompSettings();
       break;
-    case '=':
-      myTympan.println("Received: Mix Both Boards");
-      setInputMixer(State::MIC_BOTHAIC_LR);
-      setMicConfigButtons();
+    case 'X': 
+      val = incrementExpKnee_dBSPL(-gainIncrement_dB);
+      setButtonText("V_expKnee",val,1);
+      //printCompSettings();   
+      break;      
+    case 'a':
+      val = incrementLinearGain_dB(gainIncrement_dB);
+      setButtonText("V_linGain",val,1);
       break;
-    case 'r':
-      myTympan.println("Received: begin SD recording");
-      audioSDWriter.startRecording();
-      setSDRecordingButtons();
+    case 'A':
+      val = incrementLinearGain_dB(-gainIncrement_dB);
+      setButtonText("V_linGain",val,1);
+      break;      
+    case 'z':
+      val = incrementCompKnee_dBSPL(gainIncrement_dB);
+      setButtonText("V_compKnee",val,1);
+      //printCompSettings();
       break;
-    case 's':
-      myTympan.println("Received: stop SD recording");
-      audioSDWriter.stopRecording();
-      setSDRecordingButtons();
+    case 'V': 
+      val = incrementCompRatio(-compRatioIncrement);
+      setButtonText("V_compRatio",val,1);
+      //printCompSettings();
+      break;    
+    case 'v':
+      val = incrementCompRatio(compRatioIncrement);
+      setButtonText("V_compRatio",val,1);
+      //printCompSettings();
       break;
-    case '|':
-      myTympan.println("Recieved: delete all SD recordings.");
-      audioSDWriter.deleteAllRecordings();
-      myTympan.println("Delete all SD recordings complete.");
+    case 'Z': 
+      val = incrementCompKnee_dBSPL(-gainIncrement_dB);
+      setButtonText("V_compKnee",val,1);
+      //printCompSettings();
+      break;           
+    case 'l':
+      val = incrementLimiterKnee_dBSPL(gainIncrement_dB);
+      setButtonText("V_limKnee",val,1);
+      //printCompSettings();
       break;
+    case 'L': 
+      val = incrementLimiterKnee_dBSPL(-gainIncrement_dB);
+      setButtonText("V_limKnee",val,1);
+      //printCompSettings();
+      break;       
+    case 'u':
+      setOutputAIC(State::OUT_BOTH);
+      setOutputConfigButtons();
+      break;
+    case 'U':
+      setOutputAIC(State::OUT_AIC1);
+      setOutputConfigButtons();
+      break;
+    case 'o':
+      setOutputAIC(State::OUT_AIC0);
+      setOutputConfigButtons();
+      break;
+    case 'O':
+      setOutputAIC(State::OUT_NONE);
+      setOutputConfigButtons();
+      break;
+    case ']':
+      myState.flag_sendPlottingData = !(myState.flag_sendPlottingData);
+      if (myState.flag_sendPlottingData) myState.flag_sendPlotLegend = true;
+      break;      
     case 'J': case 'j':
       printTympanRemoteLayout();
-      delay(100);
+      delay(20);
       setFullGUIState();
-      break;
+      break;      
   }
 }
 
@@ -318,36 +354,37 @@ void SerialManager::printTympanRemoteLayout(void) {
   char jsonConfig[] = "JSON={"
     "'icon':'creare.png',"
     "'pages':["
-      "{'title':'Input Select','cards':["
-        "{'name':'Audio Source', 'buttons':["
-                                           "{'label':'Digital: Earpieces', 'cmd': 'd', 'id':'configPDMMic', 'width':'12'},"
-                                           "{'label':'Analog: PCB Mics',  'cmd': 'w', 'id':'configPCBMic',  'width':'12'},"
-                                           "{'label':'Analog: Mic Jack (Mic)',  'cmd': 'W', 'id':'configMicJack', 'width':'12'},"
-                                           "{'label':'Analog: Mic Jack (Line)',  'cmd': 'e', 'id':'configLineJack', 'width':'12'},"
-                                           "{'label':'Analog: BT Audio', 'cmd': 'E', 'id':'configLineSE',  'width':'12'}" //don't have a trailing comma on this last one
-                                          "]},"
-        "{'name':'Digital and Analog Options','buttons':[{'label':'Swipe Right'}]}"  //don't have a trailing comma on this last one
-      "]},"
-      "{'title':'Digital Input Settings','cards':["
-        "{'name':'Digital Earpiece Mics','buttons':[{'label': 'Front', 'cmd': '9', 'id':'micsFront', 'width':'6'},{'label': 'Rear', 'cmd': '(', 'id':'micsRear', 'width':'6'}, {'label': 'Both','cmd':'0', 'id':'micsBoth', 'width':'12'}, {'label': 'Both (Inverted)','cmd':')','id':'micsBothInv', 'width':'12'}]},"
-        "{'name':'Output Gain',    'buttons':[{'label':'-', 'cmd':'K', 'width':'4'},{'id':'outGain', 'label':'0', 'width':'4'},{'label':'+', 'cmd':'k', 'width':'4'}]}"//don't have a trailing comma on this last one
-      "]},"
-      "{'title':'Analog Input Settings','cards':["
-        "{'name':'Analog Input Source','buttons':[{'label': 'Tympan Board', 'cmd': '-', 'id':'micsAIC0', 'width':'12'},{'label': 'Earpiece Shield', 'cmd': '_', 'id':'micsAIC1', 'width':'12'}, {'label': 'Mix Both','cmd':'=', 'id':'micsBothAIC', 'width':'12'}]},"
-        "{'name':'Analog Input Gain', 'buttons':[{'label':'-', 'cmd':'I', 'width':'4'},{'id':'inGain',  'label':'0', 'width':'4'},{'label':'+', 'cmd':'i', 'width':'4'}]},"  //whichever line is the last line, NO TRAILING COMMA!
-        "{'name':'Output Gain',    'buttons':[{'label':'-', 'cmd':'K', 'width':'4'},{'id':'outGain', 'label':'0', 'width':'4'},{'label':'+', 'cmd':'k', 'width':'4'}]}"//don't have a trailing comma on this last one
+      //"{'title':'Input Select','cards':["
+        //"{'name':'Audio Source', 'buttons':["
+        //                                   "{'label':'Digital: Earpieces', 'cmd': 'd', 'id':'configPDMMic', 'width':'12'},"
+        //                                   "{'label':'Analog: PCB Mics',  'cmd': 'w', 'id':'configPCBMic',  'width':'12'},"
+        //                                   "{'label':'Analog: Mic Jack (Mic)',  'cmd': 'W', 'id':'configMicJack', 'width':'12'},"
+        //                                   "{'label':'Analog: Mic Jack (Line)',  'cmd': 'e', 'id':'configLineJack', 'width':'12'},"
+        //                                   "{'label':'Analog: BT Audio', 'cmd': 'E', 'id':'configLineSE',  'width':'12'}" //don't have a trailing comma on this last one
+        //                                  "]},"
+      "{'title':'Input / Output Select','cards':["
+        "{'name':'Choose Earpiece Mics','buttons':[{'label': 'Front', 'cmd': '9', 'id':'micsFront', 'width':'6'},{'label': 'Rear', 'cmd': '(', 'id':'micsRear', 'width':'6'}, {'label': 'Both (F+R)','cmd':'0', 'id':'micsBoth', 'width':'6'}, {'label': 'Both (F-R)','cmd':')','id':'micsBothInv', 'width':'6'},{'label': 'Mute','cmd':'-','id':'micsMute', 'width':'12'}]},"
+        "{'name':'Choose Output Board','buttons':[{'label': 'Both', 'cmd': 'u', 'id':'outBoth', 'width':'6'},{'label': 'None', 'cmd': 'O', 'id':'outNone', 'width':'6'}, {'label': 'Top','cmd':'U', 'id':'outTop', 'width':'6'}, {'label': 'Bottom','cmd':'o','id':'outBot', 'width':'6'}]},"
+        "{'name':'More Options','buttons':[{'label':'Swipe Right'}]}"  //don't have a trailing comma on this last one
       "]},"
       "{'title':'Audio Processing','cards':["
-        "{'name':'Highpass Filter Cutoff','buttons':[{'label': 'Lower', 'cmd': 'F'},{'label': 'Higher', 'cmd': 'f'}]},"
-        "{'name':'Exp Knee',     'buttons':[{'label': 'Lower', 'cmd' :'X', 'width':'4'},{'label': '', 'width':'4', 'id':'V_expKnee'},{'label': 'Higher', 'cmd': 'x', 'width':'4'}]},"
-        "{'name':'Comp Knee',    'buttons':[{'label': 'Lower', 'cmd' :'Z', 'width':'4'},{'label': '', 'width':'4', 'id':'V_compKnee'},{'label': 'Higher', 'cmd': 'z', 'width':'4'}]},"
-        "{'name':'Limiter Knee', 'buttons':[{'label': 'Lower', 'cmd' :'L', 'width':'4'},{'label': '', 'width':'4', 'id':'V_limKnee'},{'label': 'Higher', 'cmd': 'l', 'width':'4'}]}"//no trailing comma on last one
-      "]},"
-      "{'title':'Global','cards':["
+        "{'name':'Highpass Cutoff (Hz)','buttons':[{'label': 'Lower', 'width':'4', 'cmd': 'F'},{'label': '', 'width':'4', 'id':'hp_Hz'},{'label': 'Higher', 'width':'4', 'cmd': 'f'}]},"
+        "{'name':'Linear Gain (dB)',     'buttons':[{'label': 'Lower', 'cmd' :'A', 'width':'4'},{'label': '', 'width':'4', 'id':'V_linGain'},{'label': 'Higher', 'cmd': 'a', 'width':'4'}]},"
+        "{'name':'Compressor Settings','buttons':[{'label':'Swipe Right'}]}"  //don't have a trailing comma on this last one
+      "]},"      
+      "{'title':'WDRC Settings','cards':["
+        //"{'name':'Exp Knee (dB SPL)',     'buttons':[{'label': 'Lower', 'cmd' :'X', 'width':'4'},{'label': '', 'width':'4', 'id':'V_expKnee'},{'label': 'Higher', 'cmd': 'x', 'width':'4'}]},"
+        "{'name':'Comp Knee (dB SPL)',    'buttons':[{'label': 'Lower', 'cmd' :'Z', 'width':'4'},{'label': '', 'width':'4', 'id':'V_compKnee'},{'label': 'Higher', 'cmd': 'z', 'width':'4'}]},"
+        "{'name':'Compression Ratio',     'buttons':[{'label': 'Lower', 'cmd' :'V', 'width':'4'},{'label': '', 'width':'4', 'id':'V_compRatio'},{'label': 'Higher', 'cmd': 'v', 'width':'4'}]},"
+        "{'name':'Limiter Knee (dB SPL)', 'buttons':[{'label': 'Lower', 'cmd' :'L', 'width':'4'},{'label': '', 'width':'4', 'id':'V_limKnee'},{'label': 'Higher', 'cmd': 'l', 'width':'4'}]},"//no trailing comma on last one
+        "{'name':'System Settings','buttons':[{'label':'Swipe Right'}]}"  //don't have a trailing comma on this last one
+      "]},"      
+      "{'title':'System Settings','cards':["
         "{'name':'Record to SD Card','buttons':[{'label':'Start', 'cmd':'r', 'id':'recordStart'},{'label':'Stop', 'cmd':'s'}]},"
         "{'name':'CPU Reporting',    'buttons':[{'label':'Start', 'cmd':'c', 'id':'cpuStart'}   ,{'label':'Stop', 'cmd':'C'}]}" //don't have a trailing comma on this last one
       "]}"   //don't have a trailing comma on this last one.                         
-    "]"
+    "],"
+    "'prescription':{'type':'BoysTown','pages':['serialPlotter']}"
   "}";
   myTympan.println(jsonConfig);
 }
@@ -389,65 +426,69 @@ void SerialManager::processStream(void) {
   }
 }
 
-
-int SerialManager::readStreamIntArray(int idx, int* arr, int len) {
-  int i;
-  for (i=0; i<len; i++) {
-    arr[i] = *((int*)(stream_data+idx)); 
-    idx=idx+4;
-  }
-  return idx;
-}
-
-int SerialManager::readStreamFloatArray(int idx, float* arr, int len) {
-  int i;
-  for (i=0; i<len; i++) {
-    arr[i] = *((float*)(stream_data+idx)); 
-    idx=idx+4;
-  }
-  return idx;
-}
-
-
 void SerialManager::setFullGUIState(void) {
   setInputConfigButtons();
   setMicConfigButtons();
-  setInputGainButtons();
-  setOutputGainButtons();
+  //setInputGainButtons();
+  //setOutputGainButtons();
 
-  setButtonText("V_expKnee",incrementExpKnee_dBSPL(0.0));delay(2);
-  setButtonText("V_compKnee",incrementCompKnee_dBSPL(0.0));delay(2);
-  setButtonText("V_limKnee",incrementLimiterKnee_dBSPL(0.0));delay(2);
+  setOutputConfigButtons();
+
+  setButtonText("hp_Hz",incrementHPCutoffFreq_Hz(1.0),0); delay(2);
+  setButtonText("V_expKnee",incrementExpKnee_dBSPL(0.0),1);delay(2);
+  setButtonText("V_linGain",incrementLinearGain_dB(0.0),1);delay(2);
+  setButtonText("V_compKnee",incrementCompKnee_dBSPL(0.0),1);delay(2);
+  setButtonText("V_compRatio",incrementCompRatio(0.0),1);delay(2);
+  setButtonText("V_limKnee",incrementLimiterKnee_dBSPL(0.0),1);delay(2);
   
   setButtonState("cpuStart",myState.flag_printCPUandMemory);
   setSDRecordingButtons();
-  
 }
 
-void SerialManager::setSDRecordingButtons(void) {
-   if (audioSDWriter.getState() == AudioSDWriter_F32::STATE::RECORDING) {
-    setButtonState("recordStart",true);
-  } else {
-    setButtonState("recordStart",false);
-  } 
+
+void SerialManager::setInputConfigButtons(void) {
+  //clear out previous state of buttons
+  setButtonState("configPDMMic",false);  delay(10);
+  setButtonState("configPCBMic",false);  delay(10);
+  setButtonState("configMicJack",false); delay(10);
+  setButtonState("configLineJack",false);delay(10);
+  setButtonState("configLineSE",false);  delay(10);
+
+  //set the new state of the buttons
+  switch (myState.input_source) {
+    case (State::INPUT_PDMMICS):
+      setButtonState("configPDMMic",true);  delay(3); break;
+    case (State::INPUT_PCBMICS):
+      setButtonState("configPCBMic",true);  delay(3); break;
+    case (State::INPUT_MICJACK_MIC): 
+      setButtonState("configMicJack",true); delay(3); break;
+    case (State::INPUT_LINEIN_SE): 
+      setButtonState("configLineSE",true);  delay(3); break;
+    case (State::INPUT_MICJACK_LINEIN): 
+      setButtonState("configLineJack",true);delay(3); break;
+  }  
 }
 
 void SerialManager::setMicConfigButtons(bool disableAll) {
 
   //clear any previous state of the buttons
-  setButtonState("micsFront",false); delay(10);
-  setButtonState("micsRear",false); delay(10);
-  setButtonState("micsBoth",false); delay(10);
-  setButtonState("micsBothInv",false); delay(10);
-  setButtonState("micsAIC0",false); delay(10);
-  setButtonState("micsAIC1",false); delay(10);
-  setButtonState("micsBothAIC",false); delay(10);
+  setButtonState("micsFront",false); delay(3);
+  setButtonState("micsRear",false); delay(3);
+  setButtonState("micsBoth",false); delay(3);
+  setButtonState("micsBothInv",false); delay(3);
+  setButtonState("micsMute",false); delay(3);
+  //setButtonState("micsAIC0",false); delay(3);
+  //setButtonState("micsAIC1",false); delay(3);
+  //setButtonState("micsBothAIC",false); delay(3);
 
   //now, set the one button that should be active
   int mic_config = myState.analog_mic_config;   //assume that we're in our analog input configuration
   if (myState.input_source == State::INPUT_PDMMICS) mic_config = myState.digital_mic_config; //but check to see if we're in digital input configuration
   if (disableAll == false) {
     switch (mic_config) {
+       case myState.MIC_MUTE:
+        setButtonState("micsMute",true);
+        break;
       case myState.MIC_FRONT:
         setButtonState("micsFront",true);
         break;
@@ -472,35 +513,37 @@ void SerialManager::setMicConfigButtons(bool disableAll) {
     }
   }
 }
+void SerialManager::setInputGainButtons(void);
+void SerialManager::setOutputGainButtons(void);
 
 
-void SerialManager::setInputConfigButtons(void) {
+void SerialManager::setOutputConfigButtons(void) {
   //clear out previous state of buttons
-  setButtonState("configPDMMic",false);  delay(10);
-  setButtonState("configPCBMic",false);  delay(10);
-  setButtonState("configMicJack",false); delay(10);
-  setButtonState("configLineJack",false);delay(10);
-  setButtonState("configLineSE",false);  delay(10);
+  setButtonState("outBoth",false);  delay(3);
+  setButtonState("outTop",false);  delay(3);
+  setButtonState("outBot",false); delay(3);
+  setButtonState("outNone",false);delay(3);
+  
 
   //set the new state of the buttons
-  switch (myState.input_source) {
-    case (State::INPUT_PDMMICS):
-      setButtonState("configPDMMic",true);  delay(10); break;
-    case (State::INPUT_PCBMICS):
-      setButtonState("configPCBMic",true);  delay(10); break;
-    case (State::INPUT_MICJACK_MIC): 
-      setButtonState("configMicJack",true); delay(10); break;
-    case (State::INPUT_LINEIN_SE): 
-      setButtonState("configLineSE",true);  delay(10); break;
-    case (State::INPUT_MICJACK_LINEIN): 
-      setButtonState("configLineJack",true);delay(10); break;
+  switch (myState.output_aic) {
+    case (State::OUT_BOTH):
+      setButtonState("outBoth",true);  delay(3); break;
+    case (State::OUT_AIC1):
+      setButtonState("outTop",true);  delay(3); break;
+    case (State::OUT_AIC0): 
+      setButtonState("outBot",true); delay(3); break;
+    case (State::OUT_NONE): 
+      setButtonState("outNone",true);  delay(3); break;
   }  
 }
-void SerialManager::setInputGainButtons(void) {
-  setButtonText("inGain",String(myState.inputGain_dB,1));
-}
-void SerialManager::setOutputGainButtons(void) {
-  setButtonText("outGain",String(myState.volKnobGain_dB,1));
+
+void SerialManager::setSDRecordingButtons(void) {
+   if (audioSDWriter.getState() == AudioSDWriter_F32::STATE::RECORDING) {
+    setButtonState("recordStart",true);
+  } else {
+    setButtonState("recordStart",false);
+  } 
 }
 
 void SerialManager::setButtonState(String btnId, bool newState) {
@@ -511,10 +554,13 @@ void SerialManager::setButtonState(String btnId, bool newState) {
   }
 }
 
+void SerialManager::setButtonText(String btnId, float val,int nplaces=2) {
+  myTympan.print("TEXT=BTN:" + btnId + ":");
+  myTympan.println(val,nplaces);
+}
 void SerialManager::setButtonText(String btnId, String text) {
   myTympan.println("TEXT=BTN:" + btnId + ":"+text);
 }
-
 
 
 #endif
