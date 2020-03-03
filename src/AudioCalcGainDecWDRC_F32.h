@@ -204,6 +204,7 @@ class AudioCalcGainDecWDRC_F32 : public AudioStream_F32
 	}
 	
 	float setMaxdB(float32_t _maxdB) { return maxdB = _maxdB; }
+	float getMaxdB(void) { return maxdB; }
 	float setKneeExpansion_dBSPL(float32_t _knee) { return exp_end_knee = _knee; }
 	float getKneeExpansion_dBSPL(void) { return exp_end_knee; }
 	float setExpansionCompRatio(float32_t _cr) { return exp_cr = _cr; }
@@ -211,6 +212,7 @@ class AudioCalcGainDecWDRC_F32 : public AudioStream_F32
 	float setKneeCompressor_dBSPL(float32_t _knee) { return tk = _knee; }
 	float getKneeCompressor_dBSPL(void) { return tk; }
 	float setCompRatio(float32_t _cr) { return cr = _cr; }
+	float getCompRatio(void) { return cr; }
 	float setKneeLimiter_dBSPL(float32_t _bolt) { return bolt = _bolt; }
 	float getKneeLimiter_dBSPL(void) { return bolt; }
 

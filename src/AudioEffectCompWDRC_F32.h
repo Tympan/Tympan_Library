@@ -164,7 +164,8 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	void setAttackRelease_msec(float32_t attack_ms, float32_t release_ms) {
 		calcEnvelope.setAttackRelease_msec(attack_ms, release_ms);
 	}
-	void setMaxdB(float32_t foo) { calcGain.setMaxdB(foo); }
+	float setMaxdB(float32_t foo) { return calcGain.setMaxdB(foo); }
+	float getMaxdB(void) { return calcGain.getMaxdB(); }
 	float setKneeExpansion_dBSPL(float32_t _knee) { return calcGain.setKneeExpansion_dBSPL(_knee); }
 	float getKneeExpansion_dBSPL(void) { return calcGain.getKneeExpansion_dBSPL(); }
 	float setExpansionCompRatio(float32_t _cr) { return calcGain.setExpansionCompRatio(_cr); }
@@ -172,6 +173,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float setKneeCompressor_dBSPL(float32_t foo) { return calcGain.setKneeCompressor_dBSPL(foo); }
 	float getKneeCompressor_dBSPL(void) { return calcGain.getKneeCompressor_dBSPL(); }
 	float setCompRatio(float32_t foo) { return calcGain.setCompRatio(foo); }
+	float getCompRatio(void) { return calcGain.getCompRatio(); }
 	float setKneeLimiter_dBSPL(float32_t foo) { return calcGain.setKneeLimiter_dBSPL(foo); }
 	float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
 	float getAttack_msec(void) { return calcEnvelope.getAttack_msec(); }
