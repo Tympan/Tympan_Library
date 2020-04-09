@@ -1,6 +1,6 @@
-// Functional Test for Tympan Earpieces and Shield
+// Demo sketch using the Tympan digital-mic earpieces.
 //
-// Created: Eric Yuan, Open Audio, Jan 2020
+// Created: Chip Audette, Open Audio, Mar 2020
 //
 // This example code is in the public domain.
 //
@@ -9,11 +9,11 @@
 //    and two Tympan earpieces (each with a front and back PDM micrphone) 
 //    connected through the earpiece audio ports (which uses the USB-B Mini connector).
 //
-//  Mixing:
-//  The front and back mic for each earpiece will be mixed into a single channel.
-//  The output will be routed to both the Tympan AIC (i2s_out[0,1]) and the 
-//  Shield AIC (i2s_out[2,3]), which can be heard using the earpiece receivers 
-//  or a headphone plugged into the 3.5mm audio jacks on either the Tympan or Shield
+// Sketch Features:
+//    * Control the two mics in each earpiece: Front-only, back-only, add the two, or subtract the two
+//    * After mixing the microphones, performs treble boost and WDRC compression on left and on right
+//    * Allows you to record all four mics to a 4-channel WAV file on the SD Card
+//    * Control the system via the Tympan App
 
 #include <Tympan_Library.h>
 #include "State.h"                          //For enums
