@@ -63,7 +63,7 @@ private:
 	int32_t  level; // 0=off, 65536=max
 	uint32_t seed;  // must start at 1
 	static uint16_t instance_count;
-	int16_t audio_block[AUDIO_BLOCK_SAMPLES]; //working memory for use by the legacy int16 code for generating the noise
+	int16_t block_data[AUDIO_BLOCK_SAMPLES]; //working memory for use by the legacy int16 code for generating the noise
 };
 
 #endif
