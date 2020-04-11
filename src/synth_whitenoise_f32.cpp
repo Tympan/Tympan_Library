@@ -40,7 +40,7 @@
 
 void AudioSynthNoiseWhite_F32::update(void)
 {
-	audio_block_t *block;
+	//audio_block_t *block;
 	audio_block_f32_t *block_f32;
 	uint32_t *p, *end;
 	int32_t n1, n2, gain;
@@ -52,13 +52,14 @@ void AudioSynthNoiseWhite_F32::update(void)
 		//Serial.println(": Gain = 0, returning.");
 		return;
 	}
-	block = AudioStream::allocate();
+	//block = AudioStream::allocate();
 	block_f32 = AudioStream_F32::allocate_f32();
-	if (!block | !block_f32) {
+	if (!block_data | !block_f32) {
 		//Serial.println(": NULL block. returning.");
 		return;
 	}
-	p = (uint32_t *)(block->data);
+	//p = (uint32_t *)(block->data);
+	p = (uint32_t *)(block_data);
 	//end = p + AUDIO_BLOCK_SAMPLES/2;
 	end = p + (block_f32->length)/2;
 	
@@ -113,11 +114,11 @@ void AudioSynthNoiseWhite_F32::update(void)
 	seed = lo;
 	
 	//convert int16 to f32
-	AudioConvert_I16toF32::convert_i16_to_f32(block->data,block_f32->data,block_f32->length);
+	AudioConvert_I16toF32::convert_i16_to_f32(block_data,block_f32->data,block_f32->length);
 	
 	AudioStream_F32::transmit(block_f32);
 	AudioStream_F32::release(block_f32);
-	AudioStream::release(block);
+	//AudioStream::release(block);
 	//Serial.println(" Done.");
 }
 
