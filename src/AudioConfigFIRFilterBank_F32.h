@@ -14,10 +14,6 @@
 
 #include <Tympan_Library.h>
 
-#define fmove(x,y,n)    memmove(x,y,(n)*sizeof(float))
-#define fcopy(x,y,n)    memcpy(x,y,(n)*sizeof(float))
-#define fzero(x,n)      memset(x,0,(n)*sizeof(float))
-
 class AudioConfigFIRFilterBank_F32 {
   //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node  
   //GUI: shortName:config_FIRbank

@@ -10,7 +10,19 @@
  */
 
 #include "AudioConfigFIRFilterBank_F32.h"
+
+#ifndef fmove
+#define fmove(x,y,n)    memmove(x,y,(n)*sizeof(float))
+#endif
+#ifndef fcopy
+#define fcopy(x,y,n)    memcpy(x,y,(n)*sizeof(float))
+#endif
+#ifndef fzero
+#define fzero(x,n)      memset(x,0,(n)*sizeof(float))
+#endif
+
 #include "utility/BTNRH_rfft.h"
+
 
 void AudioConfigFIRFilterBank_F32::fir_filterbank(float *bb, float *cf, const int nc, const int nw_orig, const int wt, const float sr)
     {
