@@ -30,7 +30,9 @@ AudioControlSGTL5000_Extended	KEYWORD1
 micBiasEnable		KEYWORD2
 
 AudioConfigFIRFilterBank_F32	KEYWORD1
+AudioConfigIIRFilterBank_F32	KEYWORD1
 createFilterCoeff	KEYWORD2
+disable			KEYWORD2
 
 AudioConvert_I16toF32	KEYWORD1
 AudioConvert_F32toI16	KEYWORD1
@@ -53,6 +55,7 @@ AudioFilterBiquad_F32	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1
 AudioFilterTimeWeighting_F32	KEYWORD1
+AudioFilterIIR_F32	KEYWORD1
 AudioInputI2S_F32	KEYWORD1
 AudioInputI2SQuad_F32	KEYWORD1
 AudioInputUSB_F32	KEYWORD1

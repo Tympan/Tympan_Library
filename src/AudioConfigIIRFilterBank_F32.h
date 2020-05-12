@@ -25,7 +25,10 @@ class AudioConfigIIRFilterBank_F32 {
 	{
       createFilterCoeff(n_chan, n_iir, sample_rate_Hz, crossover_freq, filter_bcoeff, filter_acoeff);
     }
-
+    AudioConfigIIRFilterBank_F32(const int n_chan, const int n_iir, const float sample_rate_Hz, const float td, float *crossover_freq, float *filter_bcoeff, float *filter_acoeff, int *filter_delay)
+	{
+      createFilterCoeff(n_chan, n_iir, sample_rate_Hz, td, crossover_freq, filter_bcoeff, filter_acoeff, filter_delay);
+    }
 
     //createFilterCoeff:
     //   Purpose: create all of the IIR filter coefficients for the IIR filterbank
@@ -44,13 +47,16 @@ class AudioConfigIIRFilterBank_F32 {
     //           are computed by this routine.  You must have pre-allocated the array such as: 
 	//           float filter_acoeff[N_CHAN][N_IIR+1];
 	int createFilterCoeff(const int n_chan, const int n_iir, const float sample_rate_Hz, float *crossover_freq, float *filter_bcoeff, float *filter_acoeff) {
-		float filter_delay[n_chan];
-		return createFilterCoeff(const int n_chan, const int n_iir, const float sample_rate_Hz, float *crossover_freq, float *filter_bcoeff, float *filter_acoeff, float *filter_delay) {
+		int filter_delay[n_chan]; //samples
+		float td_msec = 0.000;  //assumed max delay (?) for the time-alignment process?
+		return createFilterCoeff(n_chan, n_iir, sample_rate_Hz, td_msec, crossover_freq, filter_bcoeff, filter_acoeff, filter_delay);
 	}
 		
 	//createFilterCoeff: same as above but adds an output "filter_delay" that tells you how many samples to delay
 	//   each filter so that the impulse response lines up better (at the cross-over frequencies?)
-    int createFilterCoeff(const int n_chan, const int n_iir, const float sample_rate_Hz, float *crossover_freq, float *filter_bcoeff, float *filter_acoeff, float *filter_delay) {
+	//       "td_msec" is an input setting the max time delay of all filters (?) in milliseconds
+	//       "filter_delay" is the output with the best time delay (samples) for each filter.  It is ]
+    int createFilterCoeff(const int n_chan, const int n_iir, const float sample_rate_Hz, const float td_msec, float *crossover_freq, float *filter_bcoeff, float *filter_acoeff, int *filter_delay) {
       float *cf = crossover_freq;
       int flag__free_cf = 0;
       if (cf == NULL) {
@@ -59,9 +65,11 @@ class AudioConfigIIRFilterBank_F32 {
         flag__free_cf = 1;
         computeLogSpacedCornerFreqs(n_chan, sample_rate_Hz, cf);
       }
-      const int window_type = 0;  //0 = Hamming, 1=Blackmann, 2 = Hanning
-      iir_filterbank(filter_bcoeff, filter_acoeff, filter_delay, cf, n_chan, n_iir, sample_rate_Hz);
+
+	  //Serial.println("AudioConfigIIRFilterBank_F32: createFilterCoeff: calling iir_filterbank...");
+      int ret_val = iir_filterbank(filter_bcoeff, filter_acoeff, filter_delay, cf, n_chan, n_iir, sample_rate_Hz, td_msec);
       if (flag__free_cf) free(cf); 
+	  return ret_val;
     }
 
     //compute frequencies that space zero to nyquist.  Leave zero off, because it is assumed to exist in the later code.
@@ -80,6 +88,7 @@ class AudioConfigIIRFilterBank_F32 {
     }
   private:
 
-    void iir_filterbank(float *bb, float *aa, float *d, float *cf, const int nc, const int n_iir, const float sr);
+	int iir_filterbank_basic(float *bb, float *aa, float *cf, const int nc, const int n_iir, const float sr); //no time alignment, no gain balancing
+    int iir_filterbank(float *bb, float *aa, int *d, float *cf, const int nc, const int n_iir, const float sr, const float td);
 };
 #endif
