@@ -1,4 +1,5 @@
 
+#include "AICShield.h"
 #include "AudioStream_F32.h"
 #include "BTNRH_WDRC_Types.h"
 #include "control_aic3206.h"

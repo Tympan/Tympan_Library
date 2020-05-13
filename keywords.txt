@@ -13,6 +13,17 @@ AudioMemoryUsageMaxReset_F32	KEYWORD1
 
 AudioConnection_F32	KEYWORD1
 
+AICShield		KEYWORD1
+AICShieldBase		KEYWORD1
+AICShieldPins		KEYWORD1
+AICShieldRev		KEYWORD1
+enable28V_CCP		KEYWORD2
+enableCCPAtten1		KEYWORD2
+enableCCPAtten2		KEYWORD2
+setBigLED_CCP		KEYWORD2
+setLittleLED_CCP	KEYWORD2
+
+
 AudioCalcGainWDRC_F32	KEYWORD1
 AudioCalcGainDecWDRC_F32	KEYWORD1
 AudioCalcEnvelope_F32	KEYWORD1
