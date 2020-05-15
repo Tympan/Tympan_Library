@@ -51,6 +51,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 							resetAIC = 20; 
 							i2cBus = 2;
 							enableStereoExtMicBias = 41; 
+							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
 							break;
 							
 						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
@@ -63,6 +64,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 							CCP_bigLED =  53;    //same as SCK_2 (alt)
 							CCP_littleLED = 41;    //same as AIC_Shield_enableStereoExtMicBias
 							CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2
+							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
 							break;
 					}
 					break;
@@ -89,6 +91,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 		int CCP_atten1 = NOT_A_FEATURE, CCP_atten2 = NOT_A_FEATURE;
 		int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED = NOT_A_FEATURE;
 		int CCP_enable28V = NOT_A_FEATURE;
+		int defaultInput = NOT_A_FEATURE;
 	
 };
 
@@ -118,6 +121,11 @@ class AICShieldBase : public AudioControlAIC3206
 
 		void setupPins(const AICShieldPins &_pins);
 		void setAudioSettings(const AudioSettings_F32 &_aud_set) { audio_settings = _aud_set; }  //shallow copy
+		virtual bool enable(void) { 
+			AudioControlAIC3206::enable();
+			if (pins.defaultInput != NOT_A_FEATURE)	inputSelect(pins.defaultInput);
+		}
+			
 
 		//TympanPins getTympanPins(void) { return &pins; }
 		int setBigLED_CCP(int _value) { if (pins.CCP_bigLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_bigLED,_value); return _value; } return NOT_A_FEATURE;}

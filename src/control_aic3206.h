@@ -71,9 +71,9 @@ public:
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;
 	}
-	enum INPUTS {IN1, IN2, IN3, IN3_wBIAS};
-	bool enable(void);
-	bool disable(void);
+	enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS};
+	virtual bool enable(void);
+	virtual bool disable(void);
 	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster. 
 	bool volume(float n);
 	static float applyLimitsOnVolumeSetting(float vol_dB);
