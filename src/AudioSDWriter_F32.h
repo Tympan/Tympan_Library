@@ -39,6 +39,7 @@ class AudioSDWriter {
     virtual int getNumWriteChannels(void) {
       return numWriteChannels;
     }
+	virtual String getCurrentFilename(void) { return current_filename; }
 
     virtual void prepareSDforRecording(void) = 0;
     virtual int startRecording(void) = 0;
@@ -51,6 +52,7 @@ class AudioSDWriter {
     WriteDataType writeDataType = WriteDataType::INT16;
     int recording_count = 0;
     int numWriteChannels = 2;
+	String current_filename = String("Not Recording");
 };
 
 //AudioSDWriter_F32: A class to write data from audio blocks as part
