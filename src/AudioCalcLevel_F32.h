@@ -5,7 +5,7 @@
 #include "Arduino.h"
 #include "AudioFilterTimeWeighting_F32.h"
 
-//Time weighting for sound level meter.  Defaults to SLOW
+//Exponential time weighting for sound level meter.  Defaults to SLOW
 class AudioCalcLevel_F32 : public AudioFilterTimeWeighting_F32 
 {
 	public:
