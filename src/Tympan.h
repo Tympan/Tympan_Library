@@ -21,6 +21,7 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
 #define TYMPAN_REV_D3 (TympanRev::D3)
 #define TYMPAN_REV_D4 (TympanRev::D4)
 #define TYMPAN_REV_D (TympanRev::D)
+//define TYMPAN_REV_D_CCP (TympanRev::D_CCP)
 
 //the Tympan is a Teensy audio library "control" object
 //include <usb_desc.h>  //to know if we're using native or emulated USB serial
@@ -30,7 +31,9 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
 #include "AudioStream_F32.h"
 #include "AudioSettings_F32.h"
 
+#ifndef NOT_A_FEATURE
 #define NOT_A_FEATURE (-9999)
+#endif
 
 class TympanPins { //Teensy 3.6 Pin Numbering
 	public:
@@ -116,10 +119,29 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO0 = 56;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
 					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
 					enableStereoExtMicBias = 20; //PTD5
-					AIC_Shield_enableStereoExtMicBias = 41;
+					//AIC_Shield_enableStereoExtMicBias = 41;
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
 					break;
+/* 				case (TympanRev::D_CCP):  //the Tympan functions itself are same as RevD, but added some features to support the CCP shield
+					//Teensy 3.6 Pin Numbering
+					resetAIC = 35;  //PTC8
+					potentiometer = 39; //A20
+					amberLED = 36; //PTC9
+					redLED = 10;  //PTC4
+					BT_nReset = 34;  //PTE25, active LOW reset
+					BT_REGEN = 31;  //must pull high to enable BC127
+					BT_PIO0 = 56;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
+					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
+					enableStereoExtMicBias = 20; //PTD5
+					AIC_Shield_enableStereoExtMicBias = 41;
+					BT_serial_speed = 9600;
+					Rev_Test = 44;		
+					CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)
+					CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)
+					CCP_bigLED =  53;    //same as SCK_2 (alt)
+					CCP_littleLED = 41;    //same as AIC_Shield_enableStereoExtMicBias
+					CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2 */
 			}
 		}
 		//#if defined(SEREMU_INTERFACE)
@@ -142,7 +164,10 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int Rev_Test = NOT_A_FEATURE;
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
-		int AIC_Shield_enableStereoExtMicBias = NOT_A_FEATURE;
+		//int AIC_Shield_enableStereoExtMicBias = NOT_A_FEATURE;
+		//int CCP_atten1 = NOT_A_FEATURE, CCP_atten2 = NOT_A_FEATURE;
+		//int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED = NOT_A_FEATURE;
+		//int CCP_enable28V = NOT_A_FEATURE;
 		//#if defined(SEREMU_INTERFACE)
 		//	usb_seremu_class *USB_Serial = &Serial;
 		//#else
@@ -184,8 +209,13 @@ class TympanBase : public AudioControlAIC3206, public Print
 		void forceBTtoDataMode(bool state);
 
 		//TympanPins getTympanPins(void) { return &pins; }
-		void setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); }
-		void setRedLED(int _value) { digitalWrite(pins.redLED,_value); }
+		int setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); return _value; }
+		int setRedLED(int _value) { digitalWrite(pins.redLED,_value); return _value; }
+		//int setCCPBigLED(int _value) { if (pins.CCP_bigLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_bigLED,_value); return _value; } return NOT_A_FEATURE;}
+		//int setCCPLittleLED(int _value) { if (pins.CCP_littleLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_littleLED,_value); return _value; } return NOT_A_FEATURE;}
+		//int setCCPEnable28V(int _value) { if (pins.CCP_enable28V != NOT_A_FEATURE) { digitalWrite(pins.CCP_enable28V,_value); return _value; } return NOT_A_FEATURE; }
+		//int setCCPEnableAtten1(int _value) { if (pins.CCP_atten1 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten1,_value); return _value; } return NOT_A_FEATURE; }
+		//int setCCPEnableAtten2(int _value) { if (pins.CCP_atten2 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten2,_value); return _value; } return NOT_A_FEATURE; }
 		int readPotentiometer(void) {
 			//Serial.print("TympanBase: readPot, pin "); Serial.println(pins.potentiometer);
 			int val = analogRead(pins.potentiometer);
@@ -193,7 +223,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 			return val;
 		};
 		int setEnableStereoExtMicBias(int new_state);  //use for base Tympan board (not the AIC shield)
-		int setEnableStereoExtMicBiasAIC(int new_state);  //use for AIC Shield
+		//int setEnableStereoExtMicBiasAIC(int new_state);  //use for AIC Shield
 	
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }

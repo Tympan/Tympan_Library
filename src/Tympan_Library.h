@@ -1,10 +1,12 @@
 
+#include "AICShield.h"
 #include "AudioStream_F32.h"
 #include "BTNRH_WDRC_Types.h"
 #include "control_aic3206.h"
 #include "AudioCalcEnvelope_F32.h"
 #include "AudioCalcGainWDRC_F32.h"
 #include "AudioCalcGainDecWDRC_F32.h"
+#include "AudioCalcLeq_F32.h"
 #include "AudioCalcLevel_F32.h"
 #include "AudioConfigFIRFilterBank_F32.h"
 #include "AudioConfigIIRFilterBank_F32.h"

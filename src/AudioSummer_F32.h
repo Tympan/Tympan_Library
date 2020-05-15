@@ -78,7 +78,7 @@ public:
 	} 
 
   private:
-    audio_block_f32_t *inputQueueArray[4];
+    audio_block_f32_t *inputQueueArray[8];
     bool flag_useChan[8];
 };
 

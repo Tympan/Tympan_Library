@@ -9,7 +9,8 @@
 #define TIME_CONST_SLOW  (1.0f)
 #define TIME_CONST_FAST	 (0.125f)
 
-//Time weighting for sound level meter.  Defaults to SLOW
+//Exponential time weighting for traditional (ie, old style) sound level meter.  
+//   Default time constant is SLOW
 class AudioFilterTimeWeighting_F32 : public AudioStream_F32 
 {
 	public:

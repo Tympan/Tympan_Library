@@ -125,6 +125,7 @@ int AudioSDWriter_F32::startRecording(char* fname) {
 	  buffSDWriter->resetBuffer();
 	  current_SD_state = STATE::RECORDING;
 	  setStartTimeMillis();
+	  current_filename = String(fname);
 	  
 	} else {
 	  if (serial_ptr) {
@@ -146,6 +147,7 @@ void AudioSDWriter_F32::stopRecording(void) {
 
 	//close the file
 	close(); current_SD_state = STATE::STOPPED;
+	current_filename = String("Not Recording");
 
 	//clear the buffer
 	if (buffSDWriter) buffSDWriter->resetBuffer();

@@ -13,9 +13,26 @@ AudioMemoryUsageMaxReset_F32	KEYWORD1
 
 AudioConnection_F32	KEYWORD1
 
+AICShield		KEYWORD1
+AICShieldBase		KEYWORD1
+AICShieldPins		KEYWORD1
+AICShieldRev		KEYWORD1
+enable28V_CCP		KEYWORD2
+enableCCPAtten1		KEYWORD2
+enableCCPAtten2		KEYWORD2
+setBigLED_CCP		KEYWORD2
+setLittleLED_CCP	KEYWORD2
+
+
 AudioCalcGainWDRC_F32	KEYWORD1
 AudioCalcGainDecWDRC_F32	KEYWORD1
 AudioCalcEnvelope_F32	KEYWORD1
+AudioCalcLeq_F32	KEYWORD1
+setTimeWindow_sec	KEYWORD2
+getTimeWindow_sec	KEYWORD2
+getCurrentLevel		KEYWORD2
+getCurrentLevel_dB	KEYWORD2
+clearStates		KEYWORD2
 AudioCalcLevel_F32	KEYWORD1
 
 AudioControlAIC3206	KEYWORD1
@@ -54,8 +71,11 @@ AudioEffectFreqShiftFD_F32	KEYWORD1
 AudioFilterBiquad_F32	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1
-AudioFilterTimeWeighting_F32	KEYWORD1
 AudioFilterIIR_F32	KEYWORD1
+AudioFilterTimeWeighting_F32	KEYWORD1
+setTimeConst_sec	KEYWORD2
+getTimeConst_sec	KEYWORD2
+
 AudioInputI2S_F32	KEYWORD1
 AudioInputI2SQuad_F32	KEYWORD1
 AudioInputUSB_F32	KEYWORD1
