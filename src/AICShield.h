@@ -122,8 +122,9 @@ class AICShieldBase : public AudioControlAIC3206
 		void setupPins(const AICShieldPins &_pins);
 		void setAudioSettings(const AudioSettings_F32 &_aud_set) { audio_settings = _aud_set; }  //shallow copy
 		virtual bool enable(void) { 
-			AudioControlAIC3206::enable();
+			bool foo = AudioControlAIC3206::enable();
 			if (pins.defaultInput != NOT_A_FEATURE)	inputSelect(pins.defaultInput);
+			return foo;
 		}
 			
 
