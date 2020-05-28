@@ -16,11 +16,11 @@
 
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
-#define TYMPAN_INPUT_LINE_IN            1   //uses IN1, on female Arduino-style headers (shared with BT Audio)
-#define TYMPAN_INPUT_BT_AUDIO	        1   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
-#define TYMPAN_INPUT_ON_BOARD_MIC       2   //uses IN2, for analog signals from microphones on PCB
-#define TYMPAN_INPUT_JACK_AS_LINEIN     3   //uses IN3, for analog signals from mic jack, no mic bias 
-#define TYMPAN_INPUT_JACK_AS_MIC        4   //uses IN3, for analog signals from mic jack, with mic bias
+#define TYMPAN_INPUT_LINE_IN            (AudioControlAIC3206::IN1)   //uses IN1, on female Arduino-style headers (shared with BT Audio)
+#define TYMPAN_INPUT_BT_AUDIO	        (AudioControlAIC3206::IN1)   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
+#define TYMPAN_INPUT_ON_BOARD_MIC       (AudioControlAIC3206::IN2)   //uses IN2, for analog signals from microphones on PCB
+#define TYMPAN_INPUT_JACK_AS_LINEIN     (AudioControlAIC3206::IN3)   //uses IN3, for analog signals from mic jack, no mic bias 
+#define TYMPAN_INPUT_JACK_AS_MIC        (AudioControlAIC3206::IN3_wBIAS)   //uses IN3, for analog signals from mic jack, with mic bias
 
 
 //convenience names to use with outputSelect()
@@ -71,8 +71,9 @@ public:
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;
 	}
-	bool enable(void);
-	bool disable(void);
+	enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS};
+	virtual bool enable(void);
+	virtual bool disable(void);
 	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster. 
 	bool volume(float n);
 	static float applyLimitsOnVolumeSetting(float vol_dB);

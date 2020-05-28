@@ -8,6 +8,14 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 	//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: ");
 	//Serial.print(_pins.potentiometer); Serial.print(" / "); Serial.println(pins.potentiometer);
 
+	//setup the CCP related pins
+	//if (pins.CCP_enable28V != NOT_A_FEATURE) { pinMode(pins.CCP_enable28V,OUTPUT);  setCCPEnable28V(LOW); }
+	//if (pins.CCP_atten1 != NOT_A_FEATURE) { pinMode(pins.CCP_atten1,OUTPUT); digitalWrite(pins.CCP_atten1,LOW); }
+	//if (pins.CCP_atten2 != NOT_A_FEATURE) { pinMode(pins.CCP_atten2,OUTPUT); digitalWrite(pins.CCP_atten2,LOW); }
+	//if (pins.CCP_bigLED != NOT_A_FEATURE) { pinMode(pins.CCP_bigLED,OUTPUT); digitalWrite(pins.CCP_bigLED,LOW); }
+	//if (pins.CCP_littleLED != NOT_A_FEATURE) { pinMode(pins.CCP_littleLED,OUTPUT); digitalWrite(pins.CCP_littleLED,LOW); }
+	
+	//setup the Tympan pins]
 	pinMode(pins.potentiometer,INPUT);
 	pinMode(pins.amberLED,OUTPUT); digitalWrite(pins.amberLED,LOW);
 	pinMode(pins.redLED,OUTPUT); digitalWrite(pins.redLED,LOW);
@@ -15,10 +23,12 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 		pinMode(pins.enableStereoExtMicBias,OUTPUT);
 		setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
 	}
-	if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
-		pinMode(pins.AIC_Shield_enableStereoExtMicBias,OUTPUT);
-		setEnableStereoExtMicBiasAIC(true); //enable stereo external mics (REV_D)
-	}
+	
+	//setup the AIC shield pins
+	//if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
+	//	pinMode(pins.AIC_Shield_enableStereoExtMicBias,OUTPUT);
+	//	setEnableStereoExtMicBiasAIC(true); //enable stereo external mics (REV_D)
+	//}
 	
 
 	//get the comm pins and setup the regen and reset pins
@@ -62,6 +72,8 @@ int TympanBase::setEnableStereoExtMicBias(int new_state) {
 		return pins.enableStereoExtMicBias;
 	}
 }
+
+/*
 int TympanBase::setEnableStereoExtMicBiasAIC(int new_state) {  //for AIC Shield
 	if (pins.AIC_Shield_enableStereoExtMicBias != NOT_A_FEATURE) {
 		digitalWrite(pins.AIC_Shield_enableStereoExtMicBias,new_state);
@@ -69,7 +81,8 @@ int TympanBase::setEnableStereoExtMicBiasAIC(int new_state) {  //for AIC Shield
 	} else {
 		return pins.AIC_Shield_enableStereoExtMicBias;
 	}
-}	
+}
+*/	
 
 void TympanBase::beginBluetoothSerial(int BT_speed) {
 	BT_Serial->begin(BT_speed);

@@ -228,7 +228,7 @@ bool AudioControlAIC3206::inputLevel(float volume) {
 }
 
 bool AudioControlAIC3206::inputSelect(int n) {
-  if ( (n == TYMPAN_INPUT_LINE_IN) || (n == TYMPAN_INPUT_BT_AUDIO) ) {
+  if ( n == AudioControlAIC3206::IN1 ) {
     // USE LINE IN SOLDER PADS
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN1 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -241,7 +241,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 
     if (debugToSerial) Serial.println("Set Audio Input to Line In");
     return true;
-  } else if (n == TYMPAN_INPUT_JACK_AS_MIC) {
+  } else if ( n == AudioControlAIC3206::IN3_wBIAS ) {
     // mic-jack = IN3
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -253,7 +253,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 
     if (debugToSerial) Serial.println("Set Audio Input to JACK AS MIC, BIAS SET TO DEFAULT 2.5V");
     return true;
-  } else if (n == TYMPAN_INPUT_JACK_AS_LINEIN) {
+  } else if ( n == AudioControlAIC3206::IN3 ) {
     // 1
     // mic-jack = IN3
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
@@ -266,7 +266,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 
     if (debugToSerial) Serial.println("Set Audio Input to JACK AS LINEIN, BIAS OFF");
     return true;
-  } else if (n == TYMPAN_INPUT_ON_BOARD_MIC) {
+  } else if ( n == AudioControlAIC3206::IN2 ) {
     // on-board = IN2
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN2 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
