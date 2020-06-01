@@ -48,7 +48,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 					
 						case (AICShieldRev::A) :    //Basic AIC shield (2019 and 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = 20; 
+							resetAIC = 42; //Fixed 2020-06-01
 							i2cBus = 2;
 							enableStereoExtMicBias = 41; 
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
@@ -56,7 +56,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 							
 						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = 20; 
+							resetAIC = 42;   //Fixed 2020-06-01
 							i2cBus = 2;
 							enableStereoExtMicBias = 41; 
 							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)
