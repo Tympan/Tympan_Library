@@ -52,10 +52,12 @@ class AudioFilterIIR_F32 : public AudioStream_F32
 			copyCoeff(_b_coeff, b_coeff, _n_coeff);
 			copyCoeff(_a_coeff, a_coeff, _n_coeff);
 			n_coeff = _n_coeff;
+			resetFilterStates();
 			return 0;
 		}
 		void end(void) {  initCoefficientsToPassthru(); disable(); }
 		void update(void);
+		void resetFilterStates(void) { for (int i=0; i<IIR_MAX_N_COEFF; i++) filter_states[i]=0.0; }
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
 		
