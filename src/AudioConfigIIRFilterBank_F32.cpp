@@ -126,6 +126,10 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, flo
 	  nc, //number of channels (8) 
 	  nz);  //filter order.  (4)
 
+	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: post iirfb_zp: gains = ");
+	//for (int Ichan = 0; Ichan < nc; Ichan++) { Serial.print(g[Ichan],5); Serial.print(", ");};
+	//Serial.println();
+
 
 	//adjust filter to time-align the peaks of the fiter response
 	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: calling align_peak_fb...");
@@ -138,31 +142,67 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, flo
 	  nc,  //number of channels
 	  nz);  //filter order (4)
 
+	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: post align_peak_fb: gains = ");
+	//for (int Ichan = 0; Ichan < nc; Ichan++) { Serial.print(g[Ichan],5); Serial.print(", ");};
+	//Serial.println();
 
-	//adjust gain of each filter (for flat response even during crossover?)
-	//WARNING: This operation takes a lot of RAM.  If ret_val is -1, it failed.
-	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: calling adjust_gain_fb...");
-	int ret_val = adjust_gain_fb(z,   //filter zeros.  pointer to array float[64]
-	  p, //filter poles.  pointer to array float[64]
-	  g, //gain for each filter.  pointer to array float[8] 
-	  d, //delay for each filter (samples).  pointer to array int[8]
-	  cf, //pointer to cutoff frequencies, float[7]
-	  sr, //sample rate (Hz) 
-	  nc, //number of channels (8) 
-	  nz);  //filter order (4)
-	if (ret_val < 0) {
-		Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: *** ERROR *** failed (in adjust_gain_fb.");
-	}
+	int ret_val = 0;
+	if (0) {
+
+		//adjust gain of each filter (for flat response even during crossover?)
+		//WARNING: This operation takes a lot of RAM.  If ret_val is -1, it failed.
+		//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: calling adjust_gain_fb...");
+		ret_val = adjust_gain_fb(z,   //filter zeros.  pointer to array float[64]
+		  p, //filter poles.  pointer to array float[64]
+		  g, //gain for each filter.  pointer to array float[8] 
+		  d, //delay for each filter (samples).  pointer to array int[8]
+		  cf, //pointer to cutoff frequencies, float[7]
+		  sr, //sample rate (Hz) 
+		  nc, //number of channels (8) 
+		  nz);  //filter order (4)
+		if (ret_val < 0) {
+			Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: *** ERROR *** failed (in adjust_gain_fb.");
+		}
+		
+		//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: post adjust_gain_fb: gains = ");
+		//for (int Ichan = 0; Ichan < nc; Ichan++) { Serial.print(g[Ichan],5); Serial.print(", ");};
+		//Serial.println();
 	  
+	}
+	
 	//change representation from pole-zero to transfer function
 	zp2ba_fb(z,p,nz,nc,b,a);
+	
+	//print the coeff for debugging
+	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: ");
+	//for (int Ichan = 0; Ichan < nc; Ichan++) {
+	//	Serial.print("Band "); Serial.print(Ichan);Serial.print(", g = "); Serial.print(g[Ichan],5); Serial.print(", b"); 
+	//	for (int Icoeff = 0; Icoeff < n_iir+1; Icoeff++) {
+	//		Serial.print(", ");
+	//		Serial.print(b[Ichan*(nz+1)+Icoeff],5);
+	//	}
+	//	Serial.println();
+	//}
+
 	  
 	//apply the gain to the b coefficients
 	for (int Ichan = 0; Ichan < nc; Ichan++) {
 		for (int Icoeff = 0; Icoeff < n_iir+1; Icoeff++) {
-			b[Ichan*(nz+1)+Icoeff] *= g[Ichan];
+			//if ((Ichan == 0) || (Ichan == nc-1)) { //really?  only do it for the first and last?  WEA 6/8/2020
+				b[Ichan*(nz+1)+Icoeff] *= g[Ichan];
+			//}
 		}
 	}
+
+	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: post g*b: ");
+	//for (int Ichan = 0; Ichan < nc; Ichan++) {
+	//	Serial.print("Band "); Serial.print(Ichan);Serial.print(", b"); 
+	//	for (int Icoeff = 0; Icoeff < n_iir+1; Icoeff++) {
+	//		Serial.print(", ");
+	//		Serial.print(b[Ichan*(nz+1)+Icoeff],5);
+	//	}
+	//	Serial.println();
+	//}
 	
 	//release the allocated memory
 	free(g);
