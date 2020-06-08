@@ -22,7 +22,7 @@ void AudioCalcLeq_F32::update(void)
 	for (int i=0; i < block->length; i++) block->data[i] *= block->data[i];
 
 	//apply the time window averaging
-	if (timeWindow_samp == block->length) { //the averaging is the same as the block length!
+	if (timeWindow_samp == ((unsigned long) block->length)) { //the averaging is the same as the block length!
 		calcAverage_exactBlock(block);
 	} else {
 		calcAverage(block);
@@ -52,7 +52,7 @@ int AudioCalcLeq_F32::calcAverage(audio_block_f32_t *block) {
 	int number_of_updated_averages = 0;
 	
 	//step through each data point, accumulating and updating as needed
-	for (int i; i < block->length; i++) {
+	for (int i=0; i < block->length; i++) {
 		running_sum += block->data[i]; //update the running sum
 		points_averaged++;  //update our tracking of the number of data points averaged 
 		
