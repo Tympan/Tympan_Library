@@ -92,8 +92,6 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank_basic(float *b, float *a, float
 */
 int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, float *cf, const int nc, const int n_iir, const float sr, const float td) {
 
-	//Serial.print("AudioConfigIIRFilterBank: iir_filterbank: nw_orig = "); Serial.print(nw_orig);
-	//Serial.print(", nw = "); Serial.println(nw);
 	if (n_iir < 1) {
 		Serial.println("AudioConfigIIRFilterBank: iir_filterbank: *** ERROR *** filter order must be at least 1.");
 		return -1;
@@ -102,7 +100,6 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, flo
 		Serial.println("AudioConfigIIRFilterBank: iir_filterbank: *** ERROR *** filter order must be <= 8.");
 		return -1;
 	}
-	
 	
 	//allocate some memory
 	float *z = (float *) calloc(nc*n_iir*2,sizeof(float)); //z is complex, so needs to be twice as long
@@ -116,7 +113,6 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, flo
     //Serial.println(FreeRam());
 
 	//design filterbank, zeros and poles and gains
-	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: calling iirfb_zp...");
 	int nz = n_iir;  //the CHA code from BTNRH uses this notation
 	iirfb_zp(z,   //filter zeros.  pointer to array float[64]
 	  p, //filter poles.  pointer to array float[64]
@@ -126,13 +122,17 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, flo
 	  nc, //number of channels (8) 
 	  nz);  //filter order.  (4)
 
-	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: post iirfb_zp: gains = ");
-	//for (int Ichan = 0; Ichan < nc; Ichan++) { Serial.print(g[Ichan],5); Serial.print(", ");};
-	//Serial.println();
-
+	#if 0
+		//plot zeros and poles and gains
+		Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: orig zero-pole");
+		for (int Iband=0; Iband < nc; Iband++) {
+			Serial.print("  : Band "); Serial.print(Iband); Serial.print(", Gain = "); Serial.println(g[Iband],8);
+			Serial.print("    : Z: ");for (int i=0; i < 2*n_iir; i++) { Serial.print(z[(Iband*2*n_iir)+i],4); Serial.print(", ");}; Serial.println();
+			Serial.print("    : P: ");for (int i=0; i < 2*n_iir; i++) { Serial.print(p[(Iband*2*n_iir)+i],4); Serial.print(", ");}; Serial.println();
+		}
+	#endif
 
 	//adjust filter to time-align the peaks of the fiter response
-	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: calling align_peak_fb...");
 	align_peak_fb(z, //filter zeros.  pointer to array float[64]
 	  p, //filter poles.  pointer to array float[64]
 	  g, //gain for each filter.  pointer to array float[8]
@@ -142,16 +142,11 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, flo
 	  nc,  //number of channels
 	  nz);  //filter order (4)
 
-	//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: post align_peak_fb: gains = ");
-	//for (int Ichan = 0; Ichan < nc; Ichan++) { Serial.print(g[Ichan],5); Serial.print(", ");};
-	//Serial.println();
 
 	int ret_val = 0;
 	if (0) {
-
 		//adjust gain of each filter (for flat response even during crossover?)
 		//WARNING: This operation takes a lot of RAM.  If ret_val is -1, it failed.
-		//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: calling adjust_gain_fb...");
 		ret_val = adjust_gain_fb(z,   //filter zeros.  pointer to array float[64]
 		  p, //filter poles.  pointer to array float[64]
 		  g, //gain for each filter.  pointer to array float[8] 
@@ -163,12 +158,17 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank(float *b, float *a, int *d, flo
 		if (ret_val < 0) {
 			Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: *** ERROR *** failed (in adjust_gain_fb.");
 		}
-		
-		//Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: post adjust_gain_fb: gains = ");
-		//for (int Ichan = 0; Ichan < nc; Ichan++) { Serial.print(g[Ichan],5); Serial.print(", ");};
-		//Serial.println();
-	  
 	}
+	
+	#if 0
+		//plot zeros and poles and gains
+		Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank: prior to b-a conversion");
+		for (int Iband=0; Iband < nc; Iband++) {
+			Serial.print("  : Band "); Serial.print(Iband); Serial.print(", Gain = "); Serial.println(g[Iband],8);
+			Serial.print("    : Z: ");for (int i=0; i < 2*n_iir; i++) { Serial.print(z[(Iband*2*n_iir)+i],4); Serial.print(", ");}; Serial.println();
+			Serial.print("    : P: ");for (int i=0; i < 2*n_iir; i++) { Serial.print(p[(Iband*2*n_iir)+i],4); Serial.print(", ");}; Serial.println();
+		}
+	#endif
 	
 	//change representation from pole-zero to transfer function
 	zp2ba_fb(z,p,nz,nc,b,a);
