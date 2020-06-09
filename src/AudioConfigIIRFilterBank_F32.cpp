@@ -338,7 +338,7 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank_sos(float *sos, int *d, float *
 
 	
 	//print the SOS coeff for debugging
-	#if 1
+	#if 0
 		Serial.println("AudioConfigIIRFilterBank_F32: iir_filterbank_sos: sos sections");
 		for (int Iband=0; Iband < nc; Iband++) {
 			Serial.print("  : Band "); Serial.print(Iband); Serial.println();
