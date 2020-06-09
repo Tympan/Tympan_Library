@@ -72,6 +72,22 @@ class AudioConfigIIRFilterBank_F32 {
 	  return ret_val;
     }
 
+    int createFilterCoeff_SOS(const int n_chan, const int n_iir, const float sample_rate_Hz, const float td_msec, float *crossover_freq, float *filter_sos, int *filter_delay) {
+      float *cf = crossover_freq;
+      int flag__free_cf = 0;
+      if (cf == NULL) {
+        //compute corner frequencies that are logarithmically spaced
+        cf = (float *) calloc(n_chan, sizeof(float));
+        flag__free_cf = 1;
+        computeLogSpacedCornerFreqs(n_chan, sample_rate_Hz, cf);
+      }
+
+	  //Serial.println("AudioConfigIIRFilterBank_F32: createFilterCoeff: calling iir_filterbank...");
+      int ret_val = iir_filterbank_sos(filter_sos, filter_delay, cf, n_chan, n_iir, sample_rate_Hz, td_msec);
+      if (flag__free_cf) free(cf); 
+	  return ret_val;
+    }
+
     //compute frequencies that space zero to nyquist.  Leave zero off, because it is assumed to exist in the later code.
     //example of an *8* channel set of frequencies: cf = {317.1666, 502.9734, 797.6319, 1264.9, 2005.9, 3181.1, 5044.7}
     void computeLogSpacedCornerFreqs(const int n_chan, const float sample_rate_Hz, float *cf) {
@@ -88,7 +104,8 @@ class AudioConfigIIRFilterBank_F32 {
     }
   private:
 
-	int iir_filterbank_basic(float *bb, float *aa, float *cf, const int nc, const int n_iir, const float sr); //no time alignment, no gain balancing
-    int iir_filterbank(float *bb, float *aa, int *d, float *cf, const int nc, const int n_iir, const float sr, const float td);
+	int iir_filterbank_basic(float *bb,  float *aa, float *cf, const int nc, const int n_iir, const float sr); //no time alignment, no gain balancing
+    int iir_filterbank(      float *bb,  float *aa, int *d,    float *cf,    const int nc,    const int n_iir, const float sr, const float td);
+	int iir_filterbank_sos(  float *sos, int *d,    float *cf, const int nc, const int n_iir, const float sr,  const float td);
 };
 #endif
