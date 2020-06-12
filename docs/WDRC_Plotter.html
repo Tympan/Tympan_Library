@@ -42,7 +42,7 @@ th, td {
 			gain_at_exp_end_knee  = cr_const * exp_end_knee + tkgo;
 		  }
 
-		  var exp_cr_const = 1.0-Math.max(0.01,exp_cr);
+		  var exp_cr_const = 1.0/Math.max(0.01,exp_cr) - 1.0;
 		  var regime = 0;
 		  if (pdb < exp_end_knee) {  //if below the expansion threshold, do expansion expansion region.
 			  gdb = gain_at_exp_end_knee - ((exp_end_knee-pdb)*exp_cr_const); //reduce gain the farther down you are from the end of the expansion region
