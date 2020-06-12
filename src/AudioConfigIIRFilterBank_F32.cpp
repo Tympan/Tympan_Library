@@ -245,6 +245,7 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank_sos(float *sos, int *d, float *
     //Serial.println(FreeRam());
 
 	//design filterbank, zeros and poles and gains
+	Serial.println("AudioConfigIIRFilterBank_F32::iir_filterbank_sos: calling iirfb_zp()");
 	int nz = n_iir;  //the CHA code from BTNRH uses this notation
 	iirfb_zp(z,   //filter zeros.  pointer to array float[64]
 	  p, //filter poles.  pointer to array float[64]
@@ -265,6 +266,7 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank_sos(float *sos, int *d, float *
 	#endif
 
 	//adjust filter to time-align the peaks of the fiter response
+	Serial.println("AudioConfigIIRFilterBank_F32::iir_filterbank_sos: calling align_peak_fb()");
 	align_peak_fb(z, //filter zeros.  pointer to array float[64]
 	  p, //filter poles.  pointer to array float[64]
 	  g, //gain for each filter.  pointer to array float[8]
@@ -303,6 +305,7 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank_sos(float *sos, int *d, float *
 	#endif
 	
 	//convert to second order sections
+	Serial.println("AudioConfigIIRFilterBank_F32::iir_filterbank_sos: converting to second order sections");
 	float bk[3], ak[3];  //each biquad is 3 b coefficients and 3 a coefficients
 	int out_ind ;  
 	int n_biquad = nz / 2;
@@ -372,6 +375,7 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank_sos(float *sos, int *d, float *
 	//}
 	
 	//release the allocated memory
+	Serial.println("AudioConfigIIRFilterBank_F32::iir_filterbank_sos: calling freeing memory");
 	free(g);
 	free(p);
 	free(z);
