@@ -247,6 +247,32 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
         Idst--;
       }
     }
+	
+	
+	virtual void printEstimatedFeedbackImpulseResponse(void) {
+      printEstimatedFeedbackImpulseResponse(&Serial, false);
+    }
+	virtual void printEstimatedFeedbackImpulseResponse(bool flag) {
+      printEstimatedFeedbackImpulseResponse(&Serial, flag);
+    }
+	virtual void printEstimatedFeedbackImpulseResponse(Print *p) {
+		printEstimatedFeedbackImpulseResponse(p,false);
+	}
+    virtual void printEstimatedFeedbackImpulseResponse(Print *p, bool flag_eachOnNewLine) {
+      p->println("AudioEffectFeedbacCancel_F32: estimated feedback impulse response:");
+	  float scale = 1.0;
+	  if (flag_eachOnNewLine) scale = 20.0;
+      for (int i=0; i<afl; i++) { 
+		p->print(efbp[i]*scale,5); 
+		if (flag_eachOnNewLine) {
+			p->println();
+		} else {
+			p->print(", ");
+		}	
+	  }
+	  if (!flag_eachOnNewLine) p->println();
+    }
+
 
   protected:
     //state-related variables
