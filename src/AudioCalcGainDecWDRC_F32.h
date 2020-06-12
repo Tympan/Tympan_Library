@@ -124,7 +124,7 @@ class AudioCalcGainDecWDRC_F32 : public AudioStream_F32
         gain_at_exp_end_knee  = cr_const * exp_end_knee + tkgo;
       }
 
-      float exp_cr_const = 1.0/Math.max(0.01,exp_cr) - 1.0;
+      float exp_cr_const = 1.0/max(0.01,exp_cr) - 1.0;
       //for (k = 0; k < n; k++) {  //loop over each sample
 	  int subcounter = 0; int index_last_computed = 0;  //these are to effect the decimation so that it conly computes every decimate_factor points
       for (k = 0; k < n; k++) {  //loop over each sample
