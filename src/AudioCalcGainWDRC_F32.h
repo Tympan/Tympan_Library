@@ -102,7 +102,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
         gain_at_exp_end_knee  = cr_const * exp_end_knee + tkgo;
       }
 
-      float exp_cr_const = 1.f-max(0.01f,exp_cr);
+      float exp_cr_const = 1.0/Math.max(0.01,exp_cr) - 1.0;
       for (k = 0; k < n; k++) {  //loop over each sample
         if (pdb[k] < exp_end_knee) {  //if below the expansion threshold, do expansion
           //expansion region.
