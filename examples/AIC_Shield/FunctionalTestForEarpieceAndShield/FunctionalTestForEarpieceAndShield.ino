@@ -38,16 +38,17 @@ AudioOutputI2SQuad_F32        i2s_out(audio_settings);        //Digital audio *t
 AudioSDWriter_F32             audioSDWriter(audio_settings);  //this is stereo by default
 
 //Connect the front and rear mics (from each earpiece) to input mixers
-AudioConnection_F32           patchcord1(i2s_in, 3, inputMixerL, 0);  //Left-Front Mic
-AudioConnection_F32           patchcord2(i2s_in, 2, inputMixerL, 1);  //Left-Rear Mic
-AudioConnection_F32           patchcord3(i2s_in, 1, inputMixerR, 0);  //Right-Front Mic
-AudioConnection_F32           patchcord4(i2s_in, 0, inputMixerR, 1);  //Right-Rear Mic
+AudioConnection_F32           patchcord1(i2s_in, 1, inputMixerL, 0);  //Left-Front Mic
+AudioConnection_F32           patchcord2(i2s_in, 0, inputMixerL, 1);  //Left-Rear Mic
+AudioConnection_F32           patchcord3(i2s_in, 3, inputMixerR, 0);  //Right-Front Mic
+AudioConnection_F32           patchcord4(i2s_in, 2, inputMixerR, 1);  //Right-Rear Mic
 
 //Connect the input mixers to both the Tympan and Shield audio outputs
+//NOTE: The left and right RIC is correct, but the headphone jacks have the left and right swapped.  
 AudioConnection_F32           patchcord11(inputMixerL, 0, i2s_out, 1); //Tympan AIC, left output
-AudioConnection_F32           patchcord12(inputMixerR, 0, i2s_out, 2); //Tympan AIC, right output
-AudioConnection_F32           patchcord13(inputMixerL, 0, i2s_out, 2); //Shield AIC, left output
-AudioConnection_F32           patchcord14(inputMixerR, 0, i2s_out, 3); //Shield AIC, right output
+AudioConnection_F32           patchcord12(inputMixerR, 0, i2s_out, 0); //Tympan AIC, right output
+AudioConnection_F32           patchcord13(inputMixerL, 0, i2s_out, 3); //Shield AIC, left output
+AudioConnection_F32           patchcord14(inputMixerR, 0, i2s_out, 2); //Shield AIC, right output
 
 //Connect the input mixer to the SD card
 AudioConnection_F32           patchcord21(inputMixerL, 0, audioSDWriter, 0);   //connect Raw audio to queue (to enable SD writing)
@@ -190,10 +191,10 @@ void setInputMixer(Mic_Channels micChannelName, int gainVal) {
       break;   
     case ALL_MICS:
       myTympan.print("All Mic Gain: ");
-      inputMixerL.gain(0,gainVal);  //first aic (left earpiece), left mic
-      inputMixerL.gain(1,gainVal);  //first aic (left earpiece), left mic
-      inputMixerR.gain(0,gainVal);  //first aic (left earpiece), left mic
-      inputMixerR.gain(1,gainVal);  //first aic (left earpiece), left mic
+      inputMixerL.gain(0,gainVal);  //Left-Front Mic
+      inputMixerL.gain(1,gainVal);  //Left-Rear Mic
+      inputMixerR.gain(0,gainVal);  //Right-Front Mic
+      inputMixerR.gain(1,gainVal);  //Right-Rear Mic
       break;         
   }
   myTympan.println(gainVal);
