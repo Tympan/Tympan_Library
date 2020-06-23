@@ -1,6 +1,6 @@
 // FormantShifter_FD
 //
-// Demonstrate formant shifting via frequency domain processin.
+// Demonstrate formant shifting via frequency domain processing.  Makes it sound like helium talking!
 //
 // Created: Chip Audette (OpenAudio) March 2019
 //
