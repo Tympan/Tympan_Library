@@ -10,7 +10,6 @@ enum Mic_Channels {
   };
 
 enum Mic_Input {
-  NO_MIC, 
   INPUT_PCBMICS,
   INPUT_MICJACK_MIC,
   INPUT_MICJACK_LINEIN,
