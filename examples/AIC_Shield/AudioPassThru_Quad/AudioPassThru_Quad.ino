@@ -24,7 +24,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // define classes to control the Tympan and the AIC_Shield
 Tympan                        myTympan;    //note: Rev C is not compatible with the AIC shield
-AudioControlAIC3206           aicShield(AIC_RESET_PIN,AIC_I2C_BUS);  //for AIC_Shield
+AICShield                     aicShield;   //note: Rev C is not compatible with the AIC shield
 
 // define audio classes
 AudioInputI2SQuad_F32         i2s_in(audio_settings);        //Digital audio *from* the Tympan AIC.
