@@ -19,9 +19,6 @@ const float sample_rate_Hz = 44117.0f ;  //24000 to 44117 to 96000 (or other fre
 const int audio_block_samples = 128;     //do not make bigger than audio_block_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
-#define AIC_RESET_PIN 20   //for I2C connection to AIC shield (eventually move into Tympan library)
-#define AIC_I2C_BUS 2     //for I2C connection to AIC shield (eventually move into Tympan library)
-
 // define classes to control the Tympan and the AIC_Shield
 Tympan                        myTympan;    //note: Rev C is not compatible with the AIC shield
 AICShield                     aicShield;   //note: Rev C is not compatible with the AIC shield
