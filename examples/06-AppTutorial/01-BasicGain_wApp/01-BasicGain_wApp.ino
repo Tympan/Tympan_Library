@@ -1,12 +1,15 @@
 /*
-*   BasicGain
+*   BasicGain_wApp
 *
-*   Created: Chip Audette, Nov 2016
+*   Created: Chip Audette, June 2020
 *   Purpose: Process audio using Tympan by applying gain.
+*      Also, illustrate how to change Tympan setting via the TympanRemote App.
 *
 *   Blue potentiometer adjusts the digital gain applied to the audio signal.
 *
 *   Uses default sample rate of 44100 Hz with Block Size of 128
+*
+*   TympanRemote App: https://play.google.com/store/apps/details?id=com.creare.tympanRemote&hl=en_US
 *
 *   MIT License.  use at your own risk.
 */
@@ -28,13 +31,14 @@ AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Righ
 
 
 // define the setup() function, the function that is called once when the device is booting
-const float input_gain_dB = 20.0f; //gain on the microphone
-float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
+const float input_gain_dB = 10.0f; //gain on the microphone
+float digital_gain_dB = 0.0;      //this will be set by the app
 void setup() {
 
   //begin the serial comms (for debugging)
-  Serial.begin(115200);  delay(500);
-  Serial.println("BasicGain: starting setup()...");
+  myTympan.beginBothSerial();  
+  delay(3000);
+  myTympan.println("BasicGain_wApp: starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10); 
@@ -51,52 +55,70 @@ void setup() {
   myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
 
-  // check the volume knob
-  servicePotentiometer(millis(),0);  //the "0" is not relevant here.
-
   Serial.println("Setup complete.");
 } //end setup()
 
 
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
-
-  //check the potentiometer
-  servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
+  
+  //look for in-coming serial messages (via USB or via Bluetooth)
+  if (Serial.available()) respondToByte((char)Serial.read());   //USB Serial
+  if (Serial1.available()) respondToByte((char)Serial1.read()); //BT Serial
 
 } //end loop();
 
 
 // ///////////////// Servicing routines
 
-//servicePotentiometer: listens to the blue potentiometer and sends the new pot value
-//  to the audio processing algorithm as a control parameter
-void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  //static unsigned long updatePeriod_millis = 100; //how many milliseconds between updating the potentiometer reading?
-  static unsigned long lastUpdate_millis = 0;
-  static float prev_val = -1.0;
+//respond to serial commands
+void respondToByte(char c) {
+  myTympan.print("Received character "); myTympan.println(c);
+  
+  switch (c) {
+    case 'J': case 'j':
+      printTympanRemoteLayout();
+      break;
+    case 'k':
+      changeGain(3.0);
+      printGainLevels();
+      break;
+    case 'K':
+      changeGain(-3.0);
+      printGainLevels();
+      break;
+  }
+}
 
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+// Print the layout for the Tympan Remote app, in a JSON-ish string
+// (single quotes are used here, whereas JSON spec requires double quotes.  The app converts ' to " before parsing the JSON string).
+// Please don't put commas or colons in your ID strings!
+void printTympanRemoteLayout(void) {
+  char jsonConfig[] = "JSON={"
+    "'pages':["
+      "{'title':'MyFirstPage','cards':["
+            "{'name':'Change Loudness','buttons':[{'label': 'Less', 'cmd': 'K'},{'label': 'More', 'cmd': 'k'}]}"
+      "]}" //no comma on the last one
+    "]" 
+  "}";
+  myTympan.println(jsonConfig);  
+  delay(50);
+  myTympan.println();
+}
 
-    //read potentiometer
-	float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
-    val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
-    //send the potentiometer value to your algorithm as a control parameter
-    if (abs(val - prev_val) > 0.05) { //is it different than before?
-      prev_val = val;  //save the value for comparison for the next time around
+//change the gain from the App
+void changeGain(float change_in_gain_dB) {
+  digital_gain_dB = digital_gain_dB + change_in_gain_dB;
+  gain1.setGain_dB(digital_gain_dB);  //set the gain of the Left-channel gain processor
+  gain2.setGain_dB(digital_gain_dB);  //set the gain of the Right-channel gain processor
+}
 
-      //choose the desired gain value based on the knob setting
-      const float min_gain_dB = -20.0, max_gain_dB = 40.0; //set desired gain range
-      vol_knob_gain_dB = min_gain_dB + (max_gain_dB - min_gain_dB)*val; //computed desired gain value in dB
 
-      //command the new gain setting
-      gain1.setGain_dB(vol_knob_gain_dB);  //set the gain of the Left-channel gain processor
-      gain2.setGain_dB(vol_knob_gain_dB);  //set the gain of the Right-channel gain processor
-      Serial.print("servicePotentiometer: Digital Gain dB = "); Serial.println(vol_knob_gain_dB); //print text to Serial port for debugging
-    }
-    lastUpdate_millis = curTime_millis;
-  } // end if
-} //end servicePotentiometer();
+//Print gain levels 
+void printGainLevels(void) {
+  myTympan.print("Analog Input Gain (dB) = "); 
+  myTympan.println(input_gain_dB); //print text to Serial port for debugging
+  myTympan.print("Digital Gain (dB) = "); 
+  myTympan.println(digital_gain_dB); //print text to Serial port for debugging
+}
