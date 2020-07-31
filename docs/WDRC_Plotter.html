@@ -152,27 +152,33 @@ th, td {
     </script>
   </head>
   <body style="font-family:sans-serif;">
-  	<div id="curve_chart" style="width: 600px; height: 500px"></div>
-			 
-	<form>
-	  <table>
-	  <tr><td><label for="exp_cr"><font color="blue"><b>Expansion:</b></font> Ratio (<i>exp_cr</i>)</label></td></tr>
-	  <tr><td><input type="float" id="exp_cr" name="exp_cr" value=0.57 onchange="drawChart();"></td></tr>
-	  <tr><td><label for="exp_end_knee"><font color="blue"><b>Expansion:</b></font> End Kneepoint (<i>exp_end_knee</i>)</label></td></tr>
-	  <tr><td><input type="float" id="exp_end_knee" name="exp_end_knee" value=30 onchange="drawChart();"></td></tr>
-	  <tr><td><label for="tkgain"><font color="green"><b>Linear:</b></font> Gain (<i>tkgain</i>)</label></td></tr>
-	  <tr><td><input type="float" id="tkgain" name="tkgain" value=20 onchange="drawChart();"></td></tr>
-	  <tr><td><label for="tk"><font color="red"><b>Compression:</b></font> Start Kneepoint (<i>tk</i>)</label></td></tr>
-	  <tr><td><input type="float" id="tk" name="tk" value=50 onchange="drawChart();"></td></tr>
-	  <tr><td><label for="cr"><font color="red"><b>Compression:</b></font> Ratio (<i>cr</i>)</label></td></tr>
-	  <tr><td><input type="float" id="cr" name="cr" value=1.5 onchange="drawChart();"></td></tr>
-	  <tr><td><label for="bolt"><font color="gray"><b>Limitter:</b></font> Start Kneepoint (<i>bolt</i>)</label></td></tr>
-	  <tr><td><input type="float" id="bolt" name="bolt" value=90 onchange="drawChart();"></td></tr>
-	  <tr><td></td></tr>
-	  <tr><td><input id="recompute" type="button" value="Recompute" onclick="drawChart();"/></td></tr>
-	  </table>
-	</form>
-
+ 	<table class="columns">
+		<tr>
+			<td><div id="curve_chart" style="width: 600px; height: 500px"></div></td>
+		</tr>
+		<tr>
+			<td>			 
+				<form>
+				  <table>
+				  <tr><td><label for="exp_cr"><font color="blue"><b>Expansion:</b></font> Ratio (<i>exp_cr</i>)</label></td></tr>
+				  <tr><td><input type="float" id="exp_cr" name="exp_cr" value=0.57 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="exp_end_knee"><font color="blue"><b>Expansion:</b></font> End Kneepoint (<i>exp_end_knee</i>)</label></td></tr>
+				  <tr><td><input type="float" id="exp_end_knee" name="exp_end_knee" value=30 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="tkgain"><font color="green"><b>Linear:</b></font> Gain (<i>tkgain</i>)</label></td></tr>
+				  <tr><td><input type="float" id="tkgain" name="tkgain" value=20 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="tk"><font color="red"><b>Compression:</b></font> Start Kneepoint (<i>tk</i>)</label></td></tr>
+				  <tr><td><input type="float" id="tk" name="tk" value=50 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="cr"><font color="red"><b>Compression:</b></font> Ratio (<i>cr</i>)</label></td></tr>
+				  <tr><td><input type="float" id="cr" name="cr" value=1.5 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="bolt"><font color="gray"><b>Limitter:</b></font> Start Kneepoint (<i>bolt</i>)</label></td></tr>
+				  <tr><td><input type="float" id="bolt" name="bolt" value=90 onchange="drawChart();"></td></tr>
+				  <tr><td></td></tr>
+				  <tr><td><input id="recompute" type="button" value="Recompute" onclick="drawChart();"/></td></tr>
+				  </table>
+				</form>
+			</td>
+		</tr>
+	</table>
 	<H2>WDRC Input-Output Calculator</H2>
     <p>This page illustrates how the WDRC settings change the input-output behavior of the WDRC algorithm.</p>
 	<p>The WDRC calculations shown here are taken from <a href="https://github.com/Tympan/Tympan_Library/blob/master/src/AudioCalcGainWDRC_F32.h">AudioCalcGainWDRC_F32.h</a>, which is part of the <a href="https://github.com/Tympan/Tympan_Library">Tympan_Library</a> for Arduino.</p>
