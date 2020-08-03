@@ -41,13 +41,13 @@ namespace BTNRH_WDRC {
 				if (r.readAndParseLine(file, line, buff_len, &eps, 1) < 0) return -1;
 				
 				//write to serial for debugging
-				printAllValues();
+				//printAllValues();
 			
 				return 0;
 			}
 		
 			
-			int readFromSD(SdFatSdioEX &sd, char *filename) {
+			int readFromSD(SdFatSdioEX &sd, const char *filename) {
 				SdFile_Gre file;
 				
 				//open SD
@@ -72,7 +72,7 @@ namespace BTNRH_WDRC {
 				//return
 				return ret_val;
 			}
-			int readFromSD(char *filename) {
+			int readFromSD(const char *filename) {
 				SdFatSdioEX sd;
 				return readFromSD(sd, filename);
 			}	
@@ -89,7 +89,7 @@ namespace BTNRH_WDRC {
 			};
 		
 		
-			void printToSDFile(SdFile_Gre *file, char *var_name) {
+			void printToSDFile(SdFile_Gre *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_AFC";
 				r.writeHeader(file, header_str, var_name);
 				
@@ -97,16 +97,16 @@ namespace BTNRH_WDRC {
 				r.writeValuesOnLine(file, &afl,	1, true, "afl, length (samples) of adaptive filter", 1);
 				r.writeValuesOnLine(file, &mu,  1, true, "mu, scale factor for adaptation (bigger is faster)", 1);
 				r.writeValuesOnLine(file, &rho, 1, true, "rho, smoooothing factor for envelope (bigger is longer average)", 1);
-				r.writeValuesOnLine(file, &eps, 1, false, "eps, min value for env (helps avoid divide by zero", 1);//no trailing comma on the last one 
+				r.writeValuesOnLine(file, &eps, 1, false, "eps, min value for env (helps avoid divide by zero)", 1);//no trailing comma on the last one 
 				
 				r.writeFooter(file); 
 			}
 		
-			int printToSD(char *filename, char *var_name, bool deleteExisting = false) {
+			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFatSdioEX sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
 			}
-			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name, bool deleteExisting = false) {
+			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFile_Gre file;
 				
 				//open SD
@@ -194,13 +194,13 @@ namespace BTNRH_WDRC {
 				if (r.readAndParseLine(file, line, buff_len, bolt, nchannel) < 0) return -1;
 
 				//write to serial for debugging
-				printAllValues();
+				//printAllValues();
 			
 				return 0;
 			}
 		
 			
-			int readFromSD(SdFatSdioEX &sd, char *filename) {
+			int readFromSD(SdFatSdioEX &sd, const char *filename) {
 				SdFile_Gre file;
 				
 				//open SD
@@ -225,7 +225,7 @@ namespace BTNRH_WDRC {
 				//return
 				return ret_val;
 			}
-			int readFromSD(char *filename) {
+			int readFromSD(const char *filename) {
 				SdFatSdioEX sd;
 				return readFromSD(sd, filename);
 			}	
@@ -255,7 +255,7 @@ namespace BTNRH_WDRC {
 				for (int i=0; i<nchannel;i++) { s->print(bolt[i]); s->print(", ");}; s->println();
 			};
 			
-			void printToSDFile(SdFile_Gre *file, char *var_name) {
+			void printToSDFile(SdFile_Gre *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_DSL";
 				r.writeHeader(file, header_str, var_name);
 				
@@ -275,11 +275,11 @@ namespace BTNRH_WDRC {
 				r.writeFooter(file); 
 			}
 			
-			int printToSD(char *filename, char *var_name, bool deleteExisting = false) {
+			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFatSdioEX sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
 			}
-			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name, bool deleteExisting = false) {
+			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFile_Gre file;
 				
 				//open SD
@@ -398,13 +398,13 @@ namespace BTNRH_WDRC {
 				if (r.readAndParseLine(file, line, buff_len, &bolt, 1) < 0) return -1;
 
 				//write to serial for debugging
-				printAllValues();
+				//printAllValues();
 			
 				return 0;
 			}
 		
 			
-			int readFromSD(SdFatSdioEX &sd, char *filename) {
+			int readFromSD(SdFatSdioEX &sd, const char *filename) {
 				SdFile_Gre file;
 				
 				//open SD
@@ -429,7 +429,7 @@ namespace BTNRH_WDRC {
 				//return
 				return ret_val;
 			}
-			int readFromSD(char *filename) {
+			int readFromSD(const char *filename) {
 				SdFatSdioEX sd;
 				return readFromSD(sd, filename);
 			}	
@@ -450,7 +450,7 @@ namespace BTNRH_WDRC {
 			};
 			
 			
-			void printToSDFile(SdFile_Gre *file, char *var_name) {
+			void printToSDFile(SdFile_Gre *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_WDRC";
 				r.writeHeader(file, header_str, var_name);
 				
@@ -468,11 +468,11 @@ namespace BTNRH_WDRC {
 				r.writeFooter(file); 
 			}
 			
-			int printToSD(char *filename, char *var_name, bool deleteExisting = false) {
+			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFatSdioEX sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
 			}
-			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name, bool deleteExisting = false) {
+			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFile_Gre file;
 				
 				//open SD

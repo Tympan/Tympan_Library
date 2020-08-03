@@ -61,7 +61,7 @@ class AccessConfigDataOnSD {
 			return pos;
 		}
 
-		virtual bool isInString(char *line, int buff_len, char *targ_str) {
+		virtual bool isInString(char *line, int buff_len, const char *targ_str) {
 			int targ_len = strlen(targ_str);
 			if (targ_len <= 0) return false;
 			
@@ -119,7 +119,7 @@ class AccessConfigDataOnSD {
 			return 0;
 		}
 
-		int readRowsUntilTargStr(SdFile_Gre *file, char *line, int buff_len, char *targ_str) {
+		int readRowsUntilTargStr(SdFile_Gre *file, char *line, int buff_len, const char *targ_str) {
 			//bool found_start = false;
 			int n;
 
@@ -143,7 +143,7 @@ class AccessConfigDataOnSD {
 			return -1;
 		}			
 		
-		void writeHeader(SdFile_Gre *file, char *type_name, char *var_name) {
+		void writeHeader(SdFile_Gre *file, const char *type_name, const char *var_name) {
 			file->println();
 			file->print(type_name);
 			file->print(" ");
@@ -180,14 +180,14 @@ class AccessConfigDataOnSD {
 			if (total_in_row < n_val) total_in_row = n_val;
 			file->print(" ");
 			if (total_in_row == 1) {  //write a single value
-				file->print(out_val[0],6); 
+				file->print(out_val[0],5); 
 			} else { //write many values
 				file->print("{ ");
 				for (int i=0; i < total_in_row; i++) {
 					if (i < n_val) {
-						file->print(out_val[i],6);
+						file->print(out_val[i],5);
 					} else {
-						file->print(out_val[n_val-1],6);
+						file->print(out_val[n_val-1],5);
 					}
 					if (i < (total_in_row-1)) file->print(", ");
 				}
