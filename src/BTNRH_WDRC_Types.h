@@ -52,13 +52,13 @@ namespace BTNRH_WDRC {
 				
 				//open SD
 				if (!(sd.begin())) {
-					Serial.println("BTNRH_WDRC: CHA_DSL: readFromSD: cannot open SD.");
+					Serial.println("BTNRH_WDRC: CHA_AFC: readFromSD: cannot open SD.");
 					return -1;
 				}
 				
 				//open file
 				if (!(file.open(filename,O_READ))) {   //open for reading
-					Serial.print("BTNRH_WDRC: CHA_DSL: readFromSD: cannot open file ");
+					Serial.print("BTNRH_WDRC: CHA_AFC: readFromSD: cannot open file ");
 					Serial.println(filename);
 					return -1;
 				}
@@ -192,13 +192,17 @@ namespace BTNRH_WDRC {
 				s->print("    : nchannel = "); s->println(nchannel);
 				s->print("    : cross_freq (Hz) = ");
 				for (int i=0; i<nchannel-1;i++) { s->print(cross_freq[i]); s->print(", ");}; s->println();
-				s->print("    : tkgain = ");
+				s->print("    : exp_cr = ");
+				for (int i=0; i<nchannel;i++) { s->print(exp_cr[i]); s->print(", ");}; s->println();
+				s->print("    : exp_end_knee (dB SPL) = ");
+				for (int i=0; i<nchannel;i++) { s->print(exp_end_knee[i]); s->print(", ");}; s->println();
+				s->print("    : tkgain (dB) = ");
 				for (int i=0; i<nchannel;i++) { s->print(tkgain[i]); s->print(", ");}; s->println();
 				s->print("    : cr = ");
 				for (int i=0; i<nchannel;i++) { s->print(cr[i]); s->print(", ");}; s->println();
-				s->print("    : tk = ");
+				s->print("    : tk (dB SPL) = ");
 				for (int i=0; i<nchannel;i++) { s->print(tk[i]); s->print(", ");}; s->println();
-				s->print("    : bolt = ");
+				s->print("    : bolt (dB SPL) = ");
 				for (int i=0; i<nchannel;i++) { s->print(bolt[i]); s->print(", ");}; s->println();
 			};
 	};
@@ -245,18 +249,147 @@ namespace BTNRH_WDRC {
 		float bolt;                 // broadband output limiting threshold
 	} CHA_WDRC; */
 	
-	typedef struct {
-		float attack;               // attack time (ms), unused in this class
-		float release;              // release time (ms), unused in this class
-		float fs;                   // sampling rate (Hz), set through other means in this class
-		float maxdB;                // maximum signal (dB SPL)...I think this is the SPL corresponding to signal with rms of 1.0
-		float exp_cr;				// compression ratio for low-SPL region (ie, the expander)
-		float exp_end_knee;			// expansion-end kneepoint
-		float tkgain;               // compression-start gain
-		float tk;                   // compression-start kneepoint
-		float cr;                   // compression ratio
-		float bolt;                 // broadband output limiting threshold
-	} CHA_WDRC;
+	class CHA_WDRC {
+		public: 
+			float attack;               // attack time (ms), unused in this class
+			float release;              // release time (ms), unused in this class
+			float fs;                   // sampling rate (Hz), set through other means in this class
+			float maxdB;                // maximum signal (dB SPL)...I think this is the SPL corresponding to signal with rms of 1.0
+			float exp_cr;				// compression ratio for low-SPL region (ie, the expander)
+			float exp_end_knee;			// expansion-end kneepoint
+			float tkgain;               // compression-start gain
+			float tk;                   // compression-start kneepoint
+			float cr;                   // compression ratio
+			float bolt;                 // broadband output limiting threshold
+			AccessConfigDataOnSD r;
+			
+			
+			int readFromSDFile(SdFile_Gre *file) {
+				const int buff_len = 300;
+				char line[buff_len];
+				
+				//find start of data structure
+				char targ_str[] = "CHA_WDRC";
+				int lines_read = r.readRowsUntilTargStr(file,line,buff_len,targ_str); //file is incremented so that the next line should be the first part of the DSL data
+				if (lines_read <= 0) {
+					Serial.println("BTNRH_WDRC: CHA_WDRC: readFromSDFile: *** could not find start of DSL data in file.");
+					return -1;
+				}
+				//Serial.print("BTNRH_WDRC: CHA_WDRC: readFromSDFile: DSL Structure Starts at line "); Serial.println(lines_read);
+				
+				// read the overall settings
+				if (r.readAndParseLine(file, line, buff_len, &attack, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &release, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &fs, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &maxdB, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &exp_cr, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &exp_end_knee, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &tkgain, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &tk, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &cr, 1) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, &bolt, 1) < 0) return -1;
+
+				//write to serial for debugging
+				printAllValues();
+			
+				return 0;
+			}
+		
+			
+			int readFromSD(SdFatSdioEX &sd, char *filename) {
+				SdFile_Gre file;
+				
+				//open SD
+				if (!(sd.begin())) {
+					Serial.println("BTNRH_WDRC: CHA_WDRC: readFromSD: cannot open SD.");
+					return -1;
+				}
+				
+				//open file
+				if (!(file.open(filename,O_READ))) {   //open for reading
+					Serial.print("BTNRH_WDRC: CHA_WDRC: readFromSD: cannot open file ");
+					Serial.println(filename);
+					return -1;
+				}
+				
+				//read data
+				int ret_val = readFromSDFile(&file);
+				
+				//close file
+				file.close();
+				
+				//return
+				return ret_val;
+			}
+			int readFromSD(char *filename) {
+				SdFatSdioEX sd;
+				return readFromSD(sd, filename);
+			}	
+			
+			void printAllValues(void) { printAllValues(&Serial); }
+			void printAllValues(Stream *s) {
+				s->println("CHA_WDRC:");
+				s->print("    : attack (ms) = "); s->println(attack);
+				s->print("    : release (ms) = "); s->println(release);
+				s->print("    : fs (Hz) = "); s->println(fs);
+				s->print("    : maxdB (dB SPL) = "); s->println(maxdB);;
+				s->print("    : exp_cr = "); s->println(exp_cr);
+				s->print("    : exp_end_knee (dB SPL) = "); s->println(exp_end_knee);
+				s->print("    : tkgain (dB) = "); s->println(tkgain);
+				s->print("    : tk (db SPL) = "); s->println(tk);
+				s->print("    : cr = "); s->println(cr);
+				s->print("    : bolt (dB SPL) = "); s->println(bolt);
+			};
+			
+			
+			void printToSDFile(SdFile_Gre *file, char *var_name) {
+				char header_str[] = "BTNRH_WDRC::CHA_WDRC";
+				r.writeHeader(file, header_str, var_name);
+				
+				r.writeValuesOnLine(file, &attack, 1, true, "atttack (msec)", 1);
+				r.writeValuesOnLine(file, &release, 1, true, "release (msec) ", 1);
+				r.writeValuesOnLine(file, &fs, 1, true, "sample rate (ignored)", 1);
+				r.writeValuesOnLine(file, &maxdB, 1, true, "max dB", 1);
+				r.writeValuesOnLine(file, &exp_cr, 1, true, "Expansion: Compression Ratio", 1);
+				r.writeValuesOnLine(file, &exp_end_knee, 1, true, "Expansion: Knee (dB SPL)", 1);
+				r.writeValuesOnLine(file, &tkgain, 1, true, "Linear: Gain (dB)", 1);
+				r.writeValuesOnLine(file, &tk, 1, true, "Compression: Knee (dB SPL)", 1);
+				r.writeValuesOnLine(file, &cr, 1, true, "Compression: Compression Ratio", 1);
+				r.writeValuesOnLine(file, &bolt, 1, false, "Limiter: Knee (dB SPL)", 1);  //no trailing comma on the last one
+				
+				r.writeFooter(file); 
+			}
+			
+			int printToSD(char *filename, char *var_name) {
+				SdFatSdioEX sd;
+				return readFromSD(sd, filename);
+			}
+			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name) {
+				SdFile_Gre file;
+				
+				//open SD
+				if (!(sd.begin())) {
+					Serial.println("BTNRH_WDRC: CHA_WDRC: readFromSD: cannot open SD.");
+					return -1;
+				}
+				
+				//open file
+				if (!(file.open(filename,O_WRITE | O_CREAT | O_AT_END))) {   //open for reading
+					Serial.print("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open file ");
+					Serial.println(filename);
+					return -1;
+				}
+				
+				//write data
+				printToSDFile(&file, var_name);
+				
+				//close file
+				file.close();
+				
+				//return
+				return 0;
+			}			
+	};
 	
 }
 
