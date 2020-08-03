@@ -149,11 +149,13 @@ class AccessConfigDataOnSD {
 			file->print(" ");
 			file->print(var_name);
 			file->print(" {");
+			file->println();
 		}
 		
 		//write integer values
-		void writeValuesOnLine(SdFile_Gre *file, int out_val[], int n_val, bool trailing_comma = true, int total_in_row = -1) {
+		void writeValuesOnLine(SdFile_Gre *file, int out_val[], int n_val, bool trailing_comma, const char* comment, int total_in_row = -1) {
 			if (total_in_row < n_val) total_in_row = n_val;
+			file->print(" ");
 			if (total_in_row == 1) { //write a single value
 				file->print(out_val[0]); 
 			} else {  //write many values
@@ -164,17 +166,19 @@ class AccessConfigDataOnSD {
 					} else {
 						file->print(out_val[n_val-1]);
 					}
-					if (i < (n_val-1)) file->print(", ");
+					if (i < (total_in_row-1)) file->print(", ");
 				}
 				file->print("}");
 			}
 			if (trailing_comma) file->print(",");
+			file->print(" \t// "); file->print(comment);
 			file->println();
 		}
 
 		//write float values
 		void writeValuesOnLine(SdFile_Gre *file, float out_val[], int n_val, bool trailing_comma, const char* comment, int total_in_row = -1) {
 			if (total_in_row < n_val) total_in_row = n_val;
+			file->print(" ");
 			if (total_in_row == 1) {  //write a single value
 				file->print(out_val[0],6); 
 			} else { //write many values
@@ -185,12 +189,12 @@ class AccessConfigDataOnSD {
 					} else {
 						file->print(out_val[n_val-1],6);
 					}
-					if (i < (n_val-1)) file->print(", ");
+					if (i < (total_in_row-1)) file->print(", ");
 				}
 				file->print("}");
 			}
 			if (trailing_comma) file->print(",");
-			file->print("// "); file->print(comment);
+			file->print(" \t// "); file->print(comment);
 			file->println();
 		}
 		void writeFooter(SdFile_Gre *file) {

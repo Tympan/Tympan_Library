@@ -89,6 +89,55 @@ namespace BTNRH_WDRC {
 			};
 		
 		
+			void printToSDFile(SdFile_Gre *file, char *var_name) {
+				char header_str[] = "BTNRH_WDRC::CHA_AFC";
+				r.writeHeader(file, header_str, var_name);
+				
+				r.writeValuesOnLine(file, &default_to_active, 1, true, "enable AFC at startup?", 1);
+				r.writeValuesOnLine(file, &afl,	1, true, "afl, length (samples) of adaptive filter", 1);
+				r.writeValuesOnLine(file, &mu,  1, true, "mu, scale factor for adaptation (bigger is faster)", 1);
+				r.writeValuesOnLine(file, &rho, 1, true, "rho, smoooothing factor for envelope (bigger is longer average)", 1);
+				r.writeValuesOnLine(file, &eps, 1, false, "eps, min value for env (helps avoid divide by zero", 1);//no trailing comma on the last one 
+				
+				r.writeFooter(file); 
+			}
+		
+			int printToSD(char *filename, char *var_name, bool deleteExisting = false) {
+				SdFatSdioEX sd;
+				return printToSD(sd, filename, var_name, deleteExisting);
+			}
+			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name, bool deleteExisting = false) {
+				SdFile_Gre file;
+				
+				//open SD
+				if (!(sd.begin())) {
+					Serial.println("BTNRH_WDRC: CHA_AFC: printToSD: cannot open SD.");
+					return -1;
+				}
+				
+				//delete existing file
+				if (deleteExisting) {
+					if (sd.exists(filename)) sd.remove(filename);
+				}
+				
+				//open file
+				file.open(filename,O_RDWR  | O_CREAT | O_APPEND); //open for writing
+				if (!file.isOpen()) {  
+					Serial.print("BTNRH_WDRC: CHA_AFC: printToSD: cannot open file ");
+					Serial.println(filename);
+					return -1;
+				}
+				
+				//write data
+				printToSDFile(&file, var_name);
+				
+				//close file
+				file.close();
+				
+				//return
+				return 0;
+			}	
+		
 	};
           
 	class CHA_DSL  {
@@ -205,6 +254,65 @@ namespace BTNRH_WDRC {
 				s->print("    : bolt (dB SPL) = ");
 				for (int i=0; i<nchannel;i++) { s->print(bolt[i]); s->print(", ");}; s->println();
 			};
+			
+			void printToSDFile(SdFile_Gre *file, char *var_name) {
+				char header_str[] = "BTNRH_WDRC::CHA_DSL";
+				r.writeHeader(file, header_str, var_name);
+				
+				r.writeValuesOnLine(file, &attack,      1, true, "atttack (msec)", 1);
+				r.writeValuesOnLine(file, &release,     1, true, "release (msec) ", 1);
+				r.writeValuesOnLine(file, &maxdB,       1, true, "max dB", 1);
+				r.writeValuesOnLine(file, &ear,         1, true, "ear (0=left, 1=right)", 1);
+				r.writeValuesOnLine(file, &nchannel,    1, true, "number of channels", 1);
+				r.writeValuesOnLine(file, cross_freq,   nchannel, true, "Crossover Freq (Hz)", DSL_MXCH);
+				r.writeValuesOnLine(file, exp_cr,       nchannel, true, "Expansion: Compression Ratio", DSL_MXCH);
+				r.writeValuesOnLine(file, exp_end_knee, nchannel, true, "Expansion: Knee (dB SPL)", DSL_MXCH);
+				r.writeValuesOnLine(file, tkgain,       nchannel, true, "Linear: Gain (dB)", DSL_MXCH);
+				r.writeValuesOnLine(file, tk,           nchannel, true,"Compression: Knee (dB SPL)", DSL_MXCH);
+				r.writeValuesOnLine(file, cr,           nchannel, true, "Compression: Compression Ratio", DSL_MXCH);
+				r.writeValuesOnLine(file, bolt,         nchannel, false, "Limiter: Knee (dB SPL)", DSL_MXCH); //no trailing comma on the last one	
+				
+				r.writeFooter(file); 
+			}
+			
+			int printToSD(char *filename, char *var_name, bool deleteExisting = false) {
+				SdFatSdioEX sd;
+				return printToSD(sd, filename, var_name, deleteExisting);
+			}
+			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name, bool deleteExisting = false) {
+				SdFile_Gre file;
+				
+				//open SD
+				if (!(sd.begin())) {
+					Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD.");
+					return -1;
+				}
+				
+				//delete existing file
+				if (deleteExisting) {
+					if (sd.exists(filename)) sd.remove(filename);
+				}
+				
+				
+				//open file
+				file.open(filename,O_RDWR  | O_CREAT | O_APPEND); //open for writing
+				if (!file.isOpen()) {  
+					Serial.print("BTNRH_WDRC: CHA_DSL: printToSD: cannot open file ");
+					Serial.println(filename);
+					return -1;
+				}
+				
+				//write data
+				printToSDFile(&file, var_name);
+				
+				//close file
+				file.close();
+				
+				//return
+				return 0;
+			}
+			
+			
 	};
 	
 	typedef struct {
@@ -360,21 +468,27 @@ namespace BTNRH_WDRC {
 				r.writeFooter(file); 
 			}
 			
-			int printToSD(char *filename, char *var_name) {
+			int printToSD(char *filename, char *var_name, bool deleteExisting = false) {
 				SdFatSdioEX sd;
-				return readFromSD(sd, filename);
+				return printToSD(sd, filename, var_name, deleteExisting);
 			}
-			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name) {
+			int printToSD(SdFatSdioEX &sd, char *filename, char *var_name, bool deleteExisting = false) {
 				SdFile_Gre file;
 				
 				//open SD
 				if (!(sd.begin())) {
-					Serial.println("BTNRH_WDRC: CHA_WDRC: readFromSD: cannot open SD.");
+					Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD.");
 					return -1;
 				}
 				
+				//delete existing file
+				if (deleteExisting) {
+					if (sd.exists(filename)) sd.remove(filename);
+				}
+				
 				//open file
-				if (!(file.open(filename,O_WRITE | O_CREAT | O_AT_END))) {   //open for reading
+				file.open(filename,O_RDWR  | O_CREAT | O_APPEND); //open for writing
+				if (!file.isOpen()) {  
 					Serial.print("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open file ");
 					Serial.println(filename);
 					return -1;
