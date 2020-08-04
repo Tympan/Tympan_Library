@@ -1,8 +1,12 @@
 
+#ifndef _textAndStringUtils_h
+#define _textAndStringUtils_h
+
 
 bool isNumberRelatedChar(char c) {
   return (isDigit(c) || (c == '.') || (c == '+') || (c == '-'));
 }
+
 
 int parseNextNumberFromString(String text_buffer, int start_ind, float &value) {
   //find start of number
@@ -17,3 +21,5 @@ int parseNextNumberFromString(String text_buffer, int start_ind, float &value) {
 
   return end_ind;
 }
+
+#endif
