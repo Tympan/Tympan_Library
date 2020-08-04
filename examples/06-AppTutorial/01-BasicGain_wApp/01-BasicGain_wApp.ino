@@ -29,6 +29,10 @@ AudioConnection_F32       patchCord2(i2s_in, 1, gain2, 0);    //connect the Righ
 AudioConnection_F32       patchCord11(gain1, 0, i2s_out, 0);  //connect the Left gain to the Left output
 AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Right gain to the Right output
 
+//define class for handling the GUI on the app
+#include "TympanRemoteFormatter.h"
+TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
+
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 10.0f; //gain on the microphone
@@ -54,6 +58,9 @@ void setup() {
   //Set the desired volume levels
   myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
+
+  //Create the GUI description (but not yet transmitted to the App...that's after it connects)
+  createTympanRemoteLayout();
 
   Serial.println("Setup complete.");
 } //end setup()
@@ -94,16 +101,30 @@ void respondToByte(char c) {
 // (single quotes are used here, whereas JSON spec requires double quotes.  The app converts ' to " before parsing the JSON string).
 // Please don't put commas or colons in your ID strings!
 void printTympanRemoteLayout(void) {
-  char jsonConfig[] = "JSON={"
-    "'pages':["
-      "{'title':'MyFirstPage','cards':["
-            "{'name':'Change Loudness','buttons':[{'label': 'Less', 'cmd': 'K'},{'label': 'More', 'cmd': 'k'}]}"
-      "]}" //no comma on the last one
-    "]" 
-  "}";
-  myTympan.println(jsonConfig);  
-  delay(50);
-  myTympan.println();
+  myTympan.println(myGUI.asString());
+}
+
+//define the GUI for the App
+void createTympanRemoteLayout(void) {
+  
+  // Create some temporary variables
+  TR_Page *page_h;  //dummy handle for a page
+  TR_Card *card_h;  //dummy handle for a card
+
+  //Add first page to GUI
+  page_h = myGUI.addPage("MyFirstPage");
+      card_h = page_h->addCard("Change Loudness");
+        #if 0
+          card_h->addButton("-","K");   //assumes default ID and default width. 
+          card_h->addButton("+","k");   //assumes default ID and default width
+        #else
+          card_h->addButton("-","K","minusButton",6);  //displayed string, command, button ID, button width (out of 12)
+          card_h->addButton("+","k","plusButton",6);   //displayed string, command, button ID, button width (out of 12)
+        #endif
+        
+  //add some pre-defined pages to the GUI
+  myGUI.addPredefinedPage("serialMonitor");
+  myGUI.addPredefinedPage("plot");
 }
 
 
