@@ -94,13 +94,20 @@ class AccessConfigDataOnSD {
 		}
 		
 		//read and parse floating point values from a line
-		int readAndParseLine(SdFile_Gre *file, char *line, int buff_len, float out_val[], int n_val) {
+		int readAndParseLine(SdFile_Gre *file, char *line, int buff_len, float out_val[], int n_val, int round_digit = 99) {
 			int nchar;
 			if ((nchar = getNonEmptyLine(file, line, buff_len)) <= 0) return -1;
 			char *p_str = line;
 			if (p_str[0]=='{') p_str++;
+			float scale_fac = 1.0;
+			if (round_digit <= 10) scale_fac = powf(10.0,round_digit); 
 			for (int Ichan = 0; Ichan < n_val; Ichan++) {
-				out_val[Ichan] = (float)strtod(p_str, &p_str);  //p_Str is a pointer inside "line" where the float value ended
+				if (round_digit > 10) {	
+					out_val[Ichan] = (float)strtod(p_str, &p_str);  //p_Str is a pointer inside "line" where the float value ended
+				} else {
+					//round to the given significant digit
+					out_val[Ichan] = (float) ( ((int) ( (scale_fac * strtod(p_str, &p_str))+0.5 ) ) / scale_fac );//p_Str is a pointer inside "line" where the float value ended
+				}
 				if (p_str[0]==',') p_str++;
 			}
 			return 0;
