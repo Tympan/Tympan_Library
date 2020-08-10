@@ -159,8 +159,9 @@ namespace BTNRH_WDRC {
 			float bolt[DSL_MXCH];       // broadband output limiting threshold
 			AccessConfigDataOnSD r;
 			
-			int readFromSDFile(SdFile_Gre *file) {
-				const int buff_len = 300;
+			int readFromSDFile(SdFile_Gre *file) { //returns zero if successful
+				//Serial.println("CHA_DSL: readFromSDFile: starting...");
+				const int buff_len = 400;
 				char line[buff_len];
 				
 				//find start of data structure
@@ -185,7 +186,7 @@ namespace BTNRH_WDRC {
 				}
 				
 				//read the per-channel settings
-				if (r.readAndParseLine(file, line, buff_len, cross_freq, nchannel) < 0) return -1;
+				if (r.readAndParseLine(file, line, buff_len, cross_freq, nchannel) < 0) return -1;				
 				if (r.readAndParseLine(file, line, buff_len, exp_cr, nchannel) < 0) return -1;
 				if (r.readAndParseLine(file, line, buff_len, exp_end_knee, nchannel) < 0) return -1;
 				if (r.readAndParseLine(file, line, buff_len, tkgain, nchannel) < 0) return -1;
@@ -193,6 +194,7 @@ namespace BTNRH_WDRC {
 				if (r.readAndParseLine(file, line, buff_len, tk, nchannel) < 0) return -1;
 				if (r.readAndParseLine(file, line, buff_len, bolt, nchannel) < 0) return -1;
 
+				Serial.println("CHA_DSL: readFromSDFile: success!");
 				//write to serial for debugging
 				//printAllValues();
 			
@@ -233,6 +235,9 @@ namespace BTNRH_WDRC {
 			
 			void printAllValues(void) { printAllValues(&Serial); }
 			void printAllValues(Stream *s) {
+				int last_chan = nchannel;
+				//last_chan = DSL_MXCH;
+				
 				s->println("CHA_DSL:");
 				s->print("    : attack (ms) = "); s->println(attack);
 				s->print("    : release (ms) = "); s->println(release);
@@ -240,19 +245,19 @@ namespace BTNRH_WDRC {
 				s->print("    : ear (0 = left, 1 = right) "); s->println(ear);
 				s->print("    : nchannel = "); s->println(nchannel);
 				s->print("    : cross_freq (Hz) = ");
-				for (int i=0; i<nchannel-1;i++) { s->print(cross_freq[i]); s->print(", ");}; s->println();
+				for (int i=0; i< last_chan;i++) { s->print(cross_freq[i]); s->print(", ");}; s->println();
 				s->print("    : exp_cr = ");
-				for (int i=0; i<nchannel;i++) { s->print(exp_cr[i]); s->print(", ");}; s->println();
+				for (int i=0; i<last_chan;i++) { s->print(exp_cr[i]); s->print(", ");}; s->println();
 				s->print("    : exp_end_knee (dB SPL) = ");
-				for (int i=0; i<nchannel;i++) { s->print(exp_end_knee[i]); s->print(", ");}; s->println();
+				for (int i=0; i<last_chan;i++) { s->print(exp_end_knee[i]); s->print(", ");}; s->println();
 				s->print("    : tkgain (dB) = ");
-				for (int i=0; i<nchannel;i++) { s->print(tkgain[i]); s->print(", ");}; s->println();
+				for (int i=0; i<last_chan;i++) { s->print(tkgain[i]); s->print(", ");}; s->println();
 				s->print("    : cr = ");
-				for (int i=0; i<nchannel;i++) { s->print(cr[i]); s->print(", ");}; s->println();
+				for (int i=0; i<last_chan;i++) { s->print(cr[i]); s->print(", ");}; s->println();
 				s->print("    : tk (dB SPL) = ");
-				for (int i=0; i<nchannel;i++) { s->print(tk[i]); s->print(", ");}; s->println();
+				for (int i=0; i<last_chan;i++) { s->print(tk[i]); s->print(", ");}; s->println();
 				s->print("    : bolt (dB SPL) = ");
-				for (int i=0; i<nchannel;i++) { s->print(bolt[i]); s->print(", ");}; s->println();
+				for (int i=0; i<last_chan;i++) { s->print(bolt[i]); s->print(", ");}; s->println();
 			};
 			
 			void printToSDFile(SdFile_Gre *file, const char *var_name) {
@@ -268,8 +273,8 @@ namespace BTNRH_WDRC {
 				r.writeValuesOnLine(file, exp_cr,       nchannel, true, "Expansion: Compression Ratio", DSL_MXCH);
 				r.writeValuesOnLine(file, exp_end_knee, nchannel, true, "Expansion: Knee (dB SPL)", DSL_MXCH);
 				r.writeValuesOnLine(file, tkgain,       nchannel, true, "Linear: Gain (dB)", DSL_MXCH);
-				r.writeValuesOnLine(file, tk,           nchannel, true,"Compression: Knee (dB SPL)", DSL_MXCH);
 				r.writeValuesOnLine(file, cr,           nchannel, true, "Compression: Compression Ratio", DSL_MXCH);
+				r.writeValuesOnLine(file, tk,           nchannel, true,"Compression: Knee (dB SPL)", DSL_MXCH);
 				r.writeValuesOnLine(file, bolt,         nchannel, false, "Limiter: Knee (dB SPL)", DSL_MXCH); //no trailing comma on the last one	
 				
 				r.writeFooter(file); 
