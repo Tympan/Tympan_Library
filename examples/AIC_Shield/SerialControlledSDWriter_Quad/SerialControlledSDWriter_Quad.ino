@@ -38,12 +38,9 @@ float input_gain_dB = default_input_gain_dB;
 
 // /////////// Define audio objects...they are configured later
 
-#define AIC_RESET_PIN 20   //for I2C connection to AIC shield (eventually move into Tympan library)
-#define AIC_I2C_BUS 2     //for I2C connection to AIC shield (eventually move into Tympan library)
-
 // define classes to control the Tympan and the AIC_Shield
 Tympan                        myTympan(TympanRev::D);    //note: Rev C is not compatible with the AIC shield
-AudioControlAIC3206           aicShield(AIC_RESET_PIN,AIC_I2C_BUS);  //for AIC_Shield
+AICShield                     aicShield(TympanRev::D, AICShieldRev::A);  //for AIC_Shield
 AudioInputI2SQuad_F32         i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioSDWriter_F32             audioSDWriter(audio_settings); //this is stereo by default
 AudioOutputI2SQuad_F32        i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.

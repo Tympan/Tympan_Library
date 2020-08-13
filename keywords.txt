@@ -166,3 +166,15 @@ setAmberLED		KEYWORD2
 setRedLED		KEYWORD2
 readPotentiometer	KEYWORD2
 getTympanRev		KEYWORD2
+TympanRemoteFormatter	KEYWORD1
+TR_Page			KEYWORD1
+TR_Card			KEYWORD1
+TR_Button		KEYWORD1
+addPage			KEYWORD2
+addPredefinedPage	KEYWORD2
+addCard			KEYWORD2
+addButton		KEYWORD2
+asString		KEYWORD2
+asValidJSON		KEYWORD2
+
+
