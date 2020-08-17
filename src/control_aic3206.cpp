@@ -1106,7 +1106,7 @@ void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
 	c = coeff[2];
 	aic_writePage(page,32,(uint8_t)(c>>24));
 	aic_writePage(page,33,(uint8_t)(c>>16));
-	aic_writePage(page,34,(uint8_t)(c>>9));	
+	aic_writePage(page,34,(uint8_t)(c>>8));	
 }
 void AudioControlAIC3206::setHpfIIRCoeffOnADC_Right(uint32_t *coeff) {
 	int page;
