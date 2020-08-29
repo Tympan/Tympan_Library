@@ -12,9 +12,11 @@ Requirements
 
 **Hardware**: This library is intended to be used to program a Teensy 3.6 that is connected to a Tympan Audio Board (the Tympan in the nice black case).  To fully utilize the Teensy 3.6, you will also need an external microphone, a headset or earbuds and a micro USB cable. Although the Tympan Audio Board also has an On-Board Microphone, the default programming for this device references an external microphone. If you have been provided with the 2017-04-27 Typman Getting Started.pptx, you will find it helpful to review that first for additional information related to the physical hardware setup. 
 
-**Arduino IDE**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the actual Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
+**Arduino IDE (Windows/Linux)**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the actual Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
 
-**Teensyduino Add-On**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program the Teensy using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to just a few (like Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash).  It's your choice.
+**Teensyduino Add-On (Windows/Linux)**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program the Teensy using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to just a few (like Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash).  It's your choice.
+
+**Teensyduino (Mac)**: Recent versions of OS X do not support the Teensyduino Add-On installer, so there is a full [Teensyduino IDE](https://www.pjrc.com/teensy/td_download.html) available from the Teensy project which just needs to be downloaded and extracted from its ZIP file.
 
 Installing the Tympan Library
 ------------
