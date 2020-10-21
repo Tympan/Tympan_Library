@@ -117,18 +117,20 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
 					break;
-				case (TympanRev::E_A) :    //Earliest trials with Tympan 4 with Rev A 
+				case (TympanRev::E_A) :    //Earliest trials with Tympan 4 with Rev A
 					//Teensy 4.0 Pin Numbering
-					resetAIC = 5;  //PTD6
-					potentiometer = 15;  //PTC0
-					amberLED = 36;  //PTC9
-					redLED = 35;  //PTC8
-					BT_nReset = 6; //
-					BT_REGEN = NOT_A_FEATURE;
-					BT_PIO4 = 2;  //PTD0
+					resetAIC = 26;  //
+					potentiometer = 17;  //
+					amberLED = 15;  //
+					redLED = 16;  //
+					BT_nReset = 9; //
+					BT_REGEN = 14;
+					BT_PIO4 = NOT_A_FEATURE;
+					BT_PIO0 = 5;
+					BT_PIO5 = 2;
 					reversePot = true;
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
-					break;		
+					break;
 			}
 		}
 		usb_serial_class * getUSBSerial(void) { return USB_Serial; }
