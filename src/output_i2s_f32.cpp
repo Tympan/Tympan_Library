@@ -35,6 +35,7 @@
 //include "memcpy_audio.h"
 //#include "memcpy_interleave.h"
 #include <arm_math.h>
+#include <Audio.h> //to get access to Audio/utlity/imxrt_hw.h
 
 /* //taken from Teensy Audio utility/imxrt_hw.h and imxrt_hw.cpp...
 #if defined(__IMXRT1062__)
