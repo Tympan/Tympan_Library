@@ -119,17 +119,18 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					break;
 				case (TympanRev::E_A) :    //Earliest trials with Tympan 4 with Rev A
 					//Teensy 4.0 Pin Numbering
-					resetAIC = 26;  //
-					potentiometer = 17;  //
-					amberLED = 15;  //
-					redLED = 16;  //
+					resetAIC = 26;  //Teensy pin that goes to the reset pin of the audio AIC
+					potentiometer = 17;  //Teensy pin to potentiometer that is often used as a volume control
+					amberLED = 15;  // Teensy pin to the amber LED
+					redLED = 16;  // Teensy pin to the red LED
 					BT_nReset = 9; //
 					BT_REGEN = 14;
-					BT_PIO4 = NOT_A_FEATURE;
+					//BT_PIO4 = NOT_A_FEATURE;
 					BT_PIO0 = 5;
-					BT_PIO5 = 2;
-					reversePot = true;
-					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
+					//BT_PIO5 = 2;
+					BT_PIO4 = 2;  //This is actually PIO5 but we don't have a name for this.  We don't really use this anyway, so whatever.  (WEA 10/24/2020)
+					reversePot = true;  //need to check this.  Is the pot really wired backwards like the old RevA???  Since it worked correctly (not reversed) on Rev D, I bet that it's correct on RevE, too.
+					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
 					break;
 			}
 		}
