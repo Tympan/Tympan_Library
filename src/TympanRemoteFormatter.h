@@ -135,8 +135,7 @@ class TympanRemoteFormatter {
       String s;
       int i;
 
-      s = "JSON={",
-          "'icon':'tympan.png',";
+      s = "JSON={'icon':'tympan.png',";
 
       // Add pages:
       if (nPages > 0) {
