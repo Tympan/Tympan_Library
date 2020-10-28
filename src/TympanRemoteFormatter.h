@@ -88,7 +88,7 @@ class TR_Page {
       String s;
       int i;
       
-      s = "{'name':'"+name+"'";
+      s = "{'title':'"+name+"'";
       if (nCards > 0) {
         s += ",'cards':[";
         s += cards[0].asString();
@@ -135,7 +135,9 @@ class TympanRemoteFormatter {
       String s;
       int i;
 
-      s = "{";
+      s = "JSON={",
+          "'icon':'tympan.png',";
+
       // Add pages:
       if (nPages > 0) {
         s += "'pages':[";
