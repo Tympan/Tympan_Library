@@ -89,12 +89,12 @@ void respondToByte(char c) {
     case 'k':
       changeGain(3.0);
       printGainLevels();
-      SetButtonText("gainIndicator", String(digital_gain_dB));
+      setButtonText("gainIndicator", String(digital_gain_dB));
       break;
     case 'K':
       changeGain(-3.0);
       printGainLevels();
-      SetButtonText("gainIndicator", String(digital_gain_dB));
+      setButtonText("gainIndicator", String(digital_gain_dB));
       break;
   }
 }
@@ -148,6 +148,6 @@ void printGainLevels(void) {
   myTympan.println(digital_gain_dB); //print text to Serial port for debugging
 }
 
-void SetButtonText(String btnId, String text) {
+void setButtonText(String btnId, String text) {
   myTympan.println("TEXT=BTN:" + btnId + ":"+text);
 }
