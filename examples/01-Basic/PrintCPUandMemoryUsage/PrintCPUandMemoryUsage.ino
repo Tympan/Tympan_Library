@@ -4,7 +4,6 @@
 *   Created: Chip Audette, Apr 2017
 *   Purpose: BasicGain plus changes sample rate plus prints the CPU and Memory usage
 *
-*   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the audio signal.
 *
 *   MIT License.  use at your own risk.
@@ -36,8 +35,8 @@ const float input_gain_dB = 20.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void setup() {
   //begin the serial comms (for debugging)
-  Serial.begin(115200);  delay(500);
-  Serial.println("PrintCPUandMemoryUsage: starting setup()...");
+  myTympan.beginBothSerial(); delay(1000); //let's use the print functions in "myTympan" so it goes to BT, too!
+  myTympan.println("PrintCPUandMemoryUsage: starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10,audio_settings); 
@@ -57,18 +56,18 @@ void setup() {
   // check the volume knob
   servicePotentiometer(millis(),0);  //the "0" is not relevant here.
 
-  Serial.println("Setup complete.");
+  myTympan.println("Setup complete.");
 } //end setup()
 
 
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
 
-  //check the potentiometer
+  //serivce the potentiometer
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
-  //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),3000); //print every 3000 msec
+  //Print the CPU and Memory Usage
+  myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
 } //end loop();
 
@@ -101,32 +100,14 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
       //command the new gain setting
       gain1.setGain_dB(vol_knob_gain_dB);  //set the gain of the Left-channel gain processor
       gain2.setGain_dB(vol_knob_gain_dB);  //set the gain of the Right-channel gain processor
-      Serial.print("servicePotentiometer: Digital Gain dB = "); Serial.println(vol_knob_gain_dB); //print text to Serial port for debugging
+      myTympan.print("servicePotentiometer: Digital Gain dB = "); myTympan.println(vol_knob_gain_dB); //print text to Serial port for debugging
     }
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
 
 
-//This routine prints the current and maximum CPU usage and the current usage of the AudioMemory that has been allocated
-void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  //static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
-  static unsigned long lastUpdate_millis = 0;
 
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("CPU Cur/Peak: ");
-    Serial.print(audio_settings.processorUsage());
-    Serial.print("%/");
-    Serial.print(audio_settings.processorUsageMax());
-    Serial.print("%, ");
-    Serial.print("MEM Cur/Peak: ");
-    Serial.print(AudioMemoryUsage_F32());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax_F32());
-    Serial.println();
 
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }
-}
+
+

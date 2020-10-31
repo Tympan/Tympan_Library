@@ -45,7 +45,10 @@ void AudioFilterFIR_F32::update(void)
 		
 		//apply the FIR
 		arm_fir_f32(&fir_inst, block->data, block_new->data, block->length);
+		
+		//copy info about the block
 		block_new->length = block->length;
+		block_new->id = block->id;
 
 		//transmit the data
 		AudioStream_F32::transmit(block_new); // send the FIR output

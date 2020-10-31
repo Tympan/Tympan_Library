@@ -1,6 +1,8 @@
 // FormantShifter_FD
 //
-// Demonstrate formant shifting via frequency domain processin.
+// Demonstrate formant shifting via frequency domain processing.  
+//    Using the thumb-wheel, give yourself a deep resonant voice.
+//    Or, turning the other way, make your voice sound like helium talking!
 //
 // Created: Chip Audette (OpenAudio) March 2019
 //

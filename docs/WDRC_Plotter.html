@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>WDRC Input-Output Calculator</title>
+<style>
+th, td {
+	padding: 2px;
+}
+</style>
+  
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart', 'table']});
+      google.charts.setOnLoadCallback(drawChart);
+
+		function WDRC_circuit_gain(env_dB, exp_cr, exp_end_knee, tkgn,  tk,  cr, bolt) 
+		  //exp_cr = compression ratio for expansion
+		  //exp_end_knee = kneepoint for end of the expansion region
+			//tkgn = gain (dB?) at start of compression (ie, gain for linear behavior?)
+			//tk = compression start kneepoint (pre-compression, dB SPL?)
+			//cr = compression ratio
+			//bolt = broadband output limiting threshold (post-compression, dB SPL?)
+		{
+		  var gdb = 0.0;
+		  var tkgo= 0.0;
+		  var pblt= 0.0;
+		  var k= 0.0;
+		  var pdb = env_dB; //just rename it to keep the code below unchanged (input SPL dB)
+		  var tk_tmp = tk;   //temporary, threshold for start of compression (input SPL dB)
+		  
+		  if ((tk_tmp + tkgn) > bolt) { //after gain, would the compression threshold be above the output-limitting threshold ("bolt")
+			  tk_tmp = bolt - tkgn;  //if so, lower the compression threshold to be the pre-gain value resulting in "bolt"
+		  }
+
+		  tkgo = tkgn + tk_tmp * (1.0 - 1.0 / cr);  //intermediate calc
+		  pblt = cr * (bolt - tkgo); //calc input level (dB) where we need to start limiting, not just compression
+		  var cr_const = ((1.0 / cr) - 1.0); //pre-calc a constant that we'll need later
+
+		  //compute gain at transition between expansion and linear/compression regions
+		  var gain_at_exp_end_knee = tkgn;
+		  if (tk_tmp < exp_end_knee) {
+			gain_at_exp_end_knee  = cr_const * exp_end_knee + tkgo;
+		  }
+
+		  var exp_cr_const = 1.0/Math.max(0.01,exp_cr) - 1.0;
+		  var regime = 0;
+		  if (pdb < exp_end_knee) {  //if below the expansion threshold, do expansion expansion region.
+			  gdb = gain_at_exp_end_knee - ((exp_end_knee-pdb)*exp_cr_const); //reduce gain the farther down you are from the end of the expansion region
+			  regime = 0;
+			} else if ((pdb < tk_tmp) && (cr >= 1.0)) {  //if below the compression threshold, go linear
+				gdb = tkgn;  //we're in the linear region.  Apply linear gain.
+				regime = 1;
+			} else if (pdb > pblt) { //we're beyond the compression region into the limitting region
+				gdb =  bolt + ( (pdb - pblt) / 10.0) - pdb; //10:1 limiting!
+				regime = 3;
+			} else {
+				gdb = cr_const * pdb + tkgo; //compression
+				regime = 2;
+			}
+			
+			var output_dB = pdb + gdb;
+			var output = [output_dB, regime];
+		  return output;
+		}
+
+      function drawChart() {
+		//var inputs = new google.visualization.arrayToDataTable([
+		//	['Name', 'Value'],
+		//	['Slope', 2.0],
+		//	['Limit', 80.0]
+		//],
+		//false); //'false' means that the first row contains labels not data
+		
+		var data = new google.visualization.DataTable();
+		data.addColumn('number', 'Input SPL');
+		data.addColumn('number', 'Exp');
+		data.addColumn('number', 'Lin');
+		data.addColumn('number', 'Comp');
+		data.addColumn('number', 'Limit');
+		data.addColumn('number', '1:1');
+		var nRows = 100;
+		data.addRows(nRows);
+		
+		//get the input parameters from the HTML form
+		var exp_cr = parseFloat(document.getElementById("exp_cr").value);
+		var exp_end_knee = parseFloat(document.getElementById("exp_end_knee").value);
+		var tkgain = parseFloat(document.getElementById("tkgain").value);
+		var tk = parseFloat(document.getElementById("tk").value);
+		var cr = parseFloat(document.getElementById("cr").value);
+		var bolt = parseFloat(document.getElementById("bolt").value);
+		
+		//compute the values to display in the graph
+		var iRow;
+		var startSPL = 20;
+		for (iRow = 0; iRow < nRows; iRow++) {
+			//compute values
+			var inputSPL_dB = startSPL+iRow;
+			var outputSPL_Linear_dB = inputSPL_dB;
+			var output = WDRC_circuit_gain(inputSPL_dB, exp_cr, exp_end_knee, tkgain,  tk,  cr, bolt);
+			var outputSPL_WDRC_dB = parseFloat(output[0]);
+			var regime = output[1];
+			//regime = Math.max([0, Math.min([4-1, regime])]);
+		
+			//push into table
+			data.setCell(iRow,0,inputSPL_dB);
+			data.setCell(iRow,1,NaN);
+			data.setCell(iRow,2,NaN);
+			data.setCell(iRow,3,NaN);
+			data.setCell(iRow,4,NaN);
+			data.setCell(iRow,5,outputSPL_Linear_dB);
+			
+			//put the WDRC value into the correct column
+			data.setCell(iRow,1+regime,outputSPL_WDRC_dB);
+			
+		}
+
+		//format the graph
+        var options = {
+          title: 'WDRC Input-Output',
+          legend: { position: 'bottom' },
+		  pointSize: 5,
+		  colors: ['blue','green','red','gray','black','yellow'],
+		  series: {
+				0: { pointSize:5 },
+				1: { pointSize:5 },
+				2: { pointSize:5 },
+				3: { pointSize:5 },
+				4: { pointSize:0, lineWidth:3, lineDashStyle:[10,10] }
+				},
+
+		  hAxis: {minValue: startSPL, 
+		          maxValue: startSPL+nRows, 
+				  title:'Input SPL (dB)',
+				  ticks:[20,40,60,80,100,120]
+				 },
+		  vAxis: {minValue: startSPL, 
+				maxValue: startSPL+nRows, 
+				title:'Output SPL (dB)',
+				ticks:[20,40,60,80,100,120]
+				}
+        };
+
+		//https://developers.google.com/chart/interactive/docs/gallery/linechart#examples
+        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+	
+	
+        chart.draw(data, options);
+		//table.draw(inputs, {showRowNumber: true, width: '100%', height: '100%'});
+
+      }
+    </script>
+  </head>
+  <body style="font-family:sans-serif;">
+ 	<table class="columns">
+		<tr>
+			<td><div id="curve_chart" style="width: 600px; height: 500px"></div></td>
+			<td>			 
+				<form>
+				  <table>
+				  <tr><td><label for="exp_cr"><font color="blue"><b>Expansion:</b></font> Ratio (<i>exp_cr</i>)</label></td></tr>
+				  <tr><td><input type="float" id="exp_cr" name="exp_cr" value=0.57 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="exp_end_knee"><font color="blue"><b>Expansion:</b></font> End Kneepoint (<i>exp_end_knee</i>)</label></td></tr>
+				  <tr><td><input type="float" id="exp_end_knee" name="exp_end_knee" value=30 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="tkgain"><font color="green"><b>Linear:</b></font> Gain (<i>tkgain</i>)</label></td></tr>
+				  <tr><td><input type="float" id="tkgain" name="tkgain" value=20 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="tk"><font color="red"><b>Compression:</b></font> Start Kneepoint (<i>tk</i>)</label></td></tr>
+				  <tr><td><input type="float" id="tk" name="tk" value=50 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="cr"><font color="red"><b>Compression:</b></font> Ratio (<i>cr</i>)</label></td></tr>
+				  <tr><td><input type="float" id="cr" name="cr" value=1.5 onchange="drawChart();"></td></tr>
+				  <tr><td><label for="bolt"><font color="gray"><b>Limitter:</b></font> Start Kneepoint (<i>bolt</i>)</label></td></tr>
+				  <tr><td><input type="float" id="bolt" name="bolt" value=90 onchange="drawChart();"></td></tr>
+				  <tr><td></td></tr>
+				  <tr><td><input id="recompute" type="button" value="Recompute" onclick="drawChart();"/></td></tr>
+				  </table>
+				</form>
+			</td>
+		</tr>
+	</table>
+	<H2>WDRC Input-Output Calculator</H2>
+    <p>This page illustrates how the WDRC settings change the input-output behavior of the WDRC algorithm.</p>
+	<p>The WDRC calculations shown here are taken from <a href="https://github.com/Tympan/Tympan_Library/blob/master/src/AudioCalcGainWDRC_F32.h">AudioCalcGainWDRC_F32.h</a>, which is part of the <a href="https://github.com/Tympan/Tympan_Library">Tympan_Library</a> for Arduino.</p>
+	<br>
+	<p>Chip Audette, OpenAudio, June 2020, MIT License</p>
+  </body>
+</html>
+

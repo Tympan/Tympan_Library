@@ -14,6 +14,13 @@
 #ifndef _SerialManager_h
 #define _SerialManager_h
 
+
+//functions in the main sketch that I want to call from here
+extern void incrementKnobGain(float);
+extern void incrementHPCutoffFreq_Hz(float);
+extern void printGainSettings(void);
+extern void togglePrintMemoryAndCPU(void);
+
 //now, define the Serial Manager class
 class SerialManager {
   public:
@@ -39,12 +46,6 @@ void SerialManager::printHelp(void) {
   Serial.print("   F: Lower the highpass filter cutoff frequency by "); Serial.print((freqIncrementFactor-1.0)*100.0,0); Serial.println("%");
   Serial.println();
 }
-
-//functions in the main sketch that I want to call from here
-extern void incrementKnobGain(float);
-extern void incrementHPCutoffFreq_Hz(float);
-extern void printGainSettings(void);
-extern void togglePrintMemoryAndCPU(void);
 
 //switch yard to determine the desired action
 void SerialManager::respondToByte(char c) {

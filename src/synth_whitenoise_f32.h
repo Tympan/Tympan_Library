@@ -35,7 +35,7 @@
 #ifndef synth_whitenoise_f32_h_
 #define synth_whitenoise_f32_h_
 #include <Arduino.h>
-#include "AudioStream.h"
+//#include "AudioStream.h"  //2020-04-11 Tring to remove dependence upon AudioStream, especially Aud
 #include "AudioStream_F32.h"
 #include "utility/dspinst.h"
 #include "AudioConvert_F32.h" //for convert_i16_to_f32
@@ -63,6 +63,7 @@ private:
 	int32_t  level; // 0=off, 65536=max
 	uint32_t seed;  // must start at 1
 	static uint16_t instance_count;
+	int16_t block_data[AUDIO_BLOCK_SAMPLES]; //working memory for use by the legacy int16 code for generating the noise
 };
 
 #endif

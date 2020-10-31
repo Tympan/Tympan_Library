@@ -26,6 +26,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
   public:
     //default constructor
     AudioCalcGainWDRC_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
+	AudioCalcGainWDRC_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) { setDefaultValues(); };
 
     //here's the method that does all the work
     void update(void) {
@@ -40,7 +41,9 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       
       // ////////////////////// do the processing here!
       calcGainFromEnvelope(in_block->data, out_block->data, in_block->length);
-      out_block->length = in_block->length; out_block->fs_Hz = in_block->fs_Hz;
+      out_block->length = in_block->length; 
+	  out_block->fs_Hz = in_block->fs_Hz;
+	  out_block->id = in_block->id;
       
       //transmit the block and be done
       AudioStream_F32::transmit(out_block);
@@ -99,7 +102,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
         gain_at_exp_end_knee  = cr_const * exp_end_knee + tkgo;
       }
 
-      float exp_cr_const = 1.f-max(0.01f,exp_cr);
+      float exp_cr_const = 1.0/max(0.01,exp_cr) - 1.0;
       for (k = 0; k < n; k++) {  //loop over each sample
         if (pdb[k] < exp_end_knee) {  //if below the expansion threshold, do expansion
           //expansion region.
@@ -160,6 +163,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
 	float getCurrentGain_dB(void) { return db2(getCurrentGain()); }
     
 	float setMaxdB(float32_t _maxdB) { return maxdB = _maxdB; }
+	float getMaxdB(void) { return maxdB; }
 	float setKneeExpansion_dBSPL(float32_t _knee) { return exp_end_knee = _knee; }
 	float getKneeExpansion_dBSPL(void) { return exp_end_knee; }
 	float setExpansionCompRatio(float32_t _cr) { return exp_cr = _cr; }
@@ -167,6 +171,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
 	float setKneeCompressor_dBSPL(float32_t _knee) { return tk = _knee; }
 	float getKneeCompressor_dBSPL(void) { return tk; }
 	float setCompRatio(float32_t _cr) { return cr = _cr; }
+	float getCompRatio(void) { return cr; }
 	float setKneeLimiter_dBSPL(float32_t _bolt) { return bolt = _bolt; }
 	float getKneeLimiter_dBSPL(void) { return bolt; }
 

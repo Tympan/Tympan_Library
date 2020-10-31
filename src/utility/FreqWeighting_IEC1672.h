@@ -29,10 +29,9 @@ class FreqWeighting_IEC1672 {
 		int index = 0;
 		bool done = false;
 		float32_t val;
-	
-		while (!done & (index < (N_all_fs_Hz-1))) {
+		while ( (!done) & (index < (N_all_fs_Hz-1))) {
 			val = 0.5*(all_fs_Hz[index] + all_fs_Hz[index+1]);
-			if (targ_fs_Hz < val) {
+			if (targ_fs_Hz > val) {
 				index++;
 			} else {
 				done = 1;
@@ -42,6 +41,7 @@ class FreqWeighting_IEC1672 {
 	}
 	float32_t* get_filter_matlab_sos(int type, float32_t targ_fs_Hz) {
 		int ind = findIndexForSampleRate(targ_fs_Hz);
+		
 		float32_t* coeff = (all_A_matlab_sos[ind]);
 		switch (type) {
 			case A_WEIGHT:

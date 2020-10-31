@@ -140,6 +140,7 @@ private:
 	void receiveIncomingData(void);
 	void discardUnneededBlocksFromQueue(void);
 	void transmitOutgoingData(void);
+	unsigned long last_received_block_id = 0;
 };
 
 #endif

@@ -5,7 +5,6 @@
 *   Purpose: Process audio by applying a high-pass filter followed by gain followed
 *            by a dynamic range compressor.
 *
-*   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
 *
 *   MIT License.  use at your own risk.
@@ -20,7 +19,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::D);     //do TympanRev::D or TympanRev::C
+Tympan                    myTympan(TympanRev::D, audio_settings); //do TympanRev::D or TympanRev::C
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
 AudioFilterBiquad_F32     hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
@@ -71,8 +70,8 @@ const float input_gain_dB = 20.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void setup() {
   //begin the serial comms (for debugging)
-  Serial.begin(115200);  delay(500);
-  Serial.println("TrebleBoost_wComp: Starting setup()...");
+  myTympan.beginBothSerial(); delay(1000); //let's use the print functions in "myTympan" so it goes to BT, too!
+  myTympan.println("TrebleBoost_wComp: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10,audio_settings); 
@@ -91,7 +90,7 @@ void setup() {
 
   //Set the cutoff frequency for the highpassfilter
   float cutoff_Hz = 1000.f;  //frequencies below this will be attenuated
-  Serial.print("Highpass filter cutoff at ");Serial.print(cutoff_Hz);Serial.println(" Hz");
+  myTympan.print("Highpass filter cutoff at ");myTympan.print(cutoff_Hz);myTympan.println(" Hz");
   hp_filt1.setHighpass(0, cutoff_Hz); //biquad IIR filter.  left channel
   hp_filt2.setHighpass(0, cutoff_Hz); //biquad IIR filter.  right channel
 
@@ -101,7 +100,7 @@ void setup() {
   // check the setting on the potentiometer
   servicePotentiometer(millis(),0);
 
-  Serial.println("Setup complete.");
+  myTympan.println("Setup complete.");
 } //end setup()
 
 
@@ -111,8 +110,8 @@ void loop() {
   //periodically check the potentiometer
   servicePotentiometer(millis(),100); //update every 100 msec
 
-  //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),6000); //print every 3000 msec
+  //periodically  print the CPU and Memory Usage
+  myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
   //periodically print the gain status
   printGainStatus(millis(),2000); //update every 4000 msec
@@ -134,7 +133,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(myTympan.readPotentiometer()) / 1024.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //send the potentiometer value to your algorithm as a control parameter
@@ -148,36 +147,13 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
       //command the new gain setting
       comp1.setGain_dB(vol_knob_gain_dB);  //set the gain of the Left-channel linear gain at start of compression
       comp2.setGain_dB(vol_knob_gain_dB);  //set the gain of the Right-channel linear gain at start of compression
-      Serial.print("servicePotentiometer: linear gain dB = "); Serial.println(vol_knob_gain_dB); //print text to Serial port for debugging
+      myTympan.print("servicePotentiometer: linear gain dB = "); myTympan.println(vol_knob_gain_dB); //print text to Serial port for debugging
     }
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
 
 
-
-//This routine prints the current and maximum CPU usage and the current usage of the AudioMemory that has been allocated
-void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  //static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
-  static unsigned long lastUpdate_millis = 0;
-
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("CPU Cur/Peak: ");
-    Serial.print(audio_settings.processorUsage());
-    Serial.print("%/");
-    Serial.print(audio_settings.processorUsageMax());
-    Serial.print("%, ");
-    Serial.print("MEM Cur/Peak: ");
-    Serial.print(AudioMemoryUsage_F32());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax_F32());
-    Serial.println();
-
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }
-}
 
 //This routine plots the current gain settings, including the dynamically changing gains
 //of the compressors
@@ -188,19 +164,19 @@ void printGainStatus(unsigned long curTime_millis, unsigned long updatePeriod_mi
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("printGainStatus: ");
+    myTympan.print("printGainStatus: ");
 
-    Serial.print("Input PGA = ");
-    Serial.print(input_gain_dB,1);
-    Serial.print(" dB.");
+    myTympan.print("Input PGA = ");
+    myTympan.print(input_gain_dB,1);
+    myTympan.print(" dB.");
 
-    Serial.print(" Compressor Gain (L/R) = ");
-    Serial.print(comp1.getCurrentGain_dB(),1);
-    Serial.print(", ");
-    Serial.print(comp2.getCurrentGain_dB(),1);
-    Serial.print(" dB.");
+    myTympan.print(" Compressor Gain (L/R) = ");
+    myTympan.print(comp1.getCurrentGain_dB(),1);
+    myTympan.print(", ");
+    myTympan.print(comp2.getCurrentGain_dB(),1);
+    myTympan.print(" dB.");
 
-    Serial.println();
+    myTympan.println();
 
     lastUpdate_millis = curTime_millis;
   } // end if

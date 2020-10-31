@@ -42,9 +42,14 @@
 class AudioSynthToneSweep_F32 : public AudioStream_F32
 {
 public:
-  AudioSynthToneSweep_F32(void) :
-  AudioStream_F32(0,NULL), sweep_busy(0)
-  { }
+  AudioSynthToneSweep_F32(void) : AudioStream_F32(0,NULL), sweep_busy(0)
+  { 
+	fs_Hz = (float)AUDIO_SAMPLE_RATE_EXACT;
+  }
+  AudioSynthToneSweep_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0,NULL), sweep_busy(0)  
+  { 
+	fs_Hz = settings.sample_rate_Hz;
+  }
 
   boolean play(float t_amp,float t_lo,float t_hi,float t_time);
   boolean play(float t_amp,float t_lo,float t_hi,float t_time, float fs_Hz);
@@ -68,7 +73,7 @@ private:
   float tone_incr;
   int tone_sign;
   unsigned char sweep_busy;
-  float fs_Hz;
+  float fs_Hz = (float)AUDIO_SAMPLE_RATE_EXACT;
 };
 
 #endif

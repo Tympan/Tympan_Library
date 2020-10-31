@@ -49,6 +49,9 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       
       //do the algorithm
       cha_agc_channel(block->data, out_block->data, block->length);
+	  
+	  //copy the audio_block id
+	  out_block->id = block->id;
       
       // transmit the block and release memory
       AudioStream_F32::transmit(out_block); // send the FIR output
@@ -118,7 +121,14 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       calcGain.setParams_from_CHA_WDRC(gha);
     }
 
-    //set all of the user parameters for the compressor
+    //set all of the user parameters for the compressor...assuming no expansion regime
+    //assumes that the sample rate has already been set!!!
+	void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt) {
+		float exp_cr = 1.0, exp_end_knee = -200.0;  //this should disable the exansion regime
+		setParams(attack_ms, release_ms, maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
+	}
+
+    //set all of the user parameters for the compressor...assumes that there is an expansion regime
     //assumes that the sample rate has already been set!!!
     void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt) {
       
@@ -154,7 +164,8 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	void setAttackRelease_msec(float32_t attack_ms, float32_t release_ms) {
 		calcEnvelope.setAttackRelease_msec(attack_ms, release_ms);
 	}
-	void setMaxdB(float32_t foo) { calcGain.setMaxdB(foo); }
+	float setMaxdB(float32_t foo) { return calcGain.setMaxdB(foo); }
+	float getMaxdB(void) { return calcGain.getMaxdB(); }
 	float setKneeExpansion_dBSPL(float32_t _knee) { return calcGain.setKneeExpansion_dBSPL(_knee); }
 	float getKneeExpansion_dBSPL(void) { return calcGain.getKneeExpansion_dBSPL(); }
 	float setExpansionCompRatio(float32_t _cr) { return calcGain.setExpansionCompRatio(_cr); }
@@ -162,6 +173,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float setKneeCompressor_dBSPL(float32_t foo) { return calcGain.setKneeCompressor_dBSPL(foo); }
 	float getKneeCompressor_dBSPL(void) { return calcGain.getKneeCompressor_dBSPL(); }
 	float setCompRatio(float32_t foo) { return calcGain.setCompRatio(foo); }
+	float getCompRatio(void) { return calcGain.getCompRatio(); }
 	float setKneeLimiter_dBSPL(float32_t foo) { return calcGain.setKneeLimiter_dBSPL(foo); }
 	float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
 	float getAttack_msec(void) { return calcEnvelope.getAttack_msec(); }

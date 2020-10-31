@@ -2,9 +2,8 @@
 *   ChangeSampleRate
 *
 *   Created: Chip Audette, Apr 2017
-*   Purpose: Change the sample rate and block size, then apply gain
+*   Purpose: Change the sample rate and block size used by the Tympan, then apply gain
 *
-*   Uses Tympan Audio Adapter.
 *   Blue potentiometer adjusts the digital gain applied to the audio signal.
 *
 *   MIT License.  use at your own risk.

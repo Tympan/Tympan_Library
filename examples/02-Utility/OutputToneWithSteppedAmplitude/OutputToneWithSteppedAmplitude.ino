@@ -18,7 +18,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 
 // Create the audio library objects that we'll use
-Tympan                tympanHardware(TympanRev::D);   //use TympanRev::D or TympanRev::C
+Tympan                    myTympan(TympanRev::D, audio_settings);   //use TympanRev::D or TympanRev::C
 AudioSynthWaveform_F32    sineWave(audio_settings);   //from the Tympan_Library
 AudioOutputI2S_F32        audioOutput(audio_settings);//from the Tympan_Library
 
@@ -38,25 +38,24 @@ int amp_index = N_AMP-1;       //a counter to use when stepping through the give
 void setup(void)
 {
   //Open serial link for debugging
-  Serial.begin(115200); delay(500);
-  Serial.println("OutputTone: starting setup()...");
+  myTympan.beginBothSerial(); delay(1000); //both Serial (USB) and Serial1 (BT) are started here
+  myTympan.println("OutputTone: starting setup()...");
 
   //allocate the audio memory
-  AudioMemory(10); AudioMemory_F32(20,audio_settings); //I can only seem to allocate 400 blocks
-  Serial.println("OutputTone: memory allocated.");
-
+  AudioMemory_F32(20,audio_settings); //I can only seem to allocate 400 blocks
+  
   //set the sine wave parameters
   sineWave.frequency(tone_freq_Hz);
   sineWave.amplitude(0.0);
-  tympanHardware.setAmberLED(LOW);
+  myTympan.setAmberLED(LOW);
   
   //start the audio hardware
-  tympanHardware.enable();
+  myTympan.enable();
 
   //Set the baseline volume levels
-  tympanHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
  
-  Serial.println("Setup complete.");
+  myTympan.println("Setup complete.");
 }
 
 // define loop()...this is run over-and-over while the device is powered
@@ -74,7 +73,7 @@ void loop(void)
     case START_SILENCE:
       sineWave.amplitude(0.0f);
       start_time_millis = millis();
-      tympanHardware.setAmberLED(LOW);
+      myTympan.setAmberLED(LOW);
       state = PLAY_SILENCE;
       break;
     case PLAY_SILENCE:
@@ -85,17 +84,16 @@ void loop(void)
     case START_TONE:
       amp_index++; if (amp_index == N_AMP) { amp_index = 0; iteration_count++;}
       sineWave.amplitude(tone_amp[amp_index]);
-      Serial.print("Changing to start tone, amplitude = ");Serial.println(tone_amp[amp_index]);
-      tympanHardware.setAmberLED(HIGH);
+      myTympan.print("Changing to start tone, amplitude = ");myTympan.println(tone_amp[amp_index]);
+      myTympan.setAmberLED(HIGH);
       start_time_millis = millis();
       state = PLAY_TONE;
       break;
     case PLAY_TONE:
       if ((millis() - start_time_millis) >= tone_dur_msec) {
         state = START_SILENCE;
-        Serial.println("Changing to start silence...");
+        myTympan.println("Changing to start silence...");
       }
       break;     
   }
 }
-

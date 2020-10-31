@@ -42,13 +42,13 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
 
     int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
       sample_rate_Hz = settings.sample_rate_Hz;
-      int N_FFT;
 
       //setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
       N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
       if (N_FFT < 1) return N_FFT;
       N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
       if (N_FFT < 1) return N_FFT;
+	  
 
       //decide windowing
       //Serial.println("AudioEffectFreqShiftFD_F32: setting myFFT to use hanning...");
@@ -60,6 +60,27 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
         }
       #endif
 
+ 	  //decide how much overlap is happening
+	  switch (myIFFT.getNBuffBlocks()) {
+		  case 0:
+			//should never happen
+			break;
+		  case 1:
+		    overlap_amount = NONE;
+			break;
+		  case 2:
+		    overlap_amount = HALF;
+			break;
+		  case 3:
+			//to do...need to add phase shifting logic to the update() function to support this case
+			break;
+		  case 4:
+			overlap_amount = THREE_QUARTERS;
+		    //to do...need to add phase shifting logic to the update() function to support this case
+			break;
+	  }
+			
+	  
 	  #if 0
       //print info about setup
       Serial.println("AudioEffectFreqShiftFD_F32: FFT parameters...");
@@ -79,16 +100,21 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
       return N_FFT;
     }
 
-    //void setLowpassFreq_Hz(float freq_Hz) { lowpass_freq_Hz = freq_Hz;  }
-    //float getLowpassFreq_Hz(void) {   return lowpass_freq_Hz; }
     int setShift_bins(int _shift_bins) {
       return shift_bins = _shift_bins;
     }
     int getShift_bins(void) {
       return shift_bins;
     }
-
+	float getShift_Hz(void) {
+		return getFrequencyOfBin(shift_bins);
+	}
+	float getFrequencyOfBin(int bin) { //"bin" should be zero to (N_FFT-1)
+		return sample_rate_Hz * ((float)bin) / ((float) N_FFT);
+	}
+	
     virtual void update(void);
+	bool enable(bool state = true) { enabled = state; return enabled;}
 
   private:
     int enabled = 0;
@@ -96,9 +122,12 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
-    float lowpass_freq_Hz = 1000.f;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
-
+	int N_FFT = -1;
+	enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to THREE_QUARTERS
+	int overlap_amount = NONE;
+	int overlap_block_counter = 0;
+	
     int shift_bins = 0; //how much to shift the frequency
 };
 
