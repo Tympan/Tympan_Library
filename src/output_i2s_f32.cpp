@@ -177,7 +177,7 @@ int AudioOutputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 #endif
 
 //#for 16-bit transfers
-//#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_tx_buffer[0]))
+#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_tx_buffer[0]))
 
 //#for 32-bit transfers
 //#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_tx_buffer[0]))
@@ -205,14 +205,18 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 	dma.TCD->SOFF = 2;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
 	dma.TCD->NBYTES_MLNO = 2;
-	dma.TCD->SLAST = -sizeof(i2s_tx_buffer);
+	//dma.TCD->SLAST = -sizeof(i2s_tx_buffer);//orig from Teensy Audio Library 2020-10-31
+	dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES;
 	dma.TCD->DADDR = (void *)((uint32_t)&I2S0_TDR0 + 2);
 	dma.TCD->DOFF = 0;
-	dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;
+	//dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 2; //orig from Teensy Audio Library 2020-10-31
+	dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
 	dma.TCD->DLASTSGA = 0;
-	dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;
+	//dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;//orig from Teensy Audio Library 2020-10-31
+	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_TX);
+	dma.enable();  //newer location of this line in Teensy Audio library
 
 	I2S0_TCSR = I2S_TCSR_SR;
 	I2S0_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
@@ -224,21 +228,25 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 	dma.TCD->SOFF = 2;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
 	dma.TCD->NBYTES_MLNO = 2;
-	dma.TCD->SLAST = -sizeof(i2s_tx_buffer);
+	//dma.TCD->SLAST = -sizeof(i2s_tx_buffer);//orig from Teensy Audio Library 2020-10-31
+	dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES;
 	dma.TCD->DOFF = 0;
-	dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;
+	//dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 2; //orig from Teensy Audio Library 2020-10-31
+	dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
 	dma.TCD->DLASTSGA = 0;
-	dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;
+	//dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;//orig from Teensy Audio Library 2020-10-31
+	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2);
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX);
+	dma.enable();  //newer location of this line in Teensy Audio library
 
 	I2S1_RCSR |= I2S_RCSR_RE | I2S_RCSR_BCE;
 	I2S1_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
 #endif
 	update_responsibility = update_setup();
 	dma.attachInterrupt(AudioOutputI2S_F32::isr);
-	dma.enable();
+	//dma.enable(); //original location of this line in older Tympan_Library
 	
 	// change the I2S frequencies to make the requested sample rate
 	//setI2SFreq(AudioOutputI2S_F32::sample_rate_Hz);
@@ -257,10 +265,12 @@ void AudioOutputI2S_F32::isr(void)
 
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
-	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
+	//if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {	//original 16-bit
+	if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) {	//are we transmitting the first half or second half of the buffer?
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		//dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2]; //original Teensy Audio
+		dest = (int16_t *)&i2s_tx_buffer[audio_block_samples/2]; //this will be diff if we were to do 32-bit samples
 		if (AudioOutputI2S_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
 		// DMA is transmitting the second half of the buffer
@@ -272,22 +282,6 @@ void AudioOutputI2S_F32::isr(void)
 	blockR = AudioOutputI2S_F32::block_right_1st;
 	offsetL = AudioOutputI2S_F32::block_left_offset;
 	offsetR = AudioOutputI2S_F32::block_right_offset;
-
-	/* Original from Teensy Audio library (Teensy 4 compatible)
-	if (blockL && blockR) {
-		memcpy_tointerleaveLR(dest, blockL->data + offsetL, blockR->data + offsetR);
-		offsetL += AUDIO_BLOCK_SAMPLES / 2;
-		offsetR += AUDIO_BLOCK_SAMPLES / 2;
-	} else if (blockL) {
-		memcpy_tointerleaveL(dest, blockL->data + offsetL);
-		offsetL += AUDIO_BLOCK_SAMPLES / 2;
-	} else if (blockR) {
-		memcpy_tointerleaveR(dest, blockR->data + offsetR);
-		offsetR += AUDIO_BLOCK_SAMPLES / 2;
-	} else {
-		memset(dest,0,AUDIO_BLOCK_SAMPLES * 2);
-	}
-	*/
 
 	int16_t *d = dest;
 	if (blockL && blockR) {
@@ -321,7 +315,8 @@ void AudioOutputI2S_F32::isr(void)
 	
 	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
 
-	if (offsetL < AUDIO_BLOCK_SAMPLES) {
+	//if (offsetL < AUDIO_BLOCK_SAMPLES) { //orig Teensy Audio
+	if (offsetL < (uint16_t)audio_block_samples) {
 		AudioOutputI2S_F32::block_left_offset = offsetL;
 	} else {
 		AudioOutputI2S_F32::block_left_offset = 0;
@@ -329,7 +324,8 @@ void AudioOutputI2S_F32::isr(void)
 		AudioOutputI2S_F32::block_left_1st = AudioOutputI2S_F32::block_left_2nd;
 		AudioOutputI2S_F32::block_left_2nd = NULL;
 	}
-	if (offsetR < AUDIO_BLOCK_SAMPLES) {
+	//if (offsetR < AUDIO_BLOCK_SAMPLES) { //orig Teensy Audio
+	if (offsetR < (uint16_t)audio_block_samples) {
 		AudioOutputI2S_F32::block_right_offset = offsetR;
 	} else {
 		AudioOutputI2S_F32::block_right_offset = 0;
@@ -785,12 +781,13 @@ void AudioOutputI2S_F32::update(void)
   #define MCLK_MULT 1
   #define MCLK_DIV  17
 #elif F_CPU == 216000000
-  #define MCLK_MULT 8
-  #define MCLK_DIV  153
-  #define MCLK_SRC  0
+  #define MCLK_MULT 12
+  #define MCLK_DIV  17
+  #define MCLK_SRC  1
 #elif F_CPU == 240000000
-  #define MCLK_MULT 4
+  #define MCLK_MULT 2
   #define MCLK_DIV  85
+  #define MCLK_SRC  0
 #elif F_CPU == 16000000
   #define MCLK_MULT 12
   #define MCLK_DIV  17
@@ -998,7 +995,9 @@ void AudioOutputI2S_F32::config_i2s_i32(void)
 } */
 /******************************************************************/
 
-void AudioOutputI2Sslave_F32::begin(void)
+// From Chip: The I2SSlave functionality has NOT been extended to allow for different block sizes or sample rates (2020-10-31)
+
+void AudioOutputI2Sslave_F32::begin(void)  
 {
 
 	dma.begin(true); // Allocate the DMA channel first
@@ -1023,27 +1022,36 @@ void AudioOutputI2Sslave_F32::begin(void)
 	dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_TX);
+	dma.enable();
+
 	I2S0_TCSR = I2S_TCSR_SR;
 	I2S0_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
 
 #elif defined(__IMXRT1062__)
 	CORE_PIN7_CONFIG  = 3;  //1:TX_DATA0
-	//CORE_PIN2_CONFIG  = 2;  //2:TX_DATA0
 	dma.TCD->SADDR = i2s_tx_buffer;
 	dma.TCD->SOFF = 2;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
 	dma.TCD->NBYTES_MLNO = 2;
 	dma.TCD->SLAST = -sizeof(i2s_tx_buffer);
-	dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR1 + 2);
+	//dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR1 + 2);
 	dma.TCD->DOFF = 0;
 	dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;
 	dma.TCD->DLASTSGA = 0;
 	dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;
-	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI2_TX);
+	//dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI2_TX);
+	dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2);
+	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX);
+	dma.enable();
+
+	I2S1_RCSR |= I2S_RCSR_RE | I2S_RCSR_BCE;
+	I2S1_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
+
 #endif
 
 	update_responsibility = update_setup();
-	dma.enable();
+	//dma.enable();
 	dma.attachInterrupt(AudioOutputI2S_F32::isr);
 }
 
@@ -1093,18 +1101,18 @@ void AudioOutputI2Sslave_F32::begin(void)
 
 #elif defined(__IMXRT1062__)
 
+	CCM_CCGR5 |= CCM_CCGR5_SAI1(CCM_CCGR_ON);
+
 	// if either transmitter or receiver is enabled, do nothing
 	if (I2S1_TCSR & I2S_TCSR_TE) return;
 	if (I2S1_RCSR & I2S_RCSR_RE) return;
 
-	CCM_CCGR5 |= CCM_CCGR5_SAI1(CCM_CCGR_ON);
-	//Select MCLK
-	IOMUXC_GPR_GPR1 = (IOMUXC_GPR_GPR1
-		& ~(IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL_MASK | ((uint32_t)(1<<20)) ))
-		| (IOMUXC_GPR_GPR1_SAI1_MCLK_DIR | IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL(0));
-	CORE_PIN23_CONFIG = 3;  //1:MCLK
-	CORE_PIN21_CONFIG = 3;  //1:RX_BCLK
-	CORE_PIN20_CONFIG = 3;  //1:RX_SYNC
+	// not using MCLK in slave mode - hope that's ok?
+	//CORE_PIN23_CONFIG = 3;  // AD_B1_09  ALT3=SAI1_MCLK
+	CORE_PIN21_CONFIG = 3;  // AD_B1_11  ALT3=SAI1_RX_BCLK
+	CORE_PIN20_CONFIG = 3;  // AD_B1_10  ALT3=SAI1_RX_SYNC
+	IOMUXC_SAI1_RX_BCLK_SELECT_INPUT = 1; // 1=GPIO_AD_B1_11_ALT3, page 868
+	IOMUXC_SAI1_RX_SYNC_SELECT_INPUT = 1; // 1=GPIO_AD_B1_10_ALT3, page 872
 
 	// configure transmitter
 	I2S1_TMR = 0;
@@ -1112,7 +1120,7 @@ void AudioOutputI2Sslave_F32::begin(void)
 	I2S1_TCR2 = I2S_TCR2_SYNC(1) | I2S_TCR2_BCP;
 	I2S1_TCR3 = I2S_TCR3_TCE;
 	I2S1_TCR4 = I2S_TCR4_FRSZ(1) | I2S_TCR4_SYWD(31) | I2S_TCR4_MF
-		| I2S_TCR4_FSE | I2S_TCR4_FSP;
+		| I2S_TCR4_FSE | I2S_TCR4_FSP | I2S_RCR4_FSD;
 	I2S1_TCR5 = I2S_TCR5_WNW(31) | I2S_TCR5_W0W(31) | I2S_TCR5_FBT(31);
 
 	// configure receiver
@@ -1121,7 +1129,7 @@ void AudioOutputI2Sslave_F32::begin(void)
 	I2S1_RCR2 = I2S_RCR2_SYNC(0) | I2S_TCR2_BCP;
 	I2S1_RCR3 = I2S_RCR3_RCE;
 	I2S1_RCR4 = I2S_RCR4_FRSZ(1) | I2S_RCR4_SYWD(31) | I2S_RCR4_MF
-		| I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
+		| I2S_RCR4_FSE | I2S_RCR4_FSP;
 	I2S1_RCR5 = I2S_RCR5_WNW(31) | I2S_RCR5_W0W(31) | I2S_RCR5_FBT(31);
 
 #endif
