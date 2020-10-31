@@ -71,7 +71,7 @@ public:
 	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
 	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
 	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
-	static float setI2SFreq(const float);
+	static float setI2SFreq_T3(const float);
 
 
 

@@ -113,9 +113,9 @@
 	end
 */
 
-/* 
-float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
-#if defined(KINETISK)
+
+float AudioOutputI2S_F32::setI2SFreq_T3(const float freq_Hz) {  
+#if defined(KINETISK)   //for Teensy 3.x only!
 	int freq = (int)(freq_Hz+0.5);
   typedef struct {
     uint8_t mult;
@@ -155,7 +155,7 @@ float AudioOutputI2S_F32::setI2SFreq(const float freq_Hz) {
 #endif
   return 0.0f;
 } 
-*/
+
 
 audio_block_f32_t * AudioOutputI2S_F32::block_left_1st = NULL;
 audio_block_f32_t * AudioOutputI2S_F32::block_right_1st = NULL;
@@ -220,7 +220,7 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 
 	I2S0_TCSR = I2S_TCSR_SR;
 	I2S0_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
-
+	
 #elif defined(__IMXRT1062__)
 	CORE_PIN7_CONFIG  = 3;  //1:TX_DATA0
 
@@ -247,9 +247,6 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 	update_responsibility = update_setup();
 	dma.attachInterrupt(AudioOutputI2S_F32::isr);
 	//dma.enable(); //original location of this line in older Tympan_Library
-	
-	// change the I2S frequencies to make the requested sample rate
-	//setI2SFreq(AudioOutputI2S_F32::sample_rate_Hz);
 	
 	enabled = 1;
 	
@@ -848,6 +845,10 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit)
 	CORE_PIN9_CONFIG  = PORT_PCR_MUX(6); // pin  9, PTC3, I2S0_TX_BCLK
 	CORE_PIN11_CONFIG = PORT_PCR_MUX(6); // pin 11, PTC6, I2S0_MCLK
 
+	// change the I2S frequencies to make the requested sample rate
+	setI2SFreq_T3(AudioOutputI2S_F32::sample_rate_Hz);  //for T3.x only!
+
+
 #elif defined(__IMXRT1062__)
 
 	CCM_CCGR5 |= CCM_CCGR5_SAI1(CCM_CCGR_ON);
@@ -856,7 +857,9 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit)
 	if (I2S1_TCSR & I2S_TCSR_TE) return;
 	if (I2S1_RCSR & I2S_RCSR_RE) return;
 //PLL:
-	int fs = AUDIO_SAMPLE_RATE_EXACT;
+	int fs = AUDIO_SAMPLE_RATE_EXACT; //original from Teensy Audio Library
+	//int fs = sample_rate_Hz;
+	
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
 	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
 	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
