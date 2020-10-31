@@ -36,7 +36,7 @@
 #include <Arduino.h>
 #include <arm_math.h> 
 #include "AudioStream_F32.h"
-#include "AudioStream.h"
+#include "AudioStream.h"   //Do we really need this?? (Chip, 2020-10-31)
 #include "DMAChannel.h"
 
 class AudioInputI2S_F32 : public AudioStream_F32

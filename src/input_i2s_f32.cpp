@@ -30,12 +30,13 @@
  *	The F32 conversion is under the MIT License.  Use at your own risk.
  */
  
-#include <Arduino.h>
+#include <Arduino.h>  //do we really need this? (Chip: 2020-10-31)
 #include "input_i2s_f32.h"
 #include "output_i2s_f32.h"
+#include <arm_math.h>
 
-
-static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+//DMAMEM __attribute__((aligned(32))) 
+static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES]; //good for 16-bit audio samples coming in from teh AIC.  32-bit transfers will need this to be bigger.
 audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_right_f32 = NULL;
 uint16_t AudioInputI2S_F32::block_offset = 0;
@@ -50,7 +51,7 @@ int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
 
 //#for 16-bit transfers
-//#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
+#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_rx_buffer[0]))
 
 //#for 32-bit transfers
 //#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_rx_buffer[0]))
@@ -76,16 +77,19 @@ void AudioInputI2S_F32::begin(bool transferUsing32bit) {
 
 #if defined(KINETISK)
 	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0
-	dma.TCD->SADDR = (void *)((uint32_t)&I2S0_RDR0 + 2);
+	dma.TCD->SADDR = (void *)((uint32_t)&I2S0_RDR0 + 2);  //From Teensy Audio Library...but why "+ 2"  (Chip 2020-10-31)
 	dma.TCD->SOFF = 0;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
 	dma.TCD->NBYTES_MLNO = 2;
 	dma.TCD->SLAST = 0;
 	dma.TCD->DADDR = i2s_rx_buffer;
 	dma.TCD->DOFF = 2;
-	dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 2;
-	dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);
-	dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 2;
+	//dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 2;  //original from Teensy Audio Library
+	dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
+	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);  //original from Teensy Audio Library
+	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;
+	//dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 2;  //original from Teensy Audio Library
+	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_RX);
 
@@ -103,9 +107,12 @@ void AudioInputI2S_F32::begin(bool transferUsing32bit) {
 	dma.TCD->SLAST = 0;
 	dma.TCD->DADDR = i2s_rx_buffer;
 	dma.TCD->DOFF = 2;
-	dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 2;
-	dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);
-	dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 2;
+	//dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 2; //original from Teensy Audio Library
+	dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
+	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer); //original from Teensy Audio Library
+	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;
+	//dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 2; //original from Teensy Audio Library
+	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_RX);
 
@@ -274,28 +281,33 @@ void AudioInputI2S_F32::isr(void)
 	dma.clearInterrupt();
 	//Serial.println("isr");
 
-	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
+	//if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) { //original Teensy Audio Library
+	if (daddr < (uint32_t)i2s_rx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+		//src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2]; //original Teensy Audio Library
+		//end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES]; //original Teensy Audio Library
+		src = (int16_t *)&i2s_rx_buffer[audio_block_samples/2];
+		end = (int16_t *)&i2s_rx_buffer[audio_block_samples];			
 		update_counter++; //let's increment the counter here to ensure that we get every ISR resulting in audio
 		if (AudioInputI2S_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
 		src = (int16_t *)&i2s_rx_buffer[0];
-		end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		//end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2]; //original Teensy Audio Library
+		end = (int16_t *)&i2s_rx_buffer[audio_block_samples/2];
 	}
 	left_f32 = AudioInputI2S_F32::block_left_f32;
 	right_f32 = AudioInputI2S_F32::block_right_f32;
 	if (left_f32 != NULL && right_f32 != NULL) {
 		offset = AudioInputI2S_F32::block_offset;
-		if (offset <= (uint32_t)(AUDIO_BLOCK_SAMPLES/2)) {
+		//if (offset <= (uint32_t)(AUDIO_BLOCK_SAMPLES/2)) { //original Teensy Audio Library
+		if (offset <= ((uint32_t) audio_block_samples/2)) {
 			dest_left_f32 = &(left_f32->data[offset]);
 			dest_right_f32 = &(right_f32->data[offset]);
-			AudioInputI2S_F32::block_offset = offset + AUDIO_BLOCK_SAMPLES/2;
-
+			//AudioInputI2S_F32::block_offset = offset + AUDIO_BLOCK_SAMPLES/2; //original Teensy Audio Library
+			AudioInputI2S_F32::block_offset = offset + audio_block_samples/2;
 			do {
 				//Serial.println(*src);
 				//n = *src++;
@@ -520,18 +532,11 @@ void AudioInputI2S_F32::update(void)
 		block_offset = 0;
 		__enable_irq();
 		
-		scale_i16_to_f32(out_left->data, out_left->data, audio_block_samples);
-		out_left->id = update_counter; 
+		//update_counter++; //I chose to update it in the ISR instead.
+		update_1chan(0,out_left);  //uses audio_block_samples and update_counter
+		update_1chan(1,out_right);  //uses audio_block_samples and update_counter
 		
-		scale_i16_to_f32(out_right->data, out_right->data, audio_block_samples);
-		out_right->id = update_counter;
 		
-		// then transmit the DMA's former blocks
-		AudioStream_F32::transmit(out_left, 0);
-		AudioStream_F32::release(out_left);
-		AudioStream_F32::transmit(out_right, 1);
-		AudioStream_F32::release(out_right);
-		//Serial.print(".");
 	} else if (new_left != NULL) {
 		// the DMA didn't fill blocks, but we allocated blocks
 		if (block_left_f32 == NULL) {
