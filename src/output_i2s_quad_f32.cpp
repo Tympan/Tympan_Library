@@ -34,11 +34,15 @@
 #include "output_i2s_quad_f32.h"
 #include "memcpy_audio.h"
 #include <arm_math.h>
+#include "output_i2s_f32.h"  //for setI2Sfreq_T3()
 
-#if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
 
+#if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
 
-#if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#if defined(__IMXRT1062__)
+#include "utility/imxrt_hw.h"
+#endif
+
 
 audio_block_f32_t * AudioOutputI2SQuad_F32::block_ch1_1st = NULL;
 audio_block_f32_t * AudioOutputI2SQuad_F32::block_ch2_1st = NULL;
@@ -48,26 +52,28 @@ audio_block_f32_t * AudioOutputI2SQuad_F32::block_ch1_2nd = NULL;
 audio_block_f32_t * AudioOutputI2SQuad_F32::block_ch2_2nd = NULL;
 audio_block_f32_t * AudioOutputI2SQuad_F32::block_ch3_2nd = NULL;
 audio_block_f32_t * AudioOutputI2SQuad_F32::block_ch4_2nd = NULL;
-uint32_t  AudioOutputI2SQuad_F32::ch1_offset = 0;
+uint32_t  AudioOutputI2SQuad_F32::ch1_offset = 0; 
 uint32_t  AudioOutputI2SQuad_F32::ch2_offset = 0;
 uint32_t  AudioOutputI2SQuad_F32::ch3_offset = 0;
 uint32_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
 //audio_block_f32_t * AudioOutputI2SQuad_F32::inputQueueArray[4];
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
-//DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
-DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2*4];
+DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+//DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*4];  //pack 1 int32 into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples)
 DMAChannel AudioOutputI2SQuad_F32::dma(false);
 
-//static const uint32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0};
-static const float32_t zerodata[AUDIO_BLOCK_SAMPLES/2] = {0};
+//static const uint32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0}; //original from Teensy Audio Library
+static const float32_t zerodata[AUDIO_BLOCK_SAMPLES/2] = {0}; //modified for F32
 
 //initialize some static variables.  Likely get overwritten by constructor.
 float AudioOutputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioOutputI2SQuad_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
-//#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*2*sizeof(i2s_tx_buffer[0]))
-#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*(sizeof(i2s_tx_buffer[0])/2))
+//for 16-bit transfers (into a 32-bit data type) multiplied by 4 channels
+#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0])/2)
 
+//for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels
+//#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]))
 
 void AudioOutputI2SQuad_F32::begin(void)
 {
@@ -79,35 +85,80 @@ void AudioOutputI2SQuad_F32::begin(void)
 	block_ch3_1st = NULL;
 	block_ch4_1st = NULL;
 
-	// TODO: can we call normal config_i2s, and then just enable the extra output?
-	config_i2s();
-	CORE_PIN22_CONFIG = PORT_PCR_MUX(6); // pin 22, PTC1, I2S0_TXD0 -> ch1 & ch2
-	CORE_PIN15_CONFIG = PORT_PCR_MUX(6); // pin 15, PTC0, I2S0_TXD1 -> ch3 & ch4
+	#if defined(KINETISK) //this code is for Teensy 3.x, not Teensy 4
+		// TODO: can we call normal config_i2s, and then just enable the extra output?
+		config_i2s();  //this is the local config_i2s(), not the one in the non-quad version of output_i2s.  does it know about block size?  (sample rate is defined is set ~25 rows below here)
+		CORE_PIN22_CONFIG = PORT_PCR_MUX(6); // pin 22, PTC1, I2S0_TXD0 -> ch1 & ch2
+		CORE_PIN15_CONFIG = PORT_PCR_MUX(6); // pin 15, PTC0, I2S0_TXD1 -> ch3 & ch4
 
-	dma.TCD->SADDR = i2s_tx_buffer;
-	dma.TCD->SOFF = 2;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1) | DMA_TCD_ATTR_DMOD(3);
-	dma.TCD->NBYTES_MLNO = 4;
-	//dma.TCD->SLAST = -sizeof(i2s_tx_buffer); //orig
-	dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
-	dma.TCD->DADDR = &I2S0_TDR0;
-	dma.TCD->DOFF = 4;
-	//dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; //orig
-	dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 4; //allows for variable audio block length
-	dma.TCD->DLASTSGA = 0;
-	//dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; //orig
-	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 4; //allows for variable audio block length
-	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_TX);
-	update_responsibility = update_setup();
-	dma.enable();
+		dma.TCD->SADDR = i2s_tx_buffer;
+		dma.TCD->SOFF = 2;
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1) | DMA_TCD_ATTR_DMOD(3);
+		dma.TCD->NBYTES_MLNO = 4;
+		//dma.TCD->SLAST = -sizeof(i2s_tx_buffer); //orig
+		dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
+		dma.TCD->DADDR = &I2S0_TDR0;
+		dma.TCD->DOFF = 4;
+		//dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; //orig
+		dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 4; //allows for variable audio block length
+		dma.TCD->DLASTSGA = 0;
+		//dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; //orig
+		dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 4; //allows for variable audio block length
+		dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+		dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_TX);
+		update_responsibility = update_setup();
+		dma.enable();
 
-	I2S0_TCSR = I2S_TCSR_SR;
-	I2S0_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
-	dma.attachInterrupt(isr);
+		I2S0_TCSR = I2S_TCSR_SR;
+		I2S0_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
+		dma.attachInterrupt(isr);
+		
+		// change the I2S frequencies to make the requested sample rate
+		AudioOutputI2S_F32::setI2SFreq_T3(AudioOutputI2SQuad_F32::sample_rate_Hz);
 	
-	// change the I2S frequencies to make the requested sample rate
-	AudioOutputI2S_F32::setI2SFreq(AudioOutputI2SQuad_F32::sample_rate_Hz);
+	#elif defined(__IMXRT1062__) //this is for Teensy 4
+		const int pinoffset = 0; // TODO: make this configurable...
+		memset(i2s_tx_buffer, 0, sizeof(i2s_tx_buffer));
+		bool transferUsing32bit = false;  //32 bit from AIC doesn't work with quad?  so don't change this?
+		AudioOutputI2S_F32::config_i2s(transferUsing32bit,AudioOutputI2SQuad_F32::sample_rate_Hz);
+		I2S1_TCR3 = I2S_TCR3_TCE_2CH << pinoffset;
+		switch (pinoffset) {
+		  case 0:
+			CORE_PIN7_CONFIG  = 3;
+			CORE_PIN32_CONFIG = 3;
+			break;
+		  case 1:
+			CORE_PIN32_CONFIG = 3;
+			CORE_PIN9_CONFIG  = 3;
+			break;
+		  case 2:
+			CORE_PIN9_CONFIG  = 3;
+			CORE_PIN6_CONFIG  = 3;
+		}
+		dma.TCD->SADDR = i2s_tx_buffer;
+		dma.TCD->SOFF = 2;
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+		dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
+			DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |
+			DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);
+		//dma.TCD->SLAST = -sizeof(i2s_tx_buffer); //original from Teensy Audio Library
+		dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
+		dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2 + pinoffset * 4);
+		dma.TCD->DOFF = 4;
+		//dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original from Teensy Audio Library (16-bit)
+		dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (assumes 16-bit?)
+		dma.TCD->DLASTSGA = -8;
+		//dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original from Teensy Audio Library (16-bit)
+		dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (assumes 16-bit?)
+		dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+		dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX);
+		dma.enable();
+		I2S1_RCSR |= I2S_RCSR_RE | I2S_RCSR_BCE;
+		I2S1_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
+		I2S1_TCR3 = I2S_TCR3_TCE_2CH << pinoffset;
+		update_responsibility = update_setup();
+		dma.attachInterrupt(isr);
+	#endif
 	
 	enabled = 1;
 #endif
@@ -129,10 +180,13 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 
 void AudioOutputI2SQuad_F32::isr(void)
 {
-	int16_t *dest; //int16 is data type being sent to the audio codec
-
+	uint32_t saddr;
+	const float32_t *src1, *src2, *src3, *src4;
+	const float32_t *zeros = (const float32_t *)zerodata;
+	int16_t *dest;
+	
 	//update the dma and get pointer for the destination tx buffer
-	uint32_t saddr = (uint32_t)(dma.TCD->SADDR);
+	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	//if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) { //orig
 	if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //variable audio block length
@@ -145,8 +199,7 @@ void AudioOutputI2SQuad_F32::isr(void)
 	}
 
 	//get pointers for source data that we will copy into the tx buffer
-	const float32_t *src1, *src2, *src3, *src4;
-	const float32_t *zeros = (const float32_t *)zerodata;
+	//const float32_t *zeros = (const float32_t *)zerodata; //for 32-bit data??
 	src1 = (block_ch1_1st) ? (&(block_ch1_1st->data[ch1_offset])) : zeros;
 	src2 = (block_ch2_1st) ? (&(block_ch2_1st->data[ch2_offset])) : zeros;
 	src3 = (block_ch3_1st) ? (&(block_ch3_1st->data[ch3_offset])) : zeros;
@@ -160,6 +213,8 @@ void AudioOutputI2SQuad_F32::isr(void)
 		*dest++ = (int16_t) (*src2++);
 		*dest++ = (int16_t) (*src4++);
 	}
+
+	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
 
 	//now, shuffle the 1st and 2nd data block for each channel
 	isr_shuffleDataBlocks(block_ch1_1st, block_ch1_2nd, ch1_offset);
@@ -264,6 +319,7 @@ void AudioOutputI2SQuad_F32::update(void)
 }
 
 
+#if defined(KINETISK)
 // MCLK needs to be 48e6 / 1088 * 256 = 11.29411765 MHz -> 44.117647 kHz sample rate
 //
 #if F_CPU == 96000000 || F_CPU == 48000000 || F_CPU == 24000000
@@ -290,12 +346,13 @@ void AudioOutputI2SQuad_F32::update(void)
   #define MCLK_MULT 1
   #define MCLK_DIV  17
 #elif F_CPU == 216000000
-  #define MCLK_MULT 8
-  #define MCLK_DIV  153
-  #define MCLK_SRC  0
+  #define MCLK_MULT 12
+  #define MCLK_DIV  17
+  #define MCLK_SRC  1
 #elif F_CPU == 240000000
-  #define MCLK_MULT 4
+  #define MCLK_MULT 2
   #define MCLK_DIV  85
+  #define MCLK_SRC  0
 #elif F_CPU == 16000000
   #define MCLK_MULT 12
   #define MCLK_DIV  17
@@ -352,27 +409,27 @@ void AudioOutputI2SQuad_F32::config_i2s(void)
 	CORE_PIN11_CONFIG = PORT_PCR_MUX(6); // pin 11, PTC6, I2S0_MCLK
 }
 
+#endif // KINETISK
 
-#else // not __MK20DX256__
 
+#else // not supported
 
-void AudioOutputI2SQuad_F32::begin(void)
+void AudioOutputI2SQuad::begin(void)
 {
 }
 
-void AudioOutputI2SQuad_F32::update(void)
+void AudioOutputI2SQuad::update(void)
 {
-	audio_block_f32_t *block_f32;
+	audio_block_t *block;
 
-	block_f32 = receiveReadOnly_f32(0);
-	if (block_f32) release(block_f32);
-	block_f32 = receiveReadOnly_f32(1);
-	if (block_f32) release(block_f32);
-	block_f32 = receiveReadOnly_f32(2);
-	if (block_f32) release(block_f32);
-	block_f32 = receiveReadOnly_f32(3);
-	if (block_f32) release(block_f32);
+	block = receiveReadOnly(0);
+	if (block) release(block);
+	block = receiveReadOnly(1);
+	if (block) release(block);
+	block = receiveReadOnly(2);
+	if (block) release(block);
+	block = receiveReadOnly(3);
+	if (block) release(block);
 }
 
-#endif
 #endif

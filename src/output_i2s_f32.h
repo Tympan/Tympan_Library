@@ -58,15 +58,15 @@ public:
 	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
 
-	//friend class AudioInputI2S;
-	//#if defined(__IMXRT1062__)
-	//friend class AudioOutputI2SQuad;
-	//friend class AudioInputI2SQuad;
+	friend class AudioInputI2S_F32;
+	#if defined(__IMXRT1062__)
+	friend class AudioOutputI2SQuad_F32;
+	friend class AudioInputI2SQuad_F32;
 	//friend class AudioOutputI2SHex;
 	//friend class AudioInputI2SHex;
 	//friend class AudioOutputI2SOct;
 	//friend class AudioInputI2SOct;
-	//#endif
+	#endif
 
 	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
 	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
@@ -79,8 +79,10 @@ protected:
 	AudioOutputI2S_F32(int dummy): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	static void config_i2s(void);
 	static void config_i2s(bool);
-	static void config_i2s_i16(void);
-	static void config_i2s_i32(void);
+	static void config_i2s(float);
+	static void config_i2s(bool, float);
+	//static void config_i2s_i16(void,float);
+	//static void config_i2s_i32(void,float);
 	static audio_block_f32_t *block_left_1st;
 	static audio_block_f32_t *block_right_1st;
 	static bool update_responsibility;

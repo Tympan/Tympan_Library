@@ -196,7 +196,7 @@ void AudioOutputI2S_F32::begin(bool transferUsing32bit) {
 	block_left_1st = NULL;
 	block_right_1st = NULL;
 
-	AudioOutputI2S_F32::config_i2s();
+	AudioOutputI2S_F32::config_i2s(transferUsing32bit, sample_rate_Hz);
 
 #if defined(KINETISK)
 	CORE_PIN22_CONFIG = PORT_PCR_MUX(6); // pin 22, PTC1, I2S0_TXD0
@@ -802,9 +802,10 @@ void AudioOutputI2S_F32::update(void)
 #endif
 
 
-void AudioOutputI2S_F32::config_i2s(void) {	config_i2s(false); }
-
-void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit)
+void AudioOutputI2S_F32::config_i2s(void) {	config_i2s(false, AudioOutputI2S_F32::sample_rate_Hz); }
+void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {	config_i2s(transferUsing32bit, AudioOutputI2S_F32::sample_rate_Hz); }
+void AudioOutputI2S_F32::config_i2s(float fs_Hz) { config_i2s(false, fs_Hz); }
+void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 {
 #if defined(KINETISK) || defined(KINETISL)
 	SIM_SCGC6 |= SIM_SCGC6_I2S;
@@ -846,7 +847,7 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit)
 	CORE_PIN11_CONFIG = PORT_PCR_MUX(6); // pin 11, PTC6, I2S0_MCLK
 
 	// change the I2S frequencies to make the requested sample rate
-	setI2SFreq_T3(AudioOutputI2S_F32::sample_rate_Hz);  //for T3.x only!
+	setI2SFreq_T3(fs_Hz);  //for T3.x only!
 
 
 #elif defined(__IMXRT1062__)
@@ -857,8 +858,8 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit)
 	if (I2S1_TCSR & I2S_TCSR_TE) return;
 	if (I2S1_RCSR & I2S_RCSR_RE) return;
 //PLL:
-	int fs = AUDIO_SAMPLE_RATE_EXACT; //original from Teensy Audio Library
-	//int fs = sample_rate_Hz;
+	//int fs = AUDIO_SAMPLE_RATE_EXACT; //original from Teensy Audio Library
+	int fs = fs_Hz;
 	
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
 	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
@@ -912,90 +913,6 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit)
 #endif
 }
 
-
-/* void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {
-	SIM_SCGC6 |= SIM_SCGC6_I2S;
-	SIM_SCGC7 |= SIM_SCGC7_DMA;
-	SIM_SCGC6 |= SIM_SCGC6_DMAMUX;
-	
-	// if either transmitter or receiver is enabled, do nothing
-	if (I2S0_TCSR & I2S_TCSR_TE) return;
-	if (I2S0_RCSR & I2S_RCSR_RE) return;
-	
-	//if (transferUsing32bit) {
-		config_i2s_i32();
-	//} else {
-	//	config_i2s_i16();
-	//}
-
-	// configure pin mux for 3 clock signals
-	CORE_PIN23_CONFIG = PORT_PCR_MUX(6); // pin 23, PTC2, I2S0_TX_FS (LRCLK)
-	CORE_PIN9_CONFIG  = PORT_PCR_MUX(6); // pin  9, PTC3, I2S0_TX_BCLK
-	CORE_PIN11_CONFIG = PORT_PCR_MUX(6); // pin 11, PTC6, I2S0_MCLK	
-} */
-
-/* void AudioOutputI2S_F32::config_i2s_i16(void)
-{
-
-	// enable MCLK output
-	I2S0_MCR = I2S_MCR_MICS(MCLK_SRC) | I2S_MCR_MOE;
-	while (I2S0_MCR & I2S_MCR_DUF) ;
-	I2S0_MDR = I2S_MDR_FRACT((MCLK_MULT-1)) | I2S_MDR_DIVIDE((MCLK_DIV-1));
-
-	// configure transmitter
-	I2S0_TMR = 0;
-	I2S0_TCR1 = I2S_TCR1_TFW(1);  // watermark at half fifo size
-	I2S0_TCR2 = I2S_TCR2_SYNC(0) | I2S_TCR2_BCP | I2S_TCR2_MSEL(1)
-		| I2S_TCR2_BCD | I2S_TCR2_DIV(3);  //for 32-bit, use I2S_TCR2_DIV(1)
-	I2S0_TCR3 = I2S_TCR3_TCE;
-	I2S0_TCR4 = I2S_TCR4_FRSZ(1) | I2S_TCR4_SYWD(15) | I2S_TCR4_MF
-		| I2S_TCR4_FSE | I2S_TCR4_FSP | I2S_TCR4_FSD;   //for 32-bit use  I2S_TCR4_SYWD(31)
-	I2S0_TCR5 = I2S_TCR5_WNW(15) | I2S_TCR5_W0W(15) | I2S_TCR5_FBT(15); //for 32-bit, change all 15 to 31
-
-	// configure receiver (sync'd to transmitter clocks)
-	I2S0_RMR = 0;
-	I2S0_RCR1 = I2S_RCR1_RFW(1);
-	I2S0_RCR2 = I2S_RCR2_SYNC(1) | I2S_TCR2_BCP | I2S_RCR2_MSEL(1)
-		| I2S_RCR2_BCD | I2S_RCR2_DIV(3); //for 32-bit, change I2S_RCR2_DIV(3) to I2S_RCR2_DIV(1)
-	I2S0_RCR3 = I2S_RCR3_RCE;
-	I2S0_RCR4 = I2S_RCR4_FRSZ(1) | I2S_RCR4_SYWD(15) | I2S_RCR4_MF
-		| I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD; //for 32-bit, change I2S_RCR4_SYWD(15) to I2S_RCR4_SYWD(31)
-	I2S0_RCR5 = I2S_RCR5_WNW(15) | I2S_RCR5_W0W(15) | I2S_RCR5_FBT(15); //for 32-bit, change all 15 to 31
-
-
-}
-
-//32-bit transfers.  Taken from: https://github.com/WMXZ-EU/BasicAudioLogger/blob/master/I2S_32.h
-void AudioOutputI2S_F32::config_i2s_i32(void)
-{
-
-  // enable MCLK output
-  I2S0_MCR = I2S_MCR_MICS(MCLK_SRC) | I2S_MCR_MOE;
-  while (I2S0_MCR & I2S_MCR_DUF) ;
-  I2S0_MDR = I2S_MDR_FRACT((MCLK_MULT-1)) | I2S_MDR_DIVIDE((MCLK_DIV-1));
-  //I2S0_MDR = I2S_MDR_FRACT((MCLK_MULT-1)) | I2S_MDR_DIVIDE((MCLK_DIV/2-1)); //For 32-bit?
-
-  // configure transmitter
-  I2S0_TMR = 0;
-  I2S0_TCR1 = I2S_TCR1_TFW(1);  // watermark at half fifo size.  should be 1 or 2?
-  I2S0_TCR2 = I2S_TCR2_SYNC(0) | I2S_TCR2_BCP | I2S_TCR2_MSEL(1)
-    | I2S_TCR2_BCD | I2S_TCR2_DIV(1);  //transmitter must be set to asynchronous mode, 
-  I2S0_TCR3 = I2S_TCR3_TCE;
-  I2S0_TCR4 = I2S_TCR4_FRSZ(1) | I2S_TCR4_SYWD(31) | I2S_TCR4_MF
-    | I2S_TCR4_FSE | I2S_TCR4_FSP | I2S_TCR4_FSD;
-  I2S0_TCR5 = I2S_TCR5_WNW(31) | I2S_TCR5_W0W(31) | I2S_TCR5_FBT(31);
-
-  // configure receiver (sync'd to transmitter clocks)
-  I2S0_RMR = 0;
-  I2S0_RCR1 = I2S_RCR1_RFW(1); // watermark at half fifo size.  should be 1 or 2?
-  I2S0_RCR2 = I2S_RCR2_SYNC(1) | I2S_TCR2_BCP | I2S_RCR2_MSEL(1)
-    | I2S_RCR2_BCD | I2S_RCR2_DIV(1);  //receiver set to syncrhonous
-  I2S0_RCR3 = I2S_RCR3_RCE;
-  I2S0_RCR4 = I2S_RCR4_FRSZ(1) | I2S_RCR4_SYWD(31) | I2S_RCR4_MF
-    | I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
-  I2S0_RCR5 = I2S_RCR5_WNW(31) | I2S_RCR5_W0W(31) | I2S_RCR5_FBT(31);
-
-} */
 /******************************************************************/
 
 // From Chip: The I2SSlave functionality has NOT been extended to allow for different block sizes or sample rates (2020-10-31)
