@@ -12,10 +12,10 @@
 #ifndef _AudioSDWriter_F32_h
 #define _AudioSDWriter_F32_h
 
+#include <Arduino.h>  //for Serial
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
 
-#if defined(KINETISK)	
 #include "SDWriter.h"
 
 //variables to control printing of warnings and timings and whatnot
@@ -223,6 +223,5 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     }
 };
 
-#endif
 #endif
 

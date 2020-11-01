@@ -51,9 +51,10 @@ namespace BTNRH_WDRC {
 			
 				return 0;
 			}
-		
 			
 			int readFromSD(SdFatSdioEX &sd, const char *filename) {
+				int ret_val = NULL;
+				
 				SdFile_Gre file;
 				
 				//open SD
@@ -78,12 +79,18 @@ namespace BTNRH_WDRC {
 				//return
 				return ret_val;
 			}
+			#endif
+			
 			int readFromSD(const char *filename) {
+				#if USE_SD
 				SdFatSdioEX sd;
 				return readFromSD(sd, filename);
+				#else
+				return 0;
+				#endif
 			}	
 	
-		
+			#if USE_SD
 			void printToSDFile(SdFile_Gre *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_AFC";
 				r.writeHeader(file, header_str, var_name);
@@ -96,11 +103,17 @@ namespace BTNRH_WDRC {
 				
 				r.writeFooter(file); 
 			}
+			#endif
 		
 			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
+				#if USE_SD
 				SdFatSdioEX sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
+				#else
+				return 0;
+				#endif
 			}
+			#if USE_SD
 			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFile_Gre file;
 				
@@ -210,7 +223,6 @@ namespace BTNRH_WDRC {
 			
 				return 0;
 			}
-		
 			
 			int readFromSD(SdFatSdioEX &sd, const char *filename) {
 				SdFile_Gre file;
@@ -237,12 +249,18 @@ namespace BTNRH_WDRC {
 				//return
 				return ret_val;
 			}
+			#endif
+			
 			int readFromSD(const char *filename) {
+				#if USE_SD
 				SdFatSdioEX sd;
 				return readFromSD(sd, filename);
+				#else
+				return 0;
+				#endif
 			}	
 		
-			
+			#if USE_SD
 			void printToSDFile(SdFile_Gre *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_DSL";
 				r.writeHeader(file, header_str, var_name);
@@ -262,11 +280,18 @@ namespace BTNRH_WDRC {
 				
 				r.writeFooter(file); 
 			}
+			#endif
 			
 			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
+				#if USE_SD
 				SdFatSdioEX sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
+				#else
+				return 0;
+				#endif
 			}
+			
+			#if USE_SD
 			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFile_Gre file;
 				
@@ -299,8 +324,8 @@ namespace BTNRH_WDRC {
 				//return
 				return 0;
 			}
-			
 			#endif
+			
 			void printAllValues(void) { printAllValues(&Serial); }
 			void printAllValues(Stream *s) {
 				int last_chan = nchannel;
@@ -445,12 +470,18 @@ namespace BTNRH_WDRC {
 				//return
 				return ret_val;
 			}
+			#endif
+			
 			int readFromSD(const char *filename) {
+				#if USE_SD
 				SdFatSdioEX sd;
 				return readFromSD(sd, filename);
+				#else
+				return 0;
+				#endif
 			}	
 	
-			
+			#if USE_SD
 			void printToSDFile(SdFile_Gre *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_WDRC";
 				r.writeHeader(file, header_str, var_name);
@@ -468,11 +499,18 @@ namespace BTNRH_WDRC {
 				
 				r.writeFooter(file); 
 			}
+			#endif
 			
 			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
+				#if USE_SD
 				SdFatSdioEX sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
+				#else
+				return 0;
+				#endif
 			}
+			
+			#if USE_SD
 			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
 				SdFile_Gre file;
 				
@@ -504,7 +542,6 @@ namespace BTNRH_WDRC {
 				//return
 				return 0;
 			}
-
 			#endif
 			
 			void printAllValues(void) { printAllValues(&Serial); }

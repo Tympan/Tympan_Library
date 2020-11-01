@@ -20,8 +20,13 @@
 #ifndef _SDWriter_h
 #define _SDWriter_h
 
+//include "AudioStream_F32.h"
+//include <Arduino.h> //for Serial
+
 #include <arm_math.h>        //possibly only used for float32_t definition?
+#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
 #include <SdFat_Gre.h>       //originally from https://github.com/greiman/SdFat  but class names have been modified to prevent collisions with Teensy Audio/SD libraries
+#endif
 #include <Print.h>
 
 //set some constants
@@ -52,76 +57,101 @@ class SDWriter : public Print
 
     void setup(void) { init(); }
     virtual void init() {
-      if (!sd.begin()) sd.errorHalt(serial_ptr, "SDWriter: begin failed");
+		#if defined(KINETISK)
+		if (!sd.begin()) sd.errorHalt(serial_ptr, "SDWriter: begin failed");
+		#endif
     }
 
     bool openAsWAV(char *fname) {
-      bool returnVal = open(fname);
-      if (isFileOpen()) { //true if file is open
-        flag__fileIsWAV = true;
-        file.write(wavHeaderInt16(0), WAVheader_bytes); //initialize assuming zero length
-      }
-      return returnVal;
+		bool returnVal = true;
+		#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
+		bool returnVal = open(fname);
+		if (isFileOpen()) { //true if file is open
+			flag__fileIsWAV = true;
+			file.write(wavHeaderInt16(0), WAVheader_bytes); //initialize assuming zero length
+		}
+		#endif
+		return returnVal;
     }
 
     bool open(char *fname) {
-      if (sd.exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
-        // The SD library writes new data to the end of the file, so to start
-        //a new recording, the old file must be deleted before new data is written.
-        sd.remove(fname);
-      }
-      file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
-      //file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
-      return isFileOpen();
+		#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
+
+		if (sd.exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
+			// The SD library writes new data to the end of the file, so to start
+			//a new recording, the old file must be deleted before new data is written.
+			sd.remove(fname);
+		}
+		file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+		//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
+		return isFileOpen();
+		#else
+		return true;
+		#endif
     }
 
 	bool exists(char *fname) {
+		#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
 		return sd.exists(fname);
+		#else
+		return false;
+		#endif
 	}
 	bool remove(char *fname) {
+		#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
 		return sd.remove(fname);
+		#else
+		return false;
+		#endif
 	}
 	
     int close(void) {
-      //file.truncate(); 
-      if (flag__fileIsWAV) {
-        //re-write the header with the correct file size
-        uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
-        file.seekSet(0); //SdFat_Gre_FatLib version of seek();
-        file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
-        file.seekSet(fileSize);
-      }
-      file.close();
-      flag__fileIsWAV = false;
-      return 0;
+		#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
+		//file.truncate(); 
+		if (flag__fileIsWAV) {
+			//re-write the header with the correct file size
+			uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+			file.seekSet(0); //SdFat_Gre_FatLib version of seek();
+			file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
+			file.seekSet(fileSize);
+		}
+		file.close();
+		flag__fileIsWAV = false;
+		#endif
+		return 0;
     }
 
     bool isFileOpen(void) {
-      if (file.isOpen()) return true;
-      return false;
+		#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
+		if (file.isOpen()) return true;
+		#endif
+		return false;
     }
 
     //This "write" is for compatibility with the Print interface.  Writing one
     //byte at a time is EXTREMELY inefficient and shouldn't be done
     virtual size_t write(uint8_t foo)  {
-      size_t return_val = 0;
-      if (file.isOpen()) {
+		size_t return_val = 0;
+		#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
+		if (file.isOpen()) {
 
-        // write all audio bytes (512 bytes is most efficient)
-        if (flagPrintElapsedWriteTime) { usec = 0; }
-        file.write((byte *) (&foo), 1); //write one value
-        return_val = 1;
+			// write all audio bytes (512 bytes is most efficient)
+			if (flagPrintElapsedWriteTime) { usec = 0; }
+			file.write((byte *) (&foo), 1); //write one value
+			return_val = 1;
 
-        //write elapsed time only to USB serial (because only that is fast enough)
-        if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec); }
-      }
-      return return_val;
+			//write elapsed time only to USB serial (because only that is fast enough)
+			if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec); }
+		}
+		#endif
+		return return_val;
     }
 
     //write Byte buffer...the lowest-level call upon which the others are built.
     //writing 512 is most efficient (ie 256 int16 or 128 float32
     virtual size_t write(const uint8_t *buff, int nbytes) {
       size_t return_val = 0;
+	  #if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
       if (file.isOpen()) {
         if (flagPrintElapsedWriteTime) { usec = 0; }
         file.write((byte *)buff, nbytes); return_val = nbytes;
@@ -129,6 +159,7 @@ class SDWriter : public Print
         //write elapsed time only to USB serial (because only that is fast enough)
         if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec); }
       }
+	  #endif
       return return_val;
     }
     virtual size_t write(const char *buff, int nchar) { 
@@ -185,9 +216,11 @@ class SDWriter : public Print
     }
     
   protected:
+	#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
     //SdFatSdio sd; //slower
     SdFatSdioEX sd; //faster
     SdFile_Gre file;
+	#endif
     boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
     Print* serial_ptr = &Serial;

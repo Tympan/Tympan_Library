@@ -42,11 +42,10 @@
 
 #if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
 //#include "SdFat_Gre.h"
-//#include "AudioSDPlayer_F32.h"
-//#include "AudioSDWriter_F32.h"
-//#include "SDWriter.h"
-//#include "output_i2s_quad_f32.h"
 #endif
+#include "AudioSDPlayer_F32.h"
+#include "AudioSDWriter_F32.h"
+#include "SDWriter.h"
 
 #include "synth_pinknoise_f32.h"
 #include "synth_waveform_F32.h"
