@@ -271,9 +271,9 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
 }
 
- void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
-		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset,
-		audio_block_f32_t *&block_f32_scaled) //all three of these are changed upon return  
+ 
+void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
+		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset) //all three of these are changed upon return  
 {
 	//Receive the incoming audio blocks
 	audio_block_f32_t *block_f32 = receiveReadOnly_f32(chan); // channel 1
@@ -291,66 +291,6 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 			}
 		} 
 	
-		//scale F32 to Int16...which fills the audio buffer handed to us as working memory
-		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, AUDIO_BLOCK_SAMPLES);
-		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		for (int i=0; i < audio_block_samples; i++) { block_f32_scaled->data[i] = block_f32->data[i]; }
-		
-		
-		//shuffle between the two buffers that the isr() routines looks for
-		__disable_irq();
-		if (block_1st == NULL) {
-			block_1st = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
-			ch_offset = 0;
-			__enable_irq();
-		} else if (block_2nd == NULL) {
-			block_2nd = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
-			__enable_irq();
-		} else {
-			audio_block_f32_t *tmp = block_1st;
-			block_1st = block_2nd;
-			block_2nd = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
-			ch_offset = 0;
-			__enable_irq();
-			AudioStream_F32::release(tmp);  //here we are releaseing an older audio buffer used as working memory
-		}
-		AudioStream_F32::transmit(block_f32,chan);  //transmit the original audio block that we acquired here via receiveReadOnly_F32()
-		AudioStream_F32::release(block_f32);	 //release the original audio block that we acquired here via receiveReadOnly_F32()
-	} else {
-		//Serial.print("Output_i2s_quad: update: did not receive chan ");
-		//Serial.println(chan);
-		
-		//we never used the audio buffer handed to us as working memory, so release it here.
-		AudioStream_F32::release(block_f32_scaled);
-	}
-
-} 
-
-/* void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
-		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset,
-		audio_block_f32_t *&block_f32_scaled) //all three of these are changed upon return  
-{
-	//Receive the incoming audio blocks
-	audio_block_f32_t *block_f32 = receiveReadOnly_f32(chan); // channel 1
-	
-	//is it valid?
-	if (block_f32) {
-		//it is valid.  now process it.
-		
-		if (chan == 0) {
-			if (block_f32->length != audio_block_samples) {
-				Serial.print("AudioOutputI2SQuad_F32: *** WARNING ***: audio_block says len = ");
-				Serial.print(block_f32->length);
-				Serial.print(", but I2S settings want it to be = ");
-				Serial.println(audio_block_samples);
-			}
-		} 
-	
-		//scale F32 to Int16...which fills the audio buffer handed to us as working memory
-		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, AUDIO_BLOCK_SAMPLES);
-		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		//for (int i=0; i < audio_block_samples; i++) { block_f32_scaled->data[i] = block_f32->data[i]; }
-		
 		
 		//shuffle between the two buffers that the isr() routines looks for
 		__disable_irq();
@@ -374,13 +314,9 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 	} else {
 		//Serial.print("Output_i2s_quad: update: did not receive chan ");
 		//Serial.println(chan);
-		
-		//we never used the audio buffer handed to us as working memory, so release it here.
-		//AudioStream_F32::release(block_f32_scaled);
 	}
 
-} */
-
+}
 
 //This routine receives an audio block of F32 data from audio processing
 //routines.  This routine will receive one block from each audio channel.
@@ -390,34 +326,10 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 //into the DMA that the I2S peripheral pulls from.
 void AudioOutputI2SQuad_F32::update(void)
 {
-	//pre-allocate working memory for each of the four channels...will be released
-	//inside the update_1chan function when it is really free
-	#if 1
-	audio_block_f32_t *foo1_f32 = AudioStream_F32::allocate_f32();
-	audio_block_f32_t *foo2_f32 = AudioStream_F32::allocate_f32();
-	audio_block_f32_t *foo3_f32 = AudioStream_F32::allocate_f32();
-	audio_block_f32_t *foo4_f32 = AudioStream_F32::allocate_f32();
-	if ((!foo1_f32) || (!foo2_f32) || (!foo3_f32) || (!foo4_f32)) {
-		//enough mem was not available!  clear out and return
-		if (foo1_f32) AudioStream_F32::release(foo1_f32);
-		if (foo2_f32) AudioStream_F32::release(foo2_f32);
-		if (foo3_f32) AudioStream_F32::release(foo3_f32);
-		if (foo4_f32) AudioStream_F32::release(foo4_f32);
-		return;
-	}
-	
-	//process (shuffle data) for each audio channel
-	update_1chan(0, block_ch1_1st, block_ch1_2nd, ch1_offset, foo1_f32);
-	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset, foo2_f32);
-	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset, foo3_f32);
-	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset, foo4_f32);
-	#else
-	audio_block_f32_t *foo_f32;
-	update_1chan(0, block_ch1_1st, block_ch1_2nd, ch1_offset, foo_f32);
-	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset, foo_f32);
-	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset, foo_f32);
-	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset, foo_f32);
-	#endif
+	update_1chan(0, block_ch1_1st, block_ch1_2nd, ch1_offset);
+	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset);
+	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset);
+	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset);
 }
 
 
