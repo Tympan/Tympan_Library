@@ -3,6 +3,7 @@
 	
 	Created: Brendan Flynn (http://www.flexvoltbiosensor.com/) for Tympan, Jan-Feb 2017
 	Purpose: Control module for Texas Instruments TLV320AIC3206 compatible with Teensy Audio Library
+	Updates: Chip Audette (OpenAudio) 2017 through 2020+
  
 	License: MIT License.  Use at your own risk.
  */
@@ -19,11 +20,11 @@
 #  define AIC_FS                                                     44100UL
 #endif
 
-//#define AIC_BITS                                                        16
-#define AIC_BITS                                                        32
+#define AIC_BITS                                                        16
+//#define AIC_BITS                                                        32
 
-#define AIC_I2S_SLAVE                                                     1
-#if AIC_I2S_SLAVE
+#define IS_AIC_I2S_FOLLOWER                                                     1
+#if IS_AIC_I2S_FOLLOWER
 // Direction of BCLK and WCLK (reg 27) is input if a slave:
 # define AIC_CLK_DIR                                                    0
 #else
@@ -67,7 +68,7 @@
 // FS = 90.3168MHz / (8*2*128) = 44100 Hz.
 // MOD = 90.3168MHz / (8*2) = 5644800 Hz
 
-// Actual from Teensy: 44117.64706Hz * 128 => 5647058.82368Hz * 8*2 => 90352941.17888Hz
+// Actual from Teensy 3.x: 44117.64706Hz * 128 => 5647058.82368Hz * 8*2 => 90352941.17888Hz
 
 // DAC clock config.
 // Note: MDAC*DOSR/32 >= RC, where RC is 8 for the default filter.
@@ -78,7 +79,7 @@
 
 #define MODE_STANDARD	(1)
 #define MODE_LOWLATENCY (2)
-#define MODE_PDM	(3)
+#define MODE_PDM	(3)   //compatible with digital mics
 #define ADC_DAC_MODE    (MODE_PDM)
 
 
@@ -197,17 +198,19 @@ bool AudioControlAIC3206::enable(void) {
   delay(5);
 
   //hard reset the AIC
-  //Serial.println("Hardware reset of AIC...");
-  //define RESET_PIN  21
-  #define RESET_PIN (resetPinAIC)
-  pinMode(RESET_PIN,OUTPUT); 
-  digitalWrite(RESET_PIN,HIGH);delay(50); //not reset
-  digitalWrite(RESET_PIN,LOW);delay(50);  //reset
-  digitalWrite(RESET_PIN,HIGH);delay(50);//not reset
+  //Serial.print("AudioControlAIC3206: enable: Hardware reset of AIC on pin ");Serial.println(resetPinAIC);
+  pinMode(resetPinAIC,OUTPUT); 
+  digitalWrite(resetPinAIC,HIGH);delay(50); //not reset
+  digitalWrite(resetPinAIC,LOW);delay(50);  //reset
+  digitalWrite(resetPinAIC,HIGH);delay(50);//not reset
 	
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_reset...");
   aic_reset(); //delay(50);  //soft reset
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_init...");
   aic_init(); //delay(10);
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_ADC...");
   aic_initADC(); //delay(10);
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_DAC...");
   aic_initDAC(); //delay(10);
 
   aic_readPage(0, 27); // check a specific register - a register read test
