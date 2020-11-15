@@ -38,6 +38,7 @@
 #include "AudioStream_F32.h"
 //include "AudioStream.h"
 #include "DMAChannel.h"
+#include <arm_math.h>
 
 
 class AudioOutputI2SQuad_F32 : public AudioStream_F32

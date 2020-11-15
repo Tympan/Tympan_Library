@@ -56,6 +56,10 @@ uint32_t  AudioOutputI2SQuad_F32::ch1_offset = 0;
 uint32_t  AudioOutputI2SQuad_F32::ch2_offset = 0;
 uint32_t  AudioOutputI2SQuad_F32::ch3_offset = 0;
 uint32_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
+//q15_t AudioOutputI2SQuad_F32::tmp_src1[AUDIO_BLOCK_SAMPLES/2];
+//q15_t AudioOutputI2SQuad_F32::tmp_src2[AUDIO_BLOCK_SAMPLES/2];
+//q15_t AudioOutputI2SQuad_F32::tmp_src3[AUDIO_BLOCK_SAMPLES/2];
+//q15_t AudioOutputI2SQuad_F32::tmp_src4[AUDIO_BLOCK_SAMPLES/2];
 
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
@@ -186,12 +190,13 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 }
 
  
+ #define SCALE_AND_SATURATE_F32_TO_INT16(x) (min(32767.0f,max(-32767.0f, (x) * 32767.0f)))
 
  void AudioOutputI2SQuad_F32::isr(void)
 {
 	uint32_t saddr;
-	const float32_t *src1, *src2, *src3, *src4;
-	const float32_t *zeros = (const float32_t *)zerodata;
+	float32_t *src1, *src2, *src3, *src4;
+	float32_t *zeros = (float32_t *)zerodata;
 	int16_t *dest;
 	
 	//update the dma and get pointer for the destination tx buffer
@@ -201,7 +206,6 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 	if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //variable audio block length
 		// DMA is transmitting the first half of the buffer so we must fill the second half
 		//dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES]; //orig
-		//dest = (int16_t *)(&i2s_tx_buffer[audio_block_samples/2 * 4 * (2/4)]); //half the block times 4 channels times 2 bytes (int16) actual data divided by 4 bytes (int32) of size of array elements
 		dest = (int16_t *)&i2s_tx_buffer[audio_block_samples]; //new
 		if (AudioOutputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
@@ -215,33 +219,32 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 	src3 = (block_ch3_1st) ? (&(block_ch3_1st->data[ch3_offset])) : zeros;
 	src4 = (block_ch4_1st) ? (&(block_ch4_1st->data[ch4_offset])) : zeros;
 
-
-	int16_t isrc1[audio_block_samples / 2],
-			isrc2[audio_block_samples / 2],
-			isrc3[audio_block_samples / 2],
-			isrc4[audio_block_samples / 2];
-			
-	//for (int i=0; i < AUDIO_BLOCK_SAMPLES / 2; i++) {
-	for (int i=0; i < audio_block_samples/2; i++) {
-		isrc1[i] = (int16_t) src1[i];
-		isrc2[i] = (int16_t) src2[i];
-		isrc3[i] = (int16_t) src3[i];
-		isrc4[i] = (int16_t) src4[i];
-	}
-
-#if 1
+#if 0
+	//much less memory efficient, but allows us to use the memcpy_tointerleaveQuad function
+	const int n = audio_block_samples / 2;
+	q15_t tmp_src1[n], tmp_src2[n], tmp_src3[n], tmp_src4[n];
+	
+	//scale the floats to int16 and store in temporary int16 arrays
+	arm_float_to_q15(src1, tmp_src1, n);
+	arm_float_to_q15(src2, tmp_src2, n);
+	arm_float_to_q15(src3, tmp_src3, n);
+	arm_float_to_q15(src4, tmp_src4, n);
+	
 	//memcpy_tointerleaveQuad(dest, src1, src2, src3, src4);
-	memcpy_tointerleaveQuad(dest, isrc1, isrc2, isrc3, isrc4);
+	memcpy_tointerleaveQuad(dest, (int16_t *)tmp_src1, 
+	                              (int16_t *)tmp_src2, 
+								  (int16_t *)tmp_src3, 
+								  (int16_t *)tmp_src4);
 #else
-	//for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
-	for (int i=0; i < audio_block_samples/2; i++) {
-		*dest++ = (int16_t) *src1++;  //left 1
-		*dest++ = (int16_t) *src3++; // left 2
-		*dest++ = (int16_t) *src2++; // right 1
-		*dest++ = (int16_t) *src4++; //  right 2
+	int16_t *d = dest;
+	for (int i=0; i < audio_block_samples / 2; i++) {
+		*d++ = (int16_t)((q15_t)(*src1++ * 32768)); //left 1...does the q15_t ensure saturating math?
+		*d++ = (int16_t)((q15_t)(*src3++ * 32768)); //left 2...does the q15_t ensure saturating math?
+		*d++ = (int16_t)((q15_t)(*src2++ * 32768)); //right 1...does the q15_t ensure saturating math?
+		*d++ = (int16_t)((q15_t)(*src4++ * 32768)); //right 2...does the q15_t ensure saturating math?
 	}
-#endif
 
+#endif
 	//arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );  //clear out this number of bytes..which should equal AUDIO_BLOCK_SAMPLES/2 * 4chan * 2bytes/samp
 	arm_dcache_flush_delete(dest, I2S_BUFFER_TO_USE_BYTES / 2);
 
@@ -268,7 +271,7 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
 }
 
-void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
+ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
 		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset,
 		audio_block_f32_t *&block_f32_scaled) //all three of these are changed upon return  
 {
@@ -290,7 +293,9 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 	
 		//scale F32 to Int16...which fills the audio buffer handed to us as working memory
 		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, AUDIO_BLOCK_SAMPLES);
-		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		for (int i=0; i < audio_block_samples; i++) { block_f32_scaled->data[i] = block_f32->data[i]; }
+		
 		
 		//shuffle between the two buffers that the isr() routines looks for
 		__disable_irq();
@@ -319,7 +324,63 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 		AudioStream_F32::release(block_f32_scaled);
 	}
 
-}
+} 
+
+/* void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
+		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset,
+		audio_block_f32_t *&block_f32_scaled) //all three of these are changed upon return  
+{
+	//Receive the incoming audio blocks
+	audio_block_f32_t *block_f32 = receiveReadOnly_f32(chan); // channel 1
+	
+	//is it valid?
+	if (block_f32) {
+		//it is valid.  now process it.
+		
+		if (chan == 0) {
+			if (block_f32->length != audio_block_samples) {
+				Serial.print("AudioOutputI2SQuad_F32: *** WARNING ***: audio_block says len = ");
+				Serial.print(block_f32->length);
+				Serial.print(", but I2S settings want it to be = ");
+				Serial.println(audio_block_samples);
+			}
+		} 
+	
+		//scale F32 to Int16...which fills the audio buffer handed to us as working memory
+		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, AUDIO_BLOCK_SAMPLES);
+		//scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		//for (int i=0; i < audio_block_samples; i++) { block_f32_scaled->data[i] = block_f32->data[i]; }
+		
+		
+		//shuffle between the two buffers that the isr() routines looks for
+		__disable_irq();
+		if (block_1st == NULL) {
+			block_1st = block_f32; //here were are temporarily holding onto the working memory for use by the isr()
+			ch_offset = 0;
+			__enable_irq();
+		} else if (block_2nd == NULL) {
+			block_2nd = block_f32; //here were are temporarily holding onto the working memory for use by the isr()
+			__enable_irq();
+		} else {
+			audio_block_f32_t *tmp = block_1st;
+			block_1st = block_2nd;
+			block_2nd = block_f32; //here were are temporarily holding onto the working memory for use by the isr()
+			ch_offset = 0;
+			__enable_irq();
+			AudioStream_F32::release(tmp);  //here we are releaseing an older audio buffer used as working memory
+		}
+		AudioStream_F32::transmit(block_f32,chan);  //transmit the original audio block that we acquired here via receiveReadOnly_F32()
+		//AudioStream_F32::release(block_f32);	 //release the original audio block that we acquired here via receiveReadOnly_F32()
+	} else {
+		//Serial.print("Output_i2s_quad: update: did not receive chan ");
+		//Serial.println(chan);
+		
+		//we never used the audio buffer handed to us as working memory, so release it here.
+		//AudioStream_F32::release(block_f32_scaled);
+	}
+
+} */
+
 
 //This routine receives an audio block of F32 data from audio processing
 //routines.  This routine will receive one block from each audio channel.
@@ -331,6 +392,7 @@ void AudioOutputI2SQuad_F32::update(void)
 {
 	//pre-allocate working memory for each of the four channels...will be released
 	//inside the update_1chan function when it is really free
+	#if 1
 	audio_block_f32_t *foo1_f32 = AudioStream_F32::allocate_f32();
 	audio_block_f32_t *foo2_f32 = AudioStream_F32::allocate_f32();
 	audio_block_f32_t *foo3_f32 = AudioStream_F32::allocate_f32();
@@ -349,6 +411,13 @@ void AudioOutputI2SQuad_F32::update(void)
 	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset, foo2_f32);
 	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset, foo3_f32);
 	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset, foo4_f32);
+	#else
+	audio_block_f32_t *foo_f32;
+	update_1chan(0, block_ch1_1st, block_ch1_2nd, ch1_offset, foo_f32);
+	update_1chan(1, block_ch2_1st, block_ch2_2nd, ch2_offset, foo_f32);
+	update_1chan(2, block_ch3_1st, block_ch3_2nd, ch3_offset, foo_f32);
+	update_1chan(3, block_ch4_1st, block_ch4_2nd, ch4_offset, foo_f32);
+	#endif
 }
 
 
