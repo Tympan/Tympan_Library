@@ -4,13 +4,16 @@
 
 //include "utility/textAndStringUtils.h"
 
-#include <SdFat_Gre.h>   //for reading and writing settings to SD card
 #if defined(KINETISK)	
 	#include "AccessConfigDataOnSD.h"
 	#define USE_SD  1
 #else
 	#define USE_SD 0
 #endif
+#if USE_SD
+	#include <SdFat_Gre.h>   //for reading and writing settings to SD card
+#endif
+
 #define DSL_MXCH 8  
 	
 namespace BTNRH_WDRC {
