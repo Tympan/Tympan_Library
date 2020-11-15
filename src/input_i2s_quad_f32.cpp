@@ -169,6 +169,7 @@ void AudioInputI2SQuad_F32::isr(void)
 	if (daddr < (uint32_t)i2s_rx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //new quad, enable diff audio block lengths
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
+		//src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
 		src = (int16_t *)&i2s_rx_buffer[audio_block_samples];
 		//end = (int16_t *)&i2s_rx_buffer[audio_block_samples*2];
 		if (AudioInputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
@@ -181,19 +182,23 @@ void AudioInputI2SQuad_F32::isr(void)
 	
 	//De-interleave and copy to destination audio buffers.  
 	//Note the unexpected order!!! Chan 1, 3, 2, 4
+	const float32_t scale = 1.0f/32767.0f;
 	if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
 		offset = AudioInputI2SQuad_F32::block_offset;
 		if (offset <= (uint32_t)(audio_block_samples/2)) {
+			//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer)/2);
+			arm_dcache_delete((void*)src, I2S_BUFFER_TO_USE_BYTES/2);
+			
 			AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
 			dest1_f32 = &(block_ch1->data[offset]);
 			dest2_f32 = &(block_ch2->data[offset]);
 			dest3_f32 = &(block_ch3->data[offset]);
 			dest4_f32 = &(block_ch4->data[offset]);
 			for (int i=0; i < audio_block_samples/2; i++) {
-				*dest1_f32++ = (float32_t) *src++; //will need to scale this in update()
-				*dest3_f32++ = (float32_t) *src++;//will need to scale this in update()
-				*dest2_f32++ = (float32_t) *src++;//will need to scale this in update()
-				*dest4_f32++ = (float32_t) *src++;//will need to scale this in update()
+				*dest1_f32++ = scale*((float32_t) *src++);  //left 1
+				*dest3_f32++ = scale*((float32_t) *src++);  //left 2 (note chan 3!!)
+				*dest2_f32++ = scale*((float32_t) *src++);  //right 1 (note chan 2!!)
+				*dest4_f32++ = scale*((float32_t) *src++);  //right 2
 			}
 		}
 	} //else {
@@ -219,7 +224,7 @@ void AudioInputI2SQuad_F32::update_1chan(int chan, unsigned long counter, audio_
 	if (!out_block) return;
 		
 	//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
-	scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples);
+	//scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples); //don't need this anymore...it's done in the ISR
 	
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_block->id = counter;
