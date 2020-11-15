@@ -38,7 +38,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 			setAICShieldRev(_tympanRev, _AICRev);
 		}
 		void setAICShieldRev(TympanRev _tympanRev, AICShieldRev _AICRev) {
-			tympanRev = tympanRev;
+			tympanRev = _tympanRev;
 			AICRev = _AICRev;
 			switch (tympanRev) { //which Tympan are we connecting to?
 				
@@ -69,6 +69,32 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 					}
 					break;
 					
+				case  (TympanRev::E_A) :   //we're connecting to a Rev E tympan, so the pin numbers below are correct for the TympanE
+				
+					switch (AICRev) {  //which AIC_shield are we connecting to?
+					
+						case (AICShieldRev::A) :    //Basic AIC shield (2019 and 2020)
+							//Teensy 4.1 Pin Numbering
+							resetAIC = 31;
+							i2cBus = 2;
+							enableStereoExtMicBias = 29; 
+							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
+							break;
+							
+						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
+							//Teensy 4.1 Pin Numbering
+							resetAIC = 31;
+							i2cBus = 2;
+							enableStereoExtMicBias =29; 
+							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)...NEED TO UPDATE!!!
+							CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)...NEED TO UPDATE!!!
+							CCP_bigLED =  53;    //same as SCK_2 (alt)...NEED TO UPDATE!!!
+							CCP_littleLED = 41;    //same as AIC_Shield_enableStereoExtMicBias...NEED TO UPDATE!!!
+							CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2...NEED TO UPDATE!!!
+							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
+							break;
+					}
+					break;					
 				default:
 					Serial.println("AICSheildPins: *** WARNING *** This Teensy Rev is not supported.");
 					Serial.println("    : Assuming defaults and hoping for the best.");
