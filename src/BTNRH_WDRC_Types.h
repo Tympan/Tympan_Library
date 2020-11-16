@@ -3,15 +3,12 @@
 #define _BTNRH_WDRC_TYPES_H
 
 //include "utility/textAndStringUtils.h"
+	
 
-#if defined(KINETISK)	
-	#include "AccessConfigDataOnSD.h"
-	#define USE_SD  1
-#else
-	#define USE_SD 0
-#endif
+#define USE_SD  1
 #if USE_SD
-	#include <SdFat_Gre.h>   //for reading and writing settings to SD card
+	#include "AccessConfigDataOnSD.h"
+	#include <SdFat.h> //this was added in Teensyduino 1.54beta3
 #endif
 
 #define DSL_MXCH 8  
@@ -30,7 +27,7 @@ namespace BTNRH_WDRC {
 						
 			#if USE_SD		
 			AccessConfigDataOnSD r;
-			int readFromSDFile(SdFile_Gre *file) {
+			int readFromSDFile(SdFile *file) {
 				const int buff_len = 300;
 				char line[buff_len];
 				
@@ -55,10 +52,10 @@ namespace BTNRH_WDRC {
 				return 0;
 			}
 			
-			int readFromSD(SdFatSdioEX &sd, const char *filename) {
-				int ret_val = NULL;
+			int readFromSD(SdFat &sd, const char *filename) {
+				int ret_val = 0;
 				
-				SdFile_Gre file;
+				SdFile file;
 				
 				//open SD
 				if (!(sd.begin())) {
@@ -74,7 +71,7 @@ namespace BTNRH_WDRC {
 				}
 				
 				//read data
-				int ret_val = readFromSDFile(&file);
+				ret_val = readFromSDFile(&file);
 				
 				//close file
 				file.close();
@@ -86,7 +83,7 @@ namespace BTNRH_WDRC {
 			
 			int readFromSD(const char *filename) {
 				#if USE_SD
-				SdFatSdioEX sd;
+				SdFat sd;
 				return readFromSD(sd, filename);
 				#else
 				return 0;
@@ -94,7 +91,7 @@ namespace BTNRH_WDRC {
 			}	
 	
 			#if USE_SD
-			void printToSDFile(SdFile_Gre *file, const char *var_name) {
+			void printToSDFile(SdFile *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_AFC";
 				r.writeHeader(file, header_str, var_name);
 				
@@ -110,15 +107,15 @@ namespace BTNRH_WDRC {
 		
 			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
 				#if USE_SD
-				SdFatSdioEX sd;
+				SdFat sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
 				#else
 				return 0;
 				#endif
 			}
 			#if USE_SD
-			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
-				SdFile_Gre file;
+			int printToSD(SdFat &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
+				SdFile file;
 				
 				//open SD
 				if (!(sd.begin())) {
@@ -185,7 +182,7 @@ namespace BTNRH_WDRC {
 			#if USE_SD
 			AccessConfigDataOnSD r;	
 			
-			int readFromSDFile(SdFile_Gre *file) { //returns zero if successful
+			int readFromSDFile(SdFile *file) { //returns zero if successful
 				//Serial.println("CHA_DSL: readFromSDFile: starting...");
 				const int buff_len = 400;
 				char line[buff_len];
@@ -227,8 +224,8 @@ namespace BTNRH_WDRC {
 				return 0;
 			}
 			
-			int readFromSD(SdFatSdioEX &sd, const char *filename) {
-				SdFile_Gre file;
+			int readFromSD(SdFat &sd, const char *filename) {
+				SdFile file;
 				
 				//open SD
 				if (!(sd.begin())) {
@@ -256,7 +253,7 @@ namespace BTNRH_WDRC {
 			
 			int readFromSD(const char *filename) {
 				#if USE_SD
-				SdFatSdioEX sd;
+				SdFat sd;
 				return readFromSD(sd, filename);
 				#else
 				return 0;
@@ -264,7 +261,7 @@ namespace BTNRH_WDRC {
 			}	
 		
 			#if USE_SD
-			void printToSDFile(SdFile_Gre *file, const char *var_name) {
+			void printToSDFile(SdFile *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_DSL";
 				r.writeHeader(file, header_str, var_name);
 				
@@ -287,7 +284,7 @@ namespace BTNRH_WDRC {
 			
 			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
 				#if USE_SD
-				SdFatSdioEX sd;
+				SdFat sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
 				#else
 				return 0;
@@ -295,8 +292,8 @@ namespace BTNRH_WDRC {
 			}
 			
 			#if USE_SD
-			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
-				SdFile_Gre file;
+			int printToSD(SdFat &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
+				SdFile file;
 				
 				//open SD
 				if (!(sd.begin())) {
@@ -416,7 +413,7 @@ namespace BTNRH_WDRC {
 			
 			#if USE_SD
 			AccessConfigDataOnSD r;
-			int readFromSDFile(SdFile_Gre *file) {
+			int readFromSDFile(SdFile *file) {
 				const int buff_len = 300;
 				char line[buff_len];
 				
@@ -448,8 +445,8 @@ namespace BTNRH_WDRC {
 			}
 		
 			
-			int readFromSD(SdFatSdioEX &sd, const char *filename) {
-				SdFile_Gre file;
+			int readFromSD(SdFat &sd, const char *filename) {
+				SdFile file;
 				
 				//open SD
 				if (!(sd.begin())) {
@@ -477,7 +474,7 @@ namespace BTNRH_WDRC {
 			
 			int readFromSD(const char *filename) {
 				#if USE_SD
-				SdFatSdioEX sd;
+				SdFat sd;
 				return readFromSD(sd, filename);
 				#else
 				return 0;
@@ -485,7 +482,7 @@ namespace BTNRH_WDRC {
 			}	
 	
 			#if USE_SD
-			void printToSDFile(SdFile_Gre *file, const char *var_name) {
+			void printToSDFile(SdFile *file, const char *var_name) {
 				char header_str[] = "BTNRH_WDRC::CHA_WDRC";
 				r.writeHeader(file, header_str, var_name);
 				
@@ -506,7 +503,7 @@ namespace BTNRH_WDRC {
 			
 			int printToSD(const char *filename, const char *var_name, bool deleteExisting = false) {
 				#if USE_SD
-				SdFatSdioEX sd;
+				SdFat sd;
 				return printToSD(sd, filename, var_name, deleteExisting);
 				#else
 				return 0;
@@ -514,8 +511,8 @@ namespace BTNRH_WDRC {
 			}
 			
 			#if USE_SD
-			int printToSD(SdFatSdioEX &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
-				SdFile_Gre file;
+			int printToSD(SdFat &sd, const char *filename, const char *var_name, bool deleteExisting = false) {
+				SdFile file;
 				
 				//open SD
 				if (!(sd.begin())) {

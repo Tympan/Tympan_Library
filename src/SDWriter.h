@@ -66,7 +66,6 @@ class SDWriter : public Print
     }
 
     bool openAsWAV(char *fname) {
-		bool returnVal = true;
 		bool returnVal = open(fname);
 		if (isFileOpen()) { //true if file is open
 			flag__fileIsWAV = true;
