@@ -39,10 +39,6 @@
 #include "record_queue_f32.h"
 #include "input_i2s_f32.h"
 #include "input_i2s_quad_f32.h"
-
-#if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
-//#include "SdFat_Gre.h"
-#endif
 #include "AudioSDPlayer_F32.h"
 #include "AudioSDWriter_F32.h"
 #include "SDWriter.h"
