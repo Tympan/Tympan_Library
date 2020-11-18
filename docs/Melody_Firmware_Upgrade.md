@@ -47,12 +47,13 @@ In the Serial Monitor, type in the word `VERSION` and hit ENTER. The  BC127 will
 
 In this case, my Melody firmware is woefully out of date! Time to upgrade! 
 
-If you are interested in learning more about communicating in Command Mode, check out the [Melody Audio User Guide](https://source.sierrawireless.com/resources/airprime/hardware_specs_user_guides/bc127-melody-audio-7-user-guide/#sthash.9gawTWTs.dpbs)
+If you are interested in learning more about communicating in Command Mode, check out the [Melody Audio User Guide](https://source.sierrawireless.com/resources/airprime/hardware_specs_user_guides/bc127-melody-audio-7-user-guide/#sthash.9gawTWTs.dpbs) for more.
 
 # Upgrade Firmware
  
+ We need to download the Device Firmware Update (DFU) tool, which only works on **Windows PC**, and the latest firmware release. Go to the [BC127 Firmware Upgrade Tool](https://source.sierrawireless.com/resources/airprime/software/bc127-firmware-upgrade-tool/#sthash.djw3AqOU.dpbs) web page where you will also find a link to a PDF Application Note guide. Then go to the [BC127 Firmware Release](https://source.sierrawireless.com/resources/airprime/software/bc127-firmware/#sthash.glaxf9GJ.v9U9vuYZ.dpbs) page and download the Firmware Release `Melody_7_x`. The releases of the same version with extensions to the name add and subtract different features. If you're interested, dig into the Melody Audio User Guide linked to above for details on the releases.
  
+**Note:** Sierra Wireless requires that you have an account with them in order to download *anything* from their website! 
+ 
+Additionally, there is some instruction on how to make your BC127 ready to receive the upgrade. As of this writing, you have to connect via Serial Monitor (as we have done) and then type in `DFU` followed by a Carriage return. Then, disconnect the Serial port, and run the Firmware Upgrade Tool. 
 
-[BC127 Firmware Upgrade Tool](https://source.sierrawireless.com/resources/airprime/software/bc127-firmware-upgrade-tool/#sthash.djw3AqOU.dpbs)
-
-[BC127 Firmware Release](https://source.sierrawireless.com/resources/airprime/software/bc127-firmware/#sthash.glaxf9GJ.v9U9vuYZ.dpbs)
