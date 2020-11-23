@@ -1,6 +1,9 @@
 /*
 *   Upgrad Firmware TympanBT
 *
+*   ***** THIS CODE IS UNDER TEST  *****
+*   ***** CHECK THE DOCS FOLDER FOR A TUTORIAL *****
+*
 *   Created: Joel Murphy, Fall 2020
 *   Purpose: Upgrade the Melody firmware version that runs on the BC127 Bluetooth Radio Module.
 *             Downloads available from Sierra Wireless https://source.sierrawireless.com/
@@ -75,7 +78,7 @@ void setup() {
     USB_Serial->println("!!        Connected to Tympan Rev C        !!");
     USB_Serial->println("!! Do Not Attempt Melody Firmware Upgrade  !!");
   } else {
-    upgradeMelody_RevD(); 
+    enterCommandMode_RevD(); 
   }
   blinkTimer = millis();
 }
