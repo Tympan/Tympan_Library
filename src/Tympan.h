@@ -10,7 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
-enum class TympanRev { A, C, D, D0, D1, D2, D3, D4, E_A };
+enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E_A };
 
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (TympanRev::A)
@@ -21,6 +21,7 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3, D4, E_A };
 #define TYMPAN_REV_D3 (TympanRev::D3)
 #define TYMPAN_REV_D4 (TympanRev::D4)
 #define TYMPAN_REV_D (TympanRev::D)
+#define TYMPAN_REV_E_A (TympanRev::E_A)
 //define TYMPAN_REV_D_CCP (TympanRev::D_CCP)
 
 //the Tympan is a Teensy audio library "control" object
@@ -117,7 +118,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
 					BT_PIO0 = 56;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
-					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
+					BT_PIO5 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
 					enableStereoExtMicBias = 20; //PTD5
 					//AIC_Shield_enableStereoExtMicBias = 41;
 					BT_serial_speed = 9600;
@@ -134,9 +135,11 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					//BT_PIO4 = NOT_A_FEATURE;
 					BT_PIO0 = 5;
 					//BT_PIO5 = 2;
-					BT_PIO4 = 2;  //This is actually PIO5 but we don't have a name for this.  We don't really use this anyway, so whatever.  (WEA 10/24/2020)
+					BT_PIO5 = 2;  //This is actually PIO5 but we don't have a name for this.  We don't really use this anyway, so whatever.  (WEA 10/24/2020)
 					reversePot = true;  //need to check this.  Is the pot really wired backwards like the old RevA???  Since it worked correctly (not reversed) on Rev D, I bet that it's correct on RevE, too.
 					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
+					BT_serial_speed = 9600;
+					Rev_Test = 22;
 					break;
 
 /* 				case (TympanRev::D_CCP):  //the Tympan functions itself are same as RevD, but added some features to support the CCP shield
@@ -178,6 +181,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int BT_REGEN = NOT_A_FEATURE;
 		int BT_PIO0 = NOT_A_FEATURE;
 		int BT_PIO4 = NOT_A_FEATURE;  //PTD0
+		int BT_PIO5 = NOT_A_FEATURE;
 		int Rev_Test = NOT_A_FEATURE;
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
@@ -244,6 +248,13 @@ class TympanBase : public AudioControlAIC3206, public Print
 	
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
+		int read_BT_PIO0(void) { 
+			if (pins.BT_PIO0 == NOT_A_FEATURE) { 
+				return -1; 
+			} else { 
+				return digitalRead(pins.BT_PIO0); 
+			} 
+		}
 		//#if defined(SEREMU_INTERFACE)
 		//	usb_seremu_class *getUSBSerial(void) { return USB_Serial; }
 		//#else
@@ -375,6 +386,13 @@ class Tympan : public TympanBase {
 			TympanBase::setupPins(myPins);
 			TympanBase::setAudioSettings(_as);
 		}
+		Tympan(const TympanPins &_myPins) : TympanBase() {
+			TympanBase::setupPins(_myPins);
+		}
+		Tympan(const TympanPins &_myPins, const AudioSettings_F32 &_as) : TympanBase() {
+			TympanBase::setupPins(_myPins);
+			TympanBase::setAudioSettings(_as);
+		}		
 };
 
 #endif

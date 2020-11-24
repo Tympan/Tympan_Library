@@ -51,18 +51,35 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 	forceBTtoDataMode(true);
 };
 
+//void TympanBase::forceBTtoDataMode(bool state) {
+//	if (pins.BT_PIO4 != NOT_A_FEATURE) {
+//		if (state == true) {
+//			pinMode(pins.BT_PIO4,OUTPUT);
+//			digitalWrite(pins.BT_PIO4,HIGH);
+//		} else {
+//			//pinMode(pins.BT_PIO4,INPUT);  //go high-impedance (ie disable this pin)
+//			pinMode(pins.BT_PIO4,OUTPUT);
+//			digitalWrite(pins.BT_PIO4,LOW);
+//		}
+//	}
+//}
 void TympanBase::forceBTtoDataMode(bool state) {
-	if (pins.BT_PIO4 != NOT_A_FEATURE) {
+	if (pins.BT_PIO5 != NOT_A_FEATURE) {
 		if (state == true) {
-			pinMode(pins.BT_PIO4,OUTPUT);
-			digitalWrite(pins.BT_PIO4,HIGH);
+			pinMode(pins.BT_PIO5,OUTPUT);
+			Serial.println("Tympan: forceBTtoDataMode: Setting PIO5 to HIGH");
+			digitalWrite(pins.BT_PIO5,HIGH);
 		} else {
 			//pinMode(pins.BT_PIO4,INPUT);  //go high-impedance (ie disable this pin)
-			pinMode(pins.BT_PIO4,OUTPUT);
-			digitalWrite(pins.BT_PIO4,LOW);
+			pinMode(pins.BT_PIO5,OUTPUT);
+			Serial.println("Tympan: forceBTtoDataMode: Setting PIO5 to LOW");
+			digitalWrite(pins.BT_PIO5,LOW);
 		}
+	} else {
+		Serial.println("Tympan: forceBTtoDataMode: No PIO5 specified. Cannot force DATA MODE.");
 	}
 }
+
 
 int TympanBase::setEnableStereoExtMicBias(int new_state) {
 	if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
@@ -88,7 +105,7 @@ void TympanBase::beginBluetoothSerial(int BT_speed) {
 	BT_Serial->begin(BT_speed);
 
 	switch (getTympanRev()) {
-		case (TYMPAN_REV_D) : case (TYMPAN_REV_D0) : case (TYMPAN_REV_D1) : case (TYMPAN_REV_D2) : case (TYMPAN_REV_D3) :
+		case (TympanRev::D) : case (TYMPAN_REV_D0) : case (TYMPAN_REV_D1) : case (TYMPAN_REV_D2) : case (TYMPAN_REV_D3) : case (TYMPAN_REV_E_A) :
 			clearAndConfigureBTSerialRevD();
 			break;
 		default:
@@ -100,18 +117,21 @@ void TympanBase::beginBluetoothSerial(int BT_speed) {
 void TympanBase::clearAndConfigureBTSerialRevD(void) {
    //clear out any text that is waiting
 	delay(500);  //do this to wait for BT serial to come alive upon startup.  Is there a bitter way?
-	while(BT_Serial->available()) { BT_Serial->read(); delay(5); }
+	while(BT_Serial->available()) { BT_Serial->read(); delay(20); }
 
-	//transition to data mode
-	//Serial.println("Transition BT to data mode");
-	BT_Serial->print("ENTER_DATA");BT_Serial->write(0x0D); //enter data mode.  Finish with carraige return
-	delay(100);
-	int count = 0;
-	while ((count < 3) & (BT_Serial->available())) { //we should receive on "OK"
-	  //Serial.print((char)BT_SERIAL.read());
-	  BT_Serial->read(); count++;  delay(5);
+	if (1) { //sometimes have to temporarily disable for RevE development...11/20/2020, WEA
+		//transition to data mode
+		//Serial.println("Transition BT to data mode");
+		BT_Serial->print("ENTER_DATA");BT_Serial->write(0x0D); //enter data mode (Firmware v5 only!).  Finish with carriage return.
+		//BT_Serial->print("ENTER_DATA_MODE");BT_Serial->write(0x0D); //enter data mode (Firmware v6 only!).  Finish with carriage return.  Only works if there is an active BT connection to a phone or whatever...so, bascially, it behaves nothing like v5.  :(
+		delay(100);
+		int count = 0;
+		while ((count < 3) & (BT_Serial->available())) { //we should receive on "OK"
+		  //Serial.print((char)BT_SERIAL.read());
+		  BT_Serial->read(); count++;  delay(5);
+		}
+		//Serial.println("BT Should be ready.");
 	}
-	//Serial.println("BT Should be ready.");
 }
 
 void TympanBase::setBTAudioVolume(int vol) {  //only works when you are connected via Bluetooth!!!!
