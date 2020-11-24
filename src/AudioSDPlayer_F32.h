@@ -37,8 +37,7 @@
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
 
-#if defined(KINETISK)	
-#include <SdFat_Gre.h>   
+#include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 
 class AudioSDPlayer_F32 : public AudioStream_F32
 {
@@ -70,8 +69,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
     int setBlockSize(int block_size) { return audio_block_samples = block_size; };
   
   private:
-    SdFatSdioEX sd;
-    SdFile_Gre file;
+    SdFs sd;
+	SdFile file;
     bool consume(uint32_t size);
     bool parse_format(void);
     uint32_t header[10];    // temporary storage of wav header data
@@ -100,5 +99,5 @@ class AudioSDPlayer_F32 : public AudioStream_F32
     }  
     uint32_t updateBytes2Millis(void);
 };
-#endif
+
 #endif

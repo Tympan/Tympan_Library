@@ -49,7 +49,6 @@
 #define STATE_STOP      13
 #define STATE_NOT_BEGUN  99
 
-#if defined(KINETISK)	
 
 unsigned long AudioSDPlayer_F32::update_counter = 0;
 
@@ -655,4 +654,3 @@ uint32_t AudioSDPlayer_F32::lengthMillis(void)
   return ((uint64_t)tlength * b2m) >> 32;
 }
 
-#endif
