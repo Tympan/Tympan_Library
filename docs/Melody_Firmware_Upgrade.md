@@ -1,3 +1,5 @@
+## NOTE: This Document Is In Process
+
 # Update BC127 Melody Firmware Tympan Rev D
 The BC127 Bluetooth radio that comes with the Tympan Rev D works out of the box just fine for most purposes. However, the Melody Audio firmware is most likely out of date. If you choose to update the Melody firmware, let this be your guide.
 
