@@ -140,6 +140,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
 					BT_serial_speed = 9600;
 					Rev_Test = 22;
+					default_BT_mode = BT_COMMAND_MODE;
 					break;
 
 /* 				case (TympanRev::D_CCP):  //the Tympan functions itself are same as RevD, but added some features to support the CCP shield
@@ -185,6 +186,9 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int Rev_Test = NOT_A_FEATURE;
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
+		
+		enum BT_modes {BT_DATA_MODE, BT_COMMAND_MODE};
+		int default_BT_mode = BT_DATA_MODE;
 		//int AIC_Shield_enableStereoExtMicBias = NOT_A_FEATURE;
 		//int CCP_atten1 = NOT_A_FEATURE, CCP_atten2 = NOT_A_FEATURE;
 		//int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED = NOT_A_FEATURE;
@@ -276,36 +280,37 @@ class TympanBase : public AudioControlAIC3206, public Print
 		void echoIncomingBTSerial(void) {
 			while (BT_Serial->available()) USB_Serial->write(BT_Serial->read());//echo messages from BT serial over to USB Serial
 		}
-		void setBTAudioVolume(int vol); //vol is 0 (min) to 15 (max).  Only Rev D.  Only works when you are connected via Bluetooth!!!!
-
-
+		void setBTAudioVolume(int vol); //vol is 0 (min) to 15 (max).  Only Rev D (and Rev E?).  Only works when you are connected via Bluetooth!!!!
+		int getBTCommMode(void) { return BT_mode; }
+		int setBTCommMode(int val) { return BT_mode = val; }
+		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
 		//So, I inhereted the Print class, which gives me all of the Arduino print/write
 		//methods except for the most basic write().  Here, I define write() so that all
 		//of print() and println() and all of that works transparently.  Yay!
 		using Print::write;
 		virtual size_t write(uint8_t foo) {
-			if (USB_dtr()) USB_Serial->write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
-			return BT_Serial->write(foo);
-			//if (USB_dtr()) Serial.write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
-			//return Serial1.write(foo);
+			USB_serial_write(foo);  //write to USB
+			return BT_serial_write(foo);   //write same thing to Bluetooth
 		}
 		virtual size_t write(const uint8_t *buffer, size_t orig_size) { //this should be faster than the core write(uint8_t);
-			//USB_Serial->write('t');
-			size_t count = 0;
-			size_t size = orig_size;
-			int i=0;
-			if (USB_dtr()) {
-				//while (size--) count += USB_Serial->write(*buffer++);
-				while (size--) USB_Serial->write(buffer[i++]);
-				//return count;
-			}
-			size = orig_size;
-			while (size--) count += BT_Serial->write(*buffer++);
-			return count;
+			USB_serial_write(buffer,orig_size); //write to USB
+			return BT_serial_write(buffer,orig_size); //write same thing to Bluetooth
 		}
 		virtual size_t write(const char *str) { return write((const uint8_t *)str, strlen(str)); } //should use the faster write
 		virtual void flush(void) { USB_Serial->flush(); BT_Serial->flush(); }
+		
+		
+		//Serial writing and reading methods specific to USB or Bluetooth.
+		//These are primarily for internal use, but if the user wants to invoke them, go ahead!
+		virtual size_t USB_serial_write(uint8_t foo); //write a single byte
+		virtual size_t BT_serial_write(uint8_t foo);  //write single byte
+		virtual size_t USB_serial_write(const uint8_t *buffer, size_t size);  //write array of bytes (but does this ever get called?)
+		virtual size_t BT_serial_write(const uint8_t *buffer, size_t size); //write array of bytes (but does this ever get called?)
+		virtual int USB_serial_available(void) { return USB_Serial->available(); }
+		virtual int BT_serial_available(void);
+		virtual int USB_serial_read(void) { return USB_Serial->read(); }
+		virtual int BT_serial_read(void);
 
 		//using TympanPrint::print;
 		//using TympanPrint::println;
@@ -354,9 +359,17 @@ class TympanBase : public AudioControlAIC3206, public Print
 	protected:
 		TympanPins pins;
 		AudioSettings_F32 audio_settings;
-		
+		int BT_mode = TympanPins::BT_DATA_MODE;
+		static const int BT_uint8_buff_len = 256;
+		int BT_uint8_buff_ind = 0;
+		int BT_uint8_buff_end = 0;
+		uint8_t BT_uint8_buff[BT_uint8_buff_len];
 
-};
+		virtual size_t write_BC127_V7_command_mode(const uint8_t *buffer, size_t size);
+		virtual void read_BC127_V7_command_mode(void);
+		static int interpret2DigitHexAscii(char *str);
+
+}; //close the class TympanBase
 
 class Tympan : public TympanBase {
 	public:
