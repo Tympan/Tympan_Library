@@ -106,7 +106,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     }
 
     void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
-    void setWriteDataType(WriteDataType type) {
+    int setWriteDataType(WriteDataType type) {
       Print *serial_ptr = &Serial1;
       int write_nbytes = DEFAULT_SDWRITE_BYTES;
 
@@ -117,17 +117,27 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       }
 
       //make the full method call
-      setWriteDataType(type, serial_ptr, write_nbytes);
+      return setWriteDataType(type, serial_ptr, write_nbytes);
     }
-    void setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes) {
-      stopRecording();
-      writeDataType = type;
-      if (!buffSDWriter) {
-        buffSDWriter = new BufferedSDWriter(serial_ptr, writeSizeBytes);
-		if (buffSDWriter) buffSDWriter->setNChanWAV(numWriteChannels);
-        //allocateBuffer(); //use default buffer size...or comment this out and let BufferedSDWrite create it last-minute
-      }
-    }
+	int setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps=-1) {
+		stopRecording();
+		writeDataType = type;
+		if (!buffSDWriter) {
+			Serial.println("AudioSDWriter_F32: setWriteDataType: creating buffSDWriter...");
+			buffSDWriter = new BufferedSDWriter(serial_ptr, writeSizeBytes);
+			if (buffSDWriter) {
+				buffSDWriter->setNChanWAV(numWriteChannels);
+				if (bufferLength_samps >= 0) {
+					allocateBuffer(bufferLength_samps); //leave empty for default buffer size
+				} else {
+					//if we don't allocateBuffer() here, it simply lets BufferedSDWrite create it last-minute
+				}
+			} else {
+				Serial.print("AudioSDWriter_F32: setWriteDataType: *** ERROR *** Could not create buffered SD writer.");
+			}
+		}
+		if (buffSDWriter == NULL) { return -1; } else { return 0; };
+	}
     void setWriteSizeBytes(const int n) {  //512Bytes is most efficient for SD
       if (buffSDWriter) buffSDWriter->setWriteSizeBytes(n);
     }
@@ -145,17 +155,16 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       if (buffSDWriter) return buffSDWriter->setSampleRateWAV(fs_Hz);
       return fs_Hz;
     }
-
 	
     //if you want to set the audio buffer size yourself, call this method before
 	//calling startRecording().
     int allocateBuffer(const int nBytes) {
-       if (!buffSDWriter) return buffSDWriter->allocateBuffer(nBytes);
-      return 0;     
+		if (buffSDWriter) return buffSDWriter->allocateBuffer(nBytes);
+		return -2;     
     }
     int allocateBuffer(void) {  // this ends up using the default buffer size
-      if (!buffSDWriter) return buffSDWriter->allocateBuffer(); //use default buffer size
-      return 0;
+		if (buffSDWriter) return buffSDWriter->allocateBuffer(); //use default buffer size
+		return -2;
     }
 
     void prepareSDforRecording(void); //you can call this explicitly, or startRecording() will call it automatcally

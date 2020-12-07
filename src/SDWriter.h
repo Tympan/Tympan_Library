@@ -248,7 +248,13 @@ class BufferedSDWriter : public SDWriter
  
     //here is how you send data to this class.  this doesn't write any data, it just stores data
     virtual void copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan) {
-      if (!write_buffer) {if (!allocateBuffer()) return; }; //try to allocate buffer, return if it doesn't work
+      if (!write_buffer) {  //try to allocate buffer, return if it doesn't work
+		if (!allocateBuffer()) {
+			Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
+			Serial.println("    : could not allocateBuffer()");
+			return;
+		}
+	  }
 
       //how much data will we write?
       int estFinalWriteInd = bufferWriteInd + (numChan * nsamps);

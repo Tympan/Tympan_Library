@@ -50,6 +50,7 @@
 #include "synth_sine_f32.h"
 #include "synth_tonesweep_F32.h"
 #include "Tympan.h"
+#include "TympanRemoteFormatter.h"
 #include "output_i2s_f32.h"
 #include "output_i2s_quad_f32.h"
 //include "USB_Audio_F32.h"

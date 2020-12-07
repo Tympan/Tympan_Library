@@ -94,6 +94,11 @@ void BLE_Setup(void) {
   BT_Serial->print("ADVERTISING ON\r"); delay(500); echoIncomingBTSerial();
   USB_Serial->println("*** Advertising on.");
 
+  // use BLE on android
+  USB_Serial->println("*** Setting to BLE mode for Android...");
+  BT_Serial->print("SET ENABLE_ANDROID_BLE=ON\r"); delay(500); echoIncomingBTSerial();
+  USB_Serial->println("*** BLE Android mode on.");
+
   while(1) {
     if(BT_Serial->available()) {
       readBTResponse();

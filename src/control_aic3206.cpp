@@ -76,8 +76,14 @@
 // PB1 - RC = 8.  Use M8, N2
 // PB25 - RC = 12.  Use M8, N2
 
+#define MODE_STANDARD	(1)
+#define MODE_LOWLATENCY (2)
+#define MODE_PDM	(3)
+#define ADC_DAC_MODE    (MODE_PDM)
 
-#if 1
+
+#if (ADC_DAC_MODE == MODE_STANDARD)
+
 	//standard setup for 44 kHz
 	#define DOSR                                                            128
 	#define NDAC                                                              2
@@ -91,7 +97,7 @@
 	#define PRB_P                                                             1
 	#define PRB_R                                                             1
 
-#else
+#elif (ADC_DAC_MODE == MODE_LOWLATENCY)
 	//low latency setup
 	//standard setup for 44 kHz
 	#define DOSR                                                            32
@@ -106,7 +112,20 @@
 	#define PRB_P                                                             17    //DAC
 	#define PRB_R                                                             13    //ADC
 
-#endif  //for standard vs low-latency setup
+#elif (ADC_DAC_MODE == MODE_PDM)
+	#define DOSR                                                            128
+	#define NDAC                                                              2
+	#define MDAC                                                              8
+
+	#define AOSR                                                             64
+	#define NADC                                                              4
+	#define MADC                                                              8
+
+	// Signal Processing Modes, Playback and Recording.
+	#define PRB_P                                                             1
+	#define PRB_R                                                             1
+
+#endif  //for standard vs low-latency vs PDM setup
 	
 #endif // end fs if block
 
@@ -1106,7 +1125,7 @@ void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
 	c = coeff[2];
 	aic_writePage(page,32,(uint8_t)(c>>24));
 	aic_writePage(page,33,(uint8_t)(c>>16));
-	aic_writePage(page,34,(uint8_t)(c>>9));	
+	aic_writePage(page,34,(uint8_t)(c>>8));	
 }
 void AudioControlAIC3206::setHpfIIRCoeffOnADC_Right(uint32_t *coeff) {
 	int page;
