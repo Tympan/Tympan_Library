@@ -53,3 +53,5 @@
 #include "output_i2s_f32.h"
 #include "output_i2s_quad_f32.h"
 //include "USB_Audio_F32.h"
+#include "BLE/bc127.h"
+#include "BLE/ble.h"
