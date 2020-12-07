@@ -128,7 +128,7 @@ void createTympanRemoteLayout(void) {
         
   //add some pre-defined pages to the GUI
   myGUI.addPredefinedPage("serialMonitor");
-  myGUI.addPredefinedPage("plot");
+  myGUI.addPredefinedPage("serialPlotter");
 }
 
 
