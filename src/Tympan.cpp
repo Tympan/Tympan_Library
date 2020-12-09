@@ -108,7 +108,7 @@ void TympanBase::beginBluetoothSerial(int BT_speed) {
 	BT_Serial->begin(BT_speed);
 
 	switch (getTympanRev()) {
-		case (TympanRev::D) : case (TYMPAN_REV_D0) : case (TYMPAN_REV_D1) : case (TYMPAN_REV_D2) : case (TYMPAN_REV_D3) : case (TYMPAN_REV_E_A) :
+		case (TympanRev::D) : case (TympanRev::D0) : case (TympanRev::D1) : case (TympanRev::D2) : case (TympanRev::D3) : case (TympanRev::E) : case (TympanRev::E1) :
 			clearAndConfigureBTSerialRevD();
 			break;
 		default:

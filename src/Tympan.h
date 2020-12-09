@@ -10,7 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
-enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E_A };
+enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1 };
 
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (TympanRev::A)
@@ -21,7 +21,8 @@ enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E_A };
 #define TYMPAN_REV_D3 (TympanRev::D3)
 #define TYMPAN_REV_D4 (TympanRev::D4)
 #define TYMPAN_REV_D (TympanRev::D)
-#define TYMPAN_REV_E_A (TympanRev::E_A)
+#define TYMPAN_REV_E (TympanRev::E)
+#define TYMPAN_REV_E1 (TympanRev::E1)
 //define TYMPAN_REV_D_CCP (TympanRev::D_CCP)
 
 //the Tympan is a Teensy audio library "control" object
@@ -124,7 +125,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
 					break;
-				case (TympanRev::E_A) :    //Earliest trials with Tympan 4 with Rev A
+				case  (TympanRev::E) : case (TympanRev::E1) :    //Earliest trials with Tympan 4 with Rev A
 					//Teensy 4.0 Pin Numbering
 					resetAIC = 26;  //Teensy pin that goes to the reset pin of the audio AIC
 					potentiometer = 17;  //Teensy pin to potentiometer that is often used as a volume control

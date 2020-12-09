@@ -69,7 +69,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 					}
 					break;
 					
-				case  (TympanRev::E_A) :   //we're connecting to a Rev E tympan, so the pin numbers below are correct for the TympanE
+				case  (TympanRev::E) : case (TympanRev::E1) :  //we're connecting to a Rev E tympan, so the pin numbers below are correct for the TympanE
 				
 					switch (AICRev) {  //which AIC_shield are we connecting to?
 					
