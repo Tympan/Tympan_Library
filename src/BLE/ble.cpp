@@ -26,18 +26,22 @@ size_t BLE::sendString(const String &s)
 
 size_t BLE::sendMessage(const String &s)
 {
-    String buffer;
     size_t sentBytes = 0;
-    buffer.reserve(20);
     int len = s.length();
+    const int payloadLen = 19;
 
     String header;
     header = "\xab\xad\xc0\xde"; // ABADCODE, message preamble
     header.concat('\xff');       // message type
 
     // message length
-    header.concat((char)highByte(len));
-    header.concat((char)lowByte(len));
+    if (len >= 0x4000) {
+        Serial.println("Message is too long!!! Aborting.");
+        return 0;
+    }
+    int lenBytes = (len<<1) | 0x8001;
+    header.concat((char)highByte(lenBytes));
+    header.concat((char )lowByte(lenBytes));
 
     Serial.println("Header (" + String(header.length()) + " bytes): '" + header + "'");
 
@@ -45,24 +49,23 @@ size_t BLE::sendMessage(const String &s)
 
     char buf[8];
 
-    sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
+    //sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
 
     Serial.println(buf);
-
     int a = sendString(header);
     if (a != 7)
     {
         Serial.println("Error in sending header... Sent: '" + String(a) + "'");
     }
 
-    int numPackets = ceil(s.length() / 20.0);
+    int numPackets = ceil(s.length() / (float)payloadLen);
 
     for (int i = 0; i < numPackets; i++)
     {
-        buffer.concat(s.substring(i * 20, i * 20 + 20));
-        sentBytes += sendString(buffer);
+        String bu = (char)(0xF8 | i);
+        bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
+        sentBytes += (sendString(bu)-1);
         delay(10);
-        buffer = "";
     }
 
     if (s.length() == sentBytes)
