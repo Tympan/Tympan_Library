@@ -62,7 +62,7 @@ size_t BLE::sendMessage(const String &s)
 
     for (int i = 0; i < numPackets; i++)
     {
-        String bu = (char)(0xF8 | i);
+        String bu = (char)(0xF0 | lowByte(i));
         bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
         sentBytes += (sendString(bu)-1);
         delay(10);
