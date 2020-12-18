@@ -47,7 +47,7 @@ size_t BLE::sendMessage(const String &s)
 
     Serial.println("Message: '" + s + "'");
 
-    char buf[8];
+    char buf[16];
 
     sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
 
@@ -92,7 +92,7 @@ size_t BLE::recvMessage(String *s)
                     msgSize = word(s->charAt(5), s->charAt(6));
                     Serial.println("Length of message: '" + String(msgSize) + "'");
 
-                    char buf[8];
+                    char buf[16];
 
                     sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", s->charAt(0), s->charAt(1), s->charAt(2), s->charAt(3), s->charAt(4), s->charAt(5), s->charAt(6));
 
