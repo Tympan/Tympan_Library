@@ -49,7 +49,7 @@ size_t BLE::sendMessage(const String &s)
 
     char buf[8];
 
-    //sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
+    sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
 
     Serial.println(buf);
     int a = sendString(header);
