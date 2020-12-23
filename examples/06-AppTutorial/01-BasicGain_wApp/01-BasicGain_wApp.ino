@@ -89,10 +89,12 @@ void respondToByte(char c) {
     case 'k':
       changeGain(3.0);
       printGainLevels();
+      setButtonText("gainIndicator", String(digital_gain_dB));
       break;
     case 'K':
       changeGain(-3.0);
       printGainLevels();
+      setButtonText("gainIndicator", String(digital_gain_dB));
       break;
   }
 }
@@ -113,18 +115,20 @@ void createTympanRemoteLayout(void) {
 
   //Add first page to GUI
   page_h = myGUI.addPage("MyFirstPage");
+      //Add a card under the first page
       card_h = page_h->addCard("Change Loudness");
-        #if 0
-          card_h->addButton("-","K");   //assumes default ID and default width. 
-          card_h->addButton("+","k");   //assumes default ID and default width
-        #else
-          card_h->addButton("-","K","minusButton",6);  //displayed string, command, button ID, button width (out of 12)
-          card_h->addButton("+","k","plusButton",6);   //displayed string, command, button ID, button width (out of 12)
-        #endif
+          //Add a "-" digital gain button with the Label("-"); Command("K"); Internal ID ("minusButton"); and width (4)
+          card_h->addButton("-","K","minusButton",4);  //displayed string, command, button ID, button width (out of 12)
+
+          //Add an indicator that's a button with no command:  Label (value of the digital gain); Command (""); Internal ID ("gain indicator"); width (4).
+          card_h->addButton(String(digital_gain_dB),"","gainIndicator",4);  //displayed string (blank), command (blank), button ID, button width (out of 12)
+  
+          //Add a "+" digital gain button with the Label("+"); Command("K"); Internal ID ("minusButton"); and width (4)
+          card_h->addButton("+","k","plusButton",4);   //displayed string, command, button ID, button width (out of 12)
         
   //add some pre-defined pages to the GUI
   myGUI.addPredefinedPage("serialMonitor");
-  myGUI.addPredefinedPage("plot");
+  myGUI.addPredefinedPage("serialPlotter");
 }
 
 
@@ -142,4 +146,8 @@ void printGainLevels(void) {
   myTympan.println(input_gain_dB); //print text to Serial port for debugging
   myTympan.print("Digital Gain (dB) = "); 
   myTympan.println(digital_gain_dB); //print text to Serial port for debugging
+}
+
+void setButtonText(String btnId, String text) {
+  myTympan.println("TEXT=BTN:" + btnId + ":"+text);
 }
