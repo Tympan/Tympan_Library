@@ -33,6 +33,11 @@ AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Righ
 #include "TympanRemoteFormatter.h"
 TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
 
+usb_serial_class *USB_Serial = &Serial;
+HardwareSerial *BT_Serial = &Serial1;
+BLE ble = BLE(&Serial1);
+String msgFromBle = String(""); // Message from ble
+int msgLen;
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 10.0f; //gain on the microphone
@@ -40,7 +45,9 @@ float digital_gain_dB = 0.0;      //this will be set by the app
 void setup() {
 
   //begin the serial comms (for debugging)
-  myTympan.beginBothSerial();  
+  USB_Serial->begin(9600);
+  BT_Serial->begin(9600);
+      
   delay(3000);
   Serial.println("BasicGain_wApp: starting setup()...");
 
@@ -62,6 +69,9 @@ void setup() {
   //Create the GUI description (but not yet transmitted to the App...that's after it connects)
   createTympanRemoteLayout();
 
+  // Get the BLE up and running
+  setupBLE();
+  
   Serial.println("Setup complete.");
 } //end setup()
 
@@ -71,7 +81,14 @@ void loop() {
   
   //look for in-coming serial messages (via USB or via Bluetooth)
   if (Serial.available()) respondToByte((char)Serial.read());   //USB Serial
-  if (Serial1.available()) respondToByte((char)Serial1.read()); //BT Serial
+  //if (Serial1.available()) respondToByte((char)Serial1.read()); //BT Serial
+
+  if (ble.available() > 0) {
+    msgLen = ble.recvBLE(&msgFromBle);
+    for (int i=0; i < msgLen; i++) {
+      respondToByte(msgFromBle[i]);
+    }
+  }
 
 } //end loop();
 
@@ -103,7 +120,8 @@ void respondToByte(char c) {
 // (single quotes are used here, whereas JSON spec requires double quotes.  The app converts ' to " before parsing the JSON string).
 // Please don't put commas or colons in your ID strings!
 void printTympanRemoteLayout(void) {
-  myTympan.println(myGUI.asString());
+  //myTympan.println(myGUI.asString());
+  ble.sendMessage(myGUI.asString());
 }
 
 //define the GUI for the App
@@ -152,4 +170,29 @@ void setButtonText(String btnId, String text) {
   myTympan.println("TEXT=BTN:" + btnId + ":"+text);
 }
 
+// Set up the BLE
+void setupBLE()
+{
+    // Announce if connected
+    if (ble.isConnected()) {
+        Serial.println("*** Connected...");
+    } else {
+        Serial.println("*** Not Connected...");
+    }
+
+    // Turn on advertising and wait for a connection
+    Serial.println("*** Advertising on...");
+    ble.advertise(true);
+    if (!ble.waitConnect(60000)) {
+        Serial.println("*** Timed out on Connect.");
+    } else {
+        Serial.println("*** Connected...");
+    }
+
+    // Check if connected
+    if (ble.isConnected()) {
+        Serial.println("*** Is Connected...");
+    } else {
+        Serial.println("*** Is Not Connected...");
+    }
 }
