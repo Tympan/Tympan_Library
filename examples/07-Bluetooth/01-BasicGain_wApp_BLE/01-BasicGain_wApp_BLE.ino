@@ -42,7 +42,7 @@ void setup() {
   //begin the serial comms (for debugging)
   myTympan.beginBothSerial();  
   delay(3000);
-  myTympan.println("BasicGain_wApp: starting setup()...");
+  Serial.println("BasicGain_wApp: starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10); 
@@ -80,7 +80,7 @@ void loop() {
 
 //respond to serial commands
 void respondToByte(char c) {
-  myTympan.print("Received character "); myTympan.println(c);
+  Serial.print("Received character "); Serial.println(c);
   
   switch (c) {
     case 'J': case 'j':
@@ -142,10 +142,12 @@ void changeGain(float change_in_gain_dB) {
 
 //Print gain levels 
 void printGainLevels(void) {
-  myTympan.print("Analog Input Gain (dB) = "); 
-  myTympan.println(input_gain_dB); //print text to Serial port for debugging
-  myTympan.print("Digital Gain (dB) = "); 
-  myTympan.println(digital_gain_dB); //print text to Serial port for debugging
+  Serial.print("Analog Input Gain (dB) = "); 
+  Serial.println(input_gain_dB); //print text to Serial port for debugging
+  Serial.print("Digital Gain (dB) = "); 
+  Serial.println(digital_gain_dB); //print text to Serial port for debugging
+}
+
 void setButtonText(String btnId, String text) {
   myTympan.println("TEXT=BTN:" + btnId + ":"+text);
 }
