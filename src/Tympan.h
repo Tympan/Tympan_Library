@@ -252,6 +252,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 		//int setEnableStereoExtMicBiasAIC(int new_state);  //use for AIC Shield
 	
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
+		TympanPins getTympanPins(void) { return pins; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
 		int read_BT_PIO0(void) { 
 			if (pins.BT_PIO0 == NOT_A_FEATURE) { 

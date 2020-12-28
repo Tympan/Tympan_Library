@@ -37,14 +37,26 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 	//get the comm pins and setup the regen and reset pins
 	USB_Serial = pins.getUSBSerial();
 	BT_Serial = pins.getBTSerial();
-	if (pins.BT_REGEN != NOT_A_FEATURE) {
-		pinMode(pins.BT_REGEN,OUTPUT);digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
-		delay(10);  digitalWrite(pins.BT_REGEN,LOW); //hold at least 5 msec, then return low
-
+	if (pins.BT_REGEN != NOT_A_FEATURE) {  //for BC127 BT module (RevD and RevE)
+		//The BC127 manual says that the REGEN pin should start LOW when power is applied.
+		//Surely, by the time that this code is executed, power is already applied, so I
+		//don't know what good this does
+		pinMode(pins.BT_REGEN,OUTPUT);digitalWrite(pins.BT_REGEN, LOW);
+		
+		//Then, the BC127 manual says that we should wait 5 msec after appliation of battery voltage
+		//to raise REGEN to HIGH to enable the rest of the booting.  Surely, 5 msec has already
+		//passed by the time that we get here, but let's delay anyway, just to be sure.
+		delay(10);
+		//Now, raise REGEN to enable the rest of the booting
+		digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
+		
+		//wait for booting to finish (how long?!?) and lower REGEN to its normally-low position
+		delay(100);
+		digitalWrite(pins.BT_REGEN,LOW); //then return low
 	}
-	if (pins.BT_nReset != NOT_A_FEATURE) {
+	if (pins.BT_nReset != NOT_A_FEATURE) {  //For RN51 and  BC127 modules.  (RevC, RevD, RevE)
 		pinMode(pins.BT_nReset,OUTPUT);
-		digitalWrite(pins.BT_nReset,LOW);delay(10); //reset the device
+		digitalWrite(pins.BT_nReset,LOW);delay(50); //reset the device  (RevC used only 10 here, not 50.  Is 50 OK for RevC?)
 		digitalWrite(pins.BT_nReset,HIGH);  //normal operation.
 	}
 	if (pins.BT_PIO0 != NOT_A_FEATURE) {
