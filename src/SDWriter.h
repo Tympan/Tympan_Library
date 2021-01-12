@@ -194,6 +194,8 @@ class SDWriter : public Print
       return wheader;
     }
     
+	SdFs * getSdPtr(void) { return &sd; }
+	
   protected:
     //SdFatSdio sd; //slower
     //SdFatSdioEX sd; //faster
