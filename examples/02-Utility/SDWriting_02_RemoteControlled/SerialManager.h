@@ -13,6 +13,7 @@ extern const int INPUT_PCBMICS;
 extern const int INPUT_MICJACK;
 extern const int INPUT_LINEIN_SE;
 extern const int INPUT_LINEIN_JACK;
+extern const int INPUT_PDM_MICS;
 
 
 //Extern Functions
@@ -47,6 +48,7 @@ void SerialManager::printHelp(void) {
   myTympan.println("   w: Switch Input to PCB Mics");
   myTympan.println("   W: Switch Input to Headset Mics");
   myTympan.println("   e: Switch Input to LineIn on the Mic Jack");
+  myTympan.println("   E: Switch Input to PDM Digital Mics");
   myTympan.print  ("   i: Input: Increase gain by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
   myTympan.print  ("   I: Input: Decrease gain by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
   myTympan.println("   p: SD: prepare for recording");
@@ -97,7 +99,13 @@ void SerialManager::respondToByte(char c) {
       setConfiguration(INPUT_LINEIN_JACK);
       setButtonState("configPCB",false);
       setButtonState("configHeadset",false);
-      break;	  
+      break;	 
+    case 'E':
+      myTympan.println("Received: PDM Digital Mics");
+      setConfiguration(INPUT_PDM_MICS);
+      setButtonState("configPCB",false);
+      setButtonState("configHeadset",false);
+      break;
     case 'p':
       myTympan.println("Received: prepare SD for recording");
       //prepareSDforRecording();
