@@ -14,7 +14,7 @@
 
 //define state...the "myState" instance is actually created in SerialManager.h
 #define NO_STATE (-1)
-const int INPUT_PCBMICS = 0, INPUT_MICJACK = 1, INPUT_LINEIN_SE = 2, INPUT_LINEIN_JACK = 3;
+const int INPUT_PCBMICS = 0, INPUT_MICJACK = 1, INPUT_LINEIN_SE = 2, INPUT_LINEIN_JACK = 3, INPUT_PDM_MICS = 4;
 class State_t {
   public:
     int input_source = NO_STATE;
@@ -66,6 +66,7 @@ void setConfiguration(int config) {
   switch (config) {
     case INPUT_PCBMICS:
       //Select Input and set gain
+      audioHardware.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
       input_gain_dB = 15;
       myTympan.setInputGain_dB(input_gain_dB);
@@ -73,6 +74,7 @@ void setConfiguration(int config) {
 
     case INPUT_MICJACK:
       //Select Input and set gain
+      audioHardware.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the mic jack
       myTympan.setEnableStereoExtMicBias(true);  //put the mic bias on both channels
       input_gain_dB = default_input_gain_dB;
@@ -81,6 +83,7 @@ void setConfiguration(int config) {
       
     case INPUT_LINEIN_JACK:
       //Select Input and set gain
+      audioHardware.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the line-input through holes
       input_gain_dB = 0;
       myTympan.setInputGain_dB(input_gain_dB);
@@ -88,10 +91,17 @@ void setConfiguration(int config) {
       
     case INPUT_LINEIN_SE:
       //Select Input and set gain
+      audioHardware.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_LINE_IN); // use the line-input through holes
       input_gain_dB = default_input_gain_dB;
       myTympan.setInputGain_dB(input_gain_dB);
       break;
+        
+     case INPUT_PDM_MICS:
+      audioHardware.enableDigitalMicInputs(true);
+      input_gain_dB = 0;
+      myTympan.setInputGain_dB(input_gain_dB); //doesn't affect the digital PDM mic inputs?
+      break;  
   }
  }
 
