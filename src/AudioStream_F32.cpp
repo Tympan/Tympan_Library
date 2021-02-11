@@ -189,3 +189,13 @@ void AudioConnection_F32::connect(void) {
   __enable_irq();
 }
 
+bool AudioStream_F32::enableUpdates(bool enable) {
+	if (enable) {
+		return AudioStream::update_setup();
+	} else {
+		AudioStream::update_stop();
+		return false;
+	}
+	return false;
+}
+

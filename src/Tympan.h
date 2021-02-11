@@ -283,8 +283,62 @@ class TympanBase : public AudioControlAIC3206, public Print
 			while (BT_Serial->available()) USB_Serial->write(BT_Serial->read());//echo messages from BT serial over to USB Serial
 		}
 		void setBTAudioVolume(int vol); //vol is 0 (min) to 15 (max).  Only Rev D (and Rev E?).  Only works when you are connected via Bluetooth!!!!
-		int getBTCommMode(void) { return BT_mode; }
-		int setBTCommMode(int val) { return BT_mode = val; }
+		int getBTCommMode(void) { return BT_mode; }   //BT_DATA_MODE or BT_COMMAND_MODE
+		int setBTCommMode(int val) { return BT_mode = val; }  //BT_DATA_MODE or BT_COMMAND_MODE
+		void shutdownBT(void) { 
+		
+			USB_Serial->println("Tympan: shutdownBT: This does NOT work to put the BC127 into sleep mode.  Sorry.");
+		
+			//if (pins.BT_REGEN != NOT_A_FEATURE) digitalWrite(pins.BT_REGEN, LOW);
+			forceBTtoDataMode(false);
+			setBTCommMode(TympanPins::BT_COMMAND_MODE);delay(10);
+			BT_Serial->print("$");  delay(400);
+			BT_Serial->print("$$$");  delay(400);
+			BT_Serial->print('\r'); delay(200); echoIncomingBTSerial();
+			//BT_Serial->print('\r'); delay(200); echoIncomingBTSerial();
+			//BT_Serial->print('\r'); delay(200); echoIncomingBTSerial();
+			
+			if (true) {
+				//Setting DEEP_SLEEP seems to be the right command, but it only takes place after
+				//the discoverable period has expired, which for us is actually an infinite time.
+				
+				USB_Serial->println("Tympan: shutdownBT: asking for discoverable period");
+				BT_Serial->print("GET DISCOVERABLE"); BT_Serial->print('\r'); delay(400); 
+				echoIncomingBTSerial();
+
+				USB_Serial->println("Tympan: shutdownBT: setting discoverable to 1000msec");
+				BT_Serial->print("SET DISCOVERABLE=1 1000"); BT_Serial->print('\r'); delay(400); 
+				echoIncomingBTSerial();
+				
+				//This is not really power off, it just puts it into some sort of non-discoverable state.
+				USB_Serial->println("Tympan: shutdownBT: setting POWER OFF...");
+				BT_Serial->print("POWER OFF");BT_Serial->print('\r'); delay(400);
+				while (BT_Serial->available()) {
+					echoIncomingBTSerial();
+					delay(400);
+				}
+				
+				//This seems to be the most important command, but I can't seem to make it
+				//take any obvious effect on the system
+				USB_Serial->println("Tympan: shutdownBT: setting DEEP_SLEEP...");
+				BT_Serial->print("SET DEEP_SLEEP=ON"); BT_Serial->print('\r'); delay(400); 
+				echoIncomingBTSerial();
+				
+				//USB_Serial->println("Tympan: shutdownBT: sleeping for 10 seconds");
+				//delay(10000);
+				//echoIncomingBTSerial();
+				
+			} else {
+				//This is not really power off, it just puts it into some sort of non-discoverable state.
+				//I saw no power savings.
+				USB_Serial->println("Tympan: shutdownBT: setting POWER OFF...");
+				BT_Serial->print("POWER OFF");BT_Serial->print('\r'); delay(400);
+				while (BT_Serial->available()) {
+					echoIncomingBTSerial();
+					delay(400);
+				}
+			}
+		}
 		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
 		//So, I inhereted the Print class, which gives me all of the Arduino print/write

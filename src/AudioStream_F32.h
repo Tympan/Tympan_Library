@@ -93,6 +93,7 @@ class AudioStream_F32 : public AudioStream {
     static uint8_t f32_memory_used_max;
     static audio_block_f32_t * allocate_f32(void);
     static void release(audio_block_f32_t * block);
+	static bool enableUpdates(bool);
     
   protected:
     //bool active_f32;
