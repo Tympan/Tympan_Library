@@ -84,6 +84,7 @@ void loop() {
   //if (Serial1.available()) respondToByte((char)Serial1.read()); //BT Serial
 
   if (ble.available() > 0) {
+    msgFromBle = "";
     msgLen = ble.recvBLE(&msgFromBle);
     for (int i=0; i < msgLen; i++) {
       respondToByte(msgFromBle[i]);
@@ -167,7 +168,7 @@ void printGainLevels(void) {
 }
 
 void setButtonText(String btnId, String text) {
-  myTympan.println("TEXT=BTN:" + btnId + ":"+text);
+  ble.sendMessage("TEXT=BTN:" + btnId + ":"+text);
 }
 
 // Set up the BLE
