@@ -56,7 +56,7 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 	}
 
 
-	//prepare target memory nto which we'll copy the incoming data into the queue
+	//prepare target memory into which we'll copy the incoming data into the queue
 	int dest_ind = writeposition;  //inclusive
 	if (dest_ind >= (queue[head]->full_length)) {
 		head++; dest_ind = 0;
