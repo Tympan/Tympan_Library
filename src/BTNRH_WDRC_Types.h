@@ -9,6 +9,7 @@
 #if USE_SD
 	#include "AccessConfigDataOnSD.h"
 	#include <SdFat.h> //this was added in Teensyduino 1.54beta3
+	#include "SDWriter.h"  //to get macro definition of SD_CONFIG
 #endif
 
 #define DSL_MXCH 8  
@@ -58,7 +59,7 @@ namespace BTNRH_WDRC {
 				SdFile file;
 				
 				//open SD
-				if (!(sd.begin())) {
+				if (!(sd.begin(SD_CONFIG))) {
 					Serial.println("BTNRH_WDRC: CHA_AFC: readFromSD: cannot open SD.");
 					return -1;
 				}
@@ -118,7 +119,7 @@ namespace BTNRH_WDRC {
 				SdFile file;
 				
 				//open SD
-				if (!(sd.begin())) {
+				if (!(sd.begin(SD_CONFIG))) {
 					Serial.println("BTNRH_WDRC: CHA_AFC: printToSD: cannot open SD.");
 					return -1;
 				}
@@ -228,7 +229,7 @@ namespace BTNRH_WDRC {
 				SdFile file;
 				
 				//open SD
-				if (!(sd.begin())) {
+				if (!(sd.begin(SD_CONFIG))) {
 					Serial.println("BTNRH_WDRC: CHA_DSL: readFromSD: cannot open SD.");
 					return -1;
 				}
@@ -296,8 +297,10 @@ namespace BTNRH_WDRC {
 				SdFile file;
 				
 				//open SD
-				if (!(sd.begin())) {
+				if (!(sd.begin(SD_CONFIG))) {
 					Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD.");
+					//Serial.print("    : printToSD: SD = ");  Serial.println(sd);
+					//Serial.print("    : printToSD: sd.exists(filename) = ");  Serial.println(sd);
 					return -1;
 				}
 				
@@ -449,7 +452,7 @@ namespace BTNRH_WDRC {
 				SdFile file;
 				
 				//open SD
-				if (!(sd.begin())) {
+				if (!(sd.begin(SD_CONFIG))) {
 					Serial.println("BTNRH_WDRC: CHA_WDRC: readFromSD: cannot open SD.");
 					return -1;
 				}
@@ -515,7 +518,7 @@ namespace BTNRH_WDRC {
 				SdFile file;
 				
 				//open SD
-				if (!(sd.begin())) {
+				if (!(sd.begin(SD_CONFIG))) {
 					Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD.");
 					return -1;
 				}
