@@ -53,6 +53,10 @@ class AudioTestSignalGenerator_F32 : public AudioStream_F32
     void makeConnections(void) {
       patchCord1 = new AudioConnection_F32(sine_gen, 0, gain_alg, 0);
       patchCord2 = new AudioConnection_F32(gain_alg, 0, record_queue, 0);
+	  
+	  //sine_gen.instanceName = String("AudioTestSignalGenerator_F32(sine_gen)");
+	  //gain_alg.instanceName = String("AudioTestSignalGenerator_F32(gain_alg)");
+	  //record_queue.instanceName = String("AudioTestSignalGenerator_F32(record_queue)");
     }
     
     virtual void update(void);

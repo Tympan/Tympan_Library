@@ -8,6 +8,14 @@ uint32_t AudioStream_F32::f32_memory_pool_available_mask[6];
 uint8_t AudioStream_F32::f32_memory_used = 0;
 uint8_t AudioStream_F32::f32_memory_used_max = 0;
 
+//added 2021-02-17
+const int AudioStream_F32::maxInstanceCounting = 120;
+//bool AudioStream_F32::printUpdate = false;
+//bool AudioStream_F32::enableUpdateAll = false;
+int AudioStream_F32::numInstances = 0;
+AudioStream_F32* AudioStream_F32::allInstances[AudioStream_F32::maxInstanceCounting];
+bool AudioStream_F32::isAudioProcessing = false;
+
 audio_block_f32_t* allocate_f32_memory(const int num) {
 	static bool firstTime=true;
 	static audio_block_f32_t *data_f32;
@@ -189,13 +197,66 @@ void AudioConnection_F32::connect(void) {
   __enable_irq();
 }
 
-bool AudioStream_F32::enableUpdates(bool enable) {
-	if (enable) {
-		return AudioStream::update_setup();
-	} else {
-		AudioStream::update_stop();
-		return false;
-	}
-	return false;
-}
 
+/* void AudioStream_F32::printNextUpdatePointers(void) {
+	AudioStream_F32 *p;
+
+	int count=0;
+	Serial.println("AudioStream_F32: printNextUpdatePointers:");
+	
+	for (p = first_update; p; p = p->next_update) {
+		Serial.print("  : "); 
+		Serial.print(count++); 
+		Serial.print(", ");
+		Serial.print(p->instanceName);
+		if (p->active) {
+			Serial.print(", Active. Next p = ");
+			Serial.print((uint32_t)(p->next_update));
+			Serial.println(", Done.");
+		} else {			
+			Serial.print(", Not Active, ");
+			Serial.print(p->instanceName);
+			Serial.print(", Next p = "); 
+			Serial.print((uint32_t)(p->next_update));
+			Serial.println(", Done.");					
+		}
+	}
+	Serial.println("    : Done."); Serial.flush();
+}	
+ */
+
+void AudioStream_F32::printAllInstances(void) {
+	AudioStream_F32 *p;
+	//AudioStream_F32 *p_next;
+	
+	Serial.print("AudioStream_F32: printAllInstances: "); Serial.print(numInstances); Serial.println("...");
+	
+	for (int i=0; i < numInstances; i++) {
+		p = allInstances[i];
+		Serial.print("    : ");
+		Serial.print(i);
+		Serial.print(", ");
+		Serial.print((uint32_t)p);
+		
+		if ((uint32_t)p != 0) { 
+			Serial.print(", ");
+			Serial.print(p->instanceName);
+			if (p->active) {
+				Serial.print(", Active");
+			} else {		
+				Serial.print(", Not Active");
+			}
+			//Serial.print(", Next p = ");
+			//p_next = p->next_update;
+			//Serial.print((uint32_t)p_next);
+			//if ((uint32_t)p_next != 0) {
+			//	Serial.print(" = ");
+			//	Serial.print(p_next->instanceName);
+			//}
+		} else {	
+			Serial.print(", null p.");
+		}
+		Serial.println();
+	}
+	Serial.println("    : Done.");Serial.flush();
+}

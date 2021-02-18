@@ -85,6 +85,7 @@ class AudioStream_F32 : public AudioStream {
       for (int i=0; i < n_input_f32; i++) {
         inputQueue_f32[i] = NULL;
       }
+	  if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
     };
     static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
     static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
@@ -93,8 +94,19 @@ class AudioStream_F32 : public AudioStream {
     static uint8_t f32_memory_used_max;
     static audio_block_f32_t * allocate_f32(void);
     static void release(audio_block_f32_t * block);
-	static bool enableUpdates(bool);
-    
+	
+	//added for controlling whether calculations are done or not
+	static bool setIsAudioProcessing(bool enable) { if (enable) { return update_setup(); } else { return update_stop(); } };
+	static bool getIsAudioProcessing(void) { return isAudioProcessing; }
+  
+	//added for tracking and debugging how algorithms are called
+	static AudioStream_F32* allInstances[]; 
+	static int numInstances; 
+	static const int maxInstanceCounting;
+	//static void printNextUpdatePointers(void); 
+	static void printAllInstances(void);
+	String instanceName = String("NotNamed");
+	
   protected:
     //bool active_f32;
     unsigned char num_inputs_f32;
@@ -102,6 +114,9 @@ class AudioStream_F32 : public AudioStream {
     audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
     audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
     friend class AudioConnection_F32;
+	static bool update_setup(void) { return isAudioProcessing = AudioStream::update_setup(); }
+	static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }
+	static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
 	
   private:
     AudioConnection_F32 *destination_list_f32;
