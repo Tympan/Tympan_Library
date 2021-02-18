@@ -125,7 +125,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		stopRecording();
 		writeDataType = type;
 		if (!buffSDWriter) {
-			Serial.println("AudioSDWriter_F32: setWriteDataType: creating buffSDWriter...");
+			//Serial.println("AudioSDWriter_F32: setWriteDataType: creating buffSDWriter...");
 			buffSDWriter = new BufferedSDWriter(serial_ptr, writeSizeBytes);
 			if (buffSDWriter) {
 				buffSDWriter->setNChanWAV(numWriteChannels);

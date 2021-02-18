@@ -82,12 +82,12 @@ void TympanBase::forceBTtoDataMode(bool state) {
 	if (pins.BT_PIO5 != NOT_A_FEATURE) {
 		if (state == true) {
 			pinMode(pins.BT_PIO5,OUTPUT);
-			Serial.println("Tympan: forceBTtoDataMode: Setting PIO5 to HIGH");
+			//Serial.println("Tympan: forceBTtoDataMode: Setting PIO5 to HIGH");
 			digitalWrite(pins.BT_PIO5,HIGH);
 		} else {
 			//pinMode(pins.BT_PIO4,INPUT);  //go high-impedance (ie disable this pin)
 			pinMode(pins.BT_PIO5,OUTPUT);
-			Serial.println("Tympan: forceBTtoDataMode: Setting PIO5 to LOW");
+			//Serial.println("Tympan: forceBTtoDataMode: Setting PIO5 to LOW");
 			digitalWrite(pins.BT_PIO5,LOW);
 		}
 	} else {
