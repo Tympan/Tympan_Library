@@ -252,23 +252,30 @@ void iirfb_zp(float *z, float *p, float *g, float *cf, const float fs, const int
   double  fn, wn[2], sp[nb-1];
   float  *zj, *pj, *gj;
   int     j, no;
-  const double c_o_s = 9; // cross-over spread
+  double c_o_s = 9.0; // cross-over spread
   
+  //Serial.print("BTNRH_iir_filterbank: iirfb_zp: starting, nb, nz = "); Serial.print(nb); Serial.print(", ");Serial.println(nz);Serial.flush();
+ 
   //sp = (double *) calloc(nb - 1, sizeof(double));  
   no = nz / 2;    // basic filter order
   fn = fs / 2.0;    // Nyquist frequency
-  
+
+ 
   // compute cross-over-spread factors
+  //Serial.print("BTNRH_iir_filterbank: iirfb_zp: compute cross-over spread factors, nb = "); Serial.println(nb);Serial.flush();
   for (j = 0; j < (nb - 1); j++) {
-      sp[j] = 1 + c_o_s / cf[j];
+	  //Serial.print("    : j, c_o_s, cf[j] = "); Serial.print(j);Serial.print(", ");Serial.print(c_o_s);Serial.print(", ");Serial.println(cf[j]);Serial.flush();
+      sp[j] = 1.0 + c_o_s / cf[j];
   }
   
   // design low-pass filter
   wn[0] = (cf[0] / sp[0]) / fn;  //compute cutoff relative to nyquist
+  //Serial.print("BTNRH_iir_filterbank: iirfb_zp: design low-pass filter, wn = "); Serial.println(wn[0]);Serial.flush();
   butter_zp(z, p, g, nz, wn, 0); // output is in first element of z,p,g
   
   // design band-pass filters
   for (j = 1; j < (nb - 1); j++) {
+	  //Serial.print("BTNRH_iir_filterbank: iirfb_zp: design band pass filter, j = "); Serial.println(j);Serial.flush();
       zj = z + j * nz * 2; //increment pointer
       pj = p + j * nz * 2; //increment pointer
       gj = g + j; //increment pointer
@@ -282,6 +289,7 @@ void iirfb_zp(float *z, float *p, float *g, float *cf, const float fs, const int
   pj = p + (nb - 1) * nz * 2; //increment pointer
   gj = g + (nb - 1);  //increment pointer
   wn[0] = (cf[nb - 2] * sp[nb - 2]) / fn;   //compute cutoff relative to nyquist
+  //Serial.print("BTNRH_iir_filterbank: iirfb_zp: design high-pass filter, wn = "); Serial.println(wn[0]);Serial.flush();
   butter_zp(zj, pj, gj, nz, wn, 1); // HP
   
   //free(sp);
