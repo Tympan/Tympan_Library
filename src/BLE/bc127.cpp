@@ -256,6 +256,8 @@ BC127::opResult BC127::recv(String *msg)
         // we've reached the EOL sequence
         if (msg->endsWith(EOL))
         {
+            // Lop off the EOL, since it is added by the BC127 and is not part of the characteristic payload
+            *msg = msg->substring(0,msg->length()-2);
             return SUCCESS;
         }
     }
