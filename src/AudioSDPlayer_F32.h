@@ -67,6 +67,10 @@ class AudioSDPlayer_F32 : public AudioStream_F32
       return sample_rate_Hz;
     }
     int setBlockSize(int block_size) { return audio_block_samples = block_size; };
+    bool isFileOpen(void) {
+      if (file.isOpen()) return true;
+      return false;
+    }  
   
   private:
     SdFs sd;
@@ -93,10 +97,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
     float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
     int audio_block_samples = AUDIO_BLOCK_SAMPLES;
     
-    bool isFileOpen(void) {
-      if (file.isOpen()) return true;
-      return false;
-    }  
+
     uint32_t updateBytes2Millis(void);
 };
 
