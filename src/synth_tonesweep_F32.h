@@ -74,6 +74,7 @@ private:
   int tone_sign;
   unsigned char sweep_busy;
   float fs_Hz = (float)AUDIO_SAMPLE_RATE_EXACT;
+  void update_silence(void);
 };
 
 #endif
