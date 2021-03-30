@@ -113,6 +113,10 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 
 int AudioSDWriter_F32::startRecording(char* fname) {
   int return_val = 0;
+  
+  	//check to see if the SD has been initialized
+	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+  
   if (current_SD_state == STATE::STOPPED) {
 	//try to open the file on the SD card
 	if (openAsWAV(fname)) { //returns TRUE if the file opened successfully
