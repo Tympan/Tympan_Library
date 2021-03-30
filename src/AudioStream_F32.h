@@ -18,6 +18,7 @@
 #include <core_pins.h> //for F_CPU_ACTUAL ??
 #include <AudioStream.h> 
 #include "AudioSettings_F32.h"
+#include <Arduino.h>
 
 #if defined(__IMXRT1062__)   //for Teensy 4...this shouldn't be necessary
 extern volatile uint32_t F_CPU_ACTUAL;  
