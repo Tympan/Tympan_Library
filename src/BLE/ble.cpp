@@ -2,9 +2,12 @@
 
 BLE::BLE(Stream *sp) : BC127(sp)
 {
-    restore();
-    writeConfig();
-    reset();
+    Serial.print("BLE: calling restore()...");
+    Serial.println(restore());
+    Serial.print("BLE: calling writeConfig...");
+    Serial.println(writeConfig());
+    Serial.print("BLE: calling reset...");
+    Serial.println(reset());
 }
 
 size_t BLE::sendByte(char c)
