@@ -201,6 +201,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 	
   unsigned long getStartTimeMillis(void) { return t_start_millis; };
   unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
+  SdFs * getSdPtr(void) { return buffSDWriter->getSdPtr(); }
 
   protected:
     audio_block_f32_t *inputQueueArray[AUDIOSDWRITER_MAX_CHAN]; //up to four input channels

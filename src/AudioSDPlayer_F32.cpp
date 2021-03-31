@@ -59,8 +59,12 @@ void AudioSDPlayer_F32::init(void) {
 void AudioSDPlayer_F32::begin(void)
 {
   if (state == STATE_NOT_BEGUN) {
-    if (!(sd.begin(SD_CONFIG))) {
-      Serial.println("AudioPlaySdWAV_F32: cannot open SD.");
+	if (sd_ptr == NULL) {
+		//Serial.println("AudioSDPlayer_F32: creating new SdFs.");
+		sd_ptr = new SdFs();
+	}
+    if (!(sd_ptr->begin(SD_CONFIG))) {
+      Serial.println("AudioSDPlayer_F32: cannot open SD.");
       return;
     }
   }
