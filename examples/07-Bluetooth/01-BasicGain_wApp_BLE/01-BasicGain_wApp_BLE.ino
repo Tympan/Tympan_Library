@@ -35,7 +35,7 @@ TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting wi
 
 usb_serial_class *USB_Serial = &Serial;
 HardwareSerial *BT_Serial = &Serial1;
-BLE ble = BLE(&Serial1);
+BLE *ble;
 String msgFromBle = String(""); // Message from ble
 int msgLen;
 
@@ -53,6 +53,10 @@ void setup() {
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10); 
+
+  //create BLE object
+  USB_Serial->println("Setup: new BLE()...");
+  ble = new BLE(&Serial1);
 
   //Enable the Tympan to start the audio flowing!
   myTympan.enable(); // activate the Tympan's audio module
