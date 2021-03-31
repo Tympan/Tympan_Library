@@ -54,6 +54,12 @@ void setup() {
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10); 
 
+  //switch BT to command mode
+  USB_Serial->println("Setup: Switching BT module into command mode...");
+  myTympan.forceBTtoDataMode(false); delay(50);  //removing any forcing of being in data mode so that hopefully we're in command mode
+  BT_Serial->print("$");  delay(400);
+  BT_Serial->print("$$$");  delay(400);
+
   //create BLE object
   USB_Serial->println("Setup: new BLE()...");
   ble = new BLE(&Serial1);
