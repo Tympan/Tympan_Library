@@ -343,9 +343,17 @@ class TympanBase : public AudioControlAIC3206, public Print
 			}
 		}
 		
-		int FreeRam() {
-		  char top; //this new variable is, in effect, the mem location of the edge of the heap
-		  return &top - reinterpret_cast<char*>(sbrk(0));
+		static int FreeRam(void) {
+			#if defined(__IMXRT1062__)
+				extern unsigned long _heap_start;
+				extern unsigned long _heap_end;
+				extern char *__brkval;
+
+				return (char *)&_heap_end - __brkval;
+			#else
+				char top; //this new variable is, in effect, the mem location of the edge of the heap
+				return &top - reinterpret_cast<char*>(sbrk(0));
+			#endif
 		}
 		void printCPUandMemoryMessage(void) {
 		  print("CPU Cur/Pk: ");
