@@ -2,12 +2,33 @@
 
 BLE::BLE(Stream *sp) : BC127(sp)
 {
-    Serial.print("BLE: calling restore()...");
-    Serial.println(restore());
-    Serial.print("BLE: calling writeConfig...");
-    Serial.println(writeConfig());
-    Serial.print("BLE: calling reset...");
-    Serial.println(reset());
+
+}
+
+int BLE::begin(void)
+{
+
+	int ret_val;
+	ret_val = restore();
+	if (ret_val != BC127::SUCCESS) {
+		Serial.print(F("BLE: begin: restore() returned error "));
+		Serial.println(ret_val);
+		//return ret_val;
+	}
+    ret_val = writeConfig();
+	if (ret_val != BC127::SUCCESS) {
+		Serial.print(F("BLE: begin: writeConfig() returned error "));
+		Serial.println(ret_val);
+		//return ret_val;
+	}	
+    ret_val = reset();
+	if (ret_val != BC127::SUCCESS) {
+		Serial.print(F("BLE: begin: reset() returned error "));
+		Serial.println(ret_val);
+		//return ret_val;
+	}		
+	
+	return ret_val;
 }
 
 size_t BLE::sendByte(char c)
@@ -122,6 +143,16 @@ size_t BLE::recvMessage(String *s)
 
     return 0;
 }
+
+/* size_t BLE::maintainBLE(void) {
+	if isConnected() {
+		//do nothing
+	} else {
+		//check to see if advertising
+		
+		//
+	}
+} */
 
 size_t BLE::recvBLE(String *s)
 {

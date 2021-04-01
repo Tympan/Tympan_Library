@@ -9,6 +9,7 @@ class BLE : public BC127
 {
 public:
     BLE(Stream *sp);
+	int begin(void);
     size_t sendByte(char c);
     size_t sendString(const String &s);
     size_t sendMessage(const String &s);
