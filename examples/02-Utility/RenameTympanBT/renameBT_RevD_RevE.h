@@ -1,10 +1,12 @@
 
-//Rev D uses BC127: https://learn.sparkfun.com/tutorials/understanding-the-bc127-bluetooth-module/bc127-basics
+//Rev D and Rev E use BC127: https://learn.sparkfun.com/tutorials/understanding-the-bc127-bluetooth-module/bc127-basics
+//
+//Currently assumes v5.x firmware only!   Not v6 nor v7.
 
-void renameBT_RevD(void) {
+void renameBT_RevD_RevE(void) {
   
   // go into command mode
-  USB_Serial->println("*** Switching Tympan RevD BT module into command mode...");
+  USB_Serial->println("*** Switching Tympan RevD/RevE BT module into command mode...");
   myTympan.forceBTtoDataMode(false);   delay(500); echoIncomingBTSerial(); //stop forcing the device to be in data mode
   BT_Serial->print("$");  delay(400);
   BT_Serial->print("$$$");  delay(400);
@@ -34,7 +36,7 @@ void renameBT_RevD(void) {
   // process to get new Bluetooth name
   USB_Serial->println("*** Processing name info..."); 
   given_BT_name = response.substring(5); //strip off "NAME="
-  BT_hex = given_BT_name.substring(13);
+  BT_hex = given_BT_name.substring(13); //get the last 6 digits
   new_BT_name.concat("-"); new_BT_name.concat(BT_hex);
   USB_Serial->print("*** Desired New BT Name = "); USB_Serial->println(new_BT_name);
   
@@ -45,6 +47,14 @@ void renameBT_RevD(void) {
   BT_Serial->print("GET NAME"); BT_Serial->print('\r'); delay(500);  echoIncomingBTSerial();
   USB_Serial->println("*** Name setting complete.  Did it return the desired name?");
 
+  // set the short BLE name
+  new_BLE_name.concat(BT_hex.substring(2));  //get the last 4 digits
+  USB_Serial->print("*** Desired New BLE Name = "); USB_Serial->println(new_BLE_name);
+  BT_Serial->print("SET NAME_SHORT="); BT_Serial->print(new_BLE_name); BT_Serial->print('\r'); delay(1500); echoIncomingBTSerial();
+  BT_Serial->print("WRITE"); BT_Serial->print('\r'); delay(500); echoIncomingBTSerial();
+  BT_Serial->print("GET NAME_SHORT"); BT_Serial->print('\r'); delay(500);  echoIncomingBTSerial();
+  USB_Serial->println("*** BLE Name setting complete.  Did it return the desired name?");
+  
   // set the GP IO pins so that the data mode / command mode can be set by hardware
   USB_Serial->println("*** Setting GPIOCONTROL mode to OFF, which is what we need...");
   BT_Serial->print("SET GPIOCONTROL=OFF");BT_Serial->print('\r'); delay(500);echoIncomingBTSerial();

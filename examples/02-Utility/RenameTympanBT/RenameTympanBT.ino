@@ -32,13 +32,15 @@
 #include <Tympan_Library.h>
 
 #if 1
-  //Use this if you have a Tympan RevD
-  Tympan     myTympan(TympanRev::D); //set to C or D
-  String     new_BT_name = "TympanD";    //change this to whatever you'd like
+  //Use this if you have a Tympan RevD or RevE
+  Tympan     myTympan(TympanRev::D); 	//set to D ro E
+  String     new_BT_name = "TympanD";   //change this to whatever you'd like
+  String     new_BLE_name = "Tym";      //3 chars here are added to last 4 BT MAC chars
 #else
   //Use this if you have a Tympan RevC
-  Tympan     myTympan(TympanRev::C); //set to C or D
+  Tympan     myTympan(TympanRev::C);     //set to C
   String     new_BT_name = "TympanC";    //change this to whatever you'd like
+  String     new_BLE_name = "Tym";       //3 chars here are added to last 4 BT MAC chars
 #endif
 
 usb_serial_class *USB_Serial;
@@ -62,7 +64,7 @@ void readBTResponse(void) {
 }
 
 #include "renameBT_RevC.h"
-#include "renameBT_RevD.h"
+#include "renameBT_RevD_RevE.h"
 
 // Arduino setup() function, which is run once when the device starts
 void setup() {
@@ -76,7 +78,7 @@ void setup() {
   if (myTympan.getTympanRev() == TympanRev::C) {
     renameBT_RevC();
   } else {
-    renameBT_RevD(); 
+    renameBT_RevD_RevE(); 
   }
   
   //transition to Serial echo mode to allow playing around, if desired
@@ -88,5 +90,3 @@ void loop() {
   echoIncomingUSBSerial();     //echo messages from USB Serial over to BT Serial
   echoIncomingBTSerial();  //echo messages from BT serial over to USB Serial
 } //end loop();
-
-
