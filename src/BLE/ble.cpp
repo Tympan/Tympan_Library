@@ -7,7 +7,11 @@ BLE::BLE(Stream *sp) : BC127(sp)
 
 int BLE::begin(void)
 {
+	//force into command mode (not needed if already in command mode...but historical Tympan units were preloaded to Data mode instead)
+	//myTympan.forceBTtoDataMode(false);
+	_serialPort->print("$");  delay(400);	_serialPort->print("$$$");
 
+	//now do the usual setup stuff
 	int ret_val;
 	ret_val = restore();
 	if (ret_val != BC127::SUCCESS) {
@@ -33,6 +37,8 @@ int BLE::begin(void)
 
 size_t BLE::sendByte(char c)
 {
+	//Serial.print("BLE: sendBytle: "); Serial.println(c);
+	
     String s = String("").concat(c);
     if (send(s))
         return 1;
@@ -42,6 +48,8 @@ size_t BLE::sendByte(char c)
 
 size_t BLE::sendString(const String &s)
 {
+	//Serial.print("BLE: sendString: "); Serial.println(s);
+	
     if (send(s))
         return s.length();
 
