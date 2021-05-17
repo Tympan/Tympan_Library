@@ -109,6 +109,8 @@ public:
 		recompute_maxblocks();
 	}
 	virtual void update(void);
+	virtual void processData(audio_block_f32_t *input,audio_block_f32_t *output);
+	virtual void processData(audio_block_f32_t *input,audio_block_f32_t *all_output[8]);
 private:
 	void recompute_maxblocks(void) {
 		uint32_t max=0;
@@ -137,9 +139,9 @@ private:
 	audio_block_f32_t *inputQueueArray[1];
 	float sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
 	//int audio_block_len_samples = AUDIO_BLOCK_SAMPLES;
-	void receiveIncomingData(void);
+	void receiveIncomingData(audio_block_f32_t *input);
 	void discardUnneededBlocksFromQueue(void);
-	void transmitOutgoingData(void);
+	void transmitOutgoingData(audio_block_f32_t *all_output[]);
 	unsigned long last_received_block_id = 0;
 };
 

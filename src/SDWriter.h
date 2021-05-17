@@ -20,23 +20,18 @@
 #ifndef _SDWriter_h
 #define _SDWriter_h
 
-//include "AudioStream_F32.h"
-//include <Arduino.h> //for Serial
-
 #include <arm_math.h>        //possibly only used for float32_t definition?
-//#if defined(KINETISK)	//for Teensy 3.x only, not yet Teensy 4
 //#include <SdFat_Gre.h>       //originally from https://github.com/greiman/SdFat  but class names have been modified to prevent collisions with Teensy Audio/SD libraries
-//#endif
+//#include "SD.h" // was using this but we should be using sdfat
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 #include <Print.h>
 
-
 //set some constants
 #define maxBufferLengthBytes 150000    //size of big memroy buffer to smooth out slow SD write operations
-const int DEFAULT_SDWRITE_BYTES = 512; //target size for individual writes to the SD card.  Usually 512
-//const uint64_t PRE_ALLOCATE_SIZE = 40ULL << 20;// Preallocate 40MB file.  Not used.
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
 
+const int DEFAULT_SDWRITE_BYTES = 512; //target size for individual writes to the SD card.  Usually 512
+//const uint64_t PRE_ALLOCATE_SIZE = 40ULL << 20;// Preallocate 40MB file.  Not used.
 
 //SDWriter:  This is a class to write blocks of bytes, chars, ints or floats to
 //  the SD card.  It will write blocks of data of whatever the size, even if it is not
@@ -51,8 +46,11 @@ const int DEFAULT_SDWRITE_BYTES = 512; //target size for individual writes to th
 class SDWriter : public Print
 {
   public:
-    SDWriter() {};
-    SDWriter(Print* _serial_ptr) {
+    SDWriter(SdFs * _sd) {
+		sd = _sd;
+	};
+    SDWriter(SdFs * _sd, Print* _serial_ptr) {
+	  sd = _sd;
       setSerial(_serial_ptr);
     };
     virtual ~SDWriter() {
@@ -61,71 +59,71 @@ class SDWriter : public Print
 
     void setup(void) { init(); }
     virtual void init() {
-		//if (!sd.begin()) sd.errorHalt(serial_ptr, "SDWriter: begin failed");
-		if (!sd.begin(SD_CONFIG)) sd.errorHalt(serial_ptr, "SDWriter: begin failed");
+      if (!sd->begin(SD_CONFIG)) sd->errorHalt(serial_ptr, "SDWriter: begin failed");
     }
 
     bool openAsWAV(char *fname) {
-		bool returnVal = open(fname);
-		if (isFileOpen()) { //true if file is open
-			flag__fileIsWAV = true;
-			file.write(wavHeaderInt16(0), WAVheader_bytes); //initialize assuming zero length
-		}
-		return returnVal;
+      bool returnVal = open(fname);
+      if (isFileOpen()) { //true if file is open
+        flag__fileIsWAV = true;
+        file.write(wavHeaderInt16(0), WAVheader_bytes); //initialize assuming zero length
+      }
+      return returnVal;
     }
+	
 
     bool open(char *fname) {
-		if (sd.exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
-			// The SD library writes new data to the end of the file, so to start
-			//a new recording, the old file must be deleted before new data is written.
-			sd.remove(fname);
-		}
-		file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
-		//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
-		return isFileOpen();
+      if (sd->exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
+        // The SD library writes new data to the end of the file, so to start
+        //a new recording, the old file must be deleted before new data is written.
+        sd->remove(fname);
+      }
+      file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+      //file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
+      return isFileOpen();
     }
 
 	bool exists(char *fname) {
-		return sd.exists(fname);
+		return sd->exists(fname);
 	}
 	bool remove(char *fname) {
-		return sd.remove(fname);
+		return sd->remove(fname);
 	}
 	
     int close(void) {
-		//file.truncate(); 
-		if (flag__fileIsWAV) {
-			//re-write the header with the correct file size
-			uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
-			file.seekSet(0); //SdFat_Gre_FatLib version of seek();
-			file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
-			file.seekSet(fileSize);
-		}
-		file.close();
-		flag__fileIsWAV = false;
-		return 0;
+      //file.truncate(); 
+      if (flag__fileIsWAV) {
+        //re-write the header with the correct file size
+        uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+        file.seekSet(0); //SdFat_Gre_FatLib version of seek();
+        file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
+        file.seekSet(fileSize);
+      }
+      file.close();
+      flag__fileIsWAV = false;
+      return 0;
     }
 
     bool isFileOpen(void) {
-		if (file.isOpen()) return true;
-		return false;
+      if (file.isOpen()) return true;
+      return false;
     }
 
     //This "write" is for compatibility with the Print interface.  Writing one
     //byte at a time is EXTREMELY inefficient and shouldn't be done
     virtual size_t write(uint8_t foo)  {
-		size_t return_val = 0;
-		if (file.isOpen()) {
+      size_t return_val = 0;
+      if (file.isOpen()) {
 
-			// write all audio bytes (512 bytes is most efficient)
-			if (flagPrintElapsedWriteTime) { usec = 0; }
-			file.write((byte *) (&foo), 1); //write one value
-			return_val = 1;
+        // write all audio bytes (512 bytes is most efficient)
+        if (flagPrintElapsedWriteTime) { usec = 0; }
+        file.write((byte *) (&foo), 1); //write one value
+        return_val = 1;
 
-			//write elapsed time only to USB serial (because only that is fast enough)
-			if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec); }
-		}
-		return return_val;
+        //write elapsed time only to USB serial (because only that is fast enough)
+        if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec); }
+      }
+      return return_val;
     }
 
     //write Byte buffer...the lowest-level call upon which the others are built.
@@ -194,16 +192,13 @@ class SDWriter : public Print
       return wheader;
     }
     
-	SdFs * getSdPtr(void) { return &sd; }
+	SdFs * getSdPtr(void) { return sd; }
 	
   protected:
     //SdFatSdio sd; //slower
-    //SdFatSdioEX sd; //faster
-    SdFs sd;
-	//SdFile_Gre file;
-	SdFile file;
-    
-	boolean flagPrintElapsedWriteTime = false;
+	SdFs * sd; //faster
+    SdFile file;
+    boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
     Print* serial_ptr = &Serial;
     bool flag__fileIsWAV = false;
@@ -226,19 +221,26 @@ class SDWriter : public Print
 class BufferedSDWriter : public SDWriter
 {
   public:
-    BufferedSDWriter() : SDWriter() {
+    BufferedSDWriter(SdFs * _sd) : SDWriter(_sd) {
       setWriteSizeBytes(DEFAULT_SDWRITE_BYTES);
     };
-    BufferedSDWriter(Print* _serial_ptr) : SDWriter(_serial_ptr) {
+    BufferedSDWriter(SdFs * _sd, Print* _serial_ptr) : SDWriter(_sd, _serial_ptr) {
       setWriteSizeBytes(DEFAULT_SDWRITE_BYTES );
     };
-    BufferedSDWriter(Print* _serial_ptr, const int _writeSizeBytes) : SDWriter(_serial_ptr) {
+    BufferedSDWriter(SdFs * _sd, Print* _serial_ptr, const int _writeSizeBytes) : SDWriter(_sd, _serial_ptr) {
       setWriteSizeBytes(_writeSizeBytes);
     };
     ~BufferedSDWriter(void) {
       delete ptr_zeros;
       delete write_buffer;
     }
+	bool sync() {
+		if (isFileOpen())
+		{
+			file.FsBaseFile::flush();
+			return file.sync();
+		}
+	}
 
     //how many bytes should each write event be?  Set it here
     void setWriteSizeBytes(const int _writeSizeBytes) {
@@ -253,10 +255,10 @@ class BufferedSDWriter : public SDWriter
 
     //allocate the buffer for storing all the samples between write events
     int allocateBuffer(const int _nBytes = maxBufferLengthBytes) {
-      bufferLengthSamples = max(4,min(_nBytes,maxBufferLengthBytes) / nBytesPerSample);
-      if (write_buffer != 0) delete write_buffer;  //delete the old buffer
+	  bufferLengthSamples = max(4,min(_nBytes,maxBufferLengthBytes) / nBytesPerSample);
+	  if (write_buffer != 0) delete write_buffer;  //delete the old buffer
       write_buffer = new int16_t[bufferLengthSamples];
-      resetBuffer();
+	  resetBuffer();
       return (int)write_buffer;
     }
     void resetBuffer(void) { bufferReadInd = 0; bufferWriteInd = 0;  }
@@ -492,7 +494,6 @@ class BufferedSDWriter : public SDWriter
     int32_t bufferLengthSamples = maxBufferLengthBytes / nBytesPerSample;
     int32_t bufferEndInd = maxBufferLengthBytes / nBytesPerSample;
     float32_t *ptr_zeros;
-
 };
 
 

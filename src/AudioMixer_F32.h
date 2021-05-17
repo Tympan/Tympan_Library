@@ -32,7 +32,8 @@ public:
 	}
 	
     virtual void update(void);
-
+	virtual int processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
+	
     void gain(unsigned int channel, float gain) {
       if ((channel >= 4) || (channel < 0)) return;
       multiplier[channel] = gain;
