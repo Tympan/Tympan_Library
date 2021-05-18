@@ -30,7 +30,7 @@ public:
 	}
 	
     virtual void update(void);
-	virtual int AudioSummer4_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
+	virtual int processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
 
 
     int enableChannel(unsigned int channel, bool enable = true) {

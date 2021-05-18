@@ -77,6 +77,8 @@ public:
 		sampleRate_Hz = _fs_Hz; 
 		//audio_block_len_samples = block_size;  //this is the actual size that is being used in each audio_block_f32 
 	}
+	float getSampleRate_Hz(void) { return sampleRate_Hz; }
+	
 	void delay(uint8_t channel, float milliseconds) {
 		if (channel >= 8) return;
 		if (milliseconds < 0.0) milliseconds = 0.0;
@@ -111,6 +113,7 @@ public:
 	virtual void update(void);
 	virtual void processData(audio_block_f32_t *input,audio_block_f32_t *output);
 	virtual void processData(audio_block_f32_t *input,audio_block_f32_t *all_output[8]);
+	
 private:
 	void recompute_maxblocks(void) {
 		uint32_t max=0;
