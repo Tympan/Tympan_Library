@@ -66,7 +66,7 @@ void setConfiguration(int config) {
   switch (config) {
     case INPUT_PCBMICS:
       //Select Input and set gain
-      audioHardware.enableDigitalMicInputs(false);
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
       input_gain_dB = 15;
       myTympan.setInputGain_dB(input_gain_dB);
@@ -74,7 +74,7 @@ void setConfiguration(int config) {
 
     case INPUT_MICJACK:
       //Select Input and set gain
-      audioHardware.enableDigitalMicInputs(false);
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the mic jack
       myTympan.setEnableStereoExtMicBias(true);  //put the mic bias on both channels
       input_gain_dB = default_input_gain_dB;
@@ -83,7 +83,7 @@ void setConfiguration(int config) {
       
     case INPUT_LINEIN_JACK:
       //Select Input and set gain
-      audioHardware.enableDigitalMicInputs(false);
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the line-input through holes
       input_gain_dB = 0;
       myTympan.setInputGain_dB(input_gain_dB);
@@ -91,14 +91,14 @@ void setConfiguration(int config) {
       
     case INPUT_LINEIN_SE:
       //Select Input and set gain
-      audioHardware.enableDigitalMicInputs(false);
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_LINE_IN); // use the line-input through holes
       input_gain_dB = default_input_gain_dB;
       myTympan.setInputGain_dB(input_gain_dB);
       break;
         
      case INPUT_PDM_MICS:
-      audioHardware.enableDigitalMicInputs(true);
+      myTympan.enableDigitalMicInputs(true);
       input_gain_dB = 0;
       myTympan.setInputGain_dB(input_gain_dB); //doesn't affect the digital PDM mic inputs?
       break;  
