@@ -29,7 +29,10 @@
 //   just a virtual Base class.  Use AudioSDWriter_F32 further down.
 class AudioSDWriter {
   public:
-    AudioSDWriter(void) {};
+ 	AudioSDWriter(void) {};
+    AudioSDWriter(SdFs * _sd) {
+		sd = _sd;
+	};
     enum class STATE { UNPREPARED = -1, STOPPED, RECORDING };
     STATE getState(void) {
       return current_SD_state;
@@ -50,6 +53,7 @@ class AudioSDWriter {
     virtual void stopRecording(void) = 0;
 
   protected:
+	SdFs * sd;
     STATE current_SD_state = STATE::UNPREPARED;
     WriteDataType writeDataType = WriteDataType::INT16;
     int recording_count = 0;
@@ -90,6 +94,33 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       setup(_serial_ptr, _writeSizeBytes); 
       setSampleRate_Hz(settings.sample_rate_Hz); 
     }
+    AudioSDWriter_F32(SdFs * _sd) :
+      AudioSDWriter(_sd),
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
+    { 
+      setup();
+    }
+    AudioSDWriter_F32(SdFs * _sd,const AudioSettings_F32 &settings) :
+      AudioSDWriter(_sd),
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
+    { 
+      setup(); 
+      setSampleRate_Hz(settings.sample_rate_Hz);
+    }
+    AudioSDWriter_F32(SdFs * _sd,const AudioSettings_F32 &settings, Print* _serial_ptr) :
+      AudioSDWriter(_sd),
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
+    { 
+      setup(_serial_ptr);
+      setSampleRate_Hz(settings.sample_rate_Hz);
+    }
+    AudioSDWriter_F32(SdFs * _sd,const AudioSettings_F32 &settings, Print* _serial_ptr, const int _writeSizeBytes) :
+      AudioSDWriter(_sd),
+      AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
+    { 
+      setup(_serial_ptr, _writeSizeBytes); 
+      setSampleRate_Hz(settings.sample_rate_Hz); 
+    }
     ~AudioSDWriter_F32(void) {
       stopRecording();
       delete buffSDWriter;
@@ -125,8 +156,12 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		stopRecording();
 		writeDataType = type;
 		if (!buffSDWriter) {
+			if (!sd) {
+				sd = new SdFs();
+			}
+			
 			//Serial.println("AudioSDWriter_F32: setWriteDataType: creating buffSDWriter...");
-			buffSDWriter = new BufferedSDWriter(serial_ptr, writeSizeBytes);
+			buffSDWriter = new BufferedSDWriter(sd, serial_ptr, writeSizeBytes);
 			if (buffSDWriter) {
 				buffSDWriter->setNChanWAV(numWriteChannels);
 				if (bufferLength_samps >= 0) {
@@ -157,6 +192,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       if (buffSDWriter) return buffSDWriter->setSampleRateWAV(fs_Hz);
       return fs_Hz;
     }
+
 	
     //if you want to set the audio buffer size yourself, call this method before
 	//calling startRecording().
@@ -201,7 +237,11 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 	
   unsigned long getStartTimeMillis(void) { return t_start_millis; };
   unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
-  SdFs * getSdPtr(void) { return buffSDWriter->getSdPtr(); }
+  SdFs * getSdPtr(void) { 
+	if (!buffSDWriter) return buffSDWriter->getSdPtr(); 
+	return sd;
+  }
+		
 
   protected:
     audio_block_f32_t *inputQueueArray[AUDIOSDWRITER_MAX_CHAN]; //up to four input channels
