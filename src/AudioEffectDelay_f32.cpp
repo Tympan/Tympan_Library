@@ -45,7 +45,7 @@ void AudioEffectDelay_F32::update(void)
 	
 	// transmit and release
 	AudioStream_F32::release(input); //release the block that was already successfully aquired
-	const int delay_channel = 0;
+	//const int delay_channel = 0;
 	for (int channel=0; channel<8; channel++) { //loop over the different amounts of delay that might be requested
 		if (all_output[channel] != NULL) {
 			AudioStream_F32::transmit(all_output[channel], channel);
@@ -59,6 +59,7 @@ void AudioEffectDelay_F32::processData(audio_block_f32_t *input, audio_block_f32
 	receiveIncomingData(input);  //put the in-coming audio data into the queue
 	discardUnneededBlocksFromQueue();  //clear out queued data this is no longer needed
 	audio_block_f32_t *all_output[8];
+	for (int i=0; i<8;i++) all_output[i] = NULL; //initialize to NULL
 	all_output[0] = output;
 	transmitOutgoingData(all_output);  //put the queued data into the output
 }
@@ -103,8 +104,6 @@ void AudioEffectDelay_F32::receiveIncomingData(audio_block_f32_t *input) {
 		}
 	}
 
-
-	
 	//receive the in-coming audio data block
 	
 	//audio_block_f32_t *input = receiveReadOnly_f32();

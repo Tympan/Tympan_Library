@@ -43,8 +43,10 @@ void AudioSynthNoiseWhite_F32::update(void)
 	//audio_block_t *block;
 	audio_block_f32_t *block_f32;
 	uint32_t *p, *end;
-	int32_t n1, n2, gain;
-	uint32_t lo, hi, val1, val2;
+	//int32_t n1, n2;
+	int32_t gain;
+	uint32_t lo;
+	//hi, val1, val2;
 
 	//Serial.println("synth_whitenoise: update()");
 	gain = level;

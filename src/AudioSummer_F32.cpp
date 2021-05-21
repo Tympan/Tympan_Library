@@ -65,40 +65,32 @@ void AudioMixer4_F32::update(void) {
 int AudioSummer4_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out) {//audio_in can be read-only as no calculations are in-place
 	audio_block_f32_t *in;
 	
-	//find the first available channel
-	int channel = 0;
-	bool any_input_data = false;
-	while (channel < 4) {
+	if (audio_out == NULL) return -1;
+	bool firstValidAudio = true;
+	int num_channels_mixed = 0;
+	
+	//loop over channels
+	for (int channel = 0; channel < 4; channel++) {
 		in = audio_in[channel];
-		if (in && flag_useChan[channel]) {
-			//yes, this is an audio block.  Copy it to the output
-			any_input_data = true;
-			for (int i=0; i < (in->length); i++) audio_out->data[i] = in->data[i];
-			audio_out->id = in->id;
-			audio_out->length = in->length;
-
-			//break out of the while loop			
-			break;
+		if ((in != NULL) && flag_useChan[channel]) {  //is it valid audio
+			if (firstValidAudio) {
+				//this is the first audio, so simply copy it to the output
+				firstValidAudio = false;
+				for (int i=0; i < in->length; i++) { audio_out->data[i] = in->data[i]; } //copy
+				audio_out->id = in->id;
+				audio_out->length = in->length;
+			} else {
+				//scale the input data (holding in tmp) and then add tmp to the existing audio_out
+				arm_add_f32(audio_out->data, in->data, audio_out->data, audio_out->length); //sum
+			}
+			num_channels_mixed++;
 		}
 	}
 	
-	if (!any_input_data) return false;  //there was no data available.  so exit.
-
-	//add in the remaining channels, as available and if enabled
-	channel++;
-	while  (channel < 4) {
-		in = audio_in[channel];
-		if (in) {
-			if (flag_useChan[channel]) {
-				arm_add_f32(audio_out->data, in->data, audio_out->data, audio_out->length);
-			}
-		} else {
-			//do nothing, this vector is empty
-		}
-		channel++;
-	}
-
-	return true;
+	//we're done!
+	return num_channels_mixed;
+	
+	
 }	
 
 

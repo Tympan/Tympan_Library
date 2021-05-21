@@ -62,27 +62,30 @@ void AudioMixer4_F32::update(void) {
 
 //Note audio_in can be read-only as none of the operations are in-place
 int AudioMixer4_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out) {
+	if (audio_out == NULL) return -1;
 	bool firstValidAudio = true;
 	audio_block_f32_t *tmp = allocate_f32();	
-	if (!tmp) { AudioStream_F32::release(tmp);return; }  //no memory!
+	if (tmp == NULL) return -1;  //no memory!
 	int num_channels_mixed = 0;
+	
 	
 	//loop over channels
 	for (int channel = 0; channel < 4; channel++) {
-		if (audio_in[channel]) {  //is it valid audio
+		if (audio_in[channel] != NULL) {  //is it valid audio
+		
 			if (firstValidAudio) {
 				//this is the first audio, so simply scale and have the scaling operation copy directly to audio_out
 				firstValidAudio = false;
 				arm_scale_f32(audio_in[channel]->data, multiplier[channel], audio_out->data, audio_in[channel]->length);
 				audio_out->id = audio_in[channel]->id;
 				audio_out->length = audio_in[channel]->length;
-				num_channels_mixed++;
+
 			} else {
 				//scale the input data (holding in tmp) and then add tmp to the existing audio_out
 				arm_scale_f32(audio_in[channel]->data, multiplier[channel], tmp->data, audio_in[channel]->length);
 				arm_add_f32(audio_out->data, tmp->data, audio_out->data, audio_out->length);
-				num_channels_mixed++;
 			}
+			num_channels_mixed++;
 		}
 	}
 	
