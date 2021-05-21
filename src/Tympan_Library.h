@@ -33,6 +33,7 @@
 #include "AudioSettings_F32.h"
 #include "AudioSummer_F32.h"
 #include "AudioSwitch_F32.h"
+#include "EarpieceMixer_F32.h"
 #include "FFT_F32.h"
 #include "FFT_Overlapped_F32.h"
 #include "play_queue_f32.h"

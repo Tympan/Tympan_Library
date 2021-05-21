@@ -269,7 +269,8 @@ class TympanBase : public AudioControlAIC3206, public Print
 		HardwareSerial *getBTSerial(void) { return BT_Serial; }
 		void beginBothSerial(void) { beginBothSerial(115200, pins.BT_serial_speed); }
 		void beginBothSerial(int USB_speed, int BT_speed) {
-			USB_Serial->begin(USB_speed); delay(50);
+			//USB_Serial->begin(USB_speed);  //Not needed for Teensy?
+			delay(50);
 			beginBluetoothSerial(BT_speed);
 		}
 		int USB_dtr() { return USB_Serial->dtr(); }
@@ -345,7 +346,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 		
 		static int FreeRam(void) {
 			#if defined(__IMXRT1062__)
-				extern unsigned long _heap_start;
+				//extern unsigned long _heap_start;
 				extern unsigned long _heap_end;
 				extern char *__brkval;
 
