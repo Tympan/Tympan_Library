@@ -1,6 +1,23 @@
 
 #include "AICShield.h"
 
+//set the static variables
+
+//Front/Rear is weird.  Left/Right matches the enclosure labeling.
+const int EarpieceShield::PDM_LEFT_FRONT = 1;
+const int EarpieceShield::PDM_LEFT_REAR = 0;    
+const int EarpieceShield::PDM_RIGHT_FRONT = 3;
+const int EarpieceShield::PDM_RIGHT_REAR = 2;
+
+ //left/right for headphone jack on main tympan board
+const int EarpieceShield::OUTPUT_LEFT_TYMPAN = 0;
+const int EarpieceShield::OUTPUT_RIGHT_TYMPAN = 1;  
+		
+//Left/Right matches the enclosure...but is backwards from ideal
+const int EarpieceShield::OUTPUT_LEFT_EARPIECE = 3;
+const int EarpieceShield::OUTPUT_RIGHT_EARPIECE = 2;  
+
+
 void AICShieldBase::setupPins(const AICShieldPins &_pins) {
 	AudioControlAIC3206::setResetPin(_pins.resetAIC);
 	pins = _pins; //shallow copy to local version

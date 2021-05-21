@@ -29,7 +29,7 @@ enum class AICShieldRev { A, CCP, CCP_A };
 #define AICSHIELD_DEFAULT_I2C_BUS  2
 
 
-class AICShieldPins { //Teensy 3.6 Pin Numbering
+class AICShieldPins {
 	public:
 		AICShieldPins(void) {
 			setAICShieldRev(TympanRev::D, AICShieldRev::A);  //assume RevD is default
@@ -37,9 +37,11 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 		AICShieldPins(TympanRev _tympanRev, AICShieldRev _AICRev) {
 			setAICShieldRev(_tympanRev, _AICRev);
 		}
+
 		void setAICShieldRev(TympanRev _tympanRev, AICShieldRev _AICRev) {
 			tympanRev = _tympanRev;
 			AICRev = _AICRev;
+					
 			switch (tympanRev) { //which Tympan are we connecting to?
 				
 				case (TympanRev::D) : case (TympanRev::D4) :   //we're connecting to a Rev D tympan, so the pin numbers below are correct for the TympanD
@@ -94,7 +96,8 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
 							break;
 					}
-					break;					
+					break;	
+				
 				default:
 					Serial.println("AICSheildPins: *** WARNING *** This Teensy Rev is not supported.");
 					Serial.println("    : Assuming defaults and hoping for the best.");
@@ -118,6 +121,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 		int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED = NOT_A_FEATURE;
 		int CCP_enable28V = NOT_A_FEATURE;
 		int defaultInput = NOT_A_FEATURE;
+		
 	
 };
 
@@ -125,22 +129,31 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 class AICShieldBase : public AudioControlAIC3206
 {
 	public:
-		AICShieldBase(void) : AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS) {}
-		AICShieldBase(bool _debugToSerial) : AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS,_debugToSerial) {}
-		AICShieldBase(const AICShieldPins &_pins) : AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
+		AICShieldBase(void) : 
+			AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS) {
+		}
+		AICShieldBase(bool _debugToSerial) : 
+			AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS,_debugToSerial) {
+		}
+		AICShieldBase(const AICShieldPins &_pins) : 
+			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
 			setupPins(_pins);
 		}
-		AICShieldBase(const AICShieldPins &_pins, bool _debugToSerial) : AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus,_debugToSerial) {
+		AICShieldBase(const AICShieldPins &_pins, bool _debugToSerial) : 
+			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus,_debugToSerial) {
 			setupPins(_pins);
 		}
-		AICShieldBase(const AudioSettings_F32 &_as) : AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS) {
+		AICShieldBase(const AudioSettings_F32 &_as) : 
+			AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS) {
 			setAudioSettings(_as);
 		}
-		AICShieldBase(const AICShieldPins &_pins, const AudioSettings_F32 &_as) : AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
+		AICShieldBase(const AICShieldPins &_pins, const AudioSettings_F32 &_as) : 
+			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
 			setupPins(_pins);
 			setAudioSettings(_as);
 		}
-		AICShieldBase(const AICShieldPins &_pins, const AudioSettings_F32 &_as, bool _debugToSerial) : AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus,_debugToSerial) {
+		AICShieldBase(const AICShieldPins &_pins, const AudioSettings_F32 &_as, bool _debugToSerial) : 
+			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus,_debugToSerial) {
 			setupPins(_pins);
 			setAudioSettings(_as);
 		}
@@ -170,8 +183,10 @@ class AICShieldBase : public AudioControlAIC3206
 	protected:
 		AICShieldPins pins;
 		AudioSettings_F32 audio_settings;
-		
+
+
 };
+
 
 class AICShield : public AICShieldBase {
 	public:
@@ -200,6 +215,32 @@ class AICShield : public AICShieldBase {
 			AICShieldBase::setupPins(myPins);
 			AICShieldBase::setAudioSettings(_as);
 		}
+};
+
+class EarpieceShield : public AICShield {
+	public:
+		EarpieceShield(void) : 
+			AICShield() { 
+		}
+		EarpieceShield(const TympanRev &_myRev, const AICShieldRev &_aicRev) : 
+			AICShield(_myRev, _aicRev) {
+		}
+		EarpieceShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, bool _debugToSerial) : 
+			AICShield(_myRev, _aicRev, _debugToSerial) {  
+		}
+		EarpieceShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, const AudioSettings_F32 &_as) : 
+			AICShield(_myRev, _aicRev, _as) { ; 
+		}
+		EarpieceShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, const AudioSettings_F32 &_as, bool _debugToSerial) : 
+			AICShield(_myRev, _aicRev,_as, _debugToSerial) { 
+		}
+		
+		
+		//variables to simplify access to the Earpiece channel mapping...these are overwriten in setEarpiceValues()
+		//what I2S channel maps to what input or what output
+		static const int PDM_LEFT_FRONT, PDM_LEFT_REAR, PDM_RIGHT_FRONT, PDM_RIGHT_REAR;  //Front/Rear is weird.  Left/Right matches the enclosure labeling		.
+		static const int  OUTPUT_LEFT_TYMPAN, OUTPUT_RIGHT_TYMPAN;  //left/right for headphone jack on main tympan board
+		static const int  OUTPUT_LEFT_EARPIECE, OUTPUT_RIGHT_EARPIECE;  //Left/Right matches the enclosure...but is backwards from ideal
 };
 
 #endif
