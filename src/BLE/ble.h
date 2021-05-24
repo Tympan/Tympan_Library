@@ -15,7 +15,7 @@ public:
     size_t sendMessage(const String &s);
     size_t recvMessage(String *s);
     size_t recvBLE(String *s);
-    bool isConnected();
+    bool isConnected(bool printResponse = false);
     bool waitConnect(int time = -1);
 };
 

@@ -187,11 +187,21 @@ size_t BLE::recvBLE(String *s)
     return 0;
 }
 
-bool BLE::isConnected()
+bool BLE::isConnected(bool printResponse)
 {
     if (status() > 0)
     {
-        return getCmdResponse().startsWith("STATE CONNECTED");
+		String s = getCmdResponse();
+		if (printResponse) {
+			Serial.println("BLE: isConnected() response: ");
+			Serial.print(s);
+		}
+        //return s.startsWith("STATE CONNECTED"); //original
+		if (s.indexOf("CONNECTED") == -1) { //if it finds -1, then it wasn't found
+			return false;
+		} else {
+			return true;
+		}
     }
 
     return false;

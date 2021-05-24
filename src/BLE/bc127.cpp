@@ -177,9 +177,14 @@ BC127::opResult BC127::setConfig(String config, String param)
 // Retrieves the firmware version information of the device
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
 //          _cmdResponse will contain the data on SUCCESS
-BC127::opResult BC127::version()
+BC127::opResult BC127::version(bool printResponse)
 {
-    return stdCmd("VERSION");
+    BC127::opResult ret_val = stdCmd("VERSION");
+	if (printResponse) {
+		Serial.println("BC127: version response: ");
+		Serial.print(getCmdResponse());  //this should be CR terminated
+	}
+	return ret_val;
 }
 
 // Retrieves the embedded help menu
@@ -194,6 +199,7 @@ BC127::opResult BC127::help()
 // Returns: _cmdResponse
 String BC127::getCmdResponse()
 {
+	//Serial.print("BC127: getCmdResponse: _cmdResponse = ");Serial.println(_cmdResponse);
     return _cmdResponse;
 }
 

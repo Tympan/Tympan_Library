@@ -54,7 +54,7 @@ public:
     opResult status();                               // returns the connections status
     opResult stdCmd(String cmd);                     // executes a standard command option
     opResult setConfig(String config, String param); // sets a configuration register
-    opResult version();                              // returns the version info in _cmdResponse
+    opResult version(bool printResponse = false);    // returns the version info in _cmdResponse
     opResult writeConfig();                          // writes the current config to non-volatile memory
 
 protected:
