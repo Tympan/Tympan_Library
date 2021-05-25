@@ -1,9 +1,9 @@
 #include "ble.h"
 
-BLE::BLE(Stream *sp) : BC127(sp)
-{
-
-}
+//BLE::BLE(Stream *sp) : BC127(sp)
+//{
+//
+//}
 
 int BLE::begin(void)
 {
@@ -58,8 +58,11 @@ size_t BLE::sendString(const String &s)
 
 size_t BLE::sendMessage(const String &s)
 {
+	return sendMessage(s.c_str(), (int)s.length());
+}
+
+size_t BLE::sendMessage(const char* c_str, const int len) {
     size_t sentBytes = 0;
-    int len = s.length();
     const int payloadLen = 19;
 
     String header;
@@ -90,18 +93,43 @@ size_t BLE::sendMessage(const String &s)
         Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
     }
 
-    int numPackets = ceil(s.length() / (float)payloadLen);
+    //int numPackets = ceil(s.length() / (float)payloadLen);
+    //int numPackets = ceil(len / (float)payloadLen);
+	
+	int ind_start = 0, ind_end=0, ind_out;
+	char bu[1+payloadLen+1];  //temporary buffer
+	int packet_counter = 0;
+    while (ind_end < len) {
+		//compute indices into our source string
+		ind_start = ind_end;
+		ind_end = ind_start + payloadLen;
+		ind_end = min(ind_end,len);
+		
+		//construct this payload
+		ind_out = 0;
+		bu[ind_out++] = (char)(0xF0 | lowByte(packet_counter++));  //first byte
+		while (ind_start < ind_end) {
+			bu[ind_out++]=c_str[ind_start++];  //payload
+		}
+		bu[ind_out] = '\0';  //trailing byte...null terminated c-style string
+		
+		//send the payload
+		sentBytes += (sendString(String(bu))-1);
+		//delay(10);
+		delay(5); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
+	}
 
-    for (int i = 0; i < numPackets; i++)
-    {
-        String bu = (char)(0xF0 | lowByte(i));
-        bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
-        sentBytes += (sendString(bu)-1);
-        delay(10);
-    }
+	//for (int i = 0; i < numPackets; i++)
+    //{
+        //String bu = (char)(0xF0 | lowByte(i));
+        //bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
+        //sentBytes += (sendString(bu)-1);
+        //delay(10);
+    //}
 
-    if (s.length() == sentBytes)
-    {
+    //if (s.length() == sentBytes)
+    if (len == sentBytes)
+	{
         return sentBytes;
     }
 
