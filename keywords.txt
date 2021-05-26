@@ -114,6 +114,8 @@ startRecording		KEYWORD2
 stopRecording		KEYWORD2
 SDWriter		KEYWORD1
 BufferedSDWriter	KEYWORD1
+AudioSDWriter_F32_UI	KEYWORD1
+
 
 AudioSummer4_F32	KEYWORD1
 AudioSummer8_F32	KEYWORD1
@@ -144,6 +146,28 @@ AudioTestSignalMeasurementMulti_F32	KEYWORD1
 AudioControlTestAmpSweep_F32	KEYWORD1
 AudioControlTestFreqSweep_F32	KEYWORD1
 
+EarpieceMixerState	KEYWORD1
+EarpieceMixer_F32	KEYWORD1
+processData		KEYWORD2
+setTympanAndShield	KEYWORD2
+configureFrontRearMixer	KEYWORD2
+setInputAnalogVsPDM	KEYWORD2
+configureLeftRightMixer	KEYWORD2
+setTargetMicDelay_samps	KEYWORD2
+setMicDelay_samps	KEYWORD2
+state			KEYWORD2
+
+EarpieceMixer_F32_UI	KEYWORD1
+
+EarpieceShield		KEYWORD1
+PDM_LEFT_FRONT		KEYWORD2
+PDM_LEFT_REAR		KEYWORD2
+PDM_RIGHT_FRONT		KEYWORD2
+PDM_RIGHT_REAR		KEYWORD2
+OUTPUT_LEFT_TYMPAN	KEYWORD2
+OUTPUT_RIGHT_TYMPAN	KEYWORD2
+OUTPUT_LEFT_EARPIECE	KEYWORD2
+OUTPUT_RIGHT_EARPIECE	KEYWORD2
 
 FFT_F32			KEYWORD1
 useHanningWindow	KEYWORD2
@@ -157,6 +181,16 @@ getNBuffBlocks		KEYWORD2
 getFFTObject		KEYWORD2
 IFFT_Overlapped_F32	KEYWORD1
 
+SerialManagerBase	KEYWORD1
+respondToByte		KEYWORD2
+add_UI_element		KEYWORD2
+
+SerialManager_UI	KEYWORD1
+printHelp		KEYWORD2
+processCharacter	KEYWORD2
+processCharacterTriple	KEYWORD2
+setFullGUIState		KEYWORD2
+
 TympanRev		KEYWORD1
 TympanPins		KEYWORD1
 Tympan			KEYWORD1
@@ -166,6 +200,8 @@ setAmberLED		KEYWORD2
 setRedLED		KEYWORD2
 readPotentiometer	KEYWORD2
 getTympanRev		KEYWORD2
+TympanStateBase		KEYWORD1
+
 TympanRemoteFormatter	KEYWORD1
 TR_Page			KEYWORD1
 TR_Card			KEYWORD1

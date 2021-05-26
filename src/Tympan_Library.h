@@ -1,4 +1,7 @@
 
+#ifndef Tympan_Library_h
+#define Tympan_Library_h
+
 #include "AICShield.h"
 #include "AudioStream_F32.h"
 #include "BTNRH_WDRC_Types.h"
@@ -34,6 +37,7 @@
 #include "AudioSummer_F32.h"
 #include "AudioSwitch_F32.h"
 #include "EarpieceMixer_F32.h"
+#include "EarpieceMixer_F32_UI.h"
 #include "FFT_F32.h"
 #include "FFT_Overlapped_F32.h"
 #include "play_queue_f32.h"
@@ -43,6 +47,8 @@
 #include "AudioSDPlayer_F32.h"
 #include "AudioSDWriter_F32.h"
 #include "SDWriter.h"
+#include "SerialManagerBase.h"
+#include "SerialManager_UI.h"
 
 #include "synth_pinknoise_f32.h"
 #include "synth_waveform_F32.h"
@@ -52,8 +58,12 @@
 #include "synth_tonesweep_F32.h"
 #include "Tympan.h"
 #include "TympanRemoteFormatter.h"
+#include "TympanStateBase.h"
 #include "output_i2s_f32.h"
 #include "output_i2s_quad_f32.h"
 //include "USB_Audio_F32.h"
 #include "BLE/bc127.h"
 #include "BLE/ble.h"
+
+#endif
+
