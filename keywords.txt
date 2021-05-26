@@ -146,6 +146,11 @@ AudioTestSignalMeasurementMulti_F32	KEYWORD1
 AudioControlTestAmpSweep_F32	KEYWORD1
 AudioControlTestFreqSweep_F32	KEYWORD1
 
+BLE			KEYWORD1
+BC127			KEYWORD1
+isConnected		KEYWORD2
+isAdvertising		KEYWORD2
+
 EarpieceMixerState	KEYWORD1
 EarpieceMixer_F32	KEYWORD1
 processData		KEYWORD2
