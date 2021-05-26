@@ -78,6 +78,7 @@ size_t BLE::sendMessage(const String &s)
 	//check to ensure that there isn't a NULL or a CR in this header
 	bool sendExtraByte = false;
 	if ((header[6] == '\r') || (header[6] == '\0')) {
+		Serial.println("BLE: sendMessage: ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
 		sendExtraByte = true;
 		lenBytes = ( (len+1) << 1) | 0x8001;
 		header[5] = (char)highByte(lenBytes);
