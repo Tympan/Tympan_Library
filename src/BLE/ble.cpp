@@ -229,7 +229,7 @@ bool BLE::isAdvertising(bool printResponse)
     {
 		String s = getCmdResponse();
 		if (printResponse) {
-			Serial.println("BLE: isConnected() response: ");
+			Serial.println("BLE: isAdvertising() response: ");
 			Serial.print(s);
 		}
         //return s.startsWith("STATE CONNECTED"); //original
