@@ -58,12 +58,9 @@ size_t BLE::sendString(const String &s)
 
 size_t BLE::sendMessage(const String &s)
 {
-	return sendMessage(s.c_str(), (int)s.length());
-}
-
-size_t BLE::sendMessage(const char* c_str, const int len) {
-    size_t sentBytes = 0;
-    const int payloadLen = 19;
+	const size_t len = s.length();
+	const int payloadLen = 19;
+	size_t sentBytes = 0;
 
     String header;
     header = "\xab\xad\xc0\xde"; // ABADCODE, message preamble
@@ -74,32 +71,38 @@ size_t BLE::sendMessage(const char* c_str, const int len) {
         Serial.println("BLE: Message is too long!!! Aborting.");
         return 0;
     }
-    int lenBytes = (len<<1) | 0x8001;
+    int lenBytes = (len<<1) | 0x8001; //the 0x8001 is avoid the first message having the 2nd-to-last byte being NULL
     header.concat((char)highByte(lenBytes));
     header.concat((char )lowByte(lenBytes));
+	
+	//check to ensure that there isn't a NULL or a CR in this header
+	bool sendExtraByte = false;
+	if ((header[6] == '\r') || (header[6] == '\0')) {
+		sendExtraByte = true;
+		lenBytes = ( (len+1) << 1) | 0x8001;
+		header[5] = (char)highByte(lenBytes);
+		header[6] = (char)lowByte(lenBytes);
+	}
 
     //Serial.println("BLE: sendMessage: Header (" + String(header.length()) + " bytes): '" + header + "'");
-
     //Serial.println("BLE: Message: '" + s + "'");
 
+	//send the packet with the header information
     char buf[16];
-
     sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
-
     //Serial.println(buf);
     int a = sendString(header);
-    if (a != 7)
-    {
-        Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
-    }
+    if (a != 7) Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
 
     //int numPackets = ceil(s.length() / (float)payloadLen);
-    //int numPackets = ceil(len / (float)payloadLen);
+    int numPackets = ceil(len / (float)payloadLen);
 	
-	int ind_start = 0, ind_end=0, ind_out;
+/* 	int ind_start = 0, ind_end=0, ind_out;
 	char bu[1+payloadLen+1];  //temporary buffer
 	int packet_counter = 0;
-    while (ind_end < len) {
+
+	String foo_s;
+	while (ind_end < len) {
 		//compute indices into our source string
 		ind_start = ind_end;
 		ind_end = ind_start + payloadLen;
@@ -114,24 +117,29 @@ size_t BLE::sendMessage(const char* c_str, const int len) {
 		bu[ind_out] = '\0';  //trailing byte...null terminated c-style string
 		
 		//send the payload
-		sentBytes += (sendString(String(bu))-1);
+		//sentBytes += (sendString(String(bu))-1);
+		foo_s = String(bu);
+		size_t foo = sendString(foo_s);
+		if (foo > 0) sentBytes += (foo-1);
+		//Serial.println("BLE: sendMessage: packet " + String(packet_counter) + ", " + String(ind_start) + ", " + String(ind_end) + ", sentBytes = " + String(foo) + ", " + foo_s);
 		//delay(10);
 		delay(5); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
-	}
+	} */
 
-	//for (int i = 0; i < numPackets; i++)
-    //{
-        //String bu = (char)(0xF0 | lowByte(i));
-        //bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
-        //sentBytes += (sendString(bu)-1);
-        //delay(10);
-    //}
 
-    //if (s.length() == sentBytes)
-    if (len == sentBytes)
-	{
-        return sentBytes;
+
+	for (int i = 0; i < numPackets; i++)
+    {
+        String bu = (char)(0xF0 | lowByte(i));
+        bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
+        sentBytes += (sendString(bu)-1);
+        delay(4); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
     }
+	
+	if (sendExtraByte) sendString(String(" "));
+
+	//Serial.print("BLE: sendMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);
+    if (len == sentBytes) return sentBytes;
 
     return 0;
 }

@@ -13,7 +13,7 @@ public:
     size_t sendByte(char c);
     size_t sendString(const String &s);
     size_t sendMessage(const String &s);
-	size_t sendMessage(const char* c_str, const int len); //use this if you need to send super long strings (more than 1797 characters)
+	//size_t sendMessage(const char* c_str, const int len); //use this if you need to send super long strings (more than 1797 characters)
     size_t recvMessage(String *s);
     size_t recvBLE(String *s);
     bool isConnected(bool printResponse = false);
