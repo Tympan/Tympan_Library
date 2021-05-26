@@ -146,8 +146,8 @@ int EarpieceMixer_F32::configureFrontRearMixer(int val) {
 			state.input_frontrear_config = val;
 		break;
 			case EarpieceMixerState::MIC_BOTH_INVERTED:
-			frontRearMixer[LEFT].gain(FRONT, 0.75); frontRearMixer[LEFT].gain(REAR, -0.75 * rearMicScaleFac);
-			frontRearMixer[RIGHT].gain(FRONT, 0.75); frontRearMixer[RIGHT].gain(REAR, -0.75 * rearMicScaleFac);
+			frontRearMixer[LEFT].gain(FRONT, 1.0); frontRearMixer[LEFT].gain(REAR, -1.0 * rearMicScaleFac);
+			frontRearMixer[RIGHT].gain(FRONT, 1.0); frontRearMixer[RIGHT].gain(REAR, -1.0 * rearMicScaleFac);
 			state.input_frontrear_config = val;
 		break;
 	}
