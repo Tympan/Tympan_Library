@@ -18,11 +18,10 @@ class EarpieceMixerState {
     int input_analog_config = INPUT_PCBMICS;
     float inputGain_dB = 15.0;  //gain on the analog inputs (ie, the AIC ignores this when in PDM mode, right?)
     
-        
-    enum FRONTREAR_CONFIG_TYPE {MIC_FRONT=0, MIC_REAR, MIC_BOTH_INPHASE, MIC_BOTH_INVERTED, MIC_BOTH_INVERTED_DELAYED};
+    enum FRONTREAR_CONFIG_TYPE {MIC_FRONT=0, MIC_REAR, MIC_BOTH_INPHASE, MIC_BOTH_INVERTED};
     int input_frontrear_config = MIC_FRONT;
-    int targetFrontDelay_samps = 0;  //in samples
-    int targetRearDelay_samps = 0;  //in samples
+    //int targetFrontDelay_samps = 0;  //in samples
+    //int targetRearDelay_samps = 0;  //in samples
     int currentFrontDelay_samps = 0; //in samples
     int currentRearDelay_samps = 0; //in samples
     float rearMicGain_dB = 0.0f;
@@ -82,7 +81,7 @@ class EarpieceMixerBase_F32  : public AudioStream_F32 {
     //Audio classes used here
     AudioEffectDelay_F32          frontMicDelay[2];         //delays front microphone (left and right)
     AudioEffectDelay_F32          rearMicDelay[2];          //delays rear microphone (left and right)
-    AudioMixer4_F32               frontRearMixer[2];        ///mixes front-back earpiece mics (left and right)
+    AudioMixer4_F32               frontRearMixer[2];        //mixes front-back earpiece mics (left and right)
     AudioSummer4_F32              analogVsDigitalSwitch[2]; //switches between analog and PDM (a summer is cpu cheaper than a mixer, and we don't need to mix here)
     AudioMixer4_F32               leftRightMixer[2];        //mixers to control mono versus stereo (left out and right out)
 
@@ -122,8 +121,20 @@ class EarpieceMixer_F32 : public EarpieceMixerBase_F32 {
 
     // ////////  other functions for settings
     float setInputGain_dB(float gain_dB); 
-    int setTargetMicDelay_samps(const int front_rear, int samples);
+	
+	//set delays
+    //int setTargetMicDelay_samps(const int front_rear, int samples);
     int setMicDelay_samps(const int front_rear,  int samples);
+	
+	//set gains
+	float incrementRearMicGain_dB(float increment_dB) {
+		return setRearMicGain_dB(state.rearMicGain_dB + increment_dB);
+	}
+	float setRearMicGain_dB(float gain_dB) {
+	  state.rearMicGain_dB = gain_dB;
+	  configureFrontRearMixer(state.input_frontrear_config);  //this puts the new gain value into action
+	  return state.rearMicGain_dB;
+	}
     
     //to do: add GUI elements
 

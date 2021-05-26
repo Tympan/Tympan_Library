@@ -128,40 +128,30 @@ bool EarpieceMixerBase_F32::allocateAndGetAudioBlocks(audio_block_f32_t *audio_i
 // ///////////////////////////////////////////////////////////////////////////////////////////////
 
 int EarpieceMixer_F32::configureFrontRearMixer(int val) {
-  float rearMicScaleFac = sqrtf(powf(10.0, 0.1 * state.rearMicGain_dB));
-  switch (val) {
-    case EarpieceMixerState::MIC_FRONT:
-      frontRearMixer[LEFT].gain(FRONT, 1.0); frontRearMixer[LEFT].gain(REAR, 0.0);
-      frontRearMixer[RIGHT].gain(FRONT, 1.0); frontRearMixer[RIGHT].gain(REAR, 0.0);
-      state.input_frontrear_config = val;
-      setMicDelay_samps(FRONT, 0); setMicDelay_samps(REAR, 0);
-      break;
-    case EarpieceMixerState::MIC_REAR:
-      frontRearMixer[LEFT].gain(FRONT, 0.0); frontRearMixer[LEFT].gain(REAR, rearMicScaleFac);
-      frontRearMixer[RIGHT].gain(FRONT, 0.0); frontRearMixer[RIGHT].gain(REAR, rearMicScaleFac);
-      state.input_frontrear_config = val;
-      setMicDelay_samps(FRONT, 0); setMicDelay_samps(REAR, 0);
-      break;
-    case EarpieceMixerState::MIC_BOTH_INPHASE:
-      frontRearMixer[LEFT].gain(FRONT, 0.5); frontRearMixer[LEFT].gain(REAR, 0.5 * rearMicScaleFac);
-      frontRearMixer[RIGHT].gain(FRONT, 0.5); frontRearMixer[RIGHT].gain(REAR, 0.5 * rearMicScaleFac);
-      state.input_frontrear_config = val;
-      setMicDelay_samps(FRONT, 0); setMicDelay_samps(REAR, 0);
-      break;
-    case EarpieceMixerState::MIC_BOTH_INVERTED:
-      frontRearMixer[LEFT].gain(FRONT, 0.75); frontRearMixer[LEFT].gain(REAR, -0.75 * rearMicScaleFac);
-      frontRearMixer[RIGHT].gain(FRONT, 0.75); frontRearMixer[RIGHT].gain(REAR, -0.75 * rearMicScaleFac);
-      state.input_frontrear_config = val;
-      setMicDelay_samps(FRONT, 0); setMicDelay_samps(REAR, 0);
-      break;
-    case EarpieceMixerState::MIC_BOTH_INVERTED_DELAYED:
-      frontRearMixer[LEFT].gain(FRONT, 0.75); frontRearMixer[LEFT].gain(REAR, -0.75 * rearMicScaleFac);
-      frontRearMixer[RIGHT].gain(FRONT, 0.75); frontRearMixer[RIGHT].gain(REAR, -0.75 * rearMicScaleFac);
-      state.input_frontrear_config = val;
-      setMicDelay_samps(FRONT, state.targetFrontDelay_samps); setMicDelay_samps(REAR, state.targetRearDelay_samps);
-      break;
-  }
-  return state.input_frontrear_config;
+	float rearMicScaleFac = sqrtf(powf(10.0, 0.1 * state.rearMicGain_dB));
+	switch (val) {
+		case EarpieceMixerState::MIC_FRONT:
+			frontRearMixer[LEFT].gain(FRONT, 1.0); frontRearMixer[LEFT].gain(REAR, 0.0);
+			frontRearMixer[RIGHT].gain(FRONT, 1.0); frontRearMixer[RIGHT].gain(REAR, 0.0);
+			state.input_frontrear_config = val;
+			break;
+		case EarpieceMixerState::MIC_REAR:
+			frontRearMixer[LEFT].gain(FRONT, 0.0); frontRearMixer[LEFT].gain(REAR, rearMicScaleFac);
+			frontRearMixer[RIGHT].gain(FRONT, 0.0); frontRearMixer[RIGHT].gain(REAR, rearMicScaleFac);
+			state.input_frontrear_config = val;
+		break;
+			case EarpieceMixerState::MIC_BOTH_INPHASE:
+			frontRearMixer[LEFT].gain(FRONT, 0.5); frontRearMixer[LEFT].gain(REAR, 0.5 * rearMicScaleFac);
+			frontRearMixer[RIGHT].gain(FRONT, 0.5); frontRearMixer[RIGHT].gain(REAR, 0.5 * rearMicScaleFac);
+			state.input_frontrear_config = val;
+		break;
+			case EarpieceMixerState::MIC_BOTH_INVERTED:
+			frontRearMixer[LEFT].gain(FRONT, 0.75); frontRearMixer[LEFT].gain(REAR, -0.75 * rearMicScaleFac);
+			frontRearMixer[RIGHT].gain(FRONT, 0.75); frontRearMixer[RIGHT].gain(REAR, -0.75 * rearMicScaleFac);
+			state.input_frontrear_config = val;
+		break;
+	}
+	return state.input_frontrear_config;
 }
 
 
@@ -287,18 +277,21 @@ float EarpieceMixer_F32::setInputGain_dB(float gain_dB) {
   return state.inputGain_dB;
 }
 
+/*
 //This only sets the *target* delay value.  It doesn't change the actual
 //delay value if the system is in the mode where the delays are actually being used
 int EarpieceMixer_F32::setTargetMicDelay_samps(const int front_rear, int samples) {
   //Serial.print("setTargetMicDelay_samps: setting to "); Serial.print(samples);
   int out_val = -1;
   if (samples >= 0) {
+	//use the new value
     if (front_rear == FRONT) {
       out_val = state.targetFrontDelay_samps = samples;
     } else {
       out_val = state.targetRearDelay_samps = samples;
     }
   } else {
+	//can't have negative values!  use the old value
     if (front_rear == FRONT) {
       out_val = state.targetFrontDelay_samps;
     } else {
@@ -313,29 +306,32 @@ int EarpieceMixer_F32::setTargetMicDelay_samps(const int front_rear, int samples
   }
   return out_val;
 }
+*/
 
 int EarpieceMixer_F32::setMicDelay_samps(const int front_rear,  int samples) {
-  //Serial.print("setMicDelay_samps: setting to "); Serial.print(samples);
-  int out_val = -1;
-  if (samples >= 0) {
-    float sampleRate_Hz = frontMicDelay[LEFT].getSampleRate_Hz(); //all the delay modules *should* have the same sample rate
-    float delay_msec = ((float)samples) / sampleRate_Hz * 1000.0f;
+	//Serial.print("setMicDelay_samps: setting to "); Serial.print(samples);
+	int out_val = -1;
+	if (samples >= 0) {
+		//use the new value
+		float sampleRate_Hz = frontMicDelay[LEFT].getSampleRate_Hz(); //all the delay modules *should* have the same sample rate
+		float delay_msec = ((float)samples) / sampleRate_Hz * 1000.0f;
+		if (front_rear == FRONT) {
+			frontMicDelay[LEFT].delay(0, delay_msec);  //put the new value into action!
+			frontMicDelay[RIGHT].delay(0, delay_msec); //put the new value into action!
+			out_val = state.currentFrontDelay_samps = samples;
+		} else {
+			rearMicDelay[LEFT].delay(0, delay_msec);  //put the new value into action!
+			rearMicDelay[RIGHT].delay(0, delay_msec); //put the new value into action!
+			out_val = state.currentRearDelay_samps = samples;
+		}
+	} else {
+		//can't use negative values.  Use previous value
+		if (front_rear == FRONT) {
+		  out_val = state.currentFrontDelay_samps;
+		} else {
+		  out_val = state.currentRearDelay_samps;
+		}
+	}
 
-    if (front_rear == FRONT) {
-      frontMicDelay[LEFT].delay(0, delay_msec);
-      frontMicDelay[RIGHT].delay(0, delay_msec);
-      out_val = state.currentRearDelay_samps = samples;
-    } else {
-      rearMicDelay[LEFT].delay(0, delay_msec);
-      rearMicDelay[RIGHT].delay(0, delay_msec);
-      out_val = state.currentFrontDelay_samps = samples;
-    }
-  } else {
-    if (front_rear == FRONT) {
-      out_val = state.currentFrontDelay_samps;
-    } else {
-      out_val = state.currentRearDelay_samps;
-    }
-  }
-  return out_val;
+	return out_val;
 }
