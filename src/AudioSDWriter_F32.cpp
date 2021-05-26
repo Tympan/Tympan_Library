@@ -54,7 +54,7 @@ int AudioSDWriter_F32::deleteAllRecordings(void) {
 		
 	} else {
 		//SD subsystem is in the wrong state to start recording
-		if (serial_ptr) serial_ptr->println("AudioSDWriter: clear: not in correct state to start.");
+		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: clear: not in correct state to start."));
 		return_val = -1;
 	}
 	
@@ -96,7 +96,7 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 					done = true;
 				}
 			} else {
-				if (serial_ptr) serial_ptr->println("AudioSDWriter: start: Cannot do more than 999 files.");
+				if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: Cannot do more than 999 files."));
 				done = true; //don't loop again
 			} //close if (recording_count)
 				
@@ -104,7 +104,7 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 
 	} else {
 		//SD subsystem is in the wrong state to start recording
-		if (serial_ptr) serial_ptr->println("AudioSDWriter: start: not in correct state to start.");
+		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
 		return_val = -1;
 	}
 	
@@ -134,13 +134,13 @@ int AudioSDWriter_F32::startRecording(char* fname) {
 	  
 	} else {
 	  if (serial_ptr) {
-		serial_ptr->print("AudioSDWriter: start: Failed to open ");
+		serial_ptr->print(F("AudioSDWriter: start: Failed to open "));
 		serial_ptr->println(fname);
 	  }
 	  return_val = -1;
 	}
   } else {
-	if (serial_ptr) serial_ptr->println("AudioSDWriter: start: not in correct state to start.");
+	if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
 	return_val = -1;
   }
   return return_val;
@@ -256,4 +256,80 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
   //now push it into the buffer via the base class BufferedSDWriter
   if (buffSDWriter) buffSDWriter->copyToWriteBuffer(ptr_audio,nsamps,numChan);
 }
+
+// ////////////////////////////////////////////// Implement the UI methods
+
+void AudioSDWriter_F32_UI::printHelp(void) {
+	String prefix = getPrefix();
+	Serial.println(F(" AudioSDWriter: Prefix = ") + prefix);
+	Serial.println(F("   r,s,d: SD record/stop/deleteAll")); 
+};
+
+
+bool AudioSDWriter_F32_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
+	bool return_val = false;
+	if (mode_char != ID_char) return return_val; //does the mode character match our ID character?  if so, it's us!
+
+	//we ignore the chan_char and only work with the data_char
+	return_val = true;  //assume that we will find this character
+	switch (data_char) {    
+		case 'r':
+			Serial.println("AudioSDWriter_F32_UI: begin SD recording");
+			startRecording(); 			//AudioSDWriter_F32 method
+			setSDRecordingButtons();	//update the GUI buttons
+			break;
+		case 's':
+			Serial.println("AudioSDWriter_F32_UI: stop SD recording");
+			stopRecording(); 			//AudioSDWriter_F32 method
+			setSDRecordingButtons();	//update the GUI buttons
+			break;
+		case 'd':
+			Serial.println("AudioSDWriter_F32_UI: deleting all recordings");
+		    stopRecording();			//AudioSDWriter_F32 method
+			deleteAllRecordings();		//AudioSDWriter_F32 method
+			setSDRecordingButtons();    //update the GUI buttons
+			break;
+		default:
+			return_val = false;  //we did not process this character
+	}
+	return return_val;		
+};
+
+void AudioSDWriter_F32_UI::setFullGUIState(bool activeButtonsOnly) {
+	setSDRecordingButtons(activeButtonsOnly);
+}
+void AudioSDWriter_F32_UI::setSDRecordingButtons(bool activeButtonsOnly) {
+	if (getState() == AudioSDWriter_F32::STATE::RECORDING) {
+		setButtonState("recordStart",true);
+	} else {
+		setButtonState("recordStart",false);
+	}
+	setButtonText("sdFname",getCurrentFilename());
+};
+
+TR_Card* AudioSDWriter_F32_UI::addCard_sdRecord(TR_Page *page_h) {
+	if (page_h == NULL) return NULL;
+	TR_Card *card_h = page_h->addCard(F("Record Audio to SD Card"));
+	if (card_h == NULL) return NULL;
+	String prefix = getPrefix();
+
+	card_h->addButton("Start", prefix+"r", "recordStart", 6);  //label, command, id, width
+	card_h->addButton("Stop",  prefix+"s", "",            6);  //label, command, id, width
+	card_h->addButton("",      "",         "sdFname",     12); //label, command, id, width  //display the filename
+	return card_h;
+}
+
+TR_Page* AudioSDWriter_F32_UI::addPage_sdRecord(TympanRemoteFormatter *gui) {
+  if (gui == NULL) return NULL;
+  TR_Page *page_h = gui->addPage("SD Audio Writer");
+  if (page_h == NULL) return NULL;
+  addCard_sdRecord(page_h);
+  return page_h;
+
+}
+
+
+
+
+
 

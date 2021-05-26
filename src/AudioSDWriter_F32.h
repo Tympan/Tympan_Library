@@ -17,6 +17,9 @@
 #include "AudioStream_F32.h"
 
 #include "SDWriter.h"
+#include "SerialManager_UI.h"
+#include "TympanRemoteFormatter.h"
+
 
 //variables to control printing of warnings and timings and whatnot
 #define PRINT_FULL_SD_TIMING 0    //set to 1 to print timing information of *every* write operation.  Great for logging to file.  Bad for real-time human reading.
@@ -263,6 +266,52 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       return 0;
     }
 };
+
+// Here's a class that wraps AudioSDWriter_F32 with some functions to interact
+// via a serial menu and via the Tympan_Remote App.
+class AudioSDWriter_F32_UI : public AudioSDWriter_F32, public SerialManager_UI {
+	//GUI: inputs:4, outputs:0 //this line used for automatic generation of GUI node
+	public:
+		//copy all of the constructors from AudioSDWriter_F32...just pass through to the underlying constructors...nothing new being done here
+		AudioSDWriter_F32_UI(void) : 
+			AudioSDWriter_F32(), SerialManager_UI() {};
+			
+		AudioSDWriter_F32_UI(const AudioSettings_F32 &settings) : 
+			AudioSDWriter_F32(settings), SerialManager_UI() {};
+			
+		AudioSDWriter_F32_UI(const AudioSettings_F32 &settings, Print* _serial_ptr) : 
+			AudioSDWriter_F32(settings, _serial_ptr), SerialManager_UI() {};
+			
+		AudioSDWriter_F32_UI(const AudioSettings_F32 &settings, Print* _serial_ptr, const int _writeSizeBytes) : 
+			AudioSDWriter_F32(settings, _serial_ptr, _writeSizeBytes), SerialManager_UI() {};
+			
+		AudioSDWriter_F32_UI(SdFs * _sd) : 
+			AudioSDWriter_F32(_sd), SerialManager_UI() {};
+			
+		AudioSDWriter_F32_UI(SdFs * _sd, const AudioSettings_F32 &settings) :
+			AudioSDWriter_F32( _sd, settings), SerialManager_UI() {};
+			
+		AudioSDWriter_F32_UI(SdFs * _sd, const AudioSettings_F32 &settings, Print* _serial_ptr) : 
+			AudioSDWriter_F32(_sd, settings, _serial_ptr), SerialManager_UI() {};
+			
+		AudioSDWriter_F32_UI(SdFs * _sd,const AudioSettings_F32 &settings, Print* _serial_ptr, const int _writeSizeBytes) :
+			AudioSDWriter_F32(settings, _serial_ptr, _writeSizeBytes), SerialManager_UI() {};
+			
+		 // ///////// here are the methods that you must implement from SerialManager_UI
+		virtual void printHelp(void);
+		//virtual bool processCharacter(char c); //no used here
+		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
+		virtual void setFullGUIState(bool activeButtonsOnly = false);  
+		// /////////////////////////////////	
+		
+		//create the button sets for the TympanRemote's GUI
+		virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + String("x"); }
+		virtual TR_Card *addCard_sdRecord(TR_Page *page_h);
+		virtual TR_Page *addPage_sdRecord(TympanRemoteFormatter *gui);
+		virtual void setSDRecordingButtons(bool activeButtonsOnly = false);
+};
+
+
 
 #endif
 
