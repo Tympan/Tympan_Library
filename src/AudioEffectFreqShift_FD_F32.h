@@ -1,6 +1,6 @@
 
 /*
- * AudioEffectFreqShiftFD_F32
+ * AudioEffectFreqShift_FD_F32
  * 
  * Created: Chip Audette, Aug 2019
  * Purpose: Shift the frequency content of the audio up or down.  Performed in the frequency domain
@@ -10,8 +10,8 @@
  * MIT License.  use at your own risk.
 */
 
-#ifndef _AudioEffectFreqShiftFD_F32_h
-#define _AudioEffectFreqShiftFD_F32_h
+#ifndef _AudioEffectFreqShift_FD_F32_h
+#define _AudioEffectFreqShift_FD_F32_h
 
 #include "AudioStream_F32.h"
 #include <arm_math.h>
@@ -19,24 +19,24 @@
 #include <Arduino.h>
 
 
-class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
+class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
 {
 //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
 //GUI: shortName:freq_shift
   public:
-    //constructors...a few different options.  The usual one should be: AudioEffectFreqShiftFD_F32(const AudioSettings_F32 &settings, const int _N_FFT)
-    AudioEffectFreqShiftFD_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
-    AudioEffectFreqShiftFD_F32(const AudioSettings_F32 &settings) :
+    //constructors...a few different options.  The usual one should be: AudioEffectFreqShift_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT)
+    AudioEffectFreqShift_FD_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
+    AudioEffectFreqShift_FD_F32(const AudioSettings_F32 &settings) :
       AudioStream_F32(1, inputQueueArray_f32) {
       sample_rate_Hz = settings.sample_rate_Hz;
     }
-    AudioEffectFreqShiftFD_F32(const AudioSettings_F32 &settings, const int _N_FFT) :
+    AudioEffectFreqShift_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT) :
       AudioStream_F32(1, inputQueueArray_f32) {
       setup(settings, _N_FFT);
     }
 
     //destructor...release all of the memory that has been allocated
-    ~AudioEffectFreqShiftFD_F32(void) {
+    ~AudioEffectFreqShift_FD_F32(void) {
       if (complex_2N_buffer != NULL) delete complex_2N_buffer;
     }
 
@@ -51,7 +51,7 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
 	  
 
       //decide windowing
-      //Serial.println("AudioEffectFreqShiftFD_F32: setting myFFT to use hanning...");
+      //Serial.println("AudioEffectFreqShift_FD_F32: setting myFFT to use hanning...");
       (myFFT.getFFTObject())->useHanningWindow(); //applied prior to FFT
       #if 1
         if (myIFFT.getNBuffBlocks() > 3) {
@@ -83,7 +83,7 @@ class AudioEffectFreqShiftFD_F32 : public AudioStream_F32
 	  
 	  #if 0
       //print info about setup
-      Serial.println("AudioEffectFreqShiftFD_F32: FFT parameters...");
+      Serial.println("AudioEffectFreqShift_FD_F32: FFT parameters...");
       Serial.print("    : N_FFT = "); Serial.println(N_FFT);
       Serial.print("    : audio_block_samples = "); Serial.println(settings.audio_block_samples);
       Serial.print("    : FFT N_BUFF_BLOCKS = "); Serial.println(myFFT.getNBuffBlocks());

@@ -1,8 +1,8 @@
 
-#include "AudioEffectFreqShiftFD_F32.h"
+#include "AudioEffectFreqShift_FD_F32.h"
 
 
-void AudioEffectFreqShiftFD_F32::update(void)
+void AudioEffectFreqShift_FD_F32::update(void)
 {
 	//get a pointer to the latest data
 	audio_block_f32_t *in_audio_block = AudioStream_F32::receiveReadOnly_f32();
