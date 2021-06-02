@@ -21,7 +21,7 @@ bool EarpieceMixer_F32_UI::processCharacterTriple(char mode_char, char chan_char
   char c = data_char;
   
   //switch yard
-  int new_val;
+  float new_val;
   return_val = true;
   switch (c) {    
     case 'w':
