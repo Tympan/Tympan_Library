@@ -30,7 +30,6 @@ AudioConnection_F32       patchCord11(gain1, 0, i2s_out, 0);  //connect the Left
 AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Right gain to the Right output
 
 //define class for handling the GUI on the app
-#include "TympanRemoteFormatter.h"
 TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
 
 //Create BLE
