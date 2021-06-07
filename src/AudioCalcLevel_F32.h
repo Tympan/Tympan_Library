@@ -15,10 +15,13 @@ class AudioCalcLevel_F32 : public AudioFilterTimeWeighting_F32
 		virtual void update(void);
 		virtual float getCurrentLevel(void) { return cur_value; } 
 		virtual float getCurrentLevel_dB(void) { return 10.0f*log10f(cur_value); } 
-		
+		virtual float getMaxLevel(void) { return max_value; }
+		virtual float getMaxLevel_dB(void) { return 10.0f*log10f(max_value); }
+		virtual void  resetMaxLevel(void) { max_value = cur_value; }
 		
 	protected:
 		float32_t cur_value = 0.0f;
+		float32_t max_value = 0.0f;
 
 };
 

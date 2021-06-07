@@ -27,6 +27,8 @@ void AudioCalcLevel_F32::update(void)
   //save last value
   cur_value = block->data[(block->length)-1]; //get the last value
   
+  //update max
+  for (int i=0; i < block->length; i++) { if (block->data[i] > max_value) max_value = block->data[i]; }
 	
   //transmit the data
   AudioStream_F32::transmit(block); // send the IIR output
