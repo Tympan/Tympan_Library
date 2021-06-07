@@ -1,7 +1,7 @@
 /*
 *   SoundLevelMeter
 *
-*   Created: Chip Audette, OpenAudio, June 2018
+*   Created: Chip Audette, OpenAudio, June 2018 (Updated June 2021 for BLE)
 *   Purpose: Compute the current sound level, dBA-Fast or whatever
 *            Uses exponential time weighting, not integrating.
 *
@@ -34,6 +34,10 @@ AudioConnection_F32       patchCord3(calcLevel1, 0, audioQueue1, 0); //to allow 
 AudioConnection_F32       patchCord4(i2s_in, 0, i2s_out, 0);      //echo the original signal
 AudioConnection_F32       patchCord5(calcLevel1, 0, i2s_out, 1);     //connect the Right gain to the Right output
 
+//Create BLE and serialManager
+BLE ble = BLE(&Serial1); //&Serial1 is the serial connected to the Bluetooth module
+SerialManager serialManager;
+
 //calibraiton information for the microphone being used
 //float32_t mic_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f ;  //PCB Mic, http://openaudio.blogspot.com/search/label/Microphone
 float32_t mic_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f + 9.2175;  //PCB Mic baseline with manually tested adjustment.   Baseline:  http://openaudio.blogspot.com/search/label/Microphone
@@ -44,13 +48,14 @@ float32_t max_audio_pow = 0.0f;     //initilize to zero (or some small number)
 
 //control display and serial interaction
 bool enable_printCPUandMemory = false;
-void enablePrintMemoryAndCPU(bool _enable) { enable_printCPUandMemory = _enable; }
+bool enablePrintMemoryAndCPU(bool _enable) { return enable_printCPUandMemory = _enable; }
 bool enable_printLoudnessLevels = true; 
-void enablePrintLoudnessLevels(bool _enable) { 
-  enable_printLoudnessLevels = _enable; 
+bool enablePrintLoudnessLevels(bool _enable) { 
   max_audio_pow = cur_audio_pow;  //reset the max loudness state, too
+  return enable_printLoudnessLevels = _enable; 
 };
-SerialManager serialManager;
+bool enable_printToBLE = false;
+bool enablePrintingToBLE(bool _enable = true) {return enable_printToBLE = _enable; };
 
 
 
@@ -63,7 +68,7 @@ void setup() {
   myTympan.println("SoundLevelMeter: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
-  AudioMemory_F32(20,audio_settings); 
+  AudioMemory_F32(50,audio_settings); 
 
   //Enable the Tympan to start the audio flowing!
   myTympan.enable(); // activate AIC
@@ -96,9 +101,9 @@ void setup() {
   //enable any of the other algorithm elements
   audioQueue1.begin();
 
-
-  // check the volume knob
-  //servicePotentiometer(millis(),0);  //the "0" is not relevant here.
+  //setup BLE
+  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
+  ble.setupBLE(myTympan);
 
   myTympan.println("Setup complete.");
   serialManager.printHelp();
@@ -108,21 +113,27 @@ void setup() {
 
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
-  //choose to sleep ("wait for interrupt") instead of spinning our wheels doing nothing but consuming power
-  //asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
 
   //service record queue
   serviceAudioQueue();
 
   //respond to Serial commands
   while (Serial.available()) serialManager.respondToByte((char)Serial.read());
-  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read());
+  
+  //respond to BLE
+  if (ble.available() > 0) {
+    String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
+    for (int i=0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]);
+  }
+
+  //service the BLE advertising state
+  ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
   
   //printing of sound level
   if (enable_printLoudnessLevels) printLoudnessLevels(millis(),250);  //print a value every 250 msec
 
   //check to see whether to print the CPU and Memory Usage
-  if (enable_printCPUandMemory) printCPUandMemory(millis(),3000); //print every 3000 msec
+  if (enable_printCPUandMemory) myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
 } //end loop();
 
@@ -157,37 +168,16 @@ void printLoudnessLevels(unsigned long curTime_millis, unsigned long updatePerio
     float32_t cal_factor_dB = -mic_cal_dBFS_at94dBSPL_at_0dB_gain + 94.0f - input_gain_dB;
     float32_t cur_SPL_dB = 10.0f*log10f(cur_audio_pow) + cal_factor_dB;
     float32_t max_SPL_dB = 10.0f*log10f(max_audio_pow) + cal_factor_dB;
-    Serial1.print("E "); //for plotting by bluetooth app
-    myTympan.print(cur_SPL_dB);
-    myTympan.print(", ");
-    myTympan.print(max_SPL_dB);
-    myTympan.println();
+    String msg = String(cur_SPL_dB,2) + ", " + String(max_SPL_dB,2);
+    
+    //print the text string to the Serial
+    myTympan.println(msg);
+
+    //if allowed, send it over BLE with the special prefix to allow it to be printed by the SerialPlotter
+    //https://github.com/Tympan/Docs/wiki/Making-a-GUI-in-the-TympanRemote-App
+    if (enable_printToBLE) ble.sendMessage(String("P ") + msg); //for the serial plotter
     
     max_audio_pow = 0.0;  //recent for next block
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }
-}
-
-
-//This routine prints the current and maximum CPU usage and the current usage of the AudioMemory that has been allocated
-void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  static unsigned long lastUpdate_millis = 0;
-
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    myTympan.print("printCPUandMemory: ");
-    myTympan.print("CPU Cur/Peak: ");
-    myTympan.print(audio_settings.processorUsage());
-    myTympan.print("%/");
-    myTympan.print(audio_settings.processorUsageMax());
-    myTympan.print("%,   ");
-    myTympan.print("Dyn MEM Float32 Cur/Peak: ");
-    myTympan.print(AudioMemoryUsage_F32());
-    myTympan.print("/");
-    myTympan.print(AudioMemoryUsageMax_F32());
-    myTympan.println();
-
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
 }

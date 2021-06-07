@@ -4,14 +4,26 @@
 
 #include <Tympan_Library.h>
 
+//externally defined objects
 extern Tympan myTympan;
+extern BLE ble;
+
+//functions in the main sketch that I want to call from here
+extern bool enablePrintMemoryAndCPU(bool);
+extern bool enablePrintLoudnessLevels(bool);
+extern bool enablePrintingToBLE(bool);
 
 //now, define the Serial Manager class
 class SerialManager {
   public:
-    SerialManager(void) {};
+    SerialManager(void) { myGUI = new TympanRemoteFormatter; };
     void respondToByte(char c);
     void printHelp(void);
+
+    //define the GUI for the App
+    TympanRemoteFormatter *myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
+    void createTympanRemoteLayout(void);
+    void printTympanRemoteLayout(void) { myTympan.println(myGUI->asString()); ble.sendMessage(myGUI->asString());}
 
   private:
 
@@ -22,14 +34,10 @@ void SerialManager::printHelp(void) {
   myTympan.println("SerialManager Help: Available Commands:");
   myTympan.println("   h: Print this help");
   myTympan.println("   c,C: Enable/Disable printing of CPU and Memory usage");
-  //myTympan.println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
+  myTympan.println("   ],}: Start/Stop sending level to TympanRemote App.");
   myTympan.println("   l,L: Enable/Disable printing of loudness level");
   myTympan.println();
 }
-
-//functions in the main sketch that I want to call from here
-extern void enablePrintMemoryAndCPU(bool);
-extern void enablePrintLoudnessLevels(bool);
 
 
 //switch yard to determine the desired action
@@ -46,19 +54,6 @@ void SerialManager::respondToByte(char c) {
       myTympan.println("Command Received: disable printing of memory and CPU usage.");
       enablePrintMemoryAndCPU(false);
       break;
-    //    case 'f':
-    //      //frequency sweep test
-    //      { //limit the scope of any variables that I create here
-    //        freqSweepTester_filterbank.setSignalAmplitude_dBFS(-30.f);
-    //        float start_freq_Hz = 125.0f, end_freq_Hz = 16000.f, step_octave = powf(2.0,1.0/3.0); //pow(2.0,1.0/3.0) is 3 steps per octave
-    //        freqSweepTester_filterbank.setStepPattern(start_freq_Hz, end_freq_Hz, step_octave);
-    //        freqSweepTester_filterbank.setTargetDurPerStep_sec(0.5);
-    //      }
-    //      myTympan.println("Command Received: starting test using frequency sweep.  Filterbank assessment...");
-    //      freqSweepTester_filterbank.begin();
-    //      while (!freqSweepTester_filterbank.available()) {delay(100);};
-    //      myTympan.println("Press 'h' for help...");
-    //      break;
     case 'l':
       myTympan.println("Command Received: enable printing of loudness levels.");
       enablePrintLoudnessLevels(true);
@@ -67,9 +62,30 @@ void SerialManager::respondToByte(char c) {
       myTympan.println("Command Received: disable printing of loudness levels.");
       enablePrintLoudnessLevels(false);
       break;
-
+    case ']':
+      myTympan.println("Command Received: enable printing of loudness levels.");
+      enablePrintingToBLE(true);
+      enablePrintLoudnessLevels(true);
+      break;
+    case '}':
+      myTympan.println("Command Received: disable printing of loudness levels.");
+      enablePrintingToBLE(false);
+      enablePrintLoudnessLevels(false);
+      break;
+    case 'J': case 'j':
+      createTympanRemoteLayout();
+      printTympanRemoteLayout();
+      break;      
   }
 };
 
+void SerialManager::createTympanRemoteLayout(void) { 
+  //if (myGUI) delete myGUI;
+  //myGUI = new TympanRemoteFormatter();
+  
+  //add some pre-defined pages to the GUI
+  myGUI->addPredefinedPage("serialPlotter");  
+  myGUI->addPredefinedPage("serialMonitor");
+}
 
 #endif
