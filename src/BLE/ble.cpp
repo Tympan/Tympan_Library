@@ -35,6 +35,23 @@ int BLE::begin(void)
 	return ret_val;
 }
 
+void BLE::setupBLE(Tympan &_tympan) {
+
+  _tympan.forceBTtoDataMode(false); //for BLE, it needs to be in command mode, not data mode
+  
+  int ret_val = begin();
+  if (ret_val != 1) {  //via BC127.h, success is a value of 1
+    Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");  Serial.println(ret_val);
+    Serial.println("    : -1 = TIMEOUT ERROR");
+    Serial.println("    :  0 = GENERIC MODULE ERROR");
+  }
+
+  //start the advertising for a connection (whcih will be maintained in serviceBLE())
+  if (isConnected() == false) advertise(true);  //not connected, ensure that we are advertising
+
+
+}
+
 size_t BLE::sendByte(char c)
 {
 	//Serial.print("BLE: sendBytle: "); Serial.println(c);
@@ -295,4 +312,20 @@ bool BLE::waitConnect(int time)
     }
 
     return false;
+}
+
+void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
+  static unsigned long lastUpdate_millis = 0;
+
+  //has enough time passed to update everything?
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+    if (isConnected() == false) {
+      if (isAdvertising() == false) {
+        Serial.println("BLE: updateAvertising: activating BLE advertising");
+        advertise(true);  //not connected, ensure that we are advertising
+      }
+    }
+    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
+  }	
 }
