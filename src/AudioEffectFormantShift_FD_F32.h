@@ -36,6 +36,7 @@ class AudioEffectFormantShift_FD_F32 : public AudioStream_F32
     }
 
     virtual void update(void);
+	bool enable(bool state = true) { enabled = state; return enabled;}	
 
   private:
     int enabled = 0;

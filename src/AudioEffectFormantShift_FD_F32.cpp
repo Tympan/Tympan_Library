@@ -12,11 +12,11 @@ int AudioEffectFormantShift_FD_F32::setup(const AudioSettings_F32 &settings, con
 	if (N_FFT < 1) return N_FFT;
 
 	//decide windowing
-	Serial.println("AudioEffectFormantShift_FD_F32: setting myFFT to use hanning...");
+	//Serial.println("AudioEffectFormantShift_FD_F32: setting myFFT to use hanning...");
 	(myFFT.getFFTObject())->useHanningWindow(); //applied prior to FFT
 	#if 1
 		if (myIFFT.getNBuffBlocks() > 3) {
-		  Serial.println("AudioEffectFormantShift_FD_F32: setting myIFFT to use hanning...");
+		  //Serial.println("AudioEffectFormantShift_FD_F32: setting myIFFT to use hanning...");
 		  (myIFFT.getIFFTObject())->useHanningWindow(); //window again after IFFT
 		}
 	#endif
