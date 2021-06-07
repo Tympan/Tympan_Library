@@ -57,8 +57,7 @@ void AudioEffectFreqShift_FD_F32::update(void)
 		}    
 	}
   
-	//here's the tricky bit!  If the phase shift is an odd number of bins, we must manually evolve the phase through time
-
+	//here's the tricky bit!  Phase shifting may be needed through time
 	switch (overlap_amount) {
 		case NONE:
 			//no phase change needed
@@ -113,11 +112,10 @@ void AudioEffectFreqShift_FD_F32::update(void)
 						overlap_block_counter = 0;
 						break;	
 				}
-			}						
-		}
-		  
+			}
+			break;			
 	}
-  
+		   
   
 	//zero out the new DC and new nyquist
 	//complex_2N_buffer[0] = 0.0;  complex_2N_buffer[1] = 0.0;
