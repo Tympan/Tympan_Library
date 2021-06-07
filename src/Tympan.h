@@ -272,6 +272,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 			//USB_Serial->begin(USB_speed);  //Not needed for Teensy?
 			delay(50);
 			beginBluetoothSerial(BT_speed);
+			setEchoAllPrintToBT(false); //by default, do NOT send print() to the BT serial (it used to be the opposite)
 		}
 		int USB_dtr() { return USB_Serial->dtr(); }
 
@@ -386,7 +387,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 		int BT_uint8_buff_ind = 0;
 		int BT_uint8_buff_end = 0;
 		uint8_t BT_uint8_buff[BT_uint8_buff_len];
-		bool echoAllPrintToBT = true;
+		bool echoAllPrintToBT = false;  //by default, do not echo print() to the BT serial
 
 		virtual size_t write_BC127_V7_command_mode(const uint8_t *buffer, size_t size);
 		virtual void read_BC127_V7_command_mode(void);
