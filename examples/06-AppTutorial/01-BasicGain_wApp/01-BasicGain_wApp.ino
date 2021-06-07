@@ -1,7 +1,7 @@
 /*
 *   BasicGain_wApp
 *
-*   Created: Chip Audette, June 2020
+*   Created: Chip Audette, June 2020 (updated June 2021 for BLE)
 *   Purpose: Process audio using Tympan by applying gain.
 *      Also, illustrate how to change Tympan setting via the TympanRemote App.
 *
@@ -33,6 +33,9 @@ AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Righ
 #include "TympanRemoteFormatter.h"
 TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
 
+//Create BLE
+BLE ble = BLE(&Serial1);
+
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 10.0f; //gain on the microphone
@@ -40,8 +43,7 @@ float digital_gain_dB = 0.0;      //this will be set by the app
 void setup() {
 
   //begin the serial comms (for debugging)
-  myTympan.beginBothSerial();  
-  delay(3000);
+  myTympan.beginBothSerial();delay(3000);
   myTympan.println("BasicGain_wApp: starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
@@ -59,6 +61,10 @@ void setup() {
   myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
 
+  //setup BLE
+  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
+  ble.setupBLE(myTympan);
+
   //Create the GUI description (but not yet transmitted to the App...that's after it connects)
   createTympanRemoteLayout();
 
@@ -71,7 +77,15 @@ void loop() {
   
   //look for in-coming serial messages (via USB or via Bluetooth)
   if (Serial.available()) respondToByte((char)Serial.read());   //USB Serial
-  if (Serial1.available()) respondToByte((char)Serial1.read()); //BT Serial
+
+  //respond to BLE
+  if (ble.available() > 0) {
+    String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
+    for (int i=0; i < msgLen; i++) respondToByte(msgFromBle[i]);
+  }
+
+  //service the BLE advertising state
+  ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
 
 } //end loop();
 
@@ -104,6 +118,8 @@ void respondToByte(char c) {
 // Please don't put commas or colons in your ID strings!
 void printTympanRemoteLayout(void) {
   myTympan.println(myGUI.asString());
+  ble.sendMessage(myGUI.asString());
+  setButtonText("gainIndicator", String(digital_gain_dB));
 }
 
 //define the GUI for the App
@@ -121,14 +137,14 @@ void createTympanRemoteLayout(void) {
           card_h->addButton("-","K","minusButton",4);  //displayed string, command, button ID, button width (out of 12)
 
           //Add an indicator that's a button with no command:  Label (value of the digital gain); Command (""); Internal ID ("gain indicator"); width (4).
-          card_h->addButton(String(digital_gain_dB),"","gainIndicator",4);  //displayed string (blank), command (blank), button ID, button width (out of 12)
+          card_h->addButton("","","gainIndicator",4);  //displayed string (blank for now), command (blank), button ID, button width (out of 12)
   
           //Add a "+" digital gain button with the Label("+"); Command("K"); Internal ID ("minusButton"); and width (4)
           card_h->addButton("+","k","plusButton",4);   //displayed string, command, button ID, button width (out of 12)
         
   //add some pre-defined pages to the GUI
   myGUI.addPredefinedPage("serialMonitor");
-  myGUI.addPredefinedPage("serialPlotter");
+  //myGUI.addPredefinedPage("serialPlotter");
 }
 
 
@@ -149,5 +165,7 @@ void printGainLevels(void) {
 }
 
 void setButtonText(String btnId, String text) {
-  myTympan.println("TEXT=BTN:" + btnId + ":"+text);
+  String str = "TEXT=BTN:" + btnId + ":"+text;
+  myTympan.println(str);
+  ble.sendMessage(str);
 }
