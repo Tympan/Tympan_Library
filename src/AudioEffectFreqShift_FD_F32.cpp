@@ -62,12 +62,13 @@ void AudioEffectFreqShift_FD_F32::update(void)
 		case NONE:
 			//no phase change needed
 			break;
+			
 		case HALF:
 			//we only need to adjust the phase if we're shifting by an odd number of bins
 			if ((abs(shift_bins) % 2) == 1) {
 				//Alternate between adding no phase shift and adding 180 deg phase shift.
 				//Adding 180 is the same as flipping the sign of both the real and imaginary components
-				overlap_block_counter++;
+				overlap_block_counter++; 
 				if (overlap_block_counter == 2){
 					overlap_block_counter = 0;
 					for (int i=0; i < N_2; i++) {
@@ -77,43 +78,51 @@ void AudioEffectFreqShift_FD_F32::update(void)
 				}
 			}
 			break;
+			
 		case THREE_QUARTERS:
 			//The cycle of phase shifting is every 4 blocks insead of every two blocks.
-			overlap_block_counter++; //will be 1 to 4
-			if (overlap_block_counter == 4) overlap_block_counter = 0;
-			if ((abs(shift_bins) % 2) == 1) { //THIS ISN'T RIGHT ?!?!?  Needs to be fancier, "% 4" instead of "% 2" ???
-				float foo;
-				switch (overlap_block_counter) {
-					case 0:
-						//no rotation
-						break;
-					case 1:
-						//90 deg rotation (swap real and imaginary and flip the sign when moving the real to imaginary)
-						for (int i=0; i < N_2; i++) {
-							foo = complex_2N_buffer[2*i+1];
-							complex_2N_buffer[2*i+1] = complex_2N_buffer[2*i];
-							complex_2N_buffer[2*i] = -foo;
-						}
-						break;
-					case 2:
-						//180 deg...flip the sign of both real and imaginary
-						for (int i=0; i < N_2; i++) {
-							complex_2N_buffer[2*i] = -complex_2N_buffer[2*i];
-							complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i+1];
-						}
-						break;
-					case 3:
-						//270 deg rotation (swap the real and imaginary and flip the sign when moving the imaginary to the real)
-						for (int i=0; i < N_2; i++) {
-							foo = complex_2N_buffer[2*i+1];
-							complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i];
-							complex_2N_buffer[2*i] = foo;
-						}
-						overlap_block_counter = 0;
-						break;	
-				}
+			//Phase_shift = Phase_orig - Phase_new
+			//  phase_orig = (360/4) * F_orig * block_counter;  //F_orig = 0 -> Nfft/2+1
+			//  phase_new  = (360/4) * F_new * block_counter;
+			//  So, phase_shift = (360/4) * (F_new - F_orig) * block_counter;  //wrap this zero to 360 
+			//  Or, rewritten: phase_shift_deg = (360/4) * -shift_bins * block_counter //wrap this zero to 360
+			//  Or, rewritten again: phase_shift_quarters = wrap(-shift_bins * block_counter, 4); //wrapped to always be [0, 1, 2, 3]
+			overlap_block_counter++; if (overlap_block_counter >= 4) overlap_block_counter = 0; //will be [0, 1, 2, 3]
+			int phase_shift_quarters = shift_bins * overlap_block_counter;
+			while (phase_shift_quarters < 0) phase_shift_quarters += 4;  //wrap to get to zero or above
+			while (phase_shift_quarters >= 4) phase_shift_quarters -= 4; //wrap get to less than 4
+			
+			float foo;
+			switch (phase_shift_quarters) {
+				case 0:
+					//no rotation
+					break;
+				case 1:
+					//90 deg rotation (swap real and imaginary and flip the sign when moving the real to imaginary)
+					for (int i=0; i < N_2; i++) {
+						foo = complex_2N_buffer[2*i+1];
+						complex_2N_buffer[2*i+1] = complex_2N_buffer[2*i];
+						complex_2N_buffer[2*i] = -foo;
+					}
+					break;
+				case 2:
+					//180 deg...flip the sign of both real and imaginary
+					for (int i=0; i < N_2; i++) {
+						complex_2N_buffer[2*i] = -complex_2N_buffer[2*i];
+						complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i+1];
+					}
+					break;
+				case 3:
+					//270 deg rotation (swap the real and imaginary and flip the sign when moving the imaginary to the real)
+					for (int i=0; i < N_2; i++) {
+						foo = complex_2N_buffer[2*i+1];
+						complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i];
+						complex_2N_buffer[2*i] = foo;
+					}
+					break;	
 			}
-			break;			
+			break;
+			
 	}
 		   
   
