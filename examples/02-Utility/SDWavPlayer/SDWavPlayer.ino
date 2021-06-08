@@ -12,7 +12,7 @@
 #include "AudioSDPlayer_F32.h"
 
 //set the sample rate and block size
-const float sample_rate_Hz = (int)(44100);  //this value puts 37000Hz right at a FFT bin (or other frequencies in the table in AudioOutputI2S_F32)
+const float sample_rate_Hz = (int)(44100);  //choose sample rate ONLY from options in the table in AudioOutputI2S_F32
 const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
