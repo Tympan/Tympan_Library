@@ -5,18 +5,20 @@ Tympan Library
 
 **Purpose**: This library allows you to program your own audio processing algorithms for the Tympan!  It owes a big debt to the [Teensy Audio Library](http://www.pjrc.com/teensy/td_libs_Audio.html) and all of its contributors.
 
-**Note**: These instructions were based on the *Arduino IDE 1.8.2* and *Teensyduino 1.36*. If you have different versions of either of these or have downloaded different versions, the program may or may not function as expected. You may revert or upgrade to the stated versions or check for solutions on the [Tympan Forum](https://forum.tympan.org/).
+**Note**: These instructions were based on the *Arduino IDE 1.8.13* and *Teensyduino 1.53*. If you have different versions of either of these or have downloaded different versions, the program may or may not function as expected. You may revert or upgrade to the stated versions or check for solutions on the [Tympan Forum](https://forum.tympan.org/).
 
 Requirements
 ------------
 
-**Hardware**: This library is intended to be used to program a Teensy 3.6 that is connected to a Tympan Audio Board (the Tympan in the nice black case).  To fully utilize the Teensy 3.6, you will also need an external microphone, a headset or earbuds and a micro USB cable. Although the Tympan Audio Board also has an On-Board Microphone, the default programming for this device references an external microphone. If you have been provided with the 2017-04-27 Typman Getting Started.pptx, you will find it helpful to review that first for additional information related to the physical hardware setup. 
+**Hardware**: This "master" branch of this library is intended to be used with Tympan RevC or Tympan RevD.  The "develop" branch of this library expands support to include Tympan RevE.  We expect to merge the RevE support into the master branch in late June 2021.  All versions of the Tympan are, at their heart, compatible with the Teensy brand of microcontrollers.  Hence, many of the instructions below relate to Teensy.  For reference, Tympan RevC and RevD are Teensy 3.6 whereas the Tympan RevE is Teensy 4.1.
 
 **Arduino IDE (Windows/Linux)**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the actual Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
 
-**Teensyduino Add-On (Windows/Linux)**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program the Teensy using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to just a few (like Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash).  It's your choice.
+**Teensyduino Add-On (Windows/Linux, MASTER branch)**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program Teensy devices (including Tympan) using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to just a few (like Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash).  It's your choice.  
 
-**Teensyduino (Mac)**: Recent versions of OS X do not support the Teensyduino Add-On installer, so there is a full [Teensyduino IDE](https://www.pjrc.com/teensy/td_download.html) available from the Teensy project which just needs to be downloaded and extracted from its ZIP file.
+**Teensyduino (Mac, MASTER brnach)**: Recent versions of OS X do not support the Teensyduino Add-On installer, so there is a full [Teensyduino IDE](https://www.pjrc.com/teensy/td_download.html) available from the Teensy project which just needs to be downloaded and extracted from its ZIP file.
+
+**Teensyduino for DEVELOP branch**:  As of June 2021, the "develop" branch of this library requires a beta release of Teensyduino v1.54.  The beta can be downloaded from the [Teensy forum](https://forum.pjrc.com/forums/6-Announcements).  Most development up to June of 2021 has occured using 1.54 Beta 5, though any later Beta ought to work.
 
 Installing the Tympan Library
 ------------
@@ -29,7 +31,7 @@ Installing the Tympan Library
 Connect the Tympan Audio Board
 ------------------
 
-Open or restart the Arduino IDE. Before you can compile programs, you will need to tell the Arduino IDE that you want to program for Teensy. Under the "Tools" menu, choose "Board" and then "Teensy 3.6".  Also, under the "Tools" menu, choose "USB Type" and select "Serial + MIDI + Audio". 
+Open or restart the Arduino IDE. Before you can compile programs, you will need to tell the Arduino IDE that you want to program for Teensy. Under the "Tools" menu, choose "Board" and then "Teensy 3.6" (for Tympan RevC or RevD).  Also, under the "Tools" menu, choose "USB Type" and select "Serial + MIDI + Audio". 
 
 If you haven't already, plug in the Tympan Audio Board to your computer using the micro USB cable. You will see orange lights. Power the unit ON using the white switch on the side and you will see the blue blinking light which indicates power. If you already had the Tympan Audio Board plugged in, turn the power off and then on again to power cycle prior to proceeding. Make sure you see the message that the device drivers are being installed.
 
