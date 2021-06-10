@@ -3,6 +3,8 @@
 *
 *   Created: Chip Audette, OpenAudio, Mar 2018
 *   Updated: Chip Audette, Feb 2019 for Tympan RevD
+*   Updated: Chip Audette, Jan-Jun 2021 for Tympan RevE
+*   
 *   Purpose: Change the name of the Bluetooth module on the Tympan to make it 
 *       easier for us fellow humans to recognize when connecting via PC, phone, 
 *       or other device.
@@ -22,26 +24,32 @@
 *       5) Compile and Upload this sketch
 *       6) Once the code uploads to the Tympan, watch the text on the Serial Monitor.
 *
-*   Works with Tympan Rev C or Tympan Rev D
+*   Works with Tympan Rev C, Rev D, or RevE
 *       * Rev C uses RN42:  https://cdn.sparkfun.com/datasheets/Wireless/Bluetooth/bluetooth_cr_UG-v1.0r.pdf
-*       * Rev D uses BC127: https://learn.sparkfun.com/tutorials/understanding-the-bc127-bluetooth-module/bc127-basics
+*       * Rev D and Rev E use BC127: https://learn.sparkfun.com/tutorials/understanding-the-bc127-bluetooth-module/bc127-basics
 *
 *   MIT License.  use at your own risk.
 */
 
 #include <Tympan_Library.h>
 
-#if 1
-  //Use this if you have a Tympan RevD or RevE
+//Use this if you have a Tympan RevE
+Tympan     myTympan(TympanRev::E);   //set to D ro E
+String     new_BT_name = "TympanE";   //change this to whatever you'd like
+String     new_BLE_name = "TYM";      //3 chars here are added to last 4 BT MAC chars
+
+/*
+  //Use this if you have a Tympan RevD 
   Tympan     myTympan(TympanRev::D); 	//set to D ro E
   String     new_BT_name = "TympanD";   //change this to whatever you'd like
-  String     new_BLE_name = "Tym";      //3 chars here are added to last 4 BT MAC chars
-#else
+  String     new_BLE_name = "TYM";      //3 chars here are added to last 4 BT MAC chars
+*/
+/*
   //Use this if you have a Tympan RevC
   Tympan     myTympan(TympanRev::C);     //set to C
   String     new_BT_name = "TympanC";    //change this to whatever you'd like
-  String     new_BLE_name = "Tym";       //3 chars here are added to last 4 BT MAC chars
-#endif
+  String     new_BLE_name = "TYM";       //3 chars here are added to last 4 BT MAC chars
+*/
 
 usb_serial_class *USB_Serial;
 HardwareSerial *BT_Serial;

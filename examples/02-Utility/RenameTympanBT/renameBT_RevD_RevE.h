@@ -3,6 +3,8 @@
 //
 //Currently assumes v5.x firmware only!   Not v6 nor v7.
 
+//For the Tympan sketches to work with the TympanRemote App via BLE, this code must leave the module in its COMMAND mode, not DATA mode
+
 void renameBT_RevD_RevE(void) {
   
   // go into command mode
@@ -55,14 +57,16 @@ void renameBT_RevD_RevE(void) {
   BT_Serial->print("GET NAME_SHORT"); BT_Serial->print('\r'); delay(500);  echoIncomingBTSerial();
   USB_Serial->println("*** BLE Name setting complete.  Did it return the desired name?");
   
-  // set the GP IO pins so that the data mode / command mode can be set by hardware
+  // set the GP IO pins so that the data mode / command mode can be set by hardware...I don't know if this actually works
   USB_Serial->println("*** Setting GPIOCONTROL mode to OFF, which is what we need...");
   BT_Serial->print("SET GPIOCONTROL=OFF");BT_Serial->print('\r'); delay(500);echoIncomingBTSerial();
   BT_Serial->print("WRITE"); BT_Serial->print('\r'); delay(500); echoIncomingBTSerial();
-  
-  // go into data mode (Tympan's normal way of operating)
-  USB_Serial->println("*** Changing into transparanet data mode...");
-  BT_Serial->print("ENTER_DATA");BT_Serial->print('\r'); delay(500); echoIncomingBTSerial();
-  myTympan.forceBTtoDataMode(true); //forcing (via hardware pin) the BT device to be in data mode
+
+  if (0) {
+    // go into data mode (Tympan's old pre-BLE way of operating)
+    USB_Serial->println("*** Changing into transparanet data mode...");
+    BT_Serial->print("ENTER_DATA");BT_Serial->print('\r'); delay(500); echoIncomingBTSerial();
+    myTympan.forceBTtoDataMode(true); //forcing (via hardware pin) the BT device to be in data mode
+  }
   USB_Serial->println("*** BT Setup complete.");
 }
