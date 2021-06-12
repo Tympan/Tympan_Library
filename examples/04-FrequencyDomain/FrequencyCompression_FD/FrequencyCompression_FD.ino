@@ -57,8 +57,9 @@
  */
 
 #include <Tympan_Library.h>
-#include "SerialManager.h"
 #include "AudioEffectFreqComp_FD_F32.h"
+#include "SerialManager.h"
+#include "State.h"
 
 //set the sample rate and block size
 //const float sample_rate_Hz = 24000.f; ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)

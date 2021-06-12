@@ -23,71 +23,24 @@
 #ifndef _AudioEffectFreqComp_FD_F32_h
 #define _AudioEffectFreqComp_FD_F32_h
 
-#include "AudioStream_F32.h"
-#include <arm_math.h>
-#include "FFT_Overlapped_F32.h"
+#include <AudioFreqDomainBase_FD_F32.h> //from Tympan_Library: inherit all the good stuff from this!
+#include <arm_math.h>  //fast math library for our processor
 
 
-class AudioEffectFreqComp_FD_F32 : public AudioStream_F32
+//Create an audio processing class to do the compression in the frequency domain.
+// Let's inherit from  the Tympan_Library class "AudioFreqDomainBase_FD_F32" to do all of the 
+// audio buffering and FFT/IFFT operations.  That allows us to just focus on manipulating the 
+// FFT bins and not all of the detailed, tricky operations of going into and out of the frequency
+// domain.
+class AudioEffectFreqComp_FD_F32 : public AudioFreqDomainBase_FD_F32
 {
   public:
-    //constructors...a few different options.  The usual one should be: AudioEffectFreqComp_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT)
-    AudioEffectFreqComp_FD_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
-    AudioEffectFreqComp_FD_F32(const AudioSettings_F32 &settings) :
-      AudioStream_F32(1, inputQueueArray_f32) {
-      sample_rate_Hz = settings.sample_rate_Hz;
-    }
-    AudioEffectFreqComp_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT) :
-      AudioStream_F32(1, inputQueueArray_f32) {
-      setup(settings, _N_FFT);
-    }
-
-    //destructor...release all of the memory that has been allocated
-    ~AudioEffectFreqComp_FD_F32(void) {
-      if (complex_2N_buffer != NULL) delete complex_2N_buffer;
-    }
-
-    int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
-      sample_rate_Hz = settings.sample_rate_Hz;
-      int N_FFT;
-
-      //setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
-      N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-      if (N_FFT < 1) return N_FFT;
-      N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-      if (N_FFT < 1) return N_FFT;
-
-      //decide windowing
-      //Serial.println("AudioEffectFormantShiftFD_F32: setting myFFT to use hanning...");
-      (myFFT.getFFTObject())->useHanningWindow(); //applied prior to FFT
-      #if 1
-        if (myIFFT.getNBuffBlocks() > 3) {
-          //Serial.println("AudioEffectFormantShiftFD_F32: setting myIFFT to use hanning...");
-          (myIFFT.getIFFTObject())->useHanningWindow(); //window again after IFFT
-        }
-      #endif
-
-      #if 0
-        //print info about setup
-        Serial.println("AudioEffectFreqComp_FD_F32: FFT parameters...");
-        Serial.print("    : N_FFT = "); Serial.println(N_FFT);
-        Serial.print("    : audio_block_samples = "); Serial.println(settings.audio_block_samples);
-        Serial.print("    : FFT N_BUFF_BLOCKS = "); Serial.println(myFFT.getNBuffBlocks());
-        Serial.print("    : IFFT N_BUFF_BLOCKS = "); Serial.println(myIFFT.getNBuffBlocks());
-        Serial.print("    : FFT use window = "); Serial.println(myFFT.getFFTObject()->get_flagUseWindow());
-        Serial.print("    : IFFT use window = "); Serial.println((myIFFT.getIFFTObject())->get_flagUseWindow());
-      #endif
-
-      //allocate memory to hold frequency domain data
-      complex_2N_buffer = new float32_t[2 * N_FFT];
-
-      //we're done.  return!
-      enabled = 1;
-      return N_FFT;
-    }
-
+    // constructor
+    AudioEffectFreqComp_FD_F32(const AudioSettings_F32 &settings) : AudioFreqDomainBase_FD_F32(settings) {};
+    
+    // get/set methods specific to this particular frequency-domain algorithm
     float setScaleFactor(float scale_fac) {
-      if (scale_fac < 0.00001) scale_fac = 0.00001;
+      if (scale_fac < 0.00001) scale_fac = 0.00001; //limit the minimum scale factor
       return shift_scale_fac = scale_fac;
     }
     float getScaleFactor(void) {  return shift_scale_fac; }
@@ -131,19 +84,18 @@ class AudioEffectFreqComp_FD_F32 : public AudioStream_F32
     bool setShiftOnlyTheMagnitude(bool _val) { return shiftOnlyTheMagnitude = _val; }; //if true, it's a vocoder.  Otherwise, it's a frequency shifter.
     bool getShiftOnlyTheMagnitude(void) { return shiftOnlyTheMagnitude; }; //if true, it's a vocoder.  Otherwise, it's a frequency shifter.
 
-    virtual void update(void);
-    //virtual void processAudioFD(float *audio, int N_FFT);
+    //this is the method from AudioFreqDomainBase that we are overriding where we will
+    //put our own code for manipulating the frequency data.  This is called by update()
+    //from the AudioFreqDomainBase_FD_F32.  The update() method is itself called by the
+    //Tympan (Teensy) audio system, as with every other Audio processing class.
+    virtual void processAudioFD(float32_t *complex_2N_buffer, const int NFFT); 
+
+    //here are additional methods where we are going to put some details of the processing
     virtual void processAudioFD_NL_vocode(float *audio, int N_FFT);
     //virtual void processAudioFD_pitchShift(float *audio, int N_FFT);
 
   private:
-    int enabled = 0;
-    float32_t *complex_2N_buffer;
-    audio_block_f32_t *inputQueueArray_f32[1];
-    FFT_Overlapped_F32 myFFT;
-    IFFT_Overlapped_F32 myIFFT;
-    float sample_rate_Hz = AUDIO_SAMPLE_RATE;
-
+    //create some data members specific to our processing
     float shift_scale_fac = 1.0; //how much to shift formants (frequency multiplier).  1.0 is no shift
     float start_freq_Hz = 0.0f; //what (original) frequency to start the shifting?. 
     float shift_Hz = 0.0f;  //set to zero to shift all of the audio up or down
@@ -151,46 +103,17 @@ class AudioEffectFreqComp_FD_F32 : public AudioStream_F32
 };
 
 
-void AudioEffectFreqComp_FD_F32::update(void)
+void AudioEffectFreqComp_FD_F32::processAudioFD(float32_t *complex_2N_buffer, const int NFFT)
 {
-  //get a pointer to the latest data
-  audio_block_f32_t *in_audio_block = AudioStream_F32::receiveReadOnly_f32();
-  if (!in_audio_block) return;
-
-  //simply return the audio if this class hasn't been enabled
-  if (!enabled) {
-    AudioStream_F32::transmit(in_audio_block);
-    AudioStream_F32::release(in_audio_block);
-    return;
-  }
-
-  //convert to frequency domain
-  myFFT.execute(in_audio_block, complex_2N_buffer);
-  AudioStream_F32::release(in_audio_block);  //We just passed ownership to myFFT, so release it here.
-
-  // ////////////// Do your processing here!!!
 
   //if (shiftOnlyTheMagnitude) {
-    processAudioFD_NL_vocode(complex_2N_buffer, myFFT.getNFFT()); 
+    processAudioFD_NL_vocode(complex_2N_buffer, NFFT);
   //} else {
-  //  processAudioFD_pitchShift(complex_2N_buffer, myFFT.getNFFT()); 
+  //  processAudioFD_pitchShift(complex_2N_buffer, NFFT);
   //}
-  
+
+}
  
-  //rebuild the negative frequency space
-  myFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); //set the negative frequency space based on the positive
-  
-  // ///////////// End do your processing here
-
-  //call the IFFT
-  audio_block_f32_t *out_audio_block = myIFFT.execute(complex_2N_buffer); //out_block is pre-allocated in here.
-
-
-  //send the returned audio block.  Don't issue the release command here because myIFFT will re-use it
-  AudioStream_F32::transmit(out_audio_block); //don't release this buffer because myIFFT re-uses it within its own code
-  return;
-};
-
 
 //shift the audio by vocoding, which is the shifting of the FFT amplitudes but leaving the FFT phases in place
 void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_buffer, int fftSize) { //define some variables
