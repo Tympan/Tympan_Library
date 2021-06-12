@@ -1,8 +1,9 @@
-// FrequencyDomainDemo1
+// LowpassFilter_FD
 //
-// Demonstrate audio procesing in the frequency domain.
+// Demonstrate audio procesing in the frequency domain through the use of a very simple
+// lowpass filter.
 //
-// Created: Chip Audette  Sept-Oct 2016
+// Created: Chip Audette, Initial 2017
 //
 // Approach:
 //    * Take samples in the time domain
@@ -10,8 +11,6 @@
 //    * Manipulate the frequency bins as desired (LP filter?  BP filter?  Formant shift?)
 //    * Take IFFT to convert back to time domain
 //    * Send samples back to the audio interface
-//
-// Assumes the use of the Audio library from PJRC
 //
 // This example code is in the public domain (MIT License)
 
@@ -24,12 +23,11 @@ const int audio_block_samples = 32;     //for freq domain processing choose a po
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan audioHardware(TympanRev::D); //TympanRev::D or TympanRev::C
-AudioInputI2S_F32         i2s_in(audio_settings);           //Digital audio *from* the Tympan AIC.
-AudioSynthWaveformSine_F32  sinewave(audio_settings);
-AudioEffectLowpassFD_F32  audioEffectLowpassFD(audio_settings);  //create the frequency-domain processing block
-AudioOutputI2S_F32        i2s_out(audio_settings);          //Digital audio *to* the Tympan AIC.
-//AudioOutputUSB_F32        usb_out(audio_settings);
+Tympan                       myTympan(TympanRev::D);     //TympanRev::C or TympanRev::C or TympanRev::E
+AudioInputI2S_F32            i2s_in(audio_settings);           //Digital audio *from* the Tympan AIC.
+AudioSynthWaveformSine_F32   sinewave(audio_settings);
+AudioEffectLowpassFD_F32     audioEffectLowpassFD(audio_settings);  //create the frequency-domain processing block
+AudioOutputI2S_F32           i2s_out(audio_settings);          //Digital audio *to* the Tympan AIC.
 
 //Make all of the audio connections
 #if 1
@@ -39,49 +37,41 @@ AudioOutputI2S_F32        i2s_out(audio_settings);          //Digital audio *to*
 #endif
 AudioConnection_F32       patchCord12(audioEffectLowpassFD, 0, i2s_out, 0);  //connect the input to the local Freq Domain processor
 AudioConnection_F32       patchCord13(audioEffectLowpassFD, 0, i2s_out, 1);  //connect the Right gain to the Right output
-//AudioConnection_F32       patchCord14(i2s_in, 0, usb_out, 0);  //connect the input to the USB Audio Output
-//AudioConnection_F32       patchCord14(sinewave, 0, usb_out, 0);  //connect the sinewave to the USB Audio Output
-//AudioConnection_F32       patchCord15(audioEffectLowpassFD, 0, usb_out, 1);  //connect processed audio to the USB Audio Output
-
-#define POT_PIN A20  //potentiometer is tied to this pin
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 15.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
-int is_windowing_active = 0;
 void setup() {
- //begin the serial comms (for debugging)
-  Serial.begin(115200);  delay(500);
-  Serial.println("FrequencyDomainDemo2: starting setup()...");
+  //begin the serial comms (for debugging)
+  myTympan.beginBothSerial();delay(3000);
+  Serial.println("LowpassFilter_FD: starting setup()...");
   Serial.print("    : sample rate (Hz) = ");  Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("    : block size (samples) = ");  Serial.println(audio_settings.audio_block_samples);
 
-  // Audio connections require memory to work.  For more
-  // detailed information, see the MemoryAndCpuUsage example
-  AudioMemory(10); AudioMemory_F32(20, audio_settings);
+  // Allocate working memory for audio
+  AudioMemory_F32(20, audio_settings);
 
   // Configure the frequency-domain algorithm
   int N_FFT = 128;
   audioEffectLowpassFD.setup(audio_settings,N_FFT); //do after AudioMemory_F32();
 
  //Enable the Tympan to start the audio flowing!
-  audioHardware.enable(); // activate AIC
-  Serial.println("Tympan enabled.");
+  myTympan.enable(); // activate AIC
 
   //Choose the desired input
-  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
-  // audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
-  //  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on board microphones
+  // myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  // myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //Set the desired volume levels
-  audioHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
-  audioHardware.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
+  myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
 
+  //define sine wave properites (if used for debugging)
   sinewave.frequency(1000.0f);
   sinewave.amplitude(0.025f);
 
   // configure the blue potentiometer
-  pinMode(POT_PIN, INPUT); delay(50);  //set the potentiometer's input pin as an INPUT
   servicePotentiometer(millis(),0);  //update based on the knob setting the "0" is not relevant here.
 
   Serial.println("Setup complete.");
@@ -114,7 +104,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(analogRead(POT_PIN)) / 1024.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/15.0) * (float)((int)(15.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //send the potentiometer value to your algorithm as a control parameter
@@ -126,7 +116,7 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
         const float min_val = 0, max_val = 40.0; //set desired range
         float new_value = min_val + (max_val - min_val)*val;
         input_gain_dB = new_value;
-        audioHardware.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
+        myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
         Serial.print("servicePotentiometer: Input Gain (dB) = "); Serial.println(new_value); //print text to Serial port for debugging
       #else
         //use the potentiometer to set the freq-domain low-pass filter
