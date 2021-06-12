@@ -21,7 +21,7 @@ public:
 	bool isAdvertising(bool printResponse = false);
     bool isConnected(bool printResponse = false);
     bool waitConnect(int time = -1);
-	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 3000);
+	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000);
 };
 
 #endif
