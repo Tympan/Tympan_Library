@@ -38,7 +38,7 @@ class SerialManager : public SerialManagerBase {
     void setButtonText(String s1, String s2);
     
     int N_CHAN;
-    float channelGainIncrement_dB = 2.5f; 
+    float gainIncrement_dB = 2.5f; 
     float freq_knee_increment_Hz = 100.0;
     float freq_shift_increment_Hz = 100.0;
     float freq_cr_increment = powf(2.0,1.0/6.0);
@@ -58,7 +58,7 @@ void SerialManager::printHelp(void) {
   Serial.println("   p: Switch to built-in PCB microphones");
   Serial.println("   m: switch to external mic via mic jack");
   Serial.println("   l: switch to line-in via mic jack");
-  Serial.print(  "   k/K: Increase the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.print(  "   k/K: Incr/Decrease digital gain (change by "); Serial.print(gainIncrement_dB); Serial.println(" dB");
   Serial.print(  "   t/T: Raise/Lower freq knee (change by "); Serial.print(freq_knee_increment_Hz); Serial.println(" Hz)");
   Serial.print(  "   r/R: Raise/Lower freq compression (change by "); Serial.print(freq_cr_increment); Serial.println("x)");
   Serial.print(  "   f/F: Raise/Lower freq shifting (change by "); Serial.print(freq_shift_increment_Hz); Serial.println(" Hz)");
@@ -76,10 +76,10 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
     case 'g': case 'G':
       printGainSettings(); break;
     case 'k':
-      incrementDigitalGain(channelGainIncrement_dB); break;
+      incrementDigitalGain(gainIncrement_dB); break;
       setGainButtons();
     case 'K':   //which is "shift k"
-      incrementDigitalGain(-channelGainIncrement_dB);  break;
+      incrementDigitalGain(-gainIncrement_dB);  break;
       setGainButtons();
     case 'p':
       switchToPCBMics(); break;
