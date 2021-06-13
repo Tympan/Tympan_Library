@@ -129,8 +129,7 @@ void setup() {
   AudioMemory_F32(40, audio_settings);
 
   // Configure the FFT parameters algorithm
-  int overlap_factor = FFT_overlap_factor;  //set to 2, 4 or 8...which yields 50%, 75%, or 87.5% overlap (8x)
-  int N_FFT = audio_block_samples * overlap_factor;
+  int N_FFT = audio_block_samples * FFT_overlap_factor;
   Serial.print("    : N_FFT = "); Serial.println(N_FFT);
   freqShift_L.setup(audio_settings, N_FFT); //do after AudioMemory_F32();
   freqShift_R.setup(audio_settings, N_FFT); //do after AudioMemory_F32();
@@ -244,46 +243,28 @@ void printGainSettings(void) {
   myTympan.print("  Output Gain = "); myTympan.println(myState.output_gain_dB);
 }
 
+// //set various gain settings
+float setInputGain_dB(float gain_dB) { return myState.input_gain_dB = myTympan.setInputGain_dB(gain_dB);}
+float setOutputGain_dB(float gain_dB) { return myState.output_gain_dB = myTympan.volume_dB(gain_dB); }
+void incrementDigitalGain(float increment_dB) { setDigitalGain_dB(myState.digital_gain_dB + increment_dB); }
+void setDigitalGain_dB(float gain_dB) { myState.digital_gain_dB = gain_L.setGain_dB(gain_R.setGain_dB(gain_dB)); }
 
-float setInputGain_dB(float gain_dB) {
-  return myState.input_gain_dB = myTympan.setInputGain_dB(gain_dB);
-}
-
-float setOutputGain_dB(float gain_dB) {
-  return myState.output_gain_dB = myTympan.volume_dB(gain_dB);
-}
-
-void incrementDigitalGain(float increment_dB) { //"extern" to make it available to other files, such as SerialManager.h
-  setDigitalGain_dB(myState.digital_gain_dB + increment_dB);
-}
-
-void setDigitalGain_dB(float gain_dB) {
-  myState.digital_gain_dB = gain_L.setGain_dB(gain_R.setGain_dB(gain_dB));
-  printGainSettings();
-}
-
+// //set various settings for the frequency compression
 float incrementFreqKnee(float incr_factor) {
   float cur_val = freqShift_L.getStartFreq_Hz();
   return setFreqKnee_Hz(cur_val + incr_factor);
 }
-float setFreqKnee_Hz(float new_val) {
-  return myState.freq_knee_Hz =  freqShift_R.setStartFreq_Hz(freqShift_L.setStartFreq_Hz(new_val));
-}
-
+float setFreqKnee_Hz(float new_val) { return myState.freq_knee_Hz =  freqShift_R.setStartFreq_Hz(freqShift_L.setStartFreq_Hz(new_val));}
 
 float incrementFreqCR(float incr_factor) {
   incr_factor = max(0.1, min(5.0, incr_factor));
   float cur_val = freqShift_L.getFreqCompRatio();
   return setFreqCR(cur_val * incr_factor);
 }
-float setFreqCR(float new_val) {
-  return myState.freq_CR = freqShift_R.setFreqCompRatio(freqShift_L.setFreqCompRatio(new_val));
-}
+float setFreqCR(float new_val) { return myState.freq_CR = freqShift_R.setFreqCompRatio(freqShift_L.setFreqCompRatio(new_val));}
 
 float incrementFreqShift(float incr_factor) {
   float cur_val = freqShift_L.getShift_Hz();
   return setFreqShift_Hz(cur_val + incr_factor);
 }
-float setFreqShift_Hz(float new_val) {
-  return myState.freq_shift_Hz = freqShift_R.setShift_Hz(freqShift_L.setShift_Hz(new_val));
-}
+float setFreqShift_Hz(float new_val) { return myState.freq_shift_Hz = freqShift_R.setShift_Hz(freqShift_L.setShift_Hz(new_val));}
