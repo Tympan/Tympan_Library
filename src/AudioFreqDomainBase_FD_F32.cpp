@@ -4,6 +4,7 @@
 
 int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT) {
   sample_rate_Hz = settings.sample_rate_Hz;
+  audio_block_samples = settings.audio_block_samples;
   int N_FFT;
 
   //setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
@@ -100,10 +101,21 @@ void AudioFreqDomainBase_FD_F32::processAudioFD(float32_t *complex_2N_buffer, co
   */
 
   /*
-  //THIS might be a useful operation for you...getting the magnitude of the bin.
-  //here's a computationally efficient way to do it...call an optimized library
-  float orig_mag[N_2];
+  //In some other example, this might be a useful operation...getting the magnitude and phase of the bins.
+  //here's a computationally efficient way to do it...call an optimized library for the mangitude
+  float32_t orig_mag[N_2];
   arm_cmplx_mag_f32(complex_2N_buffer, orig_mag, N_2);  //get the magnitude for each FFT bin and store somewhere safes
+  
+  //here's a way to compute the phase
+  float32_t phase_rad[N_2];
+  for (ind=0; ind<N_2; ind++ ) phase_rad[ind] = atan2f(complex_2N_buffer[2*ind+1),complex_2N_buffer[2*ind]);
+
+  //here's a way to compute the complex number back from the magnitude and phase
+  float32_t new_complex_2N_buffer[2*NFFT];
+  for (ind=0; ind<N_2; ind++) {
+    new_complex_2N_buffer[ind*2]   = orig_mag[ind] * cosf(phase_rad[ind]);   //real
+    new_complex_2N_buffer[ind*2+1] = orig_mag[ind] * sinf(phase_rad[ind]); //imaginary
+  }
   */
 
   /*
