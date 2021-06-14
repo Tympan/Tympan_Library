@@ -67,7 +67,7 @@ void SerialManager::printHelp(void) {
   Serial.println("   p: Switch to built-in PCB microphones");
   Serial.println("   m: switch to external mic via mic jack");
   Serial.println("   l: switch to line-in via mic jack");
-  Serial.print(  "   k/K: Increase the digital gain (cur:"); Serial.print(myState.digital_gain_dB); Serial.println(" dB)");
+  Serial.print(  "   k/K: Incr/Decrease the digital gain (cur:"); Serial.print(myState.digital_gain_dB); Serial.println(" dB)");
   Serial.println(" Noise Reduction: No Prefix");
   Serial.print(  "   e/E: Enable/Disable NR (is_enabled = "); Serial.print(myState.NR_enable); Serial.println(")");
   Serial.print(  "   t/T: Raise/Lower learning attack (cur: "); Serial.print(myState.NR_attack_sec); Serial.println(" sec)");
