@@ -58,10 +58,11 @@ void SerialManager::printHelp(void) {
   Serial.println("   p: Switch to built-in PCB microphones");
   Serial.println("   m: switch to external mic via mic jack");
   Serial.println("   l: switch to line-in via mic jack");
-  Serial.print(  "   k/K: Incr/Decrease digital gain (change by "); Serial.print(gainIncrement_dB); Serial.println(" dB");
-  Serial.print(  "   t/T: Raise/Lower freq knee (change by "); Serial.print(freq_knee_increment_Hz); Serial.println(" Hz)");
-  Serial.print(  "   r/R: Raise/Lower freq compression (change by "); Serial.print(freq_cr_increment); Serial.println("x)");
-  Serial.print(  "   f/F: Raise/Lower freq shifting (change by "); Serial.print(freq_shift_increment_Hz); Serial.println(" Hz)");
+  Serial.print(  "   k/K: Incr/Decrease the digital gain (cur:"); Serial.print(myState.digital_gain_dB); Serial.println(" dB)");
+  Serial.println(" Frequency Compression: No Prefix"); 
+  Serial.print(  "   t/T: Raise/Lower knee frequency (cur: "); Serial.print(myState.freq_knee_Hz); Serial.println(" Hz)");
+  Serial.print(  "   r/R: Raise/Lower compression ratio (cur: "); Serial.print(myState.freq_CR); Serial.println(":1)");
+  Serial.print(  "   f/F: Raise/Lower frequency shift (cur: "); Serial.print(myState.freq_knee_Hz); Serial.println(" Hz)");
   SerialManagerBase::printHelp();  ////in here, it automatically loops over the different UI elements issuing printHelp()
 }
 

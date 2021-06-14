@@ -96,7 +96,7 @@ SerialManager serialManager(&ble);
 State myState(&audio_settings, &myTympan);
 
 //inputs and levels
-float default_mic_input_gain_dB = 15.0f; //gain on the microphone
+float default_mic_input_gain_dB = 20.0f; //gain on the microphone
 void switchToPCBMics(void) {
   myTympan.println("Switching to PCB Mics.");
   myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the microphone jack - defaults to mic bias OFF
@@ -114,6 +114,14 @@ void switchToMicInOnMicJack(void) {
   setInputGain_dB(default_mic_input_gain_dB);
 }
 
+//set up the serial manager
+void setupSerialManager(void) {
+  //register all the UI elements here
+  serialManager.add_UI_element(&myState);
+
+  //create the GUI (but don't transmit it yet.  wait for the requuest from the phone.)
+  serialManager.createTympanRemoteLayout();
+}
 
 // ////////////////////////////////////////////
 
@@ -169,6 +177,7 @@ void setup() {
 #endif
 
   //finish the setup by printing the help menu to the serial connections
+  setupSerialManager();
   serialManager.printHelp();
 }
 
@@ -215,7 +224,7 @@ void servicePotentiometer(unsigned long curTime_millis, const unsigned long upda
 
     //read potentiometer
     float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
-    val = (1.0 / 9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
+    val = (1.0 / 10.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //use the potentiometer value to control something interesting
     if (abs(val - prev_val) > 0.05) { //is it different than befor?
