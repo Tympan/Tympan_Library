@@ -62,7 +62,7 @@ void SerialManager::printHelp(void) {
   Serial.println(" Frequency Compression: No Prefix"); 
   Serial.print(  "   t/T: Raise/Lower knee frequency (cur: "); Serial.print(myState.freq_knee_Hz); Serial.println(" Hz)");
   Serial.print(  "   r/R: Raise/Lower compression ratio (cur: "); Serial.print(myState.freq_CR); Serial.println(":1)");
-  Serial.print(  "   f/F: Raise/Lower frequency shift (cur: "); Serial.print(myState.freq_knee_Hz); Serial.println(" Hz)");
+  Serial.print(  "   f/F: Raise/Lower frequency shift (cur: "); Serial.print(myState.freq_shift_Hz); Serial.println(" Hz)");
   SerialManagerBase::printHelp();  ////in here, it automatically loops over the different UI elements issuing printHelp()
 }
 
