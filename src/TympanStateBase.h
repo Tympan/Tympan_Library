@@ -58,7 +58,7 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 		virtual void printHelp(void) {
 				String prefix = getPrefix();
 				Serial.println(F(" State: Prefix = ") + prefix);
-				Serial.println(F("   c/C: Enablel/Disable printing of CPU and Memory usage"));
+				Serial.println(F("   c/C: Enable/Disable printing of CPU and Memory usage"));
 		};
 		//virtual bool processCharacter(char c); //no used here
 		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char){
