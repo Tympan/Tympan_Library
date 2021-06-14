@@ -29,6 +29,7 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
      
     virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT);
     virtual void update(void);   
+	bool enable(bool state = true) { enabled = state; return enabled;}
 
     //Here is the method for you to override with your own algorithm!
     //  * The first argument that you will receive is the float32_t *, which is an array that is allocated in
