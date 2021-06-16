@@ -33,7 +33,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //setup the  Tympan using the default settings
-Tympan                    myTympan(TympanRev::D);     //do TympanRev::C or TympanRev::D
+Tympan                    myTympan(TympanRev::E);     //do TympanRev::E or TympanRev::D
 
 // Define audio objects
 AudioInputI2S_F32             i2s_in(audio_settings);       //This is the Teensy Audio library's built-in 4-channel I2S class
