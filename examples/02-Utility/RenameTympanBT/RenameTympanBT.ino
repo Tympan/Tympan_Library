@@ -34,13 +34,13 @@
 #include <Tympan_Library.h>
 
 //Use this if you have a Tympan RevE
-Tympan     myTympan(TympanRev::E);   //set to D ro E
+Tympan     myTympan(TympanRev::E);   //set to D or E
 String     new_BT_name = "TympanE";   //change this to whatever you'd like
 String     new_BLE_name = "TYM";      //3 chars here are added to last 4 BT MAC chars
 
 /*
   //Use this if you have a Tympan RevD 
-  Tympan     myTympan(TympanRev::D); 	//set to D ro E
+  Tympan     myTympan(TympanRev::D); 	//set to D or E
   String     new_BT_name = "TympanD";   //change this to whatever you'd like
   String     new_BLE_name = "TYM";      //3 chars here are added to last 4 BT MAC chars
 */
