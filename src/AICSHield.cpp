@@ -10,16 +10,19 @@ void AICShieldBase::setupPins(const AICShieldPins &_pins) {
 	if (pins.CCP_atten1 != NOT_A_FEATURE) { pinMode(pins.CCP_atten1,OUTPUT); digitalWrite(pins.CCP_atten1,LOW); }
 	if (pins.CCP_atten2 != NOT_A_FEATURE) { pinMode(pins.CCP_atten2,OUTPUT); digitalWrite(pins.CCP_atten2,LOW); }
 	if (pins.CCP_bigLED != NOT_A_FEATURE) { pinMode(pins.CCP_bigLED,OUTPUT); digitalWrite(pins.CCP_bigLED,LOW); }
-	if (pins.CCP_littleLED != NOT_A_FEATURE) { pinMode(pins.CCP_littleLED,OUTPUT); digitalWrite(pins.CCP_littleLED,LOW); }
-	
-	
-	
+	if (pins.CCP_littleLED_1 != NOT_A_FEATURE) {
+		pinMode(pins.CCP_littleLED_1,OUTPUT); digitalWrite(pins.CCP_littleLED_1,LOW);
+		pinMode(pins.CCP_littleLED_2,OUTPUT); digitalWrite(pins.CCP_littleLED_2,LOW);
+	}
+
+
+
 	//setup the AIC shield pins
 	if (pins.enableStereoExtMicBias != NOT_A_FEATURE) {
 		pinMode(pins.enableStereoExtMicBias,OUTPUT);
 		setEnableStereoExtMicBias(true); //enable stereo external mics (REV_D)
 	}
-	
+
 };
 
 int AICShieldBase::setEnableStereoExtMicBias(int new_state) {
@@ -30,5 +33,3 @@ int AICShieldBase::setEnableStereoExtMicBias(int new_state) {
 		return pins.enableStereoExtMicBias;
 	}
 }
-
-

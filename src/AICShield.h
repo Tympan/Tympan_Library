@@ -41,34 +41,36 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 			tympanRev = tympanRev;
 			AICRev = _AICRev;
 			switch (tympanRev) { //which Tympan are we connecting to?
-				
+
 				case (TympanRev::D) : case (TympanRev::D4) :   //we're connecting to a Rev D tympan, so the pin numbers below are correct for the TympanD
-				
+
 					switch (AICRev) {  //which AIC_shield are we connecting to?
-					
+
 						case (AICShieldRev::A) :    //Basic AIC shield (2019 and 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = 20; 
+							resetAIC = 20;
 							i2cBus = 2;
-							enableStereoExtMicBias = 41; 
+							enableStereoExtMicBias = 41;
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
 							break;
-							
+
 						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = 20; 
+							resetAIC = 20;
 							i2cBus = 2;
-							enableStereoExtMicBias = 41; 
+							enableStereoExtMicBias = 41;
 							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)
 							CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)
 							CCP_bigLED =  53;    //same as SCK_2 (alt)
-							CCP_littleLED = 41;    //same as AIC_Shield_enableStereoExtMicBias
+							CCP_littleLED_1 = 41;    //same as AIC_Shield_enableStereoExtMicBias
+							// Need to add a pin for LED control when targeting prototype variant of Rev D ! ADDED BY JAM JUNE 2021
+							CCP_littleLED_2 = 8;		//same as Tympan D with OpAmp TX_3
 							CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
 							break;
 					}
 					break;
-					
+
 				default:
 					Serial.println("AICSheildPins: *** WARNING *** This Teensy Rev is not supported.");
 					Serial.println("    : Assuming defaults and hoping for the best.");
@@ -85,14 +87,14 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 		//Defaults
 		TympanRev tympanRev = TympanRev::D;
 		AICShieldRev AICRev = AICShieldRev::A;
- 		int resetAIC = AICSHIELD_DEFAULT_RESET_PIN; 
+ 		int resetAIC = AICSHIELD_DEFAULT_RESET_PIN;
 		int i2cBus = AICSHIELD_DEFAULT_I2C_BUS;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
 		int CCP_atten1 = NOT_A_FEATURE, CCP_atten2 = NOT_A_FEATURE;
-		int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED = NOT_A_FEATURE;
+		int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED_1 = NOT_A_FEATURE, CCP_littleLED_2 = NOT_A_FEATURE;
 		int CCP_enable28V = NOT_A_FEATURE;
 		int defaultInput = NOT_A_FEATURE;
-	
+
 };
 
 
@@ -121,29 +123,29 @@ class AICShieldBase : public AudioControlAIC3206
 
 		void setupPins(const AICShieldPins &_pins);
 		void setAudioSettings(const AudioSettings_F32 &_aud_set) { audio_settings = _aud_set; }  //shallow copy
-		virtual bool enable(void) { 
+		virtual bool enable(void) {
 			AudioControlAIC3206::enable();
 			if (pins.defaultInput != NOT_A_FEATURE)	inputSelect(pins.defaultInput);
 		}
-			
+
 
 		//TympanPins getTympanPins(void) { return &pins; }
 		int setBigLED_CCP(int _value) { if (pins.CCP_bigLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_bigLED,_value); return _value; } return NOT_A_FEATURE;}
-		int setLittleLED_CCP(int _value) { if (pins.CCP_littleLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_littleLED,_value); return _value; } return NOT_A_FEATURE;}
+		int setLittleLED_CCP(int _value) { if (pins.CCP_littleLED_1 != NOT_A_FEATURE) { digitalWrite(pins.CCP_littleLED_1,_value); digitalWrite(pins.CCP_littleLED_2,_value); return _value; } return NOT_A_FEATURE;}
 		int enable28V_CCP(int _value) { if (pins.CCP_enable28V != NOT_A_FEATURE) { digitalWrite(pins.CCP_enable28V,_value); return _value; } return NOT_A_FEATURE; }
 		int enableCCPAtten1(int _value) { if (pins.CCP_atten1 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten1,_value); return _value; } return NOT_A_FEATURE; }
 		int enableCCPAtten2(int _value) { if (pins.CCP_atten2 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten2,_value); return _value; } return NOT_A_FEATURE; }
-	
+
 		int setEnableStereoExtMicBias(int new_state);
 
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
 		AICShieldRev getAICRev(void) { return pins.AICRev; }
-	
+
 
 	protected:
 		AICShieldPins pins;
 		AudioSettings_F32 audio_settings;
-		
+
 };
 
 class AICShield : public AICShieldBase {
