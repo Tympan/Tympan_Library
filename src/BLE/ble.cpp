@@ -227,11 +227,22 @@ size_t BLE::recvBLE(String *s)
     {
         if (recv(&tmp) > 0)
         {
-            if (tmp.startsWith("RECV BLE "))
+            if (tmp.startsWith("RECV BLE ")) //for V5 firmware for BC127
             {
                 s->concat(tmp.substring(9).trim());
                 return tmp.substring(9).length();
             }
+			else if (tmp.startsWith("RECV 14 "))  //for V6 and newer...assumes first ("1") BLE link ("4")
+			{
+				tmp.remove(0,8);  tmp.trim();  //remove the "RECV 14 "
+				int ind = tmp.indexOf(" ");    //find the space after the number of charcters
+				if (ind >= 0) {
+					//int len_string = (tmp.substring(0,ind)).toInt();  //it tells you the number of characters received
+					tmp.remove(0,ind); tmp.trim(); //remove the number of characters received and any white space
+					s->concat(tmp); //what's left is the message
+				}
+                return tmp.length();
+			}
 
             tmp = "";
         }
@@ -301,10 +312,14 @@ bool BLE::waitConnect(int time)
 
         if (line.endsWith(EOL))
         {
-            if (line.startsWith("OPEN_OK BLE"))
+            if (line.startsWith("OPEN_OK BLE")) //V5.5
             {
                 return true;
             }
+			if (line.startsWith("OPEN_OK 14 BLE")) //V6 and newer
+			{
+				return true;
+			}
 
             // move on to next line
             line = "";
