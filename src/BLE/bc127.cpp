@@ -133,7 +133,8 @@ BC127::opResult BC127::send(String str)
 //          _cmdResponse will contain the data on SUCCESS
 BC127::opResult BC127::status()
 {
-    return stdCmd("STATUS");
+    //return stdCmd("STATUS 14"); //this might be better (more specific to BLE) for V6 firmware and above
+	return stdCmd("STATUS");
 }
 
 // Resets the device to default configuration

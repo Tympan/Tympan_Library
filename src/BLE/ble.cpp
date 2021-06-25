@@ -47,8 +47,7 @@ void BLE::setupBLE(Tympan &_tympan) {
   }
 
   //start the advertising for a connection (whcih will be maintained in serviceBLE())
-  if (isConnected() == false) advertise(true);  //not connected, ensure that we are advertising
-
+  advertise(true);
 
 }
 
@@ -253,9 +252,9 @@ size_t BLE::recvBLE(String *s)
 
 bool BLE::isAdvertising(bool printResponse)
 {
-    if (status() > 0)
+    if (status() > 0) //in bc127.cpp.  Asks the BC127 its advertising status.  answer stored in cmdResponse
     {
-		String s = getCmdResponse();
+		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
 		if (printResponse) {
 			Serial.println("BLE: isAdvertising() response: ");
 			Serial.print(s);
@@ -273,15 +272,16 @@ bool BLE::isAdvertising(bool printResponse)
 }
 bool BLE::isConnected(bool printResponse)
 {
-    if (status() > 0)
+    if (status() > 0) //in bc127.cpp.  Asks the BC127 its advertising status.  answer stored in cmdResponse
     {
-		String s = getCmdResponse();
+		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
 		if (printResponse) {
 			Serial.println("BLE: isConnected() response: ");
 			Serial.print(s);
 		}
-        //return s.startsWith("STATE CONNECTED"); //original
-		if (s.indexOf("CONNECTED") == -1) { //if it finds -1, then it wasn't found
+        
+		//if (s.indexOf("LINK 14 CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This version is prob better (more specific for BLE) but only would work for V6 and above
+		if (s.indexOf("CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This call could be overly-broad and could possibly show "connected" without a *BLE* connection
 			return false;
 		} else {
 			return true;
