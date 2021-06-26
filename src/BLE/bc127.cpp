@@ -338,3 +338,13 @@ BC127::opResult BC127::waitResponse(int time)
 
     return TIMEOUT_ERROR; // ran out of time
 }
+
+int BC127::set_BC127_firmware_ver(int val) { 
+	BC127_firmware_ver = max(5,min(7,val));
+	if (BC127_firmware_ver < 6) {
+		EOL = String("\n\r");
+	} else {
+		EOL = String("\r");
+	}
+	return BC127_firmware_ver;
+}
