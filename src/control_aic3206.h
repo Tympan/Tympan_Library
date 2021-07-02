@@ -44,6 +44,15 @@
 //define AIC3206_DEFAULT_I2C_BUS 0   //bus zero is &Wire
 #define AIC3206_DEFAULT_RESET_PIN 21
 
+
+//Link I2C Address to the AIC bus that is used. 
+/*Note that the AIC's on the Tympan Rev-D and derived shields use the same I2C address*/
+typedef enum {
+  Bus_0 =    0x18, 
+  Bus_2 =    0x18
+} Aic_3206_I2c_Address;
+
+
 class AudioControlAIC3206: public TeensyAudioControl
 {
 public:
@@ -131,8 +140,6 @@ protected:
   void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
-
-  
 };
 
 

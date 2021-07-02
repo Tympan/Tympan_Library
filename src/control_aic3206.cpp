@@ -175,19 +175,24 @@
 #define TYMPAN_ADC_MUTE_REG 0x0052 //  page 0, register 82
 #define TYMPAN_ADC_UNMUTE 0x00
 
+Aic_3206_I2c_Address i2cAddress = Bus_0;
+
 void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
 {
   // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
   switch (i2cBusIndex) {
 	case 0:
-		myWire = &Wire; break;
+    i2cAddress = Bus_0;
+    myWire = &Wire; break;
 	//case 1:
 	//	myWire = &Wire1; break;  //defined in WireKinetis.h via Teensy's 
 	case 2:
+    i2cAddress = Bus_2;
 		myWire = &Wire2; break; //defined in WireKinetis.h via Teensy's Wire.h
 	//case 3:
 	//	myWire = &Wire3; break; //commented out in WireKinetis.h?? Why?
 	default:
+    i2cAddress = Bus_0;
 		myWire = &Wire; break;
   }
 }
@@ -703,8 +708,9 @@ void AudioControlAIC3206::aic_init() {
 unsigned int AudioControlAIC3206::aic_readPage(uint8_t page, uint8_t reg)
 {
   unsigned int val;
-  if (aic_goToPage(page)) {
-    myWire->beginTransmission(AIC3206_I2C_ADDR);
+
+  if (aic_goToPage(page)) {    
+    myWire->beginTransmission(i2cAddress);
     myWire->write(reg);
     unsigned int result = myWire->endTransmission();
     if (result != 0) {
@@ -715,7 +721,7 @@ unsigned int AudioControlAIC3206::aic_readPage(uint8_t page, uint8_t reg)
       val = 300 + result;
       return val;
     }
-    if (myWire->requestFrom(AIC3206_I2C_ADDR, 1) < 1) {
+    if (myWire->requestFrom(i2cAddress, 1) < 1) {
       Serial.print("AudioControlAIC3206: ERROR: Read Page.  Page: ");Serial.print(page);
       Serial.print(" Reg: ");Serial.print(reg);
       Serial.println(".  Nothing to return");
@@ -757,7 +763,7 @@ bool AudioControlAIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) 
 		Serial.print(" Val: ");Serial.println(val);
 	}
 	if (aic_goToPage(page)) {
-		//myWire->beginTransmission(AIC3206_I2C_ADDR);
+		//myWire->beginTransmission(i2cAddress);
 		//myWire->write(reg); //delay(10);
 		//myWire->write(val); //delay(10);
 		//uint8_t result = myWire->endTransmission();
@@ -769,7 +775,7 @@ bool AudioControlAIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) 
 	return false;
 }
 bool AudioControlAIC3206::aic_writeRegister(uint8_t reg, uint8_t val) {  //assumes page has already been set
-	myWire->beginTransmission(AIC3206_I2C_ADDR);
+	myWire->beginTransmission(i2cAddress);
 	myWire->write(reg); //delay(1); //delay(10); //was delay(10)
 	myWire->write(val); //delay(1);//delay(10); //was delay(10)
 	uint8_t result = myWire->endTransmission();
@@ -783,7 +789,7 @@ bool AudioControlAIC3206::aic_writeRegister(uint8_t reg, uint8_t val) {  //assum
 }
 
 bool AudioControlAIC3206::aic_goToPage(byte page) {
-  myWire->beginTransmission(AIC3206_I2C_ADDR);
+  myWire->beginTransmission(i2cAddress);
   myWire->write(0x00); //delay(1); //delay(10);// page register  //was delay(10) from BPF
   myWire->write(page); //delay(1); //delay(10);// go to page   //was delay(10) from BPF
   byte result = myWire->endTransmission();
