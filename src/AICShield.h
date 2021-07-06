@@ -25,7 +25,7 @@ enum class AICShieldRev { A, CCP, CCP_A };
 #define NOT_A_FEATURE (-9999)
 #endif
 
-#define AICSHIELD_DEFAULT_RESET_PIN 20
+#define AICSHIELD_DEFAULT_RESET_PIN 42
 #define AICSHIELD_DEFAULT_I2C_BUS	2
 #define AICSHIELD_VARIANT_I2C_BUS  0
 #define AICSHIELD_I2C_BUS_SET_INTERNAL	4
@@ -50,7 +50,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 
 						case (AICShieldRev::A) :    //Basic AIC shield (2019 and 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = 20;
+							resetAIC = AICSHIELD_DEFAULT_RESET_PIN;
 							i2cBus = 2;
 							enableStereoExtMicBias = 41;
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
@@ -58,15 +58,16 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 
 						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = 20;
+							resetAIC = AICSHIELD_DEFAULT_RESET_PIN;
 							boardVariantTestPin = 7;
-							pinMode(7,INPUT_PULLUP); delay(10); int pinVal = digitalRead(7);
-							if(pinVal == 1){
+							pinMode(7,INPUT_PULLUP); delay(10); int pinValue = digitalRead(7);
+							if(pinValue == 1){	// production Rev D
 								i2cBus = 2;
-							} else {
+							} else {					// prototype Rev D with op amps
 								i2cBus = 0;
+								resetAIC = 35;
 							}
-							Serial.print("Shield I2C Select: "); Serial.println(pinVal+1);
+							Serial.print("Shield I2C Select: "); Serial.println(pinValue+1);
 							// i2cBus = 2;
 							enableStereoExtMicBias = 41;
 							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)
@@ -135,8 +136,9 @@ class AICShieldBase : public AudioControlAIC3206
 		void setupPins(const AICShieldPins &_pins);
 		void setAudioSettings(const AudioSettings_F32 &_aud_set) { audio_settings = _aud_set; }  //shallow copy
 		virtual bool enable(void) {
-			AudioControlAIC3206::enable();
+			bool foo = AudioControlAIC3206::enable();
 			if (pins.defaultInput != NOT_A_FEATURE)	inputSelect(pins.defaultInput);
+			return foo;
 		}
 
 
