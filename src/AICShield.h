@@ -145,7 +145,7 @@ class AICShieldBase : public AudioControlAIC3206
 			AudioControlAIC3206(pins.resetAIC, pins.i2cBus) {
 		}
 		AICShieldBase(bool _debugToSerial) :
-			AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS,_debugToSerial) {
+			AudioControlAIC3206(pins.resetAIC, pins.i2cBus,_debugToSerial) {
 		}
 		AICShieldBase(const AICShieldPins &_pins) :
 			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
@@ -157,7 +157,7 @@ class AICShieldBase : public AudioControlAIC3206
 			setupPins(_pins);
 		}
 		AICShieldBase(const AudioSettings_F32 &_as) :
-			AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_DEFAULT_I2C_BUS) {
+			AudioControlAIC3206(pins.resetAIC, pins.i2cBus) {
 			setAudioSettings(_as);
 		}
 		AICShieldBase(const AICShieldPins &_pins, const AudioSettings_F32 &_as) :
