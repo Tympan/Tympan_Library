@@ -26,6 +26,7 @@ enum class AICShieldRev { A, CCP, CCP_A };
 #endif
 
 #define AICSHIELD_DEFAULT_RESET_PIN 42
+#define AICSHIELD_VARUANT_RESET_PIN 35
 #define AICSHIELD_DEFAULT_I2C_BUS	2
 #define AICSHIELD_VARIANT_I2C_BUS  0
 #define AICSHIELD_I2C_BUS_SET_INTERNAL	4
@@ -65,7 +66,7 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 								i2cBus = 2;
 							} else {					// prototype Rev D with op amps
 								i2cBus = 0;
-								resetAIC = 35;
+								resetAIC = AICSHIELD_VARUANT_RESET_PIN;
 							}
 							Serial.print("Shield I2C Select: "); Serial.println(pinValue+1);
 							// i2cBus = 2;
@@ -113,15 +114,15 @@ class AICShieldPins { //Teensy 3.6 Pin Numbering
 class AICShieldBase : public AudioControlAIC3206
 {
 	public:
-		AICShieldBase(void) : AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_I2C_BUS_SET_INTERNAL) {}
-		AICShieldBase(bool _debugToSerial) : AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_I2C_BUS_SET_INTERNAL,_debugToSerial) {}
+		AICShieldBase(void) : AudioControlAIC3206(pins.resetAIC, pins.i2cBus) {}
+		AICShieldBase(bool _debugToSerial) : AudioControlAIC3206(pins.resetAIC, pins.i2cBus,_debugToSerial) {}
 		AICShieldBase(const AICShieldPins &_pins) : AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
 			setupPins(_pins);
 		}
 		AICShieldBase(const AICShieldPins &_pins, bool _debugToSerial) : AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus,_debugToSerial) {
 			setupPins(_pins);
 		}
-		AICShieldBase(const AudioSettings_F32 &_as) : AudioControlAIC3206(AICSHIELD_DEFAULT_RESET_PIN, AICSHIELD_I2C_BUS_SET_INTERNAL) {
+		AICShieldBase(const AudioSettings_F32 &_as) : AudioControlAIC3206(pins.resetAIC, pins.i2cBus) {
 			setAudioSettings(_as);
 		}
 		AICShieldBase(const AICShieldPins &_pins, const AudioSettings_F32 &_as) : AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
