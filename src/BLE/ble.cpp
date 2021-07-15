@@ -35,10 +35,8 @@ int BLE::begin(void)
 	return ret_val;
 }
 
-void BLE::setupBLE(Tympan &_tympan) {
-
-  _tympan.forceBTtoDataMode(false); //for BLE, it needs to be in command mode, not data mode
-  
+void BLE::setupBLE(Tympan &_tympan) 
+{  
   int ret_val = begin();
   if (ret_val != 1) {  //via BC127.h, success is a value of 1
     Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");  Serial.println(ret_val);
@@ -47,8 +45,7 @@ void BLE::setupBLE(Tympan &_tympan) {
   }
 
   //start the advertising for a connection (whcih will be maintained in serviceBLE())
-  if (isConnected() == false) advertise(true);  //not connected, ensure that we are advertising
-
+  advertise(true);
 
 }
 
@@ -227,11 +224,22 @@ size_t BLE::recvBLE(String *s)
     {
         if (recv(&tmp) > 0)
         {
-            if (tmp.startsWith("RECV BLE "))
+            if (tmp.startsWith("RECV BLE ")) //for V5 firmware for BC127
             {
                 s->concat(tmp.substring(9).trim());
                 return tmp.substring(9).length();
             }
+			else if (tmp.startsWith("RECV 14 "))  //for V6 and newer...assumes first ("1") BLE link ("4")
+			{
+				tmp.remove(0,8);  tmp.trim();  //remove the "RECV 14 "
+				int ind = tmp.indexOf(" ");    //find the space after the number of charcters
+				if (ind >= 0) {
+					//int len_string = (tmp.substring(0,ind)).toInt();  //it tells you the number of characters received
+					tmp.remove(0,ind); tmp.trim(); //remove the number of characters received and any white space
+					s->concat(tmp); //what's left is the message
+				}
+                return tmp.length();
+			}
 
             tmp = "";
         }
@@ -242,12 +250,16 @@ size_t BLE::recvBLE(String *s)
 
 bool BLE::isAdvertising(bool printResponse)
 {
-    if (status() > 0)
+	//Ask the BC127 its advertising status. 
+	//in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
+	//in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
+    if (status() > 0) //in bc127.cpp.    answer stored in cmdResponse.
     {
-		String s = getCmdResponse();
+		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
 		if (printResponse) {
 			Serial.println("BLE: isAdvertising() response: ");
 			Serial.print(s);
+			Serial.println();
 		}
         //return s.startsWith("STATE CONNECTED"); //original
 		if (s.indexOf("ADVERTISING") == -1) { //if it finds -1, then it wasn't found
@@ -262,17 +274,34 @@ bool BLE::isAdvertising(bool printResponse)
 }
 bool BLE::isConnected(bool printResponse)
 {
-    if (status() > 0)
+	//Ask the BC127 its advertising status.  
+	//in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
+	//in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
+	//   followed by LINK 14 CONNECTED or something like that if the BLE is actually connected to something
+    if (status() > 0) //in bc127.cpp.  answer stored in cmdResponse.
     {
-		String s = getCmdResponse();
+		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
 		if (printResponse) {
 			Serial.println("BLE: isConnected() response: ");
 			Serial.print(s);
+			Serial.println();
 		}
-        //return s.startsWith("STATE CONNECTED"); //original
-		if (s.indexOf("CONNECTED") == -1) { //if it finds -1, then it wasn't found
+        
+		//if (s.indexOf("LINK 14 CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This version is prob better (more specific for BLE) but only would work for V6 and above
+		int ind = s.indexOf("CONNECTED");
+		if (ind == -1) { //if it returns -1, then it wasn't found.
 			return false;
 		} else {
+			//as of V6 (or so) it'll actually say "CONNECTED[0]" if not connected, which is not helpful
+			//search instead for "LINK 14 CONNECTED", which is maybe overly restrictive as it only looks
+			//for the first "1" of the possible BLE "4" connections.
+			if (BC127_firmware_ver >= 6) {
+				ind = s.indexOf("LINK 14 CONNECTED");
+				if (ind == -1) {
+					Serial.println("BLE: isConnected: not connected.");
+					return false;
+				}
+			}
 			return true;
 		}
     }
@@ -301,10 +330,14 @@ bool BLE::waitConnect(int time)
 
         if (line.endsWith(EOL))
         {
-            if (line.startsWith("OPEN_OK BLE"))
+            if (line.startsWith("OPEN_OK BLE")) //V5.5
             {
                 return true;
             }
+			if (line.startsWith("OPEN_OK 14 BLE")) //V6 and newer
+			{
+				return true;
+			}
 
             // move on to next line
             line = "";
@@ -320,8 +353,8 @@ void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePe
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    if (isConnected() == false) {
-      if (isAdvertising() == false) {
+    if (isConnected(true) == false) { //the true tells it to print the full reply to the serial monitor
+      if (isAdvertising(true) == false) {//the true tells it to print the full reply to the serial monitor
         Serial.println("BLE: updateAvertising: activating BLE advertising");
         advertise(true);  //not connected, ensure that we are advertising
       }

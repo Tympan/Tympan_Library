@@ -117,7 +117,15 @@ BC127::opResult BC127::exitDataMode(int guardDelay)
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
 BC127::opResult BC127::send(String str)
 {
-    return stdCmd("SEND " + str);
+	if (BC127_firmware_ver >=6) {
+		//Assume a link ID of 14
+		//  the "14" assumes that we're always sending to the
+		//  first ("1", yes they count from "1")  BLE device
+		//	that is connected  (BLE connections are the "4")
+		return stdCmd("SEND 14 " + str); 
+	} else {
+		return stdCmd("SEND " + str);
+	}
 }
 
 // Retrieves the device connection status
@@ -125,7 +133,8 @@ BC127::opResult BC127::send(String str)
 //          _cmdResponse will contain the data on SUCCESS
 BC127::opResult BC127::status()
 {
-    return stdCmd("STATUS");
+    //return stdCmd("STATUS 14"); //this might be better (more specific to BLE) for V6 firmware and above
+	return stdCmd("STATUS");
 }
 
 // Resets the device to default configuration
@@ -263,7 +272,7 @@ BC127::opResult BC127::recv(String *msg)
         if (msg->endsWith(EOL))
         {
             // Lop off the EOL, since it is added by the BC127 and is not part of the characteristic payload
-            *msg = msg->substring(0,msg->length()-2);
+            *msg = msg->substring(0,msg->length()-EOL.length());
             return SUCCESS;
         }
     }
@@ -309,6 +318,9 @@ BC127::opResult BC127::waitResponse(int time)
         // we've reached the end of a line
         if (line.endsWith(EOL))
         {
+			//remove leading and trailing whitespace
+			line.trim();
+			
             // Is this the end of the command response?
             if (line.startsWith("OK") || line.startsWith("Ready"))
             {
@@ -325,4 +337,14 @@ BC127::opResult BC127::waitResponse(int time)
     }
 
     return TIMEOUT_ERROR; // ran out of time
+}
+
+int BC127::set_BC127_firmware_ver(int val) { 
+	BC127_firmware_ver = max(5,min(7,val));
+	if (BC127_firmware_ver < 6) {
+		EOL = String("\n\r");
+	} else {
+		EOL = String("\r");
+	}
+	return BC127_firmware_ver;
 }

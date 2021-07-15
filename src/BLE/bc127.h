@@ -56,16 +56,20 @@ public:
     opResult setConfig(String config, String param); // sets a configuration register
     opResult version(bool printResponse = false);    // returns the version info in _cmdResponse
     opResult writeConfig();                          // writes the current config to non-volatile memory
+	int set_BC127_firmware_ver(int val);             // user sets whether firmware is version 5, 6, or 7
+	int get_BC127_firmware_ver(void)    { return BC127_firmware_ver; }
 
 protected:
     // end-of-line delimiter
     const String EOC = String("\r");
     // end-of-command delimiter
-    const String EOL = String("\n\r");
+	String EOL = String("\r");  //this is changed by set_BC127_firmware_ver()
 
     Stream *_serialPort;    // port to talk on
     String _cmdResponse;    // response from commands
     unsigned long _timeout; // timeout for command wait
+
+	int BC127_firmware_ver = 7;  //can be 5, 6, 7
 
 private:
     opResult knownStart();                   // baseline starting function
