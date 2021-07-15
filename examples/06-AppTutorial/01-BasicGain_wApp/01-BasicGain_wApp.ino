@@ -71,12 +71,12 @@ void setup() {
   while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
   #if USE_REV_E
     //V7 firmware (ie, RevE)
-    ble.advertise(true);
   #else
     //V5 firmware (ie, RevD)
     ble.set_BC127_firmware_ver(5);
-    ble.setupBLE(myTympan);
   #endif
+
+  ble.setupBLE(myTympan);
   
   //Create the GUI description (but not yet transmitted to the App...that's after it connects)
   createTympanRemoteLayout();

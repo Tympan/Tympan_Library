@@ -35,10 +35,8 @@ int BLE::begin(void)
 	return ret_val;
 }
 
-void BLE::setupBLE(Tympan &_tympan) {
-
-  _tympan.forceBTtoDataMode(false); //for BLE, it needs to be in command mode, not data mode
-  
+void BLE::setupBLE(Tympan &_tympan) 
+{  
   int ret_val = begin();
   if (ret_val != 1) {  //via BC127.h, success is a value of 1
     Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");  Serial.println(ret_val);
