@@ -18,11 +18,11 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //set to true for Rev E (and set the Arduino IDE to Teensy 4.1).
-#define USE_REV_E (false)    //this also assumes that REV_E is BC127 firmware V7 whereas REV_D is assumed to be V5
+#define USE_REV_E (true)    //this also assumes that REV_E is BC127 firmware V7 whereas REV_D is assumed to be V5
 
 //create audio library objects for handling the audio
 #if (USE_REV_E)
-Tympan                    myTympan(TympanRev::E);  //do TympanRev::D or TympanRev::C
+Tympan                    myTympan(TympanRev::E);  //do TympanRev::E
 #else
 Tympan                    myTympan(TympanRev::D);  //do TympanRev::D or TympanRev::C
 #endif
