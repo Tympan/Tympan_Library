@@ -29,7 +29,7 @@ const int FFT_overlap_factor = 4;         //2 is 50% overlap, 4 is 75% overlap
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                       myTympan(TympanRev::E);                //TympanRev::C or TympanRev::C or TympanRev::E
+Tympan                       myTympan(TympanRev::E);                //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32            i2s_in(audio_settings);                //Digital audio *from* the Tympan AIC.
 AudioEffectNoiseReduction_FD_F32    noiseReduction(audio_settings); //create an example frequency-domain processing block
 AudioEffectGain_F32          gain_L(audio_settings);                //Applies digital gain to audio data.

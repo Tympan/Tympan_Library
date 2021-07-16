@@ -23,7 +23,7 @@ const int audio_block_samples = 32;     //for freq domain processing choose a po
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                       myTympan(TympanRev::D);                //TympanRev::C or TympanRev::C or TympanRev::E
+Tympan                       myTympan(TympanRev::E);                //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32            i2s_in(audio_settings);                //Digital audio *from* the Tympan AIC.
 AudioEffectLowpass_FD_F32    audioEffectLowpassFD(audio_settings);  //create the frequency-domain processing block
 AudioOutputI2S_F32           i2s_out(audio_settings);               //Digital audio *to* the Tympan AIC.
