@@ -17,15 +17,8 @@
 //here are the libraries that we need
 #include <Tympan_Library.h>  //include the Tympan Library
 
-//set to true for Rev E (and set the Arduino IDE to Teensy 4.1).
-#define USE_REV_E (true)    //this also assumes that REV_E is BC127 firmware V7 whereas REV_D is assumed to be V5
-
 //create audio library objects for handling the audio
-#if (USE_REV_E)
-Tympan                    myTympan(TympanRev::E);  //do TympanRev::E
-#else
-Tympan                    myTympan(TympanRev::D);  //do TympanRev::D or TympanRev::C
-#endif
+Tympan                    myTympan(TympanRev::E);  //do TympanRev::E (Teensy 3.6) or TympanRev::D (Teensy 4.1)
 AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Tympan AIC.
 AudioEffectGain_F32       gain1, gain2;  //Applies digital gain to audio data.
 AudioOutputI2S_F32        i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
@@ -69,14 +62,7 @@ void setup() {
 
   //setup BLE
   while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  #if USE_REV_E
-    //V7 firmware (ie, RevE)
-  #else
-    //V5 firmware (ie, RevD)
-    ble.set_BC127_firmware_ver(5);
-  #endif
-
-  ble.setupBLE(myTympan);
+  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
   
   //Create the GUI description (but not yet transmitted to the App...that's after it connects)
   createTympanRemoteLayout();

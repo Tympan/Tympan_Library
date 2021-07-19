@@ -81,7 +81,7 @@ void setup() {
 
   //setup BLE
   while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  ble.setupBLE(myTympan);
+  ble.setupBLE(myTympan.getBTFirmwareRev());
 
   myTympan.println("Setup complete.");
   serialManager.printHelp();
