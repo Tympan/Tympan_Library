@@ -189,7 +189,9 @@ void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
 		//case 3:
 		//	myWire = &Wire3; break; //commented out in WireKinetis.h?? Why?
 		case 4:
-			pinMode(7,INPUT_PULLUP); delay(10); int pinVal = digitalRead(7);
+		{
+			pinMode(7,INPUT_PULLUP); delay(10); 
+			int pinVal = digitalRead(7);
 			if(pinVal == 1){		// production Rev D
 				myWire = &Wire2;
 			} else {						// prototype Rev D with op amps
@@ -198,6 +200,7 @@ void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
 			}
 			Serial.print("Control I2C Select: "); Serial.println(pinVal+1);
 			break;
+		}
 		default:
 			myWire = &Wire; break;
   }

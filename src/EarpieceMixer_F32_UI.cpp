@@ -21,7 +21,6 @@ bool EarpieceMixer_F32_UI::processCharacterTriple(char mode_char, char chan_char
   char c = data_char;
   
   //switch yard
-  float new_val;
   return_val = true;
   switch (c) {    
     case 'w':
@@ -74,13 +73,11 @@ bool EarpieceMixer_F32_UI::processCharacterTriple(char mode_char, char chan_char
       setButtonState_frontRearMixer();
       break;
     case 'i':
-      new_val = incrementRearMicGain_dB(rearMicGainIncrement_dB);
-      //Serial.print("Adjusting rear mic gain to "); Serial.print(new_val); Serial.println(" dB");
+      incrementRearMicGain_dB(rearMicGainIncrement_dB);
       setButtonState_rearMic();
       break;
     case 'I':
-      new_val = incrementRearMicGain_dB(-rearMicGainIncrement_dB);
-      //Serial.print("Adjusting rear mic gain to "); Serial.print(new_val); Serial.println(" dB");
+      incrementRearMicGain_dB(-rearMicGainIncrement_dB);
       setButtonState_rearMic();
       break;
     case 'u':
