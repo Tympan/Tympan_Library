@@ -132,7 +132,7 @@ void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_
     int max_source_ind = N_2;  //this line causes this feature to be defeated
   #endif
   
-  //get the magnitude for each FFT bin and store somewhere safes
+  //get the magnitude for each FFT bin and store somewhere safe
   arm_cmplx_mag_f32(complex_2N_buffer, orig_mag, N_2);
 
   //now, loop over each bin and compute the new magnitude based on shifting the formants
@@ -149,9 +149,12 @@ void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_
       //source_ind = min(max(source_ind,1),N_2-1);
       float source_ind_float = source_freq_Hz / Hz_per_bin;
       if (source_ind_float > 0.0) {
-        source_ind = min(max(1, (int)source_ind_float), N_2 - 2); //Chip: why -2 and not -1?  Because later, for for the interpolation, we do a +1 and we want to stay within nyquist
-        interp_fac = source_ind_float - (float)source_ind;
-        interp_fac = max(0.0, interp_fac);  //this will be used in the interpolation in a few lines
+        //get the source index for the interpolation.
+        source_ind = min(max(0, (int)(source_ind_float+0.001f)), N_2 - 2);  //WEA 7/19.2021...this had been max(1,...) why?  changed to max(0,...)
+        //Chip to self: why -2 and not -1?  Because later, for for the interpolation, we do a +1 and we want to stay within nyquist           
+        
+        interp_fac = source_ind_float - (float)source_ind;  //this will be used in the interpolation in a few lines
+        //interp_fac = max(0.0, interp_fac);   ...WEA removed this 7/19/2021
     
         //what is the new magnitude...interpolate
         new_mag = 0.0; scale = 0.0;
@@ -181,7 +184,7 @@ void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_
         }
         
       } else { //if the source index is below zero, what to do?
-        //should neve get here due to the earlier check on start_freq_Hz
+        //should never get here due to the earlier check on start_freq_Hz
         
         //set to zero
         //complex_2N_buffer[2 * dest_ind] = 0.0; //real
@@ -192,9 +195,10 @@ void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_
       //leave the original audio in that bin unchanged
     }
   }
-  //zero out the lowest bin
-  complex_2N_buffer[0] = 0.0; //real
-  complex_2N_buffer[1] = 0.0; //imaginary
+  
+  //zero out the lowest bin...WEA removed this 7/19/2021
+  //complex_2N_buffer[0] = 0.0; //real
+  //complex_2N_buffer[1] = 0.0; //imaginary
 
 }
 #endif

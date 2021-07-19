@@ -14,7 +14,7 @@ class State : public TympanStateBase_UI { // look in TympanStateBase for more st
 
     //Frequency processing...these values are used as defaults in the main code
     float freq_knee_Hz = 1000.0;         //knee point (Hz) above which the frequency compression begins (will get moved to nearest bin)
-    float freq_CR = powf(2.0,3*1.0/6.0); //frequency compression factor, 1.0 is no compression, >1.0 is compression
+    float freq_CR = powf(2.0,3.0*1.0/6.0); //frequency compression factor, 1.0 is no compression, >1.0 is compression
     float freq_shift_Hz = 0.0;           //frequency shifting (Hz) (will get moved to nearest bin)
     
 };

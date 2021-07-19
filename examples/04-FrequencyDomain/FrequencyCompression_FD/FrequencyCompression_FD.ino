@@ -87,8 +87,6 @@ AudioConnection_F32       patchCord30(gain_L, 0, i2s_out, 0);      //connect to 
 AudioConnection_F32       patchCord41(gain_R, 0, i2s_out, 1);      //connect to the right output
 
 //Create BLE
-#define USE_BLE (false)
-const bool use_ble = USE_BLE;
 BLE ble = BLE(&Serial1);
 
 //control display and serial interaction
@@ -146,8 +144,7 @@ void setup() {
   setFreqKnee_Hz(myState.freq_knee_Hz);
   setFreqCR(myState.freq_CR);
   setFreqShift_Hz(myState.freq_shift_Hz); //0 is no freq shifting.
-  Serial.print("FFT resolution allowed for a shift of "); Serial.print(myState.freq_shift_Hz); Serial.print(" Hz");
-
+  Serial.print("FFT resolution allowed for a shift of "); Serial.print(myState.freq_shift_Hz); Serial.println(" Hz");
 
   //Enable the Tympan to start the audio flowing!
   myTympan.enable(); // activate AIC
@@ -158,7 +155,6 @@ void setup() {
   myTympan.setHPFonADC(true, cutoff_Hz, audio_settings.sample_rate_Hz); //set to false to disble
   //earpieceShield.setHPFonADC(true, cutoff_Hz, audio_settings.sample_rate_Hz); //set to false to disable
 
-
   //Choose the desired input
   switchToPCBMics();        //use PCB mics as input
   //switchToMicInOnMicJack(); //use Mic jack as mic input (ie, with mic bias)
@@ -167,14 +163,9 @@ void setup() {
   //Set the desired volume levels
   setOutputGain_dB(myState.output_gain_dB);    // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
 
-  // configure the blue potentiometer
-  servicePotentiometer(millis(), 0); //update based on the knob setting the "0" is not relevant here.
-
-  //setup BLE
-#if USE_BLE
+   //setup BLE
   while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
   ble.setupBLE(myTympan.getBTFirmwareRev());
-#endif
 
   //finish the setup by printing the help menu to the serial connections
   setupSerialManager();
@@ -189,7 +180,6 @@ void loop() {
   while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
 
   //respond to BLE
-#if USE_BLE
   if (ble.available() > 0) {
     String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
     for (int i = 0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]); //ends up in serialManager.processCharacter()
@@ -197,7 +187,6 @@ void loop() {
 
   //If there is no BLE connection, make sure that we keep advertising
   ble.updateAdvertising(millis(), 5000); //check every 5000 msec
-#endif
 
   //check the potentiometer
   servicePotentiometer(millis(), 100); //service the potentiometer every 100 msec
@@ -234,9 +223,7 @@ void servicePotentiometer(unsigned long curTime_millis, const unsigned long upda
       float gain_dB = 0.f + 30.0f * ((val - 0.5) * 2.0); //set volume as 0dB +/- 30 dB
       myTympan.print("Changing output volume to = "); myTympan.print(gain_dB); myTympan.println(" dB");
       setOutputGain_dB(gain_dB);
-#if USE_BLE
       serialManager.setOutputGainButtons();
-#endif
     }
 
 
@@ -256,24 +243,36 @@ void printGainSettings(void) {
 float setInputGain_dB(float gain_dB) { return myState.input_gain_dB = myTympan.setInputGain_dB(gain_dB);}
 float setOutputGain_dB(float gain_dB) { return myState.output_gain_dB = myTympan.volume_dB(gain_dB); }
 void incrementDigitalGain(float increment_dB) { setDigitalGain_dB(myState.digital_gain_dB + increment_dB); }
-void setDigitalGain_dB(float gain_dB) { myState.digital_gain_dB = gain_L.setGain_dB(gain_R.setGain_dB(gain_dB)); }
+void setDigitalGain_dB(float gain_dB) { gain_L.setGain_dB(gain_dB); gain_R.setGain_dB(gain_dB); }
 
 // //set various settings for the frequency compression
 float incrementFreqKnee(float incr_factor) {
   float cur_val = freqShift_L.getStartFreq_Hz();
   return setFreqKnee_Hz(cur_val + incr_factor);
 }
-float setFreqKnee_Hz(float new_val) { return myState.freq_knee_Hz =  freqShift_R.setStartFreq_Hz(freqShift_L.setStartFreq_Hz(new_val));}
+float setFreqKnee_Hz(float new_val) { 
+  freqShift_L.setStartFreq_Hz(new_val);
+  freqShift_R.setStartFreq_Hz(new_val);
+  return myState.freq_knee_Hz = freqShift_R.getStartFreq_Hz();
+}
 
 float incrementFreqCR(float incr_factor) {
   incr_factor = max(0.1, min(5.0, incr_factor));
   float cur_val = freqShift_L.getFreqCompRatio();
   return setFreqCR(cur_val * incr_factor);
 }
-float setFreqCR(float new_val) { return myState.freq_CR = freqShift_R.setFreqCompRatio(freqShift_L.setFreqCompRatio(new_val));}
+float setFreqCR(float new_val) { 
+  freqShift_L.setFreqCompRatio(new_val);
+  freqShift_R.setFreqCompRatio(new_val);
+  return myState.freq_CR = freqShift_R.getFreqCompRatio();
+}
 
 float incrementFreqShift(float incr_factor) {
   float cur_val = freqShift_L.getShift_Hz();
   return setFreqShift_Hz(cur_val + incr_factor);
 }
-float setFreqShift_Hz(float new_val) { return myState.freq_shift_Hz = freqShift_R.setShift_Hz(freqShift_L.setShift_Hz(new_val));}
+float setFreqShift_Hz(float new_val) { 
+  freqShift_L.setShift_Hz(new_val);
+  freqShift_R.setShift_Hz(new_val);
+  return myState.freq_shift_Hz = freqShift_R.getShift_Hz();
+}

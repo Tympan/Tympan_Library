@@ -8,7 +8,6 @@
 
 //extern objects
 extern State myState;
-extern const bool use_ble;
 
 //functions in the main sketch that I want to call from here
 extern void incrementDigitalGain(float);
@@ -77,11 +76,13 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
     case 'g': case 'G':
       printGainSettings(); break;
     case 'k':
-      incrementDigitalGain(gainIncrement_dB); break;
+      incrementDigitalGain(gainIncrement_dB);
       setGainButtons();
+      break;
     case 'K':   //which is "shift k"
-      incrementDigitalGain(-gainIncrement_dB);  break;
+      incrementDigitalGain(-gainIncrement_dB);
       setGainButtons();
+      break;
     case 'p':
       switchToPCBMics(); break;
     case 'm':
@@ -166,14 +167,14 @@ void SerialManager::createTympanRemoteLayout(void) {
     card_h = myState.addCard_cpuReporting(page_h);
 
     card_h = page_h->addCard("Input Gain (dB)");
-      card_h->addButton("-", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
+      card_h->addButton("", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
       card_h->addButton("",  "", "inGain",  4);   //displayed string (blank for now), command (blank), button ID, button width (out of 12)
-      card_h->addButton("+", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
+      card_h->addButton("", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
 
-    card_h = page_h->addCard("Volume Wheel(dB)");
-      card_h->addButton("-", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
+    card_h = page_h->addCard("Volume Wheel (dB)");
+      card_h->addButton("", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
       card_h->addButton("",  "", "outGain", 4);  //displayed string (blank for now), command (blank), button ID, button width (out of 12)
-      card_h->addButton("+", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
+      card_h->addButton("", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
 
   //myGUI.addPredefinedPage("serialMonitor");
 }
@@ -203,12 +204,12 @@ void SerialManager::setOutputGainButtons(bool activeButtonsOnly) {
 }
 void SerialManager::setNLFreqParams(bool activeButtonsOnly) {
   setButtonText("freqKnee", String(myState.freq_knee_Hz,0));
-  setButtonText("freqCR",   String(myState.freq_knee_Hz,2));
-  setButtonText("freqShift",String(myState.freq_knee_Hz,1));
+  setButtonText("freqCR",   String(myState.freq_CR,2));
+  setButtonText("freqShift",String(myState.freq_shift_Hz,0));
 }
 
 void SerialManager::setButtonText(String s1, String s2) {
-  if (use_ble) SerialManagerBase::setButtonText(s1,s2);
+  SerialManagerBase::setButtonText(s1,s2);
 }
 
 
