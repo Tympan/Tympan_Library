@@ -5,6 +5,7 @@
 
   Plays a single tone followed by silence.  Repeats the tone+silence at increasing amplitude.
   The last tone should definitely distort.  The 2nd-to-last tone should be on the edge of distorting.
+  WARNING: DO NOT LISTEN TO THIS WITH HEADPHONES ON
 
   MIT License, Use at your own risk.
 */
