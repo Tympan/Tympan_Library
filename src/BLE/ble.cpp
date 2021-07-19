@@ -35,17 +35,23 @@ int BLE::begin(void)
 	return ret_val;
 }
 
-void BLE::setupBLE(Tympan &_tympan) 
+void BLE::setupBLE(int BT_firmware) 
 {  
-  int ret_val = begin();
-  if (ret_val != 1) {  //via BC127.h, success is a value of 1
-    Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");  Serial.println(ret_val);
-    Serial.println("    : -1 = TIMEOUT ERROR");
-    Serial.println("    :  0 = GENERIC MODULE ERROR");
-  }
+	int ret_val;
+	ret_val = set_BC127_firmware_ver(BT_firmware);
+	if (ret_val != BT_firmware) {
+		Serial.println("BLE: setupBLE: *** WARNING ***: given BT_firmware (" + String(BT_firmware) + ") not allowed.");
+		Serial.println("   : assuming firmware " + String(ret_val) + " instead. Continuing...");
+	}
+	ret_val = begin();
+	if (ret_val != 1) {  //via BC127.h, success is a value of 1
+		Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");  Serial.println(ret_val);
+		Serial.println("    : -1 = TIMEOUT ERROR");
+		Serial.println("    :  0 = GENERIC MODULE ERROR");
+	}
 
-  //start the advertising for a connection (whcih will be maintained in serviceBLE())
-  advertise(true);
+	//start the advertising for a connection (whcih will be maintained in serviceBLE())
+	advertise(true);
 
 }
 
@@ -263,8 +269,10 @@ bool BLE::isAdvertising(bool printResponse)
 		}
         //return s.startsWith("STATE CONNECTED"); //original
 		if (s.indexOf("ADVERTISING") == -1) { //if it finds -1, then it wasn't found
+			//Serial.println("BLE: isAdvertising: not advertising.");
 			return false;
 		} else {
+			//Serial.println("BLE: isAdvertising: yes is advertising.");
 			return true;
 		}
     }
@@ -290,6 +298,7 @@ bool BLE::isConnected(bool printResponse)
 		//if (s.indexOf("LINK 14 CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This version is prob better (more specific for BLE) but only would work for V6 and above
 		int ind = s.indexOf("CONNECTED");
 		if (ind == -1) { //if it returns -1, then it wasn't found.
+			//Serial.println("BLE: isConnected: not connected.");
 			return false;
 		} else {
 			//as of V6 (or so) it'll actually say "CONNECTED[0]" if not connected, which is not helpful
@@ -298,10 +307,15 @@ bool BLE::isConnected(bool printResponse)
 			if (BC127_firmware_ver >= 6) {
 				ind = s.indexOf("LINK 14 CONNECTED");
 				if (ind == -1) {
-					Serial.println("BLE: isConnected: not connected.");
+					//Serial.println("BLE (v7): isConnected: not connected.");
 					return false;
 				}
+			} else {
+				//Serial.print("BLE (v5x): ind of 'Connected' = ");
+				//Serial.println(ind);
 			}
+			
+			//Serial.println("BLE: isConnected: yes is connected.");
 			return true;
 		}
     }
@@ -353,8 +367,8 @@ void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePe
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    if (isConnected(true) == false) { //the true tells it to print the full reply to the serial monitor
-      if (isAdvertising(true) == false) {//the true tells it to print the full reply to the serial monitor
+    if (isConnected() == false) { //the true tells it to print the full reply to the serial monitor
+      if (isAdvertising() == false) {//the true tells it to print the full reply to the serial monitor
         Serial.println("BLE: updateAvertising: activating BLE advertising");
         advertise(true);  //not connected, ensure that we are advertising
       }

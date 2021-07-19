@@ -59,6 +59,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 2;  //PTD0
 					reversePot = true;
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
+					default_BT_mode = BT_DATA_MODE;
+					assumed_BT_firmware = NOT_A_FEATURE;
 					break;
 				case (TympanRev::C) :   //First released Tympan hardware.  Sold in blue case.
 					//Teensy 3.6 Pin Numbering
@@ -70,6 +72,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_REGEN = NOT_A_FEATURE;
 					BT_PIO4 = 2;  //PTD0
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
+					default_BT_mode = BT_DATA_MODE;
+					assumed_BT_firmware = NOT_A_FEATURE;
 					break;
 				case (TympanRev::D0) : case (TympanRev::D1) :  //RevD development...first with BC127 BT module
 					//Teensy 3.6 Pin Numbering
@@ -82,6 +86,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
+					assumed_BT_firmware = 5;
 					break;
 				case (TympanRev::D2) :   //RevD development...includes on-board preamp
 					//Teensy 3.6 Pin Numbering
@@ -95,6 +100,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
+					assumed_BT_firmware = 5;
 					break;
 				case (TympanRev::D3) :  //Built for OpenTact
 					//Teensy 3.6 Pin Numbering
@@ -109,6 +115,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
+					assumed_BT_firmware = 5;
 					break;
 				case (TympanRev::D4) :  case (TympanRev::D) :  //RevD release candidate
 					//Teensy 3.6 Pin Numbering
@@ -124,6 +131,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					//AIC_Shield_enableStereoExtMicBias = 41;
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
+					assumed_BT_firmware = 5;
+
 					break;
 				case  (TympanRev::E) : case (TympanRev::E1) :    //Earliest trials with Tympan 4 with Rev A
 					//Teensy 4.0 Pin Numbering
@@ -141,7 +150,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
 					BT_serial_speed = 9600;
 					Rev_Test = 22;
-					default_BT_mode = BT_COMMAND_MODE;
+					assumed_BT_firmware = 7;
 					break;
 
 /* 				case (TympanRev::D_CCP):  //the Tympan functions itself are same as RevD, but added some features to support the CCP shield
@@ -189,7 +198,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int enableStereoExtMicBias = NOT_A_FEATURE;
 		
 		enum BT_modes {BT_DATA_MODE, BT_COMMAND_MODE};
-		int default_BT_mode = BT_DATA_MODE;
+		int default_BT_mode = BT_COMMAND_MODE;
+		int assumed_BT_firmware = 7;  // firmware level for BC127
 		//int AIC_Shield_enableStereoExtMicBias = NOT_A_FEATURE;
 		//int CCP_atten1 = NOT_A_FEATURE, CCP_atten2 = NOT_A_FEATURE;
 		//int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED = NOT_A_FEATURE;
@@ -278,7 +288,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 
 		void beginBluetoothSerial(void) { beginBluetoothSerial(pins.BT_serial_speed); }
 		void beginBluetoothSerial(int BT_speed);
-		void clearAndConfigureBTSerialRevD(void);
+		void clearAndConfigureBTSerialRevD(void);  //assumes BT is being used for BT Classic (not BLE)
 
 		bool mixBTAudioWithOutput(bool state) { return mixInput1toHPout(state); } //bluetooth audio is on Input1
 		void echoIncomingBTSerial(void) {
@@ -287,6 +297,8 @@ class TympanBase : public AudioControlAIC3206, public Print
 		void setBTAudioVolume(int vol); //vol is 0 (min) to 15 (max).  Only Rev D (and Rev E?).  Only works when you are connected via Bluetooth!!!!
 		int getBTCommMode(void) { return BT_mode; }   //BT_DATA_MODE or BT_COMMAND_MODE
 		int setBTCommMode(int val) { return BT_mode = val; }  //BT_DATA_MODE or BT_COMMAND_MODE
+		int setBTFirmwareRev(int val) { return BT_firmware = val; }
+		int getBTFirmwareRev(void) { return BT_firmware; }
 		void shutdownBT(void);
 		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
@@ -388,6 +400,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 		int BT_uint8_buff_end = 0;
 		uint8_t BT_uint8_buff[BT_uint8_buff_len];
 		bool echoAllPrintToBT = false;  //by default, do not echo print() to the BT serial
+		int BT_firmware = 7;
 
 		virtual size_t write_BC127_V7_command_mode(const uint8_t *buffer, size_t size);
 		virtual void read_BC127_V7_command_mode(void);

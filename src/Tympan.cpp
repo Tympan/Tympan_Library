@@ -7,6 +7,7 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 	AudioControlAIC3206::setResetPin(_pins.resetAIC);
 	pins = _pins; //shallow copy to local version
 	BT_mode = pins.default_BT_mode;
+	setBTFirmwareRev(pins.assumed_BT_firmware);
 
 	//Serial.print("TympanBase: setupPins: pins.potentiometer, given / act: ");
 	//Serial.print(_pins.potentiometer); Serial.print(" / "); Serial.println(pins.potentiometer);
@@ -135,20 +136,18 @@ void TympanBase::beginBluetoothSerial(int BT_speed) {
 void TympanBase::clearAndConfigureBTSerialRevD(void) {
    //clear out any text that is waiting
 	delay(500);  //do this to wait for BT serial to come alive upon startup.  Is there a bitter way?
-	while(BT_Serial->available()) { BT_Serial->read(); delay(20); }
+	while(BT_Serial->available()) { BT_Serial->read(); delay(5); }
 
 	if (0) { //sometimes have to temporarily disable for RevE development...11/20/2020, WEA
-		//transition to data mode
-		//Serial.println("Transition BT to data mode");
+		//transition to data mode...only do this for BT Classic, not for BLE.
+		Serial.println("Transition BT to data mode");  
 		BT_Serial->print("ENTER_DATA");BT_Serial->write(0x0D); //enter data mode (Firmware v5 only!).  Finish with carriage return.
 		//BT_Serial->print("ENTER_DATA_MODE");BT_Serial->write(0x0D); //enter data mode (Firmware v6 only!).  Finish with carriage return.  Only works if there is an active BT connection to a phone or whatever...so, bascially, it behaves nothing like v5.  :(
 		delay(100);
 		int count = 0;
 		while ((count < 3) & (BT_Serial->available())) { //we should receive on "OK"
-		  //Serial.print((char)BT_SERIAL.read());
 		  BT_Serial->read(); count++;  delay(5);
 		}
-		//Serial.println("BT Should be ready.");
 	}
 }
 
