@@ -10,7 +10,7 @@ Tympan Library
 Requirements
 ------------
 
-**Hardware**: All versions of the Tympan are, at their heart, compatible with the Teensy brand of microcontrollers.  Hence, many of the instructions below relate to Teensy.  For reference, Tympan RevD are Teensy 3.6 whereas the Tympan RevE is Teensy 4.1.
+**Hardware**: All versions of the Tympan are, at their heart, compatible with the Teensy brand of microcontrollers.  Hence, many of the instructions below relate to Teensy.  For reference, Tympan RevD is Teensy 3.6 whereas the Tympan RevE is Teensy 4.1.
 
 **Arduino IDE (Windows/Linux)**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the actual Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
 
