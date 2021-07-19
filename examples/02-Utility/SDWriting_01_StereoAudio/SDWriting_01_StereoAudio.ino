@@ -6,7 +6,9 @@
       >>> START recording by having potentiometer turned above half-way
       >>> STOP recording by having potentiometer turned below half-way
 
-   Assumes Tympan Rev C or D.  Program in Arduino IDE as a Teensy 3.6.
+   Set Tympan Rev C or D.  Program in Arduino IDE as a Teensy 3.6.
+
+   Set Tympan Rev E.  Program in Arduino IDE as a Teensy 4.1.
 
    Uses super-fast SD library that is original from Greiman, but which
       has been forked, made compatible with the Teensy Audio library, and
@@ -14,7 +16,8 @@
 
    Created: Chip Audette, OpenAudio, March 2018
     Jun 2018: updated for Tympan RevC or RevD
-    Jun 2018: updated to adde automatic mic detection
+    Jun 2018: updated to add automatic mic detection
+    Jul 2021: updated to support Tympan RevE 
 
    License: MIT License, Use At Your Own Risk
 */
@@ -58,7 +61,7 @@ void setup() {
   myTympan.print("StereoAudioToSD: runnng at a sample rate of (Hz): ");
   myTympan.println(sample_rate_Hz);
 
-  //enable the Tympman to detect whether something was plugged inot the pink mic jack
+  //enable the Tympman to detect whether something was plugged into the pink mic jack
   myTympan.enableMicDetect(true);
 
   //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop()

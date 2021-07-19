@@ -8,7 +8,7 @@
 */
 #include <Tympan_Library.h>
 
-Tympan myTympan(TympanRev::D);
+Tympan myTympan(TympanRev::E);
 
 usb_serial_class *USB_Serial;
 HardwareSerial *BT_Serial;
