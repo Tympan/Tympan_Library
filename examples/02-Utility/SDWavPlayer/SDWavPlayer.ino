@@ -6,6 +6,8 @@
  * 
  * Play back a WAV file through the Typman.
  * 
+ * For access to WAV files, please visit https://www.pjrc.com/teensy/td_libs_AudioDataFiles.html.
+ * 
  */
 
 #include <Tympan_Library.h>
