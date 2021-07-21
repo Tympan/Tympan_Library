@@ -4,8 +4,9 @@
 
 #include <Tympan_Library.h>
 
-//Extern variables
+//Extern variables from the main *.ino file
 extern Tympan myTympan;
+extern BLE ble;
 extern AudioSDWriter_F32 audioSDWriter;
 extern float input_gain_dB;
 extern State_t myState;
@@ -32,8 +33,9 @@ class SerialManager {
     void printFullGUIState(void);
     void printGainSettings(void);
     void setButtonState(String btnId, bool newState);
+    void setButtonText(String btnId, String text);
     float gainIncrement_dB = 2.5f;
-
+    
   private:
 
 };
@@ -145,9 +147,10 @@ void SerialManager::respondToByte(char c) {
             "]}"                            
           "]"
         "}";
-        myTympan.println(jsonConfig);
+        myTympan.println(jsonConfig); //send out to USB for debugging
+        ble.sendMessage(jsonConfig);  //send over BLE to the app
         delay(50);
-        printFullGUIState();
+        printFullGUIState();          //send the status of the buttons
         break;
       }
   }
@@ -177,11 +180,20 @@ void SerialManager::printGainSettings(void) {
 }
 
 void SerialManager::setButtonState(String btnId, bool newState) {
+  String str = "STATE=BTN:" + btnId + ":";
   if (newState) {
-    myTympan.println("STATE=BTN:" + btnId + ":1");
+    str += "1";
   } else {
-    myTympan.println("STATE=BTN:" + btnId + ":0");
+    str += "0";
   }
+  myTympan.println(str);  //send to USB for debugging on PC
+  ble.sendMessage(str);   //send to App via BLE
+}
+
+void SerialManager::setButtonText(String btnId, String text) {
+  String str = "TEXT=BTN:" + btnId + ":"+text;
+  myTympan.println(str); //send to USB for debugging on PC
+  ble.sendMessage(str);  //send to App via BLE
 }
 
 #endif

@@ -50,6 +50,8 @@ AudioConnection_F32           patchcord2(i2s_in, 1, i2s_out, 1);    //Right inpu
 AudioConnection_F32           patchcord3(i2s_in, 0, audioSDWriter, 0);   //connect Raw audio to left channel of SD writer
 AudioConnection_F32           patchcord4(i2s_in, 1, audioSDWriter, 1);   //connect Raw audio to right channel of SD writer
 
+//Create BLE
+BLE ble = BLE(&Serial1);
 
 //control display and serial interaction
 bool enable_printCPUandMemory = false;
@@ -131,6 +133,12 @@ void setup() {
   audioSDWriter.setWriteDataType(AudioSDWriter::WriteDataType::INT16);  //this is the built-in default, but here you could change it to FLOAT32
   audioSDWriter.setNumWriteChannels(2);       //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
 
+  //setup BLE
+  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
+  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
+  ble.updateAdvertising(millis(),0);          // ensure it is advertising (if not connected)
+
+
   //End of setup
   myTympan.println("Setup: complete."); serialManager.printHelp();
 
@@ -141,7 +149,16 @@ void loop() {
 
   //respond to Serial commands
   if (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
-  if (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
+  //if (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial (BT Classic)
+
+  //respond to BLE
+  if (ble.available() > 0) {
+    String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
+    for (int i=0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]);
+  }
+
+  //service the BLE advertising state
+  ble.updateAdvertising(millis(),10000); //check every 5000 msec to ensure it is advertising (if not connected)
 
   //service the SD recording
   serviceSD();
@@ -150,7 +167,9 @@ void loop() {
   if (enable_printCPUandMemory) myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
   //service the LEDs
-  serviceLEDs();
+  serviceLEDs(millis());
+
+
 
 } //end loop()
 
@@ -158,32 +177,27 @@ void loop() {
 
 // ///////////////// Servicing routines
 
+void serviceLEDs(unsigned long curTime_millis) {
+  static unsigned long lastUpdate_millis = 0;
+  const unsigned long long_toggle_millis = 1000;
+  const unsigned long short_toggle_millis = 100;
 
-void serviceLEDs(void) {
-  static int loop_count = 0;
-  loop_count++;
-  
-  if (audioSDWriter.getState() == AudioSDWriter::STATE::UNPREPARED) {
-    if (loop_count > 200000) {  //slow toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } else if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
+  //handle wrap-around of the clock 
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; 
 
-    //let's flicker the LEDs while writing
-    loop_count++;
-    if (loop_count > 20000) { //fast toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } else {
-    //myTympan.setRedLED(HIGH); myTympan.setAmberLED(LOW); //Go Red
-    if (loop_count > 200000) { //slow toggle
-      loop_count = 0;
-      toggleLEDs(false,true); //just blink the red
-    }
+  //choose how fast or slow to toggle based on recording state
+  unsigned long toggle_millis = long_toggle_millis;
+  if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
+    toggle_millis = short_toggle_millis;
   }
-}
+
+  //has enough time passed to toggle the LEDs
+  if ((curTime_millis - lastUpdate_millis) > toggle_millis) { //is it time to update the user interface?    
+    toggleLEDs(); //blink both
+    lastUpdate_millis = curTime_millis;
+  }
+} 
+
 
 void toggleLEDs(void) {
   toggleLEDs(true,true);  //toggle both
