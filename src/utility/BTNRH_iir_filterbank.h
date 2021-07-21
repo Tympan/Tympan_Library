@@ -58,9 +58,17 @@ void zp2ba_fb(float *z, float *p, int nz, int nb, double *b, double *a)
 }
 
 extern "C" char* sbrk(int incr);
-int FreeRam() {
-  char top; //this new variable is, in effect, the mem location of the edge of the heap
-  return &top - reinterpret_cast<char*>(sbrk(0));
+int FreeRam_BTNRH(void) {
+  #if defined(__IMXRT1062__)
+    //extern unsigned long _heap_start;
+    extern unsigned long _heap_end;
+    extern char *__brkval;
+
+    return (char *)&_heap_end - __brkval;
+  #else
+    char top; //this new variable is, in effect, the mem location of the edge of the heap
+    return &top - reinterpret_cast<char*>(sbrk(0));
+  #endif
 }
 
 
@@ -94,7 +102,7 @@ void filterbank_zp(float *y, //output: a block of filtered signal per filter ban
 	float zz[nc*nb];
 	
     //Serial.print("BTNRH_iir_filterbank: filterbank_zp: allocated memory...FreeRAM(B) = ");
-    //Serial.println(FreeRam());
+    //Serial.println(FreeRam_BTNRH());
 
     // transform poles & zeros to IIR coeficients
     zp2ba_fb(z, p, nz, nb, b, a);
@@ -408,7 +416,7 @@ int adjust_gain_fb(float *z,  // Input: filter's zeros, complex values  (float[n
 	}
 
     //Serial.print("BTNRH_iir_filterbank: adjust_gain_fb: allocated a lot of memory.  FreeRAM(B) = ");
-    //Serial.println(FreeRam());
+    //Serial.println(FreeRam_BTNRH());
     
     //get frequency response
 	filterbank_zp(y, x, nt, z, p, g, nb, nz);
@@ -417,7 +425,7 @@ int adjust_gain_fb(float *z,  // Input: filter's zeros, complex values  (float[n
     free(y);
 	
 	//Serial.print("BTNRH_iir_filterbank: filterbank_zp: allocated memory...FreeRAM(B) = ");
-    //Serial.println(FreeRam());
+    //Serial.println(FreeRam_BTNRH());
 
 
     // iteration loop
@@ -459,7 +467,7 @@ int adjust_gain_fb(float *z,  // Input: filter's zeros, complex values  (float[n
 	free(h);
 	
 	//Serial.print("BTNRH_iir_filterbank: filterbank_zp: allocated memory...FreeRAM(B) = ");
-    //Serial.println(FreeRam());
+    //Serial.println(FreeRam_BTNRH());
 
 
     //Serial.println("BTNRH_iir_filterbank: adjust_gain_fb: done.");
