@@ -18,7 +18,7 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E);  //do TympanRev::E (Teensy 3.6) or TympanRev::D (Teensy 4.1)
+Tympan                    myTympan(TympanRev::E);  //do TympanRev::D (Teensy 3.6) or TympanRev::E (Teensy 4.1)
 AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Tympan AIC.
 AudioEffectGain_F32       gain1, gain2;  //Applies digital gain to audio data.
 AudioOutputI2S_F32        i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
