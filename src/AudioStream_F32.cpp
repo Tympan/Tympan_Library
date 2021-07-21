@@ -108,6 +108,7 @@ audio_block_f32_t * AudioStream_F32::allocate_f32(void)
 // returned to the free pool
 void AudioStream_F32::release(audio_block_f32_t *block)
 {
+  if (!block) return;  //return if block is NULL
   uint32_t mask = (0x80000000 >> (31 - (block->memory_pool_index & 0x1F)));
   uint32_t index = block->memory_pool_index >> 5;
 
