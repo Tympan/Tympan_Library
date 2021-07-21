@@ -358,13 +358,13 @@ class TympanBase : public AudioControlAIC3206, public Print
 		}
 		
 		static int FreeRam(void) {
-			#if defined(__IMXRT1062__)
+			#if defined(__IMXRT1062__)  //this branch is for Teensy 4.1 (ie, Tympan RevE)
 				//extern unsigned long _heap_start;
 				extern unsigned long _heap_end;
 				extern char *__brkval;
 
 				return (char *)&_heap_end - __brkval;
-			#else
+			#else  //this branch is for Teensy 3.6 (ie, Tympan RevC and RevD)
 				char top; //this new variable is, in effect, the mem location of the edge of the heap
 				return &top - reinterpret_cast<char*>(sbrk(0));
 			#endif
