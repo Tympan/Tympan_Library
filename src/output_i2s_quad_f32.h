@@ -33,11 +33,13 @@
 #ifndef output_i2s_quad_f32_h_
 #define output_i2s_quad_f32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <arm_math.h>  //to define float32_t
 #include "AudioStream_F32.h"
 //include "AudioStream.h"
 #include "DMAChannel.h"
-#include "output_i2s_f32.h"  //for setI2Sfreq()
+#include <arm_math.h>
+
 
 class AudioOutputI2SQuad_F32 : public AudioStream_F32
 {
@@ -65,7 +67,7 @@ protected:
 	static DMAChannel dma;
 	static void isr(void);
 	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
-	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &, audio_block_f32_t *&);
+	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
 private:
 	static audio_block_f32_t *block_ch1_2nd;
 	static audio_block_f32_t *block_ch2_2nd;

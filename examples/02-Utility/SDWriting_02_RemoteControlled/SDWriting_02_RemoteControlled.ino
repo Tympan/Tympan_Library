@@ -14,7 +14,7 @@
 
 //define state...the "myState" instance is actually created in SerialManager.h
 #define NO_STATE (-1)
-const int INPUT_PCBMICS = 0, INPUT_MICJACK = 1, INPUT_LINEIN_SE = 2, INPUT_LINEIN_JACK = 3;
+const int INPUT_PCBMICS = 0, INPUT_MICJACK = 1, INPUT_LINEIN_SE = 2, INPUT_LINEIN_JACK = 3, INPUT_PDM_MICS = 4;
 class State_t {
   public:
     int input_source = NO_STATE;
@@ -37,7 +37,7 @@ float input_gain_dB = default_input_gain_dB;
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-Tympan                        myTympan(TympanRev::D);
+Tympan                        myTympan(TympanRev::E);   //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioSDWriter_F32             audioSDWriter(audio_settings); //this is stereo by default
 AudioOutputI2S_F32            i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
@@ -50,6 +50,8 @@ AudioConnection_F32           patchcord2(i2s_in, 1, i2s_out, 1);    //Right inpu
 AudioConnection_F32           patchcord3(i2s_in, 0, audioSDWriter, 0);   //connect Raw audio to left channel of SD writer
 AudioConnection_F32           patchcord4(i2s_in, 1, audioSDWriter, 1);   //connect Raw audio to right channel of SD writer
 
+//Create BLE
+BLE ble = BLE(&Serial1);
 
 //control display and serial interaction
 bool enable_printCPUandMemory = false;
@@ -66,6 +68,7 @@ void setConfiguration(int config) {
   switch (config) {
     case INPUT_PCBMICS:
       //Select Input and set gain
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
       input_gain_dB = 15;
       myTympan.setInputGain_dB(input_gain_dB);
@@ -73,6 +76,7 @@ void setConfiguration(int config) {
 
     case INPUT_MICJACK:
       //Select Input and set gain
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the mic jack
       myTympan.setEnableStereoExtMicBias(true);  //put the mic bias on both channels
       input_gain_dB = default_input_gain_dB;
@@ -81,6 +85,7 @@ void setConfiguration(int config) {
       
     case INPUT_LINEIN_JACK:
       //Select Input and set gain
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the line-input through holes
       input_gain_dB = 0;
       myTympan.setInputGain_dB(input_gain_dB);
@@ -88,10 +93,17 @@ void setConfiguration(int config) {
       
     case INPUT_LINEIN_SE:
       //Select Input and set gain
+      myTympan.enableDigitalMicInputs(false);
       myTympan.inputSelect(TYMPAN_INPUT_LINE_IN); // use the line-input through holes
       input_gain_dB = default_input_gain_dB;
       myTympan.setInputGain_dB(input_gain_dB);
       break;
+        
+     case INPUT_PDM_MICS:
+      myTympan.enableDigitalMicInputs(true);
+      input_gain_dB = 0;
+      myTympan.setInputGain_dB(input_gain_dB); //doesn't affect the digital PDM mic inputs?
+      break;  
   }
  }
 
@@ -121,6 +133,12 @@ void setup() {
   audioSDWriter.setWriteDataType(AudioSDWriter::WriteDataType::INT16);  //this is the built-in default, but here you could change it to FLOAT32
   audioSDWriter.setNumWriteChannels(2);       //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
 
+  //setup BLE
+  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
+  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
+  ble.updateAdvertising(millis(),0);          // ensure it is advertising (if not connected)
+
+
   //End of setup
   myTympan.println("Setup: complete."); serialManager.printHelp();
 
@@ -131,7 +149,16 @@ void loop() {
 
   //respond to Serial commands
   if (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
-  if (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
+  //if (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial (BT Classic)
+
+  //respond to BLE
+  if (ble.available() > 0) {
+    String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
+    for (int i=0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]);
+  }
+
+  //service the BLE advertising state
+  ble.updateAdvertising(millis(),10000); //check every 5000 msec to ensure it is advertising (if not connected)
 
   //service the SD recording
   serviceSD();
@@ -140,7 +167,9 @@ void loop() {
   if (enable_printCPUandMemory) myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
   //service the LEDs
-  serviceLEDs();
+  serviceLEDs(millis());
+
+
 
 } //end loop()
 
@@ -148,32 +177,27 @@ void loop() {
 
 // ///////////////// Servicing routines
 
+void serviceLEDs(unsigned long curTime_millis) {
+  static unsigned long lastUpdate_millis = 0;
+  const unsigned long long_toggle_millis = 1000;
+  const unsigned long short_toggle_millis = 100;
 
-void serviceLEDs(void) {
-  static int loop_count = 0;
-  loop_count++;
-  
-  if (audioSDWriter.getState() == AudioSDWriter::STATE::UNPREPARED) {
-    if (loop_count > 200000) {  //slow toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } else if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
+  //handle wrap-around of the clock 
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; 
 
-    //let's flicker the LEDs while writing
-    loop_count++;
-    if (loop_count > 20000) { //fast toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } else {
-    //myTympan.setRedLED(HIGH); myTympan.setAmberLED(LOW); //Go Red
-    if (loop_count > 200000) { //slow toggle
-      loop_count = 0;
-      toggleLEDs(false,true); //just blink the red
-    }
+  //choose how fast or slow to toggle based on recording state
+  unsigned long toggle_millis = long_toggle_millis;
+  if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
+    toggle_millis = short_toggle_millis;
   }
-}
+
+  //has enough time passed to toggle the LEDs
+  if ((curTime_millis - lastUpdate_millis) > toggle_millis) { //is it time to update the user interface?    
+    toggleLEDs(); //blink both
+    lastUpdate_millis = curTime_millis;
+  }
+} 
+
 
 void toggleLEDs(void) {
   toggleLEDs(true,true);  //toggle both

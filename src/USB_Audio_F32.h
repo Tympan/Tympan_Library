@@ -9,8 +9,11 @@
 
 #ifndef usb_audio_f32_h_
 #define usb_audio_f32_h_
+
+#if defined(KINETISK)   //only include these for Teensy 3.x (and not Teensy 4)
+
 //include "Arduino.h"
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 #include <AudioStream.h>
 //include <Audio.h>
 
@@ -144,5 +147,7 @@ public:
 private:    
 	audio_block_f32_t *inputQueueArray_f32[2];
 };
+
+#endif
 
 #endif

@@ -107,13 +107,32 @@ unsigned char AudioSynthToneSweep_F32::isPlaying(void)
 }
 
 
+void AudioSynthToneSweep_F32::update_silence(void) {
+	audio_block_f32_t *block;
+	float *bp;
+	int i;
+	
+	block = allocate_f32();
+	if(block) {
+		bp = block->data;
+		for(i = 0;i < block->length;i++) bp[i] = 0.0f;
+		
+		AudioStream_F32::transmit(block);
+		AudioStream_F32::release(block);
+	}	
+}
+
 void AudioSynthToneSweep_F32::update(void)
 {
+  
+  if(!sweep_busy) {
+	  update_silence();
+	  return;
+  }
+
   audio_block_f32_t *block;
   float *bp;
   int i;
-  
-  if(!sweep_busy)return;
 
   //          L E F T  C H A N N E L  O N L Y
   block = allocate_f32();

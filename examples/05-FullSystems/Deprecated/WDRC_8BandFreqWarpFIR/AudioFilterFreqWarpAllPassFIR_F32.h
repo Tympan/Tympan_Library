@@ -6,9 +6,8 @@
 
 
 #include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
-#include <AudioStream_F32.h>
 #include <math.h>
-
+#include "AudioStream_F32.h"
 #include <Tympan_Library.h> 
 #include "utility/BTNRH_rfft.h"
 

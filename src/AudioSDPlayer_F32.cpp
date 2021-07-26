@@ -49,6 +49,8 @@
 #define STATE_STOP      13
 #define STATE_NOT_BEGUN  99
 
+#define SD_CONFIG SdioConfig(FIFO_SDIO) //is this correct for both Teensy 3 and Teensy 4?
+
 unsigned long AudioSDPlayer_F32::update_counter = 0;
 
 void AudioSDPlayer_F32::init(void) {
@@ -57,8 +59,12 @@ void AudioSDPlayer_F32::init(void) {
 void AudioSDPlayer_F32::begin(void)
 {
   if (state == STATE_NOT_BEGUN) {
-    if (!(sd.begin())) {
-      Serial.println("AudioPlaySdWAV_F32: cannot open SD.");
+	if (sd_ptr == NULL) {
+		//Serial.println("AudioSDPlayer_F32: creating new SdFs.");
+		sd_ptr = new SdFs();
+	}
+    if (!(sd_ptr->begin(SD_CONFIG))) {
+      Serial.println("AudioSDPlayer_F32: cannot open SD.");
       return;
     }
   }
@@ -652,3 +658,4 @@ uint32_t AudioSDPlayer_F32::lengthMillis(void)
   uint32_t b2m = *(volatile uint32_t *)&bytes2millis;
   return ((uint64_t)tlength * b2m) >> 32;
 }
+

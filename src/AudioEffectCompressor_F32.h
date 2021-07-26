@@ -14,7 +14,7 @@
 #define _AudioEffectCompressor_F32
 
 #include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioEffectCompressor_F32 : public AudioStream_F32
 {

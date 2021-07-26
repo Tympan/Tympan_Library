@@ -27,6 +27,9 @@ void AudioCalcLeq_F32::update(void)
 	} else {
 		calcAverage(block);
 	}
+	
+	//update max
+	for (int i=0; i < block->length; i++) { if (block->data[i] > max_value) max_value = block->data[i]; }
 		
 	//transmit the data
 	AudioStream_F32::transmit(block); // send the IIR output

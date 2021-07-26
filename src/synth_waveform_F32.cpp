@@ -73,7 +73,7 @@ void AudioSynthWaveform_F32::update(void) {
   }
 
   if (lfo) {
-    release(lfo);
+    AudioStream_F32::release(lfo);
   }
   
   block->id = block_counter;

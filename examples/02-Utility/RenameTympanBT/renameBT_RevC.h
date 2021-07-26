@@ -27,4 +27,3 @@ void renameBT_RevC(void) {
   
   USB_Serial->println("*** Bluetooth renaming complete.");
 }
-

@@ -18,7 +18,7 @@
 #define AUDIOMIXER_F32_H
 
 #include <arm_math.h> 
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioMixer4_F32 : public AudioStream_F32 {
 //GUI: inputs:4, outputs:1  //this line used for automatic generation of GUI node
@@ -32,7 +32,8 @@ public:
 	}
 	
     virtual void update(void);
-
+	virtual int processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
+	
     void gain(unsigned int channel, float gain) {
       if ((channel >= 4) || (channel < 0)) return;
       multiplier[channel] = gain;

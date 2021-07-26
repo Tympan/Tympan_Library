@@ -17,7 +17,7 @@
 
 #include <Arduino.h>  //for Serial
 #include <arm_math.h> //ARM DSP extensions.  for speed!
-#include <AudioStream_F32.h>
+#include "AudioStream_F32.h"
 
 class AudioCalcEnvelope_F32 : public AudioStream_F32
 {
@@ -71,7 +71,7 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
         for (k = 0; k < n; k++) {
           xab = (x[k] >= 0.0f) ? x[k] : -x[k];
           if (xab >= xpk) {
-              xpk = alfa * xpk + (1.f-alfa) * xab;
+              xpk = alfa * xpk + one_minus_alfa * xab;
           } else {
               xpk = beta * xpk;
           }
@@ -91,6 +91,7 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
         float ansi_rel = 0.001f * rel_msec * sample_rate_Hz / 1.782f; 
         alfa = (float) (ansi_atk / (1.0f + ansi_atk));
         beta = (float) (ansi_rel / (10.f + ansi_rel));
+		one_minus_alfa = 1.0f - alfa;
 	}
 
 	void setDefaultValues(void) {
@@ -114,7 +115,7 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
 	float32_t sample_rate_Hz;
 	float32_t given_attack_msec, given_release_msec;
-	float32_t alfa, beta;  //time constants, but in terms of samples, not seconds
+	float32_t alfa, beta, one_minus_alfa;  //time constants, but in terms of samples, not seconds
 	float32_t state_ppk = 1.0f;
 };
 

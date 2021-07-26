@@ -9,6 +9,6 @@ void AudioMathScale_F32::update(void) {
   //use the ARM-optimized routine to add the offset
   arm_scale_f32(block->data, scale, block->data, block->length);
 
-  transmit(block);
-  release(block);
+  AudioStream_F32::transmit(block);
+  AudioStream_F32::release(block);
 }

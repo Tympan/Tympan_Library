@@ -28,19 +28,48 @@
 #include <Arduino.h>
 #include "AudioEffectDelay_f32.h"
 
-
-
-
 void AudioEffectDelay_F32::update(void)
 {	
-	//Serial.println("AudioEffectDelay_F32: update()...");
-	receiveIncomingData();  //put the in-coming audio data into the queue
-	discardUnneededBlocksFromQueue();  //clear out queued data this is no longer needed
-	transmitOutgoingData();  //put the queued data into the output
+	audio_block_f32_t *input = receiveReadOnly_f32();
+	if (input == NULL) return; //no input data is available
+	
+	audio_block_f32_t *all_output[8];
+	for (int channel=0; channel<8; channel++) { //loop over the different amounts of delay that might be requested
+		if (!(activemask & (1<<channel))) continue;
+		all_output[channel] = allocate_f32(); 
+		if (!all_output[channel]) continue;
+	}
+
+	//do the acutal processing
+	processData(input,all_output);
+	
+	// transmit and release
+	AudioStream_F32::release(input); //release the block that was already successfully aquired
+	//const int delay_channel = 0;
+	for (int channel=0; channel<8; channel++) { //loop over the different amounts of delay that might be requested
+		if (all_output[channel] != NULL) {
+			AudioStream_F32::transmit(all_output[channel], channel);
+			AudioStream_F32::release(all_output[channel]);			
+		}
+	}
 	return;
 }
 
-void AudioEffectDelay_F32::receiveIncomingData(void) {
+void AudioEffectDelay_F32::processData(audio_block_f32_t *input, audio_block_f32_t *output) {
+	receiveIncomingData(input);  //put the in-coming audio data into the queue
+	discardUnneededBlocksFromQueue();  //clear out queued data this is no longer needed
+	audio_block_f32_t *all_output[8];
+	for (int i=0; i<8;i++) all_output[i] = NULL; //initialize to NULL
+	all_output[0] = output;
+	transmitOutgoingData(all_output);  //put the queued data into the output
+}
+void AudioEffectDelay_F32::processData(audio_block_f32_t *input, audio_block_f32_t *all_output[8]) {
+	receiveIncomingData(input);  //put the in-coming audio data into the queue
+	discardUnneededBlocksFromQueue();  //clear out queued data this is no longer needed
+	transmitOutgoingData(all_output);  //put the queued data into the output
+}
+
+void AudioEffectDelay_F32::receiveIncomingData(audio_block_f32_t *input) {
 	//Serial.println("AudioEffectDelay_F32::receiveIncomingData:  starting...");
 
 	//prepare the receiving queue
@@ -56,13 +85,13 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 	}
 
 
-	//prepare target memory nto which we'll copy the incoming data into the queue
+	//prepare target memory into which we'll copy the incoming data into the queue
 	int dest_ind = writeposition;  //inclusive
 	if (dest_ind >= (queue[head]->full_length)) {
 		head++; dest_ind = 0;
-		if (head >= DELAY_QUEUE_SIZE) head = 0;
+		if (head >= DELAY_QUEUE_SIZE_F32) head = 0;
 		if (queue[head] != NULL) {
-			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE) tail = 0; }
+			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE_F32) tail = 0; }
 			AudioStream_F32::release(queue[head]);
 			queue[head]=NULL;
 		}
@@ -75,10 +104,9 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 		}
 	}
 
-
-	
 	//receive the in-coming audio data block
-	audio_block_f32_t *input = receiveReadOnly_f32();
+	
+	//audio_block_f32_t *input = receiveReadOnly_f32();
 	if (input == NULL) {
 		//if (!Serial) Serial.println("AudioEffectDelay_F32::receiveIncomingData: Input data is NULL.  Returning.");
 		return;
@@ -99,9 +127,9 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 	//finish writing taking data from the next queue buffer
 	if (src_count < n_copy) { // there's still more input data to copy...but we need to roll-over to a new input queue
 		head++; dest_ind = 0;
-		if (head >= DELAY_QUEUE_SIZE) head = 0;
+		if (head >= DELAY_QUEUE_SIZE_F32) head = 0;
 		if (queue[head] != NULL) {
-			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE) tail = 0; }
+			if (head==tail) {tail++; if (tail >= DELAY_QUEUE_SIZE_F32) tail = 0; }
 			AudioStream_F32::release(queue[head]);
 			queue[head]=NULL;
 		}
@@ -110,7 +138,7 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 			queue[head] = allocate_f32(); 
 			if (queue[head] == NULL) {
 				Serial.println("AudioEffectDelay_F32::receiveIncomingData: Null memory 3.  Returning.");
-				AudioStream_F32::release(input);
+				//AudioStream_F32::release(input);
 				return; 
 			}
 		}
@@ -120,7 +148,7 @@ void AudioEffectDelay_F32::receiveIncomingData(void) {
 		for (int i=dest_ind; i < end_loop; i++)	dest[dest_count++]=source[src_count++];
 	}
 	
-	AudioStream_F32::release(input);
+	//AudioStream_F32::release(input);
 	writeposition = dest_count;
 	headindex = head;
 	tailindex = tail;	
@@ -137,15 +165,15 @@ void AudioEffectDelay_F32::discardUnneededBlocksFromQueue(void) {
 	if (head >= tail) {
 		count = head - tail;
 	} else {
-		count = DELAY_QUEUE_SIZE + head - tail;
+		count = DELAY_QUEUE_SIZE_F32 + head - tail;
 	}
 /* 	if (head>0) {
-		Serial.print("AudioEffectDelay_F32::discardUnneededBlocksFromQueue: head, tail, count, maxblocks, DELAY_QUEUE_SIZE: ");
+		Serial.print("AudioEffectDelay_F32::discardUnneededBlocksFromQueue: head, tail, count, maxblocks, DELAY_QUEUE_SIZE_F32: ");
 		Serial.print(head); Serial.print(", ");
 		Serial.print(tail); Serial.print(", ");
 		Serial.print(count); Serial.print(", ");
 		Serial.print(maxblocks); Serial.print(", ");
-		Serial.print(DELAY_QUEUE_SIZE); Serial.print(", ");
+		Serial.print(DELAY_QUEUE_SIZE_F32); Serial.print(", ");
 		Serial.println();
 	} */
 	if (count > maxblocks) {
@@ -155,13 +183,13 @@ void AudioEffectDelay_F32::discardUnneededBlocksFromQueue(void) {
 				AudioStream_F32::release(queue[tail]);
 				queue[tail] = NULL;
 			}
-			if (++tail >= DELAY_QUEUE_SIZE) tail = 0;
+			if (++tail >= DELAY_QUEUE_SIZE_F32) tail = 0;
 		} while (--count > 0);
 	}
 	tailindex = tail;
 }
 
-void AudioEffectDelay_F32::transmitOutgoingData(void) {
+void AudioEffectDelay_F32::transmitOutgoingData(audio_block_f32_t *all_output[8]) {
 	uint16_t head = headindex;  //what block to write to 
 	//uint16_t tail = tailindex;  //last useful block of data
 	audio_block_f32_t *output;
@@ -172,7 +200,8 @@ void AudioEffectDelay_F32::transmitOutgoingData(void) {
 	// transmit the delayed outputs using queue data
 	for (channel = 0; channel < 8; channel++) {
 		if (!(activemask & (1<<channel))) continue;
-		output = allocate_f32(); 
+		//output = allocate_f32(); 
+		output = all_output[channel];
 		if (!output) continue;
 		
 		//figure out where to start pulling the data samples from
@@ -181,7 +210,7 @@ void AudioEffectDelay_F32::transmitOutgoingData(void) {
 																			  //receiveIncomingData method.  We'll adjust it next
 		uint32_t offset_samp = delay_samps[channel]+output->length;
 		if (ref_samp_long < offset_samp) { //when (ref_samp_long - offset_samp) goes negative, the uint32_t will fail, so we do this logic check
-			ref_samp_long = ref_samp_long + (((uint32_t)(DELAY_QUEUE_SIZE))*((uint32_t)AUDIO_BLOCK_SIZE_F32));
+			ref_samp_long = ref_samp_long + (((uint32_t)(DELAY_QUEUE_SIZE_F32))*((uint32_t)AUDIO_BLOCK_SIZE_F32));
 		}
 		ref_samp_long = ref_samp_long - offset_samp;
 		uint16_t source_queue_ind = (uint16_t)(ref_samp_long / ((uint32_t)AUDIO_BLOCK_SIZE_F32));
@@ -212,7 +241,7 @@ void AudioEffectDelay_F32::transmitOutgoingData(void) {
 			//yes, we need to keep filling the output
 			int Iend = n_output - dest_counter;  //how many more data points do we need
 			source_queue_ind++; source_samp = 0;  //which source block will we draw from (and reset the source sample counter)
-			if (source_queue_ind >= DELAY_QUEUE_SIZE) source_queue_ind = 0;  //wrap around on our source black.
+			if (source_queue_ind >= DELAY_QUEUE_SIZE_F32) source_queue_ind = 0;  //wrap around on our source black.
 			source_block = queue[source_queue_ind];  //get the source block
 			if (source_block == NULL) { //does it have data?
 				//no, it doesn't have data.  fill destination with zeros
@@ -232,8 +261,8 @@ void AudioEffectDelay_F32::transmitOutgoingData(void) {
 		output->id = last_received_block_id;
 		
 		//transmit and release
-		AudioStream_F32::transmit(output, channel);
-		AudioStream_F32::release(output);
+		//AudioStream_F32::transmit(output, channel);
+		//AudioStream_F32::release(output);
 	}
 }
 

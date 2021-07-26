@@ -10,7 +10,7 @@
 #ifndef play_queue_f32_h_
 #define play_queue_f32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "AudioStream_F32.h"
 
 class AudioPlayQueue_F32 : public AudioStream_F32

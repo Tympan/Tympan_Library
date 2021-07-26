@@ -14,10 +14,11 @@
 #ifndef _AudioEffectFeedbackCancel_F32
 #define _AudioEffectFeedbackCancel_F32
 
-#include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
-#include <AudioStream_F32.h>
-#include <BTNRH_WDRC_Types.h> //from Tympan_Library
 #include <Arduino.h>  //for Serial.println()
+#include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
+#include "AudioStream_F32.h"
+#include "BTNRH_WDRC_Types.h" //from Tympan_Library
+
 
 #ifndef MAX_AFC_FILT_LEN
 #define MAX_AFC_FILT_LEN  256  //must be longer than afl
@@ -134,14 +135,16 @@ class AudioEffectFeedbackCancel_F32 : public AudioStream_F32
         return;
       }
 
-      //check to see if we're outpacing our feedback data
-      if ((in_block->id > 100) && (newest_ring_audio_block_id > 0)) { //ignore startup period
-        if (abs(in_block->id - newest_ring_audio_block_id) > 1) {  //is the difference more than one block counter?
-          //the data in the ring buffer is older than expected!
-          Serial.print("AudioEffectFeedbackCancel_F32: falling behind?  in_block = ");
-          Serial.print(in_block->id); Serial.print(", ring block = "); Serial.println(newest_ring_audio_block_id);
-        }
-      }
+		//check to see if we're outpacing our feedback data
+		if (newest_ring_audio_block_id != 999999) { //999999 is the default startup number, so ignore it
+			if ((in_block->id > 100) && (newest_ring_audio_block_id > 0)) { //ignore startup period
+				if (abs(in_block->id - newest_ring_audio_block_id) > 1) {  //is the difference more than one block counter?
+					//the data in the ring buffer is older than expected!
+					Serial.print("AudioEffectFeedbackCancel_F32: falling behind?  in_block = ");
+					Serial.print(in_block->id); Serial.print(", ring block = "); Serial.println(newest_ring_audio_block_id);
+				}
+			}
+		}
 
       //do the work
       if (enable) {

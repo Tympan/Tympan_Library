@@ -12,7 +12,9 @@
 #ifndef AudioConfigFIRFilterBank_F32_h
 #define AudioConfigFIRFilterBank_F32_h
 
-#include <Tympan_Library.h>
+//#include <Tympan_Library.h>
+#include <Arduino.h>  //for calloc() and free()
+#include "AudioSettings_F32.h"
 
 class AudioConfigFIRFilterBank_F32 {
   //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node  

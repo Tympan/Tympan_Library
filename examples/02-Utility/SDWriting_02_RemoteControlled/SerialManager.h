@@ -4,8 +4,9 @@
 
 #include <Tympan_Library.h>
 
-//Extern variables
+//Extern variables from the main *.ino file
 extern Tympan myTympan;
+extern BLE ble;
 extern AudioSDWriter_F32 audioSDWriter;
 extern float input_gain_dB;
 extern State_t myState;
@@ -13,6 +14,7 @@ extern const int INPUT_PCBMICS;
 extern const int INPUT_MICJACK;
 extern const int INPUT_LINEIN_SE;
 extern const int INPUT_LINEIN_JACK;
+extern const int INPUT_PDM_MICS;
 
 
 //Extern Functions
@@ -31,8 +33,9 @@ class SerialManager {
     void printFullGUIState(void);
     void printGainSettings(void);
     void setButtonState(String btnId, bool newState);
+    void setButtonText(String btnId, String text);
     float gainIncrement_dB = 2.5f;
-
+    
   private:
 
 };
@@ -47,6 +50,7 @@ void SerialManager::printHelp(void) {
   myTympan.println("   w: Switch Input to PCB Mics");
   myTympan.println("   W: Switch Input to Headset Mics");
   myTympan.println("   e: Switch Input to LineIn on the Mic Jack");
+  myTympan.println("   E: Switch Input to PDM Digital Mics");
   myTympan.print  ("   i: Input: Increase gain by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
   myTympan.print  ("   I: Input: Decrease gain by "); myTympan.print(gainIncrement_dB); myTympan.println(" dB");
   myTympan.println("   p: SD: prepare for recording");
@@ -97,7 +101,13 @@ void SerialManager::respondToByte(char c) {
       setConfiguration(INPUT_LINEIN_JACK);
       setButtonState("configPCB",false);
       setButtonState("configHeadset",false);
-      break;	  
+      break;	 
+    case 'E':
+      myTympan.println("Received: PDM Digital Mics");
+      setConfiguration(INPUT_PDM_MICS);
+      setButtonState("configPCB",false);
+      setButtonState("configHeadset",false);
+      break;
     case 'p':
       myTympan.println("Received: prepare SD for recording");
       //prepareSDforRecording();
@@ -137,9 +147,10 @@ void SerialManager::respondToByte(char c) {
             "]}"                            
           "]"
         "}";
-        myTympan.println(jsonConfig);
+        myTympan.println(jsonConfig); //send out to USB for debugging
+        ble.sendMessage(jsonConfig);  //send over BLE to the app
         delay(50);
-        printFullGUIState();
+        printFullGUIState();          //send the status of the buttons
         break;
       }
   }
@@ -169,11 +180,20 @@ void SerialManager::printGainSettings(void) {
 }
 
 void SerialManager::setButtonState(String btnId, bool newState) {
+  String str = "STATE=BTN:" + btnId + ":";
   if (newState) {
-    myTympan.println("STATE=BTN:" + btnId + ":1");
+    str += "1";
   } else {
-    myTympan.println("STATE=BTN:" + btnId + ":0");
+    str += "0";
   }
+  myTympan.println(str);  //send to USB for debugging on PC
+  ble.sendMessage(str);   //send to App via BLE
+}
+
+void SerialManager::setButtonText(String btnId, String text) {
+  String str = "TEXT=BTN:" + btnId + ":"+text;
+  myTympan.println(str); //send to USB for debugging on PC
+  ble.sendMessage(str);  //send to App via BLE
 }
 
 #endif

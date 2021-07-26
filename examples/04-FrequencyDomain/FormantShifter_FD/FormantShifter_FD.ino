@@ -16,13 +16,12 @@
 // The amount of formant shifting is controled via the Serial link.
 //    It defaults to a modest upward shifting of the formants
 //
-// Built for the Tympan library for Teensy 3.6-based hardware
+// Built for the Tympan library for Teensy 3.6-based hardware (ie, Tympan RevD)
 //
 // MIT License.  Use at your own risk.
 //
 
 #include <Tympan_Library.h>
-#include "AudioEffectFormantShiftFD_F32.h"  //the local file holding your custom function
 #include "SerialManager.h"
 
 //set the sample rate and block size
@@ -31,9 +30,9 @@ const int audio_block_samples = 128;     //for freq domain processing choose a p
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                        audioHardware(TympanRev::D);     //do TympanRev::C or TympanRev::D
+Tympan                        audioHardware(TympanRev::E);     //do do TympanRev::D or TympanRev::E
 AudioInputI2S_F32             i2s_in(audio_settings);          //Digital audio *from* the Tympan AIC.
-AudioEffectFormantShiftFD_F32 formantShift(audio_settings);    //create the frequency-domain processing block
+AudioEffectFormantShift_FD_F32 formantShift(audio_settings);    //freq-domain processing!  
 AudioEffectGain_F32           gain1;                           //Applies digital gain to audio data.
 AudioOutputI2S_F32            i2s_out(audio_settings);         //Digital audio out *to* the Tympan AIC.
 
@@ -217,5 +216,3 @@ float incrementFormantShift(float incr_factor) {
   float cur_scale_factor = formantShift.getScaleFactor();
   return formantShift.setScaleFactor(cur_scale_factor*incr_factor);
 }
-
-

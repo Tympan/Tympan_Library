@@ -33,8 +33,8 @@
 #ifndef synth_tonesweep_f32_h_
 #define synth_tonesweep_f32_h_
 
-#include "Arduino.h"
-#include <AudioStream_F32.h>
+#include <Arduino.h>
+#include "AudioStream_F32.h"
 
 //                A u d i o S y n t h T o n e S w e e p
 // Written by Pete (El Supremo) Feb 2014
@@ -74,6 +74,7 @@ private:
   int tone_sign;
   unsigned char sweep_busy;
   float fs_Hz = (float)AUDIO_SAMPLE_RATE_EXACT;
+  void update_silence(void);
 };
 
 #endif
