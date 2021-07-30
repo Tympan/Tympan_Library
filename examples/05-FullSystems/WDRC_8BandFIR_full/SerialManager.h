@@ -8,34 +8,24 @@
 //classes from the main sketch that might be used here
 extern Tympan myTympan;               //defined in main *.ino file
 extern State myState;
+extern const int N_CHAN;
+extern AudioEffectCompWDRC_F32 expCompLim[];
+extern AudioControlTestAmpSweep_F32 ampSweepTester;
+extern AudioControlTestFreqSweep_F32 freqSweepTester;
+extern AudioControlTestFreqSweep_F32 freqSweepTester_filterbank;
 
 //functions in the main sketch that I want to call from here
 extern float incrementDigitalGain(float);
 extern void printGainSettings(void);
 extern void togglePrintAveSignalLevels(bool);
-extern void incrementDSLConfiguration(void);
+extern int incrementDSLConfiguration(void);
+extern float incrementChannelGain(int, float);
 
-//add in the algorithm whose gains we wish to set via this SerialManager...change this if your gain algorithms class changes names!
-#include "AudioEffectCompWDRC_F32.h"    //change this if you change the name of the algorithm's source code filename
-typedef AudioEffectCompWDRC_F32 GainAlgorithm_t; //change this if you change the algorithm's class name
 
 //now, define the Serial Manager class
 class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialManagerBase for more functions!
   public:
-    SerialManager(BLE *_ble,
-          int n,
-          GainAlgorithm_t *gain_algs, 
-          AudioControlTestAmpSweep_F32 &_ampSweepTester,
-          AudioControlTestFreqSweep_F32 &_freqSweepTester,
-          AudioControlTestFreqSweep_F32 &_freqSweepTester_filterbank)
-      : SerialManagerBase(_ble),
-          gain_algorithms(gain_algs), 
-          ampSweepTester(_ampSweepTester), 
-          freqSweepTester(_freqSweepTester),
-          freqSweepTester_filterbank(_freqSweepTester_filterbank)
-        {
-          N_CHAN = n;
-        };
+    SerialManager(BLE *_ble) : SerialManagerBase(_ble) {};
       
     void printHelp(void);
     void createTympanRemoteLayout(void); 
@@ -44,17 +34,9 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
     bool processCharacter(char c);  //this is called by SerialManagerBase.respondToByte(char c)
     void updateGainDisplay(void);
 
-    void incrementChannelGain(int chan, float change_dB);
-    void decreaseChannelGain(int chan);
-    void set_N_CHAN(int _n_chan) { N_CHAN = _n_chan; };
-
     float channelGainIncrement_dB = 2.5f;  
-    int N_CHAN;
   private:
-    GainAlgorithm_t *gain_algorithms;  //point to first element in array of expanders
-    AudioControlTestAmpSweep_F32 &ampSweepTester;
-    AudioControlTestFreqSweep_F32 &freqSweepTester;
-    AudioControlTestFreqSweep_F32 &freqSweepTester_filterbank;
+
     TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
    
 };
@@ -62,43 +44,43 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
 #define MAX_CHANS 8
 void printChanUpMsg(int N_CHAN) {
   char fooChar[] = "12345678";
-  myTympan.print("   ");
+  Serial.print("   ");
   for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
-    myTympan.print(fooChar[i]); 
-    if (i < (N_CHAN-1)) myTympan.print(",");
+    Serial.print(fooChar[i]); 
+    if (i < (N_CHAN-1)) Serial.print(",");
   }
-  myTympan.print(": Increase linear gain of given channel (1-");
-  myTympan.print(N_CHAN);
-  myTympan.print(") by ");
+  Serial.print(": Increase linear gain of given channel (1-");
+  Serial.print(N_CHAN);
+  Serial.print(") by ");
 }
 void printChanDownMsg(int N_CHAN) {
   char fooChar[] = "!@#$%^&*";
-  myTympan.print("   ");
+  Serial.print("   ");
   for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
-    myTympan.print(fooChar[i]); 
-    if (i < (N_CHAN-1)) myTympan.print(",");
+    Serial.print(fooChar[i]); 
+    if (i < (N_CHAN-1)) Serial.print(",");
   }
-  myTympan.print(": Decrease linear gain of given channel (1-");
-  myTympan.print(N_CHAN);
-  myTympan.print(") by ");
+  Serial.print(": Decrease linear gain of given channel (1-");
+  Serial.print(N_CHAN);
+  Serial.print(") by ");
 }
 void SerialManager::printHelp(void) {  
-  myTympan.println();
-  myTympan.println("SerialManager Help: Available Commands:");
-  myTympan.println("   h: Print this help");
-  myTympan.println("   g: Print the gain settings of the device.");
-  myTympan.println("   c/C: Enable/Disable printing of CPU and Memory usage");
-  myTympan.println("   l: Toggle printing of pre-gain per-channel signal levels (dBFS)");
-  myTympan.println("   L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')");
-  myTympan.println("   A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement.");
-  myTympan.println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
-  myTympan.println("   f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
-  myTympan.print("   k: Increase the gain of all channels (ie, knob gain) by "); myTympan.print(channelGainIncrement_dB); myTympan.println(" dB");
-  myTympan.print("   K: Decrease the gain of all channels (ie, knob gain) by ");
-  printChanUpMsg(N_CHAN);  myTympan.print(channelGainIncrement_dB); myTympan.println(" dB");
-  printChanDownMsg(N_CHAN);  myTympan.print(channelGainIncrement_dB); myTympan.println(" dB");
-  myTympan.println("   D: Toggle between DSL configurations: NORMAL vs FULL-ON");
- myTympan.println();
+  Serial.println();
+  Serial.println("SerialManager Help: Available Commands:");
+  Serial.println("   h: Print this help");
+  Serial.println("   g: Print the gain settings of the device.");
+  Serial.println("   c/C: Enable/Disable printing of CPU and Memory usage");
+  Serial.println("   l: Toggle printing of pre-gain per-channel signal levels (dBFS)");
+  Serial.println("   L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')");
+  Serial.println("   A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement.");
+  Serial.println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
+  Serial.println("   f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
+  Serial.print("   k: Increase the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.print("   K: Decrease the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  printChanUpMsg(N_CHAN);  Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  printChanDownMsg(N_CHAN);  Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.println("   D: Toggle between DSL configurations: NORMAL vs FULL-ON");
+  Serial.println();
 }
 
 
@@ -158,23 +140,23 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
         ampSweepTester.setStepPattern(start_amp_dB, end_amp_dB, step_amp_dB);
         ampSweepTester.setTargetDurPerStep_sec(1.0);
       }
-      myTympan.println("Command Received: starting test using amplitude sweep...");
+      Serial.println("Command Received: starting test using amplitude sweep...");
       ampSweepTester.begin();
       while (!ampSweepTester.available()) {delay(100);};
-      myTympan.println("Press 'h' for help...");
+      Serial.println("Press 'h' for help...");
       break;
     case 'c':      
-      myTympan.println("Received: printing memory and CPU usage.");
+      Serial.println("Received: printing memory and CPU usage.");
       myState.flag_printCPUandMemory = true;
       setButtonState("cpuStart",myState.flag_printCPUandMemory);
       break;     
     case 'C':
-      myTympan.println("Received: stopping printing memory and CPU usage.");
+      Serial.println("Received: stopping printing memory and CPU usage.");
       myState.flag_printCPUandMemory = false;
       setButtonState("cpuStart",myState.flag_printCPUandMemory);
       break;     
     case 'D':
-      myTympan.println("Command Received: changing DSL configuration...you will lose any custom gain values...");
+      Serial.println("Command Received: changing DSL configuration...you will lose any custom gain values...");
       incrementDSLConfiguration();
       break;
     case 'F':
@@ -185,10 +167,10 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
         freqSweepTester.setStepPattern(start_freq_Hz, end_freq_Hz, step_octave);
         freqSweepTester.setTargetDurPerStep_sec(1.0);
       }
-      myTympan.println("Command Received: starting test using frequency sweep, end-to-end assessment...");
+      Serial.println("Command Received: starting test using frequency sweep, end-to-end assessment...");
       freqSweepTester.begin();
       while (!freqSweepTester.available()) {delay(100);};
-      myTympan.println("Press 'h' for help...");
+      Serial.println("Press 'h' for help...");
       break; 
     case 'f':
       //frequency sweep test
@@ -198,17 +180,17 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
         freqSweepTester_filterbank.setStepPattern(start_freq_Hz, end_freq_Hz, step_octave);
         freqSweepTester_filterbank.setTargetDurPerStep_sec(0.5);
       }
-      myTympan.println("Command Received: starting test using frequency sweep.  Filterbank assessment...");
+      Serial.println("Command Received: starting test using frequency sweep.  Filterbank assessment...");
       freqSweepTester_filterbank.begin();
       while (!freqSweepTester_filterbank.available()) {delay(100);};
-      myTympan.println("Press 'h' for help...");
+      Serial.println("Press 'h' for help...");
       break;      
     case 'l':
-      myTympan.println("Command Received: toggle printing of per-band ave signal levels.");
+      Serial.println("Command Received: toggle printing of per-band ave signal levels.");
       { bool as_dBSPL = false; togglePrintAveSignalLevels(as_dBSPL); }
       break;
     case 'L':
-      myTympan.println("Command Received: toggle printing of per-band ave signal levels.");
+      Serial.println("Command Received: toggle printing of per-band ave signal levels.");
       { bool as_dBSPL = true; togglePrintAveSignalLevels(as_dBSPL); }
       break; 
     case 'u':
@@ -216,7 +198,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       old_val = myTympan.getHPCutoff_Hz(); new_val = min(old_val*sqrt(2.0), 8000.0); //half-octave steps up
       float fs_Hz = myTympan.getSampleRate_Hz();
       myTympan.setHPFonADC(true,new_val,fs_Hz);
-      myTympan.print("Command received: Increasing ADC HP Cutoff to "); myTympan.print(myTympan.getHPCutoff_Hz());myTympan.println(" Hz");
+      Serial.print("Command received: Increasing ADC HP Cutoff to "); Serial.print(myTympan.getHPCutoff_Hz());Serial.println(" Hz");
     }
       break;
     case 'U':
@@ -224,7 +206,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       old_val = myTympan.getHPCutoff_Hz(); new_val = max(old_val/sqrt(2.0), 5.0); //half-octave steps down
       float fs_Hz = myTympan.getSampleRate_Hz();
       myTympan.setHPFonADC(true,new_val,fs_Hz);
-      myTympan.print("Command received: Decreasing ADC HP Cutoff to "); myTympan.print(myTympan.getHPCutoff_Hz());myTympan.println(" Hz");   
+      Serial.print("Command received: Decreasing ADC HP Cutoff to "); Serial.print(myTympan.getHPCutoff_Hz());Serial.println(" Hz");   
       break;
     }
     default:
@@ -233,26 +215,15 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
   return ret_val;
 }
 
-void SerialManager::incrementChannelGain(int chan, float change_dB) {
-  if (chan < N_CHAN) {
-    gain_algorithms[chan].incrementGain_dB(change_dB);
-    //myTympan.print("Incrementing gain on channel ");myTympan.print(chan);
-    //myTympan.print(" by "); myTympan.print(change_dB); myTympan.println(" dB");
-    printGainSettings();  //in main sketch file
-  }
-}
-
 
 // Print the layout for the Tympan Remote app, in a JSON-ish string
-// (single quotes are used here, whereas JSON spec requires double quotes.  The app converts ' to " before parsing the JSON string).
-// Please don't put commas or colons in your ID strings!
 void SerialManager::printTympanRemoteLayout(void) {
+    if (myGUI.get_nPages() < 1) createTympanRemoteLayout();  //create the GUI, if it hasn't already been created
     String s = myGUI.asString();
     Serial.println(s);
     ble->sendMessage(s); //ble is held by SerialManagerBase
     setFullGUIState();
 }
-
 
 //define the GUI for the App
 void SerialManager::createTympanRemoteLayout(void) {
@@ -275,7 +246,7 @@ void SerialManager::createTympanRemoteLayout(void) {
           //Add a "+" digital gain button with the Label("+"); Command("K"); Internal ID ("minusButton"); and width (4)
           card_h->addButton("+","k","plusButton",4);   //displayed string, command, button ID, button width (out of 12)
 
-      //Add a button group ("card") for the CPU reporting...use a button set that is built in!
+      //Add a button group ("card") for the CPU reporting...use a button set that is built into myState for you!
       myState.addCard_cpuReporting(page_h, String("")); //see TympanStateBase.h  assumes use of 'c' and 'C' for on and off
  
         
