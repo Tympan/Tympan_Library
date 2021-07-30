@@ -1,7 +1,7 @@
 /*
-  WDRC_8BandFIR
+  WDRC_8BandFIR_full
 
-  Created: Chip Audette (OpenAudio), Feb 2017
+  Created: Chip Audette (OpenAudio), Feb 2017 (Updated July 2021)
     Primarly built upon CHAPRO "Generic Hearing Aid" from
     Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
 
@@ -20,12 +20,14 @@
 // Include all the of the needed libraries
 #include <Tympan_Library.h>
 #include "SerialManager.h"
+#include "State.h"
 
 // Define the overall setup
 String overall_name = String("Tympan: WDRC Expander-Compressor-Limiter with Overall Limiter");
 const int N_CHAN_MAX = 8;  //number of frequency bands (channels)
 int N_CHAN = N_CHAN_MAX;  //will be changed to user-selected number of channels later
-const float input_gain_dB = 15.0f; //gain on the microphone
+//const float input_gain_dB = 15.0f; //gain on the microphone
+float default_mic_input_gain_dB = 20.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0; //will be overridden by volume knob
 
 int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default vol_knob_gain_dB set a few lines below
@@ -44,8 +46,9 @@ AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to
 //create audio objects for the algorithm
 AudioFilterFIR_F32          firFilt[N_CHAN_MAX];      //here are the filters to break up the audio into multiple bands
 AudioEffectCompWDRC_F32     expCompLim[N_CHAN_MAX];   //here are the per-band compressors
-AudioMixer8_F32             mixer1;                   //mixer to reconstruct the broadband audio
-AudioEffectCompWDRC_F32     compBroadband;            //broadband compressor
+AudioMixer8_F32             mixer1(audio_settings);   //mixer to reconstruct the broadband audio
+AudioEffectGain_F32         broadbandGain(audio_settings);   //broad band gain (could be part of compressor below)
+AudioEffectCompWDRC_F32     compBroadband(audio_settings);   //broadband compressor
 AudioOutputI2S_F32          i2s_out(audio_settings);  //Digital audio output to the DAC.  Should be last.
 
 //complete the creation of the tester objects
@@ -80,7 +83,8 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   }
 
   //connect the output of the mixers to the final broadband compressor
-  patchCord[count++] = new AudioConnection_F32(mixer1, 0, compBroadband, 0);  //connect to final limiter
+  patchCord[count++] = new AudioConnection_F32(mixer1, 0, broadbandGain, 0);
+  patchCord[count++] = new AudioConnection_F32(broadbandGain, 0, compBroadband, 0);  //connect to final limiter
 
   //send the audio out
   patchCord[count++] = new AudioConnection_F32(compBroadband, 0, i2s_out, 0);  //left output
@@ -93,13 +97,16 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   return count;
 }
 
-
+//Create bluetooth BLE
+BLE ble = BLE(&Serial1);
 
 //control display and serial interaction
-bool enable_printCPUandMemory = false;
 bool enable_printAveSignalLevels = false, printAveSignalLevels_as_dBSPL = false;
 void togglePrintAveSignalLevels(bool as_dBSPL) { enable_printAveSignalLevels = !enable_printAveSignalLevels; printAveSignalLevels_as_dBSPL = as_dBSPL;};
-SerialManager serialManager(N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
+float aveSignalLevels_dBFS[N_CHAN_MAX];
+
+SerialManager serialManager(&ble,N_CHAN,expCompLim,ampSweepTester,freqSweepTester,freqSweepTester_FIR);
+State myState(&audio_settings, &myTympan, &serialManager);
 
 
 //routine to setup the hardware
@@ -114,14 +121,14 @@ void setupTympanHardware(void) {
   float cutoff_Hz = 40.0;  //set the default cutoff frequency for the highpass filter
   myTympan.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
 
-  //Choose the desired audio input on the Typman...this will be overridden by the serviceMicDetect() in loop() 
+  //Choose the desired audio input on the Typman
   myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board micropphones
   //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
   //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //set volumes
-  myTympan.volume_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
-  myTympan.setInputGain_dB(input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
+  setOutputGain_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
+  setInputGain_dB(default_mic_input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
 }
 
 
@@ -163,7 +170,7 @@ void configureBroadbandWDRCs(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &this_gha,
     //WDRCs[i].setSampleRate_Hz(fs);
     //WDRCs[i].setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
     WDRC.setSampleRate_Hz(fs);
-    WDRC.setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain + vol_knob_gain_dB, comp_ratio, tk, bolt);
+    WDRC.setParams(atk, rel, maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
  // }
 }
 
@@ -226,7 +233,6 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::C
 
 }
 
-
 void setupAudioProcessing(void) {
   //make all of the audio connections
   makeAudioConnections();
@@ -252,6 +258,7 @@ void incrementDSLConfiguration(void) {
   }
 }
 
+
 // ///////////////// Main setup() and loop() as required for all Arduino programs
 
 // define the setup() function, the function that is called once when the device is booting
@@ -273,6 +280,12 @@ void setup() {
   //update the potentiometer settings
 	if (USE_VOLUME_KNOB) servicePotentiometer(millis());
 
+  //setup BLE
+  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
+
+  //Create the GUI description (but not yet transmitted to the App...that's after it connects)
+  serialManager.createTympanRemoteLayout();
+  
   //End of setup
   printGainSettings();
   myTympan.println("Setup complete.");
@@ -287,17 +300,25 @@ void loop() {
   //asm(" WFI");  //ARM-specific.  Will wake on next interrupt.  The audio library issues tons of interrupts, so we wake up often.
 
   //respond to Serial commands
-  while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB
-  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //Bluetooth
+  while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB...respondToByte is in SerialManagerBase...it then calls SerialManager.processCharacter(c)
+  //while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //Bluetooth
+
+  //respond to BLE
+  if (ble.available() > 0) {
+    String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
+    Serial.println("Loop: BLE recvd: " + msgFromBle);
+    for (int i=0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]);  //respondToByte is in SerialManagerBase...it then calls SerialManager.processCharacter(c)
+  }
+
+  //service the BLE advertising state
+   ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
 
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
-
-  //check the mic_detect signal
-  serviceMicDetect(millis(),500);
-
-  //update the memory and CPU usage...if enough time has passed
-  if (enable_printCPUandMemory) myTympan.printCPUandMemory(millis(),3000);  //print every 3000 msec
+  
+  //periodically print the CPU and Memory Usage
+  if (myState.flag_printCPUandMemory) myState.printCPUandMemory(millis(), 3000); //print every 3000msec  (method is built into TympanStateBase.h, which myState inherits from)
+  if (myState.flag_printCPUandMemory) myState.printCPUtoGUI(millis(), 3000);     //send to App every 3000msec (method is built into TympanStateBase.h, which myState inherits from)
 
   //print info about the signal processing
   updateAveSignalLevels(millis());
@@ -327,66 +348,43 @@ void servicePotentiometer(unsigned long curTime_millis) {
     //float scaled_val = val / 3.0; scaled_val = scaled_val * scaled_val;
     if (abs(val - prev_val) > 0.05) { //is it different than befor?
       prev_val = val;  //save the value for comparison for the next time around
-
-      setVolKnobGain_dB(val*45.0f - 10.0f - input_gain_dB);
+      setDigitalGain_dB(val*45.0f - 10.0f,false);
+      Serial.print("servicePotentiometer: digital gain (dB) = ");Serial.println(myState.digital_gain_dB);
     }
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
 
 
+
+// ////////////////////////////// Functions to set the parameters and maintain the state
+
+// Gains
+float setInputGain_dB(float gain_dB) { return myState.input_gain_dB = myTympan.setInputGain_dB(gain_dB); }
+float setOutputGain_dB(float gain_dB) {  return myState.output_gain_dB = myTympan.volume_dB(gain_dB); }
+float setDigitalGain_dB(float gain_dB) { return setDigitalGain_dB(gain_dB, true); }
+float setDigitalGain_dB(float gain_dB, bool printToUSBSerial) {  
+  myState.digital_gain_dB = broadbandGain.setGain_dB(gain_dB); 
+  serialManager.updateGainDisplay();
+  if (printToUSBSerial) printGainSettings();
+  return myState.digital_gain_dB;
+}
+float incrementDigitalGain(float increment_dB) { return setDigitalGain_dB(myState.digital_gain_dB + increment_dB); }
+
+
 void printGainSettings(void) {
   myTympan.print("Gain (dB): ");
-  myTympan.print("Vol Knob = "); myTympan.print(vol_knob_gain_dB,1);
-  myTympan.print(", Input PGA = "); myTympan.print(input_gain_dB,1);
+  myTympan.print("Input PGA = "); myTympan.print(myState.input_gain_dB,1);
   myTympan.print(", Per-Channel = ");
   for (int i=0; i<N_CHAN; i++) {
-    myTympan.print(expCompLim[i].getGain_dB()-vol_knob_gain_dB,1);
+    myTympan.print(expCompLim[i].getGain_dB(),1);
     myTympan.print(", ");
   }
+  myTympan.print("Knob = "); myTympan.print(myState.digital_gain_dB,1);
   myTympan.println();
 }
 
-extern void incrementKnobGain(float increment_dB) { //"extern" to make it available to other files, such as SerialManager.h
-  setVolKnobGain_dB(vol_knob_gain_dB+increment_dB);
-}
 
-void setVolKnobGain_dB(float gain_dB) {
-    float prev_vol_knob_gain_dB = vol_knob_gain_dB;
-    vol_knob_gain_dB = gain_dB;
-    float linear_gain_dB;
-    for (int i=0; i<N_CHAN; i++) {
-      linear_gain_dB = vol_knob_gain_dB + (expCompLim[i].getGain_dB()-prev_vol_knob_gain_dB);
-      expCompLim[i].setGain_dB(linear_gain_dB);
-    }
-    printGainSettings();
-}
-
-
-void serviceMicDetect(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  static unsigned long lastUpdate_millis = 0;
-  static unsigned int prev_val = 1111; //some sort of weird value
-  unsigned int cur_val = 0;
-
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-
-    cur_val = myTympan.updateInputBasedOnMicDetect(); //if mic is plugged in, defaults to TYMPAN_INPUT_JACK_AS_MIC
-    if (cur_val != prev_val) {
-      if (cur_val) {
-        myTympan.println("serviceMicDetect: detected plug-in microphone!  External mic now active.");
-      } else {
-        myTympan.println("serviceMicDetect: detected removal of plug-in microphone. On-board PCB mics now active.");
-      }
-    }
-    prev_val = cur_val;
-    lastUpdate_millis = curTime_millis;
-  }
-}
-
-
-float aveSignalLevels_dBFS[N_CHAN_MAX];
 void updateAveSignalLevels(unsigned long curTime_millis) {
   static unsigned long updatePeriod_millis = 100; //how often to perform the averaging
   static unsigned long lastUpdate_millis = 0;
@@ -401,6 +399,7 @@ void updateAveSignalLevels(unsigned long curTime_millis) {
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
 }
+
 void printAveSignalLevels(unsigned long curTime_millis, bool as_dBSPL) {
   static unsigned long updatePeriod_millis = 3000; //how often to print the levels to the screen
   static unsigned long lastUpdate_millis = 0;
