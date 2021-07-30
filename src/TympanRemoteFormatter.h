@@ -241,6 +241,8 @@ class TympanRemoteFormatter {
       Serial.println(s);
     }
 
+	int get_nPages(void) { return nPages; }
+
   private:
     TR_Page pages[TR_MAX_N_PAGES];
     int nPages;
