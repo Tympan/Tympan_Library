@@ -5,15 +5,15 @@
     Primarly built upon CHAPRO "Generic Hearing Aid" from
     Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
 
-  Purpose: Implements 8-band WDRC compressor.  The BTNRH version was implemented the
-    filters in the frequency-domain, whereas I implemented them as FIR filters
-	in the time-domain. I've also added an expansion stage to manage noise at very
-	low SPL.  Communicates via USB Serial and via Bluetooth Serial
-
+  Purpose: Implements 8-band WDRC compressor.  Mono.  No feedback cancellation.
+     
   User Controls:
-    Potentiometer on Tympan controls the algorithm gain
+    Potentiometer on Tympan controls the broadband gain.
+    Additional controls via USB Serial and via TympanRemote App (BLE)
 
-   MIT License.  use at your own risk.
+  Records raw and processed audio to the SD card.
+
+  MIT License.  use at your own risk.
 */
 
 // Include all the of the needed libraries
@@ -46,8 +46,9 @@ State         myState(&audio_settings, &myTympan, &serialManager); //keeping one
 
 //function to setup the hardware
 void setupTympanHardware(void) {
-  Serial.println("Setting up Tympan Audio Board...");
-  myTympan.enable(); // activate AIC
+
+  //activate the Tympan's audio interface
+  myTympan.enable();
 
   //setup DC-blocking highpass filter running in the ADC hardware itself
   float cutoff_Hz = 40.0;  //set the default cutoff frequency for the highpass filter
@@ -79,20 +80,26 @@ void setup() {
   AudioMemory_F32(40,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
 
   // Enable the audio shield, select input, and enable output
-  setupTympanHardware();
+  setupTympanHardware();  //see code earlier in this file
 
   //setup filters and mixers
-  setupAudioProcessing();
-
-  //update the potentiometer settings
-	if (USE_VOLUME_KNOB) servicePotentiometer(millis());
+  setupAudioProcessing(); //see function in ConfigureAlgorithms.h
 
   //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer  
-  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
+  delay(1000); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(1000); //Assumes the default Bluetooth firmware. You can override!
+
+  //Set the state of the LEDs
+  myTympan.setRedLED(HIGH);  myTympan.setAmberLED(LOW);
+
+  //prepare the SD writer for the format that we want and any error statements
+  audioSDWriter.setSerial(&myTympan);
+  audioSDWriter.setNumWriteChannels(2);     //can record 2 or 4 channels
+  Serial.print("Setup: SD configured for " + String(audioSDWriter.getNumWriteChannels()) + " channels.");
+ 
+  //update the potentiometer settings
+	if (USE_VOLUME_KNOB) servicePotentiometer(millis());  //see code later in this file
   
   //End of setup
-  printGainSettings();
   Serial.println("Setup complete.");
   serialManager.printHelp();
 
@@ -114,6 +121,12 @@ void loop() {
   //service the BLE advertising state
    ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
 
+  //service the SD recording
+  serviceSD();
+
+  //service the LEDs
+  serviceLEDs(millis());
+  
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
   
@@ -129,6 +142,93 @@ void loop() {
 
 
 // ///////////////// Servicing routines
+
+void serviceLEDs(unsigned long curTime_millis) {
+  static unsigned long lastUpdate_millis = 0;
+  if (lastUpdate_millis > curTime_millis) { lastUpdate_millis = 0; } //account for possible wrap-around
+  unsigned long dT_millis = curTime_millis - lastUpdate_millis;
+  
+  if (audioSDWriter.getState() == AudioSDWriter::STATE::UNPREPARED) {
+    if (dT_millis > 1000) {  //slow toggle
+      toggleLEDs(true,true); //blink both
+      lastUpdate_millis = curTime_millis;
+    }
+  } else if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
+    if (dT_millis > 50) {  //fast toggle
+      toggleLEDs(true,true); //blink both
+      lastUpdate_millis = curTime_millis;
+    }
+  } else {
+    if (dT_millis > 1000) {  //slow toggle
+      toggleLEDs(true,true); //blink both
+      lastUpdate_millis = curTime_millis;
+    }
+  }
+}
+
+void toggleLEDs(const bool &useAmber, const bool &useRed) {
+  static bool LED = false;
+  LED = !LED;
+  if (LED) {
+    if (useAmber) myTympan.setAmberLED(true);
+    if (useRed) myTympan.setRedLED(false);
+  } else {
+    if (useAmber) myTympan.setAmberLED(false);
+    if (useRed) myTympan.setRedLED(true);
+  }
+  if (!useAmber) myTympan.setAmberLED(false);
+  if (!useRed) myTympan.setRedLED(false);
+}
+
+
+#define PRINT_OVERRUN_WARNING 1   //set to 1 to print a warning that the there's been a hiccup in the writing to the SD.
+void serviceSD(void) {
+  static int max_max_bytes_written = 0; //for timing diagnotstics
+  static int max_bytes_written = 0; //for timing diagnotstics
+  static int max_dT_micros = 0; //for timing diagnotstics
+  static int max_max_dT_micros = 0; //for timing diagnotstics
+
+  unsigned long dT_micros = micros();  //for timing diagnotstics
+  int bytes_written = audioSDWriter.serviceSD();
+  dT_micros = micros() - dT_micros;  //timing calculation
+
+  if ( bytes_written > 0 ) {
+    
+    max_bytes_written = max(max_bytes_written, bytes_written);
+    max_dT_micros = max((int)max_dT_micros, (int)dT_micros);
+   
+    if (dT_micros > 10000) {  //if the write took a while, print some diagnostic info
+      max_max_bytes_written = max(max_bytes_written,max_max_bytes_written);
+      max_max_dT_micros = max(max_dT_micros, max_max_dT_micros);
+      
+      Serial.print("serviceSD: bytes written = ");
+      Serial.print(bytes_written); Serial.print(", ");
+      Serial.print(max_bytes_written); Serial.print(", ");
+      Serial.print(max_max_bytes_written); Serial.print(", ");
+      Serial.print("dT millis = "); 
+      Serial.print((float)dT_micros/1000.0,1); Serial.print(", ");
+      Serial.print((float)max_dT_micros/1000.0,1); Serial.print(", "); 
+      Serial.print((float)max_max_dT_micros/1000.0,1);Serial.print(", ");      
+      Serial.println();
+      max_bytes_written = 0;
+      max_dT_micros = 0;     
+    }
+      
+    //print a warning if there has been an SD writing hiccup
+    if (PRINT_OVERRUN_WARNING) {
+      //if (audioSDWriter.getQueueOverrun() || i2s_in.get_isOutOfMemory()) {
+      if (i2s_in.get_isOutOfMemory()) {
+        float approx_time_sec = ((float)(millis()-audioSDWriter.getStartTimeMillis()))/1000.0;
+        if (approx_time_sec > 0.1) {
+          Serial.print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
+          Serial.println(approx_time_sec);
+        }
+      }
+    }
+    i2s_in.clear_isOutOfMemory();
+  }
+}
+
 
 //servicePotentiometer: listens to the blue potentiometer and sends the new pot value
 //  to the audio processing algorithm as a control parameter

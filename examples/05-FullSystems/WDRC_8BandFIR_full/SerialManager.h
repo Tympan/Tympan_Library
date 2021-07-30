@@ -33,6 +33,7 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
     void setFullGUIState(bool activeButtonsOnly = false);
     bool processCharacter(char c);  //this is called by SerialManagerBase.respondToByte(char c)
     void updateGainDisplay(void);
+    void setSDRecordingButtons(void);
 
     float channelGainIncrement_dB = 2.5f;  
   private:
@@ -44,7 +45,7 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
 #define MAX_CHANS 8
 void printChanUpMsg(int N_CHAN) {
   char fooChar[] = "12345678";
-  Serial.print("   ");
+  Serial.print(" ");
   for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
     Serial.print(fooChar[i]); 
     if (i < (N_CHAN-1)) Serial.print(",");
@@ -55,7 +56,7 @@ void printChanUpMsg(int N_CHAN) {
 }
 void printChanDownMsg(int N_CHAN) {
   char fooChar[] = "!@#$%^&*";
-  Serial.print("   ");
+  Serial.print(" ");
   for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
     Serial.print(fooChar[i]); 
     if (i < (N_CHAN-1)) Serial.print(",");
@@ -67,19 +68,20 @@ void printChanDownMsg(int N_CHAN) {
 void SerialManager::printHelp(void) {  
   Serial.println();
   Serial.println("SerialManager Help: Available Commands:");
-  Serial.println("   h: Print this help");
-  Serial.println("   g: Print the gain settings of the device.");
-  Serial.println("   c/C: Enable/Disable printing of CPU and Memory usage");
-  Serial.println("   l: Toggle printing of pre-gain per-channel signal levels (dBFS)");
-  Serial.println("   L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')");
-  Serial.println("   A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement.");
-  Serial.println("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
-  Serial.println("   f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
-  Serial.print("   k: Increase the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
-  Serial.print("   K: Decrease the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.println(" h: Print this help");
+  Serial.println(" g: Print the gain settings of the device.");
+  Serial.println(" c/C: Enable/Disable printing of CPU and Memory usage");
+  Serial.println(" l: Toggle printing of pre-gain per-channel signal levels (dBFS)");
+  Serial.println(" L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')");
+  Serial.println(" A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement.");
+  Serial.println(" F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
+  Serial.println(" f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
+  Serial.print(" k: Increase the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.print(" K: Decrease the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
   printChanUpMsg(N_CHAN);  Serial.print(channelGainIncrement_dB); Serial.println(" dB");
   printChanDownMsg(N_CHAN);  Serial.print(channelGainIncrement_dB); Serial.println(" dB");
-  Serial.println("   D: Toggle between DSL configurations: NORMAL vs FULL-ON");
+  Serial.println(" D: Toggle between DSL configurations: NORMAL vs FULL-ON");
+  Serial.println(" r/s: Begin/stop SD audio recording");
   Serial.println();
 }
 
@@ -209,6 +211,16 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       Serial.print("Command received: Decreasing ADC HP Cutoff to "); Serial.print(myTympan.getHPCutoff_Hz());Serial.println(" Hz");   
       break;
     }
+    case 'r':
+      Serial.println("Received: begin SD recording");
+      audioSDWriter.startRecording();
+      setSDRecordingButtons();
+      break;
+    case 's':
+      Serial.println("Received: stop SD recording");
+      audioSDWriter.stopRecording();
+      setSDRecordingButtons();
+      break;    
     default:
       ret_val = false;
   }
@@ -248,7 +260,9 @@ void SerialManager::createTympanRemoteLayout(void) {
 
       //Add a button group ("card") for the CPU reporting...use a button set that is built into myState for you!
       myState.addCard_cpuReporting(page_h, String("")); //see TympanStateBase.h  assumes use of 'c' and 'C' for on and off
- 
+
+      //Add a button group for SD recording...use a button set that is built into AudioSDWriter_F32_UI for you!
+      audioSDWriter.addCard_sdRecord(page_h, String(""));  //see AudioSDwriter_F32.h  assumes use of 'r' and 's'
         
   //add some pre-defined pages to the GUI...these are pre-defined within the App itself
   myGUI.addPredefinedPage("serialMonitor");
@@ -258,10 +272,20 @@ void SerialManager::createTympanRemoteLayout(void) {
 void SerialManager::setFullGUIState(bool activeButtonsOnly) {
   updateGainDisplay();
   myState.setCPUButtons(); //see TympanStateBase.h...it's a built-in update routine for the built-in CPU buttons that I created earlier
+  setSDRecordingButtons();  
 }
 
 void SerialManager::updateGainDisplay(void) {
   setButtonText("gainIndicator",String(myState.digital_gain_dB,1));
+}
+
+void SerialManager::setSDRecordingButtons(void) {
+  if (audioSDWriter.getState() == AudioSDWriter_F32::STATE::RECORDING) {
+    setButtonState("recordStart",true);
+  } else {
+    setButtonState("recordStart",false);
+  }
+  setButtonText("sdFname",audioSDWriter.getCurrentFilename());
 }
 
 #endif
