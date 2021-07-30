@@ -63,9 +63,6 @@ void setup() {
   //setup BLE
   while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
   ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
-  
-  //Create the GUI description (but not yet transmitted to the App...that's after it connects)
-  createTympanRemoteLayout();
 
   Serial.println("Setup complete.");
 } //end setup()
@@ -116,6 +113,7 @@ void respondToByte(char c) {
 // (single quotes are used here, whereas JSON spec requires double quotes.  The app converts ' to " before parsing the JSON string).
 // Please don't put commas or colons in your ID strings!
 void printTympanRemoteLayout(void) {
+  if (myGUI.get_nPages() < 1) createTympanRemoteLayout();  //create the GUI, if it hasn't already been created
   myTympan.println(myGUI.asString());
   ble.sendMessage(myGUI.asString());
   setButtonText("gainIndicator", String(digital_gain_dB));
