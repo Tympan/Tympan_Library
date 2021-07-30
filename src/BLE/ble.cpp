@@ -7,6 +7,10 @@
 
 int BLE::begin(void)
 {
+	
+	//clear the incoming serial buffer
+	while (_serialPort->available()) _serialPort->read();  //clear the serial buffer associated with the BT unit
+	
 	//force into command mode (not needed if already in command mode...but historical Tympan units were preloaded to Data mode instead)
 	//myTympan.forceBTtoDataMode(false);
 	_serialPort->print("$");  delay(400);	_serialPort->print("$$$");
@@ -37,6 +41,7 @@ int BLE::begin(void)
 
 void BLE::setupBLE(int BT_firmware) 
 {  
+
 	int ret_val;
 	ret_val = set_BC127_firmware_ver(BT_firmware);
 	if (ret_val != BT_firmware) {
