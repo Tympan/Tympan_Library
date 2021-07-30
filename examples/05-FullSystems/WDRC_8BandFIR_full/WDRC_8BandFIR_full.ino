@@ -348,7 +348,7 @@ void servicePotentiometer(unsigned long curTime_millis) {
     //float scaled_val = val / 3.0; scaled_val = scaled_val * scaled_val;
     if (abs(val - prev_val) > 0.05) { //is it different than befor?
       prev_val = val;  //save the value for comparison for the next time around
-      setDigitalGain_dB(val*45.0f - 10.0f,false);
+      setDigitalGain_dB(val*45.0f - 25.0f,false);
       Serial.print("servicePotentiometer: digital gain (dB) = ");Serial.println(myState.digital_gain_dB);
     }
     lastUpdate_millis = curTime_millis;
