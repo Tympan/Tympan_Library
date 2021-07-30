@@ -11,6 +11,10 @@ class SerialManager_UI {
     SerialManager_UI(void) { 
       ID_char = next_ID_char++;
     };
+	SerialManager_UI(SerialManagerBase  *_sm) {
+		ID_char = next_ID_char++;
+		setSerialManager(_sm);
+	}
 
     // ///////// these are the methods that you must implement when you inheret
     virtual void printHelp(void) {};        				   //default is to print nothing
