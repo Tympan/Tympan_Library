@@ -14,6 +14,8 @@ void AudioFilterFIR_F32::update(void)
 {
 	audio_block_f32_t *block, *block_new;
 
+	if (!is_enabled) return;
+
 	block = AudioStream_F32::receiveReadOnly_f32();
 	if (!block) return;
 
@@ -25,7 +27,7 @@ void AudioFilterFIR_F32::update(void)
 
 	// do passthru
 	if (coeff_p == FIR_F32_PASSTHRU) {
-		// Just passthrough
+		// Just pass through
 		AudioStream_F32::transmit(block);
 		AudioStream_F32::release(block);
 		//Serial.println("AudioFilterFIR_F32: update(): PASSTHRU.");
@@ -45,8 +47,8 @@ void AudioFilterFIR_F32::update(void)
 	AudioStream_F32::release(block);
 }
 
-void AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
-	if (!block || !block_new) return;
+int AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
+	if (!is_enabled || !block || !block_new) return -1;
 	
 	//check to make sure our FIR instance has the right size
 	if (block->length != configured_block_size) {
@@ -61,4 +63,6 @@ void AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block
 	//copy info about the block
 	block_new->length = block->length;
 	block_new->id = block->id;	
+	
+	return 0;
 }

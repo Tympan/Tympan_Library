@@ -15,7 +15,7 @@
 
 // Indicates that the code should just pass through the audio
 // without any filtering (as opposed to doing nothing at all)
-#define FIR_F32_PASSTHRU ((const float32_t *) 1)
+#define FIR_F32_PASSTHRU ((const float32_t *) 1)   //if you sete coeff_p to this, update() will simply 
 #define FIR_MAX_COEFFS 200
 
 class AudioFilterFIR_F32 : public AudioStream_F32
@@ -29,8 +29,9 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) {	}
 			
 		//initialize the FIR filter by giving it the filter coefficients
-		void begin(const float32_t *cp, const int _n_coeffs) { begin(cp, _n_coeffs, AUDIO_BLOCK_SAMPLES); } //assume that the block size is the maximum
-		void begin(const float32_t *cp, const int _n_coeffs, const int block_size) {  //or, you can provide it with the block size
+		bool begin(void) { return begin(coeff_passthru, 1, AUDIO_BLOCK_SAMPLES); }
+		bool begin(const float32_t *cp, const int _n_coeffs) { return begin(cp, _n_coeffs, AUDIO_BLOCK_SAMPLES); } //assume that the block size is the maximum
+		bool begin(const float32_t *cp, const int _n_coeffs, const int block_size) {  //or, you can provide it with the block size
 			coeff_p = cp;
 			n_coeffs = _n_coeffs;
 			
@@ -44,18 +45,39 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 			//	Serial.print("AudioFilterFIR_F32: *** ERROR ***: Cound not initialize. N_FIR = "); Serial.print(n_coeffs);
 			//	Serial.print(", Block Size = "); Serial.println(block_size);
 			//	coeff_p = NULL;
+				
+				is_armed = true;
+				is_enabled = true;
+			} else {
+				is_enabled = false;
 			}
+			return get_is_enabled();
 		}
-		void end(void) {  coeff_p = NULL; }
+		void end(void) {  coeff_p = NULL; enable(false); }
 		void update(void);
-		void processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update();
+		int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update(); returns zero if OK
+
+		bool enable(bool enable = true) { 
+			if (enable == true) {
+				if ((coeff_p != FIR_F32_PASSTHRU) && (is_armed)) {  //don't allow it to enable if it can't actually run the filters
+					is_enabled = enable;
+					return get_is_enabled();
+				}
+			}
+			is_enabled = false;
+			return get_is_enabled();
+		}
+		bool get_is_enabled(void) { return is_enabled; }
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
 		
-	private:
+	protected:
 		audio_block_f32_t *inputQueueArray[1];
+		bool is_armed = false;   //has the ARM_MATH filter class been initialized ever?
+		bool is_enabled = false; //do you want this filter to execute?
 
 		// pointer to current coefficients or NULL or FIR_PASSTHRU
+		const float32_t coeff_passthru[1] = {1.0f}; //if you do begin() with this, the FIR filter will actually execute and update() will transmit the same values that you put in
 		const float32_t *coeff_p;
 		int n_coeffs;
 		int configured_block_size;
