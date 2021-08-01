@@ -28,16 +28,8 @@ void AudioFilterIIR_F32::update(void)
 	// get a block for the IIR output
 	block_new = AudioStream_F32::allocate_f32();
 	if (block_new) {
-
-		//apply the IIR
-		filterz_nocheck(b_coeff, n_coeff,
-				a_coeff, n_coeff,
-				block->data, block_new->data, block->length,
-				filter_states);   //this is in "utility/BTNRH_iir_filter.h"
-				
-		//copy info about the block
-		block_new->length = block->length;
-		block_new->id = block->id;
+		//apply the filter
+		processAudioBlock)block,block_new);
 
 		//transmit the data
 		AudioStream_F32::transmit(block_new); // send the FIR output
@@ -46,4 +38,18 @@ void AudioFilterIIR_F32::update(void)
 		if (Serial) Serial.println("AudioFilterIIR_F32: update: could not allocate block_new.");
 	}
 	AudioStream_F32::release(block);
+}
+
+void AudioFilterIIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new)  {
+	if (!block || !block_new) return;
+	
+	//apply the IIR
+	filterz_nocheck(b_coeff, n_coeff,
+			a_coeff, n_coeff,
+			block->data, block_new->data, block->length,
+			filter_states);   //this is in "utility/BTNRH_iir_filter.h"
+			
+	//copy info about the block
+	block_new->length = block->length;
+	block_new->id = block->id;
 }

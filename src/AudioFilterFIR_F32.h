@@ -48,6 +48,7 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 		}
 		void end(void) {  coeff_p = NULL; }
 		void update(void);
+		void processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update();
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
 		

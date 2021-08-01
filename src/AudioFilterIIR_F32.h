@@ -57,6 +57,7 @@ class AudioFilterIIR_F32 : public AudioStream_F32
 		}
 		void end(void) {  initCoefficientsToPassthru(); disable(); }
 		void update(void);
+		void processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update();
 		void resetFilterStates(void) { for (int i=0; i<IIR_MAX_N_COEFF; i++) filter_states[i]=0.0; }
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
