@@ -74,6 +74,10 @@ setShift_bins			KEYWORD2
 getShift_bins			KEYWORD2
 getShift_Hz			KEYWORD2
 
+AudioFilterbankFIR_F32		KEYWORD1
+AudioFilterbankBiquad_F32	KEYWORD1
+designFilters			KEYWORD2
+
 AudioFilterBiquad_F32	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1

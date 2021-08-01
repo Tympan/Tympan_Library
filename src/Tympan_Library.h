@@ -24,6 +24,7 @@
 #include "AudioEffectFeedbackCancel_F32.h"
 #include "AudioEffectFormantShift_FD_F32.h"
 #include "AudioEffectFreqShift_FD_F32.h"
+#include "AudioFilterbank_F32.h"
 #include "AudioFilterBiquad_F32.h"
 #include "AudioFilterFIR_F32.h"
 #include "AudioFilterIIR_F32.h"
