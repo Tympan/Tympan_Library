@@ -32,33 +32,10 @@ class AudioFilterbankState {
 		
 		int filter_order = 0;
 		
-		int set_crossover_freq_Hz(float *freq_Hz, int n_filts) {
-			//make sure that we have valid input
-			if (n_filts < 0) return -1;  //-1 is error
-			
-			//make sure that we have space
-			if (n_filts > max_n_filters) {   //allocate more space
-				int ret_val = set_max_n_filters(n_filts);
-				if (ret_val < 0) return ret_val; //return if it returned an error
-			}
-			
-			//if the number of filters is greater than zero, copy the freuqencies.
-			if (n_filts==0) return 0;  //this is OK
-			for (int Ichan=0;Ichan < (n_filts-1); Ichan++) crossover_freq_Hz[Ichan] = freq_Hz[Ichan];  //n-1 because there will always be one less crossover frequency than filter
-			return set_n_filters(n_filts); //zeros is OK	
-		}
-		float get_crossover_freq_Hz(int Ichan) { 
-			if (Ichan < n_filters-1) {  //there will always be one less crossover frequency than filters
-				return crossover_freq_Hz[Ichan]; 
-			} 
-			return 0.0f;
-		}
+		int set_crossover_freq_Hz(float *freq_Hz, int n_filts);
+		float get_crossover_freq_Hz(int Ichan);
 
-		int set_n_filters(int n) {
-			if ((n < 0) && (n > max_n_filters)) return -1; //this is an error
-			n_filters = n;
-			return n_filters; 
-		}
+		int set_n_filters(int n);
 		int get_n_filters(void) { return n_filters; }
 
 	private:
@@ -67,16 +44,7 @@ class AudioFilterbankState {
 		float *crossover_freq_Hz;  //this really only needs to be [nfilters-1] in length, but we'll generally allocate [nfilters] just to avoid mistaken overruns
 		
 		//keep track of the maximum number of filters
-		int set_max_n_filters(int n) { 
-			if ((n < 0) || (n > 64)) return -1; //-1 is an error
-			if (crossover_freq_Hz != NULL) delete crossover_freq_Hz; 
-			max_n_filters = 0; n_filters = 0;
-			if (n==0) return 0;  //zero is OK
-			crossover_freq_Hz = new float[n];
-			if (crossover_freq_Hz == NULL) return -1; //-1 is an error
-			max_n_filters = n;
-			return 0;  //zero is OK;
-		}
+		int set_max_n_filters(int n);
 		int get_max_n_filters(void) { return max_n_filters; }
 		
 };
