@@ -135,10 +135,8 @@ class EarpieceMixer_F32 : public EarpieceMixerBase_F32 {
 	  configureFrontRearMixer(state.input_frontrear_config);  //this puts the new gain value into action
 	  return state.rearMicGain_dB;
 	}
-    
-    //to do: add GUI elements
 
-    //to do: add STATE accessing elements
+    //to do: add STATE accessing elements, if needed
     EarpieceMixerState state;  //just make public for now and let anyone access the state variables?
 
     

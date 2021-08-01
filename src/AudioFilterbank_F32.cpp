@@ -67,6 +67,7 @@ int AudioFilterbankFIR_F32::set_n_filters(int val) {
 			filters[Ichan].enable(false); //disable the individual filter
 		}
 	}		
+	state.set_n_filters(n_filters);
 	return get_n_filters();
 }
 
@@ -84,6 +85,9 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	
 	//copy the coefficients over to the individual filters
 	for (int i=0; i< n_chan; i++) filters[i].begin(filter_coeff[i], n_fir, block_len);
+			
+	//copy the crossover frequencies to the state
+	state.set_crossover_freq_Hz(crossover_freq, n_chan);	
 	
 	//normal return
 	enable(true);
@@ -138,6 +142,7 @@ int AudioFilterbankBiquad_F32::set_n_filters(int val) {
 			filters[Ichan].enable(false); //disable the individual filter
 		}
 	}		
+	state.set_n_filters(n_filters);
 	return get_n_filters();
 }
 
@@ -178,6 +183,9 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	//copy the coefficients over to the individual filters
 	for (int i=0; i< n_chan; i++) filters[i].setFilterCoeff_Matlab_sos(&(filter_sos[i][0]), N_BIQUAD_PER_FILT);  //sets multiple biquads.  Also calls begin().
 		
+	//copy the crossover frequencies to the state
+	state.set_crossover_freq_Hz(crossover_freq, n_chan);	
+	
 	//normal return
 	enable(true);
 	return 0;

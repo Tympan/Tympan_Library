@@ -25,10 +25,66 @@
 #define AudioFilterbankBiquad_MAX_IIR_FILT_ORDER 6    //oveall desired filter order (note: in Matlab, an "N=3" bandpass is actually a 6th-order filter to be broken up into biquads
 #define AudioFilterbankBiquad_COEFF_PER_BIQUAD  6     //3 "b" coefficients and 3 "a" coefficients per biquad
 
-class AudioFilterBankBase_F32 : public AudioStream_F32 {
+class AudioFilterbankState {
 	public:
-		AudioFilterBankBase_F32(void): AudioStream_F32(1,inputQueueArray) { } 
-		AudioFilterBankBase_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray) { }
+		AudioFilterbankState(void) {};
+		~AudioFilterbankState(void) { delete crossover_freq_Hz; }
+		
+		
+		int set_crossover_freq_Hz(float *freq_Hz, int n_filts) {
+			//make sure that we have valid input
+			if (n_filts < 0) return -1;  //-1 is error
+			
+			//make sure that we have space
+			if (n_filts > max_n_filters) {   //allocate more space
+				int ret_val = set_max_n_filters(n_filts);
+				if (ret_val < 0) return ret_val; //return if it returned an error
+			}
+			
+			//if the number of filters is greater than zero, copy the freuqencies.
+			if (n_filts==0) return 0;  //this is OK
+			for (int Ichan=0;Ichan < (n_filts-1); Ichan++) crossover_freq_Hz[Ichan] = freq_Hz[Ichan];  //n-1 because there will always be one less crossover frequency than filter
+			return set_n_filters(n_filts); //zeros is OK	
+		}
+		float get_crossover_freq_Hz(int Ichan) { 
+			if (Ichan < n_filters-1) {  //there will always be one less crossover frequency than filters
+				return crossover_freq_Hz[Ichan]; 
+			} 
+			return 0.0f;
+		}
+
+		int set_n_filters(int n) {
+			if ((n < 0) && (n > max_n_filters)) return -1; //this is an error
+			n_filters = n;
+			return n_filters; 
+		}
+		int get_n_filters(void) { return n_filters; }
+
+	private:
+		int max_n_filters = 0;  //should correspond to the length of crossover_freq_Hz
+		int n_filters = 0;      //should correspond to however many of the filters are actually being employed by the AuioFilterbank
+		float *crossover_freq_Hz;  //this really only needs to be [nfilters-1] in length, but we'll generally allocate [nfilters] just to avoid mistaken overruns
+		
+		//keep track of the maximum number of filters
+		int set_max_n_filters(int n) { 
+			if ((n < 0) || (n > 64)) return -1; //-1 is an error
+			if (crossover_freq_Hz != NULL) delete crossover_freq_Hz; 
+			max_n_filters = 0; n_filters = 0;
+			if (n==0) return 0;  //zero is OK
+			crossover_freq_Hz = new float[n];
+			if (crossover_freq_Hz == NULL) return -1; //-1 is an error
+			max_n_filters = n;
+			return 0;  //zero is OK;
+		}
+		int get_max_n_filters(void) { return max_n_filters; }
+		
+};
+
+
+class AudioFilterbankBase_F32 : public AudioStream_F32 {
+	public:
+		AudioFilterbankBase_F32(void): AudioStream_F32(1,inputQueueArray) { } 
+		AudioFilterbankBase_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray) { }
 		
 		virtual void enable(bool _enable = true) { is_enabled = _enable; }
 		
@@ -39,6 +95,8 @@ class AudioFilterBankBase_F32 : public AudioStream_F32 {
 		
 		virtual int get_n_filters(void) { return n_filters; }
 		
+		AudioFilterbankState state;
+		
 	protected: 
 		audio_block_f32_t *inputQueueArray[1];  //required as part of AudioStream_F32.  One input.
 		bool is_enabled = false;
@@ -46,12 +104,12 @@ class AudioFilterBankBase_F32 : public AudioStream_F32 {
 
 };
 
-class AudioFilterbankFIR_F32 : public AudioFilterBankBase_F32 {
+class AudioFilterbankFIR_F32 : public AudioFilterbankBase_F32 {
 //GUI: inputs:1, outputs:8  //this line used for automatic generation of GUI node  
 //GUI: shortName:filterbank_FIR
 	public:
-		AudioFilterbankFIR_F32(void) : AudioFilterBankBase_F32() { }
-		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings) : AudioFilterBankBase_F32(settings) { }
+		AudioFilterbankFIR_F32(void) : AudioFilterbankBase_F32() { }
+		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { }
 
 		//virtual void begin(void);
 		virtual void update(void);
@@ -66,12 +124,12 @@ class AudioFilterbankFIR_F32 : public AudioFilterBankBase_F32 {
 
 };
 
-class AudioFilterbankBiquad_F32 : public AudioFilterBankBase_F32 {
+class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 //GUI: inputs:1, outputs:8  //this line used for automatic generation of GUI node  
 //GUI: shortName:filterbank_Biquad
 	public:
-		AudioFilterbankBiquad_F32(void) : AudioFilterBankBase_F32() { }
-		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings) : AudioFilterBankBase_F32(settings) { }
+		AudioFilterbankBiquad_F32(void) : AudioFilterbankBase_F32() { }
+		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { }
 
 		//virtual void begin(void);
 		virtual void update(void);
