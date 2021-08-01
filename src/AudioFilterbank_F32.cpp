@@ -87,7 +87,8 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	for (int i=0; i< n_chan; i++) filters[i].begin(filter_coeff[i], n_fir, block_len);
 			
 	//copy the crossover frequencies to the state
-	state.set_crossover_freq_Hz(crossover_freq, n_chan);	
+	state.set_crossover_freq_Hz(crossover_freq, n_chan);
+	state.filter_order = n_fir;
 	
 	//normal return
 	enable(true);
@@ -185,6 +186,7 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 		
 	//copy the crossover frequencies to the state
 	state.set_crossover_freq_Hz(crossover_freq, n_chan);	
+	state.filter_order = n_iir;
 	
 	//normal return
 	enable(true);

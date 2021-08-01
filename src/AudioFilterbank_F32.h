@@ -30,6 +30,7 @@ class AudioFilterbankState {
 		AudioFilterbankState(void) {};
 		~AudioFilterbankState(void) { delete crossover_freq_Hz; }
 		
+		int filter_order = 0;
 		
 		int set_crossover_freq_Hz(float *freq_Hz, int n_filts) {
 			//make sure that we have valid input
