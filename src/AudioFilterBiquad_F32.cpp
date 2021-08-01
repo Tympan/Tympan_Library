@@ -33,11 +33,26 @@ void AudioFilterBiquad_F32::update(void)
   }
 
   // do IIR
-  arm_biquad_cascade_df1_f32(&iir_inst, block->data, block->data, block->length);
+  //arm_biquad_cascade_df1_f32(&iir_inst, block->data, block->data, block->length);
+  processAudioBlock(block, block);
+  
   
   //transmit the data
   AudioStream_F32::transmit(block); // send the IIR output
   AudioStream_F32::release(block);
+}
+
+int AudioFilterBiquad_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new)  {
+	if (!is_enabled || !block || !block_new) return -1;
+	
+	// do IIR
+	arm_biquad_cascade_df1_f32(&iir_inst, block->data, block_new->data, block->length);
+	
+	//copy info about the block
+	block_new->length = block->length;
+	block_new->id = block->id;
+	
+	return 0;
 }
 
 

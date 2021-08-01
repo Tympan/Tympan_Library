@@ -24,8 +24,10 @@
 #include "utility/BTNRH_rfft.h"
 
 
-void AudioConfigFIRFilterBank_F32::fir_filterbank(float *bb, float *cf, const int nc, const int nw_orig, const int wt, const float sr)
+int AudioConfigFIRFilterBank_F32::fir_filterbank(float *bb, float *cf, const int nc, const int nw_orig, const int wt, const float sr)
     {
+		if ((nw_orig < 1) || (nw_orig > 1024)) return -1;
+		
         double   p, w, a = 0.16, sm = 0;
         float   *ww, *bk, *xx, *yy;
         int      j, k, kk, nt, nf, ns, *be;
@@ -91,4 +93,6 @@ void AudioConfigFIRFilterBank_F32::fir_filterbank(float *bb, float *cf, const in
         free(ww);
         free(xx);
         free(yy);
+		
+		return 0;  //OK
     }
