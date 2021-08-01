@@ -2,10 +2,6 @@
 #include "SerialManagerBase.h"
 #include "SerialManager_UI.h"
 
-char SerialManager_UI::next_ID_char = '0';  //start at zero and increment through the ASCII table
-char SerialManager_UI::quadchar_start_char = QUADCHAR_START_CHAR;
-
-
 SerialManager_UI* SerialManagerBase::add_UI_element(SerialManager_UI *ptr) {
 	if (ptr == NULL) return NULL;
 	

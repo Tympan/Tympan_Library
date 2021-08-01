@@ -58,7 +58,7 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI
 		virtual void printHelp(void) {
-				String prefix = getPrefix();
+				String prefix = getPrefix(); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 				Serial.println(F(" State: Prefix = ") + prefix);
 				Serial.println(F("   c/C: Enable/Disable printing of CPU and Memory usage"));
 		};
@@ -81,7 +81,7 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 				  setCPUButtons();
 				  break;
 				default:
-					return_val = false;  //we did not process this character
+				  return_val = false;  //we did not process this character
 			}
 			return return_val;	
 		};
@@ -92,7 +92,6 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 		// /////////////////////////////////	
 		
 		//create the button sets for the TympanRemote's GUI
-		virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + String("x"); }
 		virtual TR_Card* addCard_cpuReporting(TR_Page *page_h) {
 			return addCard_cpuReporting(page_h, getPrefix());
 		}

@@ -23,13 +23,16 @@ class SerialManager_UI {
     virtual void setFullGUIState(bool activeButtonsOnly=false) {};  //default is to do nothing
     // ///////////////////////
 
+	// predefined helper functions, which you can override
+	virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + String("x"); }  //your class can use any and every String-able character in place of "x"...so, you class can have *a lot* of commands
+	
     //attach the SerialManager
     void setSerialManager(SerialManagerBase *_sm);
     SerialManagerBase *getSerialManager(void);
     
   protected:
-    char ID_char;
-    static char quadchar_start_char;
+    char ID_char;                    //see SerialManager_UI.cpp for where it gets initializedd
+    static char quadchar_start_char; //see SerialManager_UI.cpp for where it gets initializedd
     SerialManagerBase *sm = NULL;
     virtual void setButtonState(String btnId, bool newState, bool sendNow = true);
     virtual void setButtonText(String btnId, String text);

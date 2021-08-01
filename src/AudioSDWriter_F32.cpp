@@ -260,7 +260,7 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
 // ////////////////////////////////////////////// Implement the UI methods
 
 void AudioSDWriter_F32_UI::printHelp(void) {
-	String prefix = getPrefix();
+	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 	Serial.println(F(" AudioSDWriter: Prefix = ") + prefix);
 	Serial.println(F("   r,s,d: SD record/stop/deleteAll")); 
 };
