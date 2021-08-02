@@ -33,11 +33,13 @@ class AudioFilterbankState {
 		AudioFilterbankState(void) {};
 		~AudioFilterbankState(void) { delete crossover_freq_Hz; }
 		
-		int filter_order = 0;
+		int filter_order = 6; 				//order of each filter being designed.  Should be overwritten!
+		float sample_rate_Hz = 44100.f;		//sample rate used during filter design.  Should be overwritten!
+		int audio_block_len = 128;				//audio block length sometimes used in initializing the filter states.  Should be overwritten!
 		
-		int set_crossover_freq_Hz(float *freq_Hz, int n_filts);
+		int set_crossover_freq_Hz(float *freq_Hz, int n_crossover);  //n_crossover is n_filters-1
 		float get_crossover_freq_Hz(int Ichan);
-		int get_crossover_freq_Hz(float *freq_Hz, int n_filts);
+		int get_crossover_freq_Hz(float *freq_Hz, int n_crossover); //n_crossover is n_filters-1
 
 		int set_n_filters(int n);
 		int get_n_filters(void) { return n_filters; }
@@ -45,6 +47,7 @@ class AudioFilterbankState {
 		//keep track of the maximum number of filters...the user shouldn't have to worry about this
 		int set_max_n_filters(int n);
 		int get_max_n_filters(void) { return max_n_filters; }
+		
 
 	protected:
 		int max_n_filters = 0;  //should correspond to the length of crossover_freq_Hz
@@ -71,7 +74,7 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		virtual int set_n_filters(int val) = 0;  //must implement this in a child class
 		virtual int designFilters(int n_chan, int n_order, float sample_rate_Hz, int block_len, float *crossover_freq) = 0;  //must implement this in a child class
 		
-		int increment_crossover_freq_Hz(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close
+		int increment_crossover_freq(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close...and update the filter design
 		virtual int get_n_filters(void) { return n_filters; }
 		
 		AudioFilterbankState state;
@@ -81,6 +84,10 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		bool is_enabled = false;
 		int n_filters = AudioFilterbankFIR_MAX_NUM_FILTERS; //how many filters are actually being used.  Must be less than AudioFilterbankFIR_MAX_NUM_FILTERS
 		float min_freq_seperation_fac = powf(2.0f,1.0f/12.0f);  //minimum seperation of the filter crossover frequencies
+		
+		//helper functions
+		static void enforce_minimum_spacing_of_crossover_freqs(float *freqs_Hz, int n_crossover, float min_seperation_fac,  int direction = 1); //direction = 1 to move unacceptable freqs higher, -1 to move them lower
+		static void sortFrequencies(float *freq_Hz, int n_filts);
 
 };
 
