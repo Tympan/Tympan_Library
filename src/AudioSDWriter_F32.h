@@ -287,9 +287,10 @@ class AudioSDWriter_F32_UI : public AudioSDWriter_F32, public SerialManager_UI {
 		// /////////////////////////////////	
 		
 		//create the button sets for the TympanRemote's GUI
-		virtual TR_Card *addCard_sdRecord(TR_Page *page_h);
-		virtual TR_Card *addCard_sdRecord(TR_Page *, String);
-		virtual TR_Page *addPage_sdRecord(TympanRemoteFormatter *gui);
+		virtual TR_Card* addCard_sdRecord(TR_Page *page_h);
+		virtual TR_Card* addCard_sdRecord(TR_Page *, String);
+		virtual TR_Page* addPage_sdRecord(TympanRemoteFormatter *gui);
+		virtual TR_Page* addPage_default(TympanRemoteFormatter *gui) { return addPage_sdRecord(gui); };
 		virtual void setSDRecordingButtons(bool activeButtonsOnly = false);
 };
 
