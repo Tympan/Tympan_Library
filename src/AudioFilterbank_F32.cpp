@@ -43,6 +43,16 @@ float AudioFilterbankState::get_crossover_freq_Hz(int Ichan) {
 	return 0.0f;
 }
 
+int AudioFilterbankState::get_crossover_freq_Hz(float *freq_Hz, int n_requested_filters) {
+	for (int i=0; i < max(n_requested_filters, get_max_n_filters()); i++) {
+		freq_Hz[i] = crossover_freq_Hz[i];
+	}
+	if (n_requested_filters > get_max_n_filters()) {
+		return -1;  //you asked for too many filters, so return an error
+	}
+	return 0;  //return OK!
+}
+
 int AudioFilterbankState::set_n_filters(int n) {
 	if ((n < 0) && (n > max_n_filters)) return -1; //this is an error
 	n_filters = n;
@@ -58,6 +68,13 @@ int AudioFilterbankState::set_max_n_filters(int n) {
 	if (crossover_freq_Hz == NULL) return -1; //-1 is an error
 	max_n_filters = n;
 	return 0;  //zero is OK;
+}
+
+int AudioFilterbankBase_F32::increment_crossover_freq_Hz(int Ichan, float freq_increment_fac) {
+	
+	//TBD!!!
+	
+	return 0;
 }
 
 
@@ -243,4 +260,151 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 }
 
 
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+// Filterbank UI Methods
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+void AudioFilterbank_UI::printChanUpMsg(void) { 
+	int N_CHAN = this_filterbank->state.get_n_filters();	//N_CHAN is the number of filters, so there are N_CHAN-1 cross-over frequencies
+	char fooChar[] = "12345678"; 
+	int nchar = 8;
+	Serial.print(" ");
+	for (int i=0; i < (N_CHAN-1);i++) {
+		if (i < nchar) {
+			Serial.print(fooChar[i]);   //use numbers 1-8 for first 8 channels
+		} else {
+			Serial.print('a' + (i - nchar));  //use lower-case a-z (and beyond) for more than 8 channels
+		}
+	}
+	Serial.print(": Raise crossover frequency for channel (1-");
+	Serial.print(N_CHAN);
+	Serial.print(") by ");
+}
+void AudioFilterbank_UI::printChanDownMsg(void) { 
+	int N_CHAN = this_filterbank->state.get_n_filters();	//N_CHAN is the number of filters, so there are N_CHAN-1 cross-over frequencies
+	char fooChar[] = "!@#$%^&*"; 
+	int nchar = 8; 
+	Serial.print(" ");
+	for (int i=0; i < (N_CHAN-1);i++) {
+		if (i < nchar) {
+			Serial.print(fooChar[i]);    //use the symbol above each number key 1-8 for first 8 channels
+		} else {
+			Serial.print('A' + (i - nchar));  //use upper-case A-Z (and beyond) for more than 8 channels
+		}
+	}
+	Serial.print(": Lower crossover frequency for channel (1-");
+	Serial.print(N_CHAN);
+	Serial.print(") by ");
+}
+
+void AudioFilterbank_UI::printHelp(void) {
+	Serial.println(F(" Filterbank: Prefix = ") + String(quadchar_start_char) + String(ID_char) + String("x"));
+	printChanUpMsg(); Serial.println(String(freq_increment_fac,2) + "x");
+	printChanDownMsg(); Serial.println(String(freq_increment_fac,2) + "x");
+}
+
+bool AudioFilterbank_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
+	
+	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
+	if (mode_char != ID_char) return false;
+
+	//check to see if we have filters configured.  If not, return;
+	int n_crossover = (this_filterbank->state.get_n_filters()) - 1;
+	if (n_crossover < 1) return false;
+
+	//we ignore the chan_char and only work with the data_char
+	char c = data_char;
+	
+	//prepare
+	bool was_action_taken = false;
+	int Ichan;
+	int n_freqs_changed = 0; //how many frequencies incrementCrossover() change? Ideally, just one is changed, but it might need to nudge the others, too
+	
+	//check to see if they are asking to *increase* the frequency.   If so, which channel is being requested?
+	Ichan = findChan(c,+1); //the +1 searches for characters commanding to *raise* the frequency
+	if (Ichan >= 0) { 
+		n_freqs_changed = this_filterbank->increment_crossover_freq_Hz(Ichan,freq_increment_fac); 
+		if (n_freqs_changed > 0) was_action_taken = true;
+	}
+	
+	//check to see if they are asking to *decrease* the frequency.  If so, which channel is being requested?
+	if (!was_action_taken) {
+		Ichan = findChan(c,-1);  //the -1 searches for characters commanding to *lower* the frequency
+		if (Ichan >= 0) {
+			n_freqs_changed = this_filterbank->increment_crossover_freq_Hz(Ichan,1.0f/freq_increment_fac); 
+			if (n_freqs_changed > 0) was_action_taken = true;
+		}
+	}
+	
+	//update the GUI, if any changes were made
+	if (was_action_taken) {
+		if (n_freqs_changed > 1) {
+			sendAllFreqs();
+			printCrossoverFreqs();
+		} else {
+			sendOneFreq(Ichan);
+			Serial.println("AudioFilterbank_UI: Chan " + String(Ichan) + " crossover (Hz): " + String(this_filterbank->state.get_crossover_freq_Hz(Ichan),0));
+		}
+	}
+	
+	return was_action_taken;
+}
+	
+//Given a character, see if it corresponds to any of the characters associated with a request to
+//raise (or lower) the cross-over frequency.  If so, return which channel is being commanded to
+//change.  Return -1 if no match is found.
+int AudioFilterbank_UI::findChan(char c, int direction) {  //direction is +1 (raise) or -1 (lower)
+	//check inputs
+	if (!((direction == -1) || (direction == +1))) return -1;  //-1 means "not found"
+	
+	//define the targets to search across
+	char charUp[] = "12345678"; char startCharUp = 'a';
+	char charDown[] = "!@#$%^&*"; char startCharDown = 'A';
+	int nchar = 8;
+	char *charTest = charUp; char startChar = startCharUp;
+	if (direction == -1) {
+		charTest = charDown; startChar = startCharDown;
+	}
+	
+	//begin the search
+	int n_crossover = (this_filterbank->state.get_n_filters()) - 1;
+	int Ichan = 0;
+	while (Ichan < n_crossover) {
+		if (Ichan < nchar) {
+			if (c == charTest[Ichan]) return Ichan;
+		} else  {
+			if (c == (startChar + (Ichan-1))) return Ichan;
+		}
+		Ichan++;
+	}
+	return -1; //-1 means "not found"
+}
+
+void AudioFilterbank_UI::printCrossoverFreqs(void) {
+	int n_crossover = (this_filterbank->state.get_n_filters()) - 1;
+	
+	Serial.print("AudioFilterbank_UI: crossover freqs (Hz): ");
+	for (int i=0; i < n_crossover; i++) { 
+		Serial.print(this_filterbank->state.get_crossover_freq_Hz(i),0); 
+		if (i < (n_crossover-1)) Serial.print(", "); 
+	} 
+	Serial.println();
+}
+
+void AudioFilterbank_UI::sendAllFreqs(void) {
+	
+}
+
+void AudioFilterbank_UI::sendOneFreq(int Ichan) {
+	
+}
+
+void AudioFilterbank_UI::setFullGUIState(bool activeButtonsOnly) {
+	
+}

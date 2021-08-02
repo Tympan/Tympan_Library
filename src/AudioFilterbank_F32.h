@@ -71,6 +71,7 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		virtual int set_n_filters(int val) = 0;  //must implement this in a child class
 		virtual int designFilters(int n_chan, int n_order, float sample_rate_Hz, int block_len, float *crossover_freq) = 0;  //must implement this in a child class
 		
+		int increment_crossover_freq_Hz(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close
 		virtual int get_n_filters(void) { return n_filters; }
 		
 		AudioFilterbankState state;
@@ -79,6 +80,7 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		audio_block_f32_t *inputQueueArray[1];  //required as part of AudioStream_F32.  One input.
 		bool is_enabled = false;
 		int n_filters = AudioFilterbankFIR_MAX_NUM_FILTERS; //how many filters are actually being used.  Must be less than AudioFilterbankFIR_MAX_NUM_FILTERS
+		float min_freq_seperation_fac = powf(2.0f,1.0f/12.0f);  //minimum seperation of the filter crossover frequencies
 
 };
 
@@ -141,6 +143,7 @@ class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 // ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+//This is the base class to be inherited by the FIR and Biquad versions
 class AudioFilterbank_UI : public SerialManager_UI {
 	public:
 		//AudioFilterbank_UI(void) : SerialManager_UI() {};
@@ -154,16 +157,24 @@ class AudioFilterbank_UI : public SerialManager_UI {
 		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
 		virtual void setFullGUIState(bool activeButtonsOnly = false); 
 
-		float freq_fac = powf(2.0,1.0/12.0);  //how much to multiply the crossover frequency by when shifting up or down
+		float freq_increment_fac = powf(2.0,1.0/12.0);  //how much to multiply the crossover frequency by when shifting up or down
+		void printCrossoverFreqs(void);
 		
 	protected:
 		AudioFilterbankBase_F32 *this_filterbank = NULL;
 		void printChanUpMsg(void);   //used for building the help menu
 		void printChanDownMsg(void); //used for building the help menu
+		int findChan(char c, int direction); //used for interpreting in-coming commands
+		void sendAllFreqs(void);
+		void sendOneFreq(int Ichan);
+		
 		
 };
 
+//FIR filterbank with built-in UI support
 class AudioFilterbankFIR_F32_UI : public AudioFilterbankFIR_F32, public AudioFilterbank_UI {
+//GUI: inputs:1, outputs:8  //this line used for automatic generation of GUI node  
+//GUI: shortName:filterbank_FIR_UI	
 	public:
 		AudioFilterbankFIR_F32_UI(void) : AudioFilterbankFIR_F32(), AudioFilterbank_UI(this) {}
 		AudioFilterbankFIR_F32_UI(const AudioSettings_F32 &settings) : AudioFilterbankFIR_F32(settings), AudioFilterbank_UI(this) {};
@@ -171,7 +182,10 @@ class AudioFilterbankFIR_F32_UI : public AudioFilterbankFIR_F32, public AudioFil
 
 };
 
+//IIR (Biquad) filterbank with built-in UI support
 class AudioFilterbankBiquad_F32_UI : public AudioFilterbankBiquad_F32, public AudioFilterbank_UI {
+//GUI: inputs:1, outputs:8  //this line used for automatic generation of GUI node  
+//GUI: shortName:filterbank_Biquad_UI
 	public:
 		AudioFilterbankBiquad_F32_UI(void) : AudioFilterbankBiquad_F32(), AudioFilterbank_UI(this) {}
 		AudioFilterbankBiquad_F32_UI(const AudioSettings_F32 &settings) : AudioFilterbankBiquad_F32(settings), AudioFilterbank_UI(this) {};
