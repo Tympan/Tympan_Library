@@ -395,42 +395,29 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 
 
 
-void AudioFilterbank_UI::printChanUpMsg(void) { 
-	char fooChar[] = "12345678"; 	int nchar = 8;
+void AudioFilterbank_UI::printChanMsg(int direction) {  //direction +1 is up, -1 is down
+	char *charMap = charMapUp;
+	if (direction < 0) charMap = charMapDown;
+
 	int n_crossover = this_filterbank->state.get_n_filters() - 1;	// n_crossover is always n_filters - 1
-	Serial.print(" ");
-	for (int i=0; i < n_crossover;i++) {
-		if (i < nchar) {
-			Serial.print(fooChar[i]);   //use numbers 1-8 for first 8 channels
-		} else {
-			Serial.print('a' + (i - nchar));  //use lower-case a-z (and beyond) for more than 8 channels
-		}
+	Serial.print("   ");
+	for (int i=0; i < min(n_crossover,n_charMap);i++) Serial.print(charMap[i]);	
+	if (direction >= 0) {
+		Serial.print(F(": Change crossover (1-"));
+		Serial.print(n_crossover);
+		Serial.println(") by " + String(freq_increment_fac,2) + "x");
+	} else {
+		Serial.print(F(": Change crossover (1-"));
+		Serial.print(n_crossover);
+		Serial.println(") by " + String(1.0/freq_increment_fac,2) + "x");
 	}
-	Serial.print(": Raise frequency for crossover (1-");
-	Serial.print(n_crossover);
-	Serial.println(") by " + String(freq_increment_fac,2) + "x");
 }
 
-void AudioFilterbank_UI::printChanDownMsg(void) { 
-	char fooChar[] = "!@#$%^&*"; 	int nchar = 8; 
-	int n_crossover = this_filterbank->state.get_n_filters() - 1;	// n_crossover is always n_filters - 1
-	Serial.print(" ");
-	for (int i=0; i < n_crossover;i++) {
-		if (i < nchar) {
-			Serial.print(fooChar[i]);   //use numbers 1-8 for first 8 channels
-		} else {
-			Serial.print('A' + (i - nchar));  //use lower-case a-z (and beyond) for more than 8 channels
-		}
-	}
-	Serial.print(": Lower frequency for crossover (1-");
-	Serial.print(n_crossover);
-	Serial.println(") by " + String(1.0f/freq_increment_fac,2) + "x");
-}
 
 void AudioFilterbank_UI::printHelp(void) {
 	Serial.println(F(" Filterbank: Prefix = ") + String(quadchar_start_char) + String(ID_char) + String("x"));
-	printChanUpMsg();
-	printChanDownMsg(); 
+	printChanMsg(1);  //upward changes
+	printChanMsg(-1); //downward changes
 }
 
 bool AudioFilterbank_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
@@ -488,23 +475,14 @@ int AudioFilterbank_UI::findChan(char c, int direction) {  //direction is +1 (ra
 	if (!((direction == -1) || (direction == +1))) return -1;  //-1 means "not found"
 	
 	//define the targets to search across
-	char charUp[] = "12345678"; char startCharUp = 'a';
-	char charDown[] = "!@#$%^&*"; char startCharDown = 'A';
-	int nchar = 8;
-	char *charTest = charUp; char startChar = startCharUp;
-	if (direction == -1) {
-		charTest = charDown; startChar = startCharDown;
-	}
+	char *charTest = charMapUp; 
+	if (direction < 0) charTest = charMapDown; 
 	
 	//begin the search
 	int n_crossover = (this_filterbank->state.get_n_filters()) - 1;
 	int Ichan = 0;
-	while (Ichan < n_crossover) {
-		if (Ichan < nchar) {
-			if (c == charTest[Ichan]) return Ichan;
-		} else  {
-			if (c == (startChar + (Ichan-1))) return Ichan;
-		}
+	while (Ichan < min(n_crossover,n_charMap)) {
+		if (c == charTest[Ichan]) return Ichan;
 		Ichan++;
 	}
 	return -1; //-1 means "not found"
@@ -522,13 +500,46 @@ void AudioFilterbank_UI::printCrossoverFreqs(void) {
 }
 
 void AudioFilterbank_UI::sendAllFreqs(void) {
-	
+	int n_crossover = this_filterbank->state.get_n_filters() - 1;
+	if (n_crossover <= 0) return;
+	for (int i=0; i < n_crossover; i++) sendOneFreq(i);
 }
 
-void AudioFilterbank_UI::sendOneFreq(int Ichan) {
-	
+void AudioFilterbank_UI::sendOneFreq(int Ichan) {  //Ichan counts from zero
+	if (Ichan < 0) return;
+	if (Ichan > (this_filterbank->state.get_n_filters()-1)) return;
+	setButtonText(freq_id_str + String(Ichan),String(this_filterbank->state.get_crossover_freq_Hz(Ichan),0));
 }
 
 void AudioFilterbank_UI::setFullGUIState(bool activeButtonsOnly) {
-	
+	sendAllFreqs();	
 }
+
+TR_Card* AudioFilterbank_UI::addCard_crossoverFreqs(TR_Page *page_h) {
+	if (page_h == NULL) return NULL;
+	TR_Card *card_h = page_h->addCard("Crossover Freqs (Hz)");
+	if (card_h == NULL) return NULL;
+	String prefix = String(quadchar_start_char)+String(ID_char)+String("x");
+	int n_crossover = this_filterbank->get_n_filters()-1; //n_crossover is always n_filter - 1
+	
+	for (int i=0; i < min(n_crossover,n_charMap); i++) {
+		String i_str = String(i);  //counts from zero
+		card_h->addButton(i_str, "", 				    "",                3);  //label, command, id, width
+		card_h->addButton("-", 	 prefix+charMapDown[i], "",                3);  //label, command, id, width
+		card_h->addButton("",    "",                    freq_id_str+i_str, 3);  //label, command, id, width
+		card_h->addButton("+", 	 prefix+charMapUp[i],   "",                3);  //label, command, id, width
+		
+	}
+
+	return card_h;   	
+};
+
+TR_Page* AudioFilterbank_UI::addPage_crossoverFreqs(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Filterbank");
+	if (page_h == NULL) return NULL;
+	addCard_crossoverFreqs(page_h);
+	return page_h;
+}; 
+
+

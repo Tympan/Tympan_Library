@@ -19,7 +19,8 @@
 #include <AudioConfigFIRFilterBank_F32.h> //from Tympan_Library
 #include <AudioFilterBiquad_F32.h> 		  //from Tympan_Library
 #include <AudioConfigIIRFilterBank_F32.h> //from Tympan_Library
-#include <SerialManager_UI.h>
+#include <SerialManager_UI.h>			  //from Tympan_Library
+#include <TympanRemoteFormatter.h> 		  //from Tympan_Library
 
 #define AudioFilterbankFIR_MAX_NUM_FILTERS 8       //maximum number of filters to allow
 #define AudioFilterbankBiquad_MAX_NUM_FILTERS 12      //maximum number of filters to allow
@@ -166,15 +167,29 @@ class AudioFilterbank_UI : public SerialManager_UI {
 
 		float freq_increment_fac = powf(2.0,1.0/12.0);  //how much to multiply the crossover frequency by when shifting up or down
 		void printCrossoverFreqs(void);
+
+		//create the button sets for the TympanRemote's GUI
+		TR_Card *addCard_crossoverFreqs(TR_Page *page_h);
+		TR_Page *addPage_crossoverFreqs(TympanRemoteFormatter *gui);
+		TR_Page *addPage_default(TympanRemoteFormatter *gui) {return addPage_crossoverFreqs(gui); };
 		
-	protected:
-		AudioFilterbankBase_F32 *this_filterbank = NULL;
-		void printChanUpMsg(void);   //used for building the help menu
-		void printChanDownMsg(void); //used for building the help menu
-		int findChan(char c, int direction); //used for interpreting in-coming commands
+		//buttons for updating the App's GUI
 		void sendAllFreqs(void);
 		void sendOneFreq(int Ichan);
 		
+	protected:
+		AudioFilterbankBase_F32 *this_filterbank = NULL;
+		void printChanMsg(int direction);   //used for building the help menu.  direction is +1 for raising and -1 for lowering
+		int findChan(char c, int direction); //used for interpreting in-coming commands
+
+		//characters that map to channel number
+		#define N_CHARMAP (8+26+1)
+		const int n_charMap = N_CHARMAP;
+		char charMapUp[N_CHARMAP]   = "12345678abcdefghijklmnopqrstuvwxyz"; //characters for raising the frequencies
+		char charMapDown[N_CHARMAP] = "!@#$%^&*ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //characters for lowering the frequencies
+
+		//GUI names and whatnot
+		String freq_id_str = String("cfreq");
 		
 };
 
