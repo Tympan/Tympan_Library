@@ -39,24 +39,25 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
     //here is the method called automatically by the audio library
     void update(void) {
-      //receive the input audio data
-      audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
-      if (!block) return;
-      
-      //allocate memory for the output of our algorithm
-      audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
-      if (!out_block) return;
-      
-      //do the algorithm
-      cha_agc_channel(block->data, out_block->data, block->length);
-	  
-	  //copy the audio_block id
-	  out_block->id = block->id;
-      
-      // transmit the block and release memory
-      AudioStream_F32::transmit(out_block); // send the FIR output
-      AudioStream_F32::release(out_block);
-      AudioStream_F32::release(block);
+		//receive the input audio data
+		audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
+		if (!block) return;
+
+		//allocate memory for the output of our algorithm
+		audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
+		if (!out_block) return;
+
+		//do the algorithm
+		cha_agc_channel(block->data, out_block->data, block->length);
+
+		//copy the audio_block id
+		out_block->id = block->id;
+		out_block->length = block->length;
+
+		// transmit the block and release memory
+		AudioStream_F32::transmit(out_block); // send the FIR output
+		AudioStream_F32::release(out_block);
+		AudioStream_F32::release(block);
     }
 
 
