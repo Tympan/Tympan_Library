@@ -28,20 +28,22 @@ int AudioFilterbankState::set_crossover_freq_Hz(float *freq_Hz, int n_crossover)
 	if (n_crossover < 0) return -1;  //-1 is error
 	
 	//make sure that we have space
-	if (n_crossover > (max_n_filters-1)) {   //allocate more space
-		int ret_val = set_max_n_filters(n_crossover+1);  //n_crossover is n_filter - 1
+	int assumed_n_filters = n_crossover + 1;
+	if (assumed_n_filters > max_n_filters) {   //allocate more space
+		int ret_val = set_max_n_filters(assumed_n_filters);  //n_crossover is n_filter - 1
 		if (ret_val < 0) return ret_val; //return if it returned an error
 	}
 	
 	//if the number of filters is greater than zero, copy the freuqencies.
 	if (n_crossover==0) return 0;  //this is OK
-	for (int Ichan=0;Ichan < n_crossover; Ichan++) crossover_freq_Hz[Ichan] = freq_Hz[Ichan];  //n-1 because there will always be one less crossover frequency than filter
-	return set_n_filters(n_crossover+1); //returning zero means "OK".  Also, n_crossover = n_filter - 1;	
+	for (int Ichan=0; Ichan < n_crossover; Ichan++) crossover_freq_Hz[Ichan] = freq_Hz[Ichan];
+	return AudioFilterbankState::set_n_filters(assumed_n_filters); //returning zero means "OK".  Also, n_crossover = n_filter - 1;	
 }
 
 // Report the requested crossover frequency value stored in this state-tracking class
 float AudioFilterbankState::get_crossover_freq_Hz(int Ichan) { 
-	if (Ichan < n_filters-1) {  //there will always be one less crossover frequency than filters
+	int n_crossover = n_filters-1;  //there will always be one less crossover frequency than filters
+	if (Ichan < n_crossover) {  
 		return crossover_freq_Hz[Ichan]; 
 	} 
 	return 0.0f;
@@ -54,6 +56,7 @@ int AudioFilterbankState::get_crossover_freq_Hz(float *freq_Hz, int n_requested_
 		freq_Hz[i] = crossover_freq_Hz[i];
 	}
 	if (n_requested_crossover > n_to_copy) {
+		Serial.println("AudioFilterbankState: get_crossover_freq_Hz: asked for " + String(n_requested_crossover) + " but only sent " + String(n_to_copy));
 		return -1;  //you asked for too many filters, so return an error
 	}
 	return 0;  //return OK!
@@ -63,7 +66,7 @@ int AudioFilterbankState::get_crossover_freq_Hz(float *freq_Hz, int n_requested_
 // This method doesn't change the algorithm's actual audio processing.
 // To change the actual audio processing, do AudioFilterbankFIR_F32::designFilters or AudioFilterbankBiquad_F32::designFilters
 int AudioFilterbankState::set_n_filters(int n) {
-	if ((n < 0) && (n > max_n_filters)) return -1; //this is an error
+	if ((n < 0) || (n > max_n_filters)) return -1; //this is an error
 	n_filters = n;
 	return n_filters; 
 }
@@ -72,12 +75,22 @@ int AudioFilterbankState::set_n_filters(int n) {
 //the tracking of the crossover frequencies.  It must be equal to or larger than the actual number of filters
 //tracked.
 int AudioFilterbankState::set_max_n_filters(int n) { 
-	if ((n < 0) || (n > 64)) return -1; //-1 is an error
+	
+	//check inputs
+	if ((n < 1) || (n > 64)) return -1; //-1 is an error
+	
+	//compare to current setting
+	if (n <= max_n_filters) return 0;  //nothing to do, so return...zero is OK
+	
+	//we do need to expand, so first delete the current frequencies
 	if (crossover_freq_Hz != NULL) delete crossover_freq_Hz; 
 	max_n_filters = 0; n_filters = 0;
-	if (n==0) return 0;  //zero is OK
+	
+	//create new array
 	crossover_freq_Hz = new float[n];
 	if (crossover_freq_Hz == NULL) return -1; //-1 is an error
+	
+	//looks good!  let's return
 	max_n_filters = n;
 	return 0;  //zero is OK;
 }
@@ -100,8 +113,10 @@ int AudioFilterbankState::set_max_n_filters(int n) {
 // "Direction" of -1 will move frequencies lower if they're too close
 //
 // Sorts and adjusts the frequency values in-place, so be sure to use a writable frequency location!
-void AudioFilterbankBase_F32::enforce_minimum_spacing_of_crossover_freqs(float *freqs_Hz, int n_crossover, float min_seperation_fac, int direction) {
-	if (n_crossover <= 0) return;
+int AudioFilterbankBase_F32::enforce_minimum_spacing_of_crossover_freqs(float *freqs_Hz, int n_crossover, float min_seperation_fac, int direction) {
+	int n_freq_changed = 0;
+	if (n_crossover <= 0) return n_freq_changed;
+	
 	
 	float ratio;
 	if (direction >= 0) {  
@@ -111,6 +126,7 @@ void AudioFilterbankBase_F32::enforce_minimum_spacing_of_crossover_freqs(float *
 			if (ratio < min_seperation_fac) {
 				//too small!  raise the upper frequency
 				freqs_Hz[i+1]  = freqs_Hz[i] * min_seperation_fac;  //note that this could be pushed above nyquist.  danger!
+				n_freq_changed++;
 			}
 		}
 	} else {
@@ -120,36 +136,41 @@ void AudioFilterbankBase_F32::enforce_minimum_spacing_of_crossover_freqs(float *
 			if (ratio < min_seperation_fac) {
 				//too small!  lower the lower frequency
 				freqs_Hz[i-1]  = freqs_Hz[i] / min_seperation_fac; 
+				n_freq_changed++;
 			}
 		}
 	}
+	
+	return n_freq_changed;
 }
 
 // Increment the cross-over frequency (adjusting as necessary to keep them minimally seperated )
 int AudioFilterbankBase_F32::increment_crossover_freq(int Ichan, float freq_increment_fac) {
+	int n_freq_changed = 0;
 	
 	//check validity of inputs
-	const int n_crossover = state.get_n_filters() - 1;     //n_crossover is always n_filters-1
-	if ((Ichan < 0) || (Ichan >= n_crossover) || (n_crossover <=0)) return -1;  // -1 is "error"
-	
+	const int n_filters = get_n_filters();
+	const int n_crossover = n_filters - 1;     //n_crossover is always n_filters-1
+	if ((Ichan < 0) || (Ichan >= n_crossover) || (n_filters <= 0)) return -1;  // -1 is "error"
+
 	//get a copy of the crossover frequencies
-	float freqs_Hz[n_crossover];  						 //allocate an array that is big
+	float freqs_Hz[n_filters];  						 //allocate an array that is big
 	if (freqs_Hz == NULL) return -1;  					 //did it allocate the memory?
 	state.get_crossover_freq_Hz(freqs_Hz, n_crossover);  //copies cross-over frequencies into freqs_Hz	
 		
 	//increment the target frequency
 	freqs_Hz[Ichan] = freqs_Hz[Ichan] *  freq_increment_fac;
+	n_freq_changed++;
 	
 	//Ensure proper frequency spacing (don't let them be too close together)
 	int direction = 1;  //baseline assumption is that we're reqeusting an upward move 
 	if (freq_increment_fac < 1.0f) direction = -1;  //oh!  we're actually requesting a downward move.  OK.
-	enforce_minimum_spacing_of_crossover_freqs(freqs_Hz, n_crossover, min_freq_seperation_fac, direction);
+	n_freq_changed += enforce_minimum_spacing_of_crossover_freqs(freqs_Hz, n_crossover, min_freq_seperation_fac, direction);
 	
 	//redesign the filters using the new crossover frequencies
-	int n_filters = n_crossover+1;
 	designFilters(n_filters, state.filter_order, state.sample_rate_Hz, state.audio_block_len, freqs_Hz);
 	
-	return 0;
+	return n_freq_changed;
 }
 
 
@@ -203,7 +224,10 @@ void AudioFilterbankFIR_F32::update(void) {
 	audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
 	if (!block) return;
 
-	//loop over each output
+	Serial.println("AudioFilterbankFIR_F32: update: entering...");
+
+	//loop over each filter
+	int n_filters = state.get_n_filters();
 	int any_error;
 	audio_block_f32_t *block_new;
 	for (int Ichan = 0; Ichan < n_filters; Ichan++) {
@@ -215,8 +239,8 @@ void AudioFilterbankFIR_F32::update(void) {
 					AudioStream_F32::transmit(block_new,Ichan);
 				}
 			}
-			AudioStream_F32::release(block_new);
 		}
+		AudioStream_F32::release(block_new);
 	}
 	
 	//release the original audio block
@@ -225,7 +249,7 @@ void AudioFilterbankFIR_F32::update(void) {
 
 int AudioFilterbankFIR_F32::set_n_filters(int val) {
 	val = min(val, AudioFilterbankFIR_MAX_NUM_FILTERS); 
-	n_filters = val;
+	int n_filters = state.set_n_filters(val);
 	for (int Ichan = 0; Ichan < AudioFilterbankFIR_MAX_NUM_FILTERS; Ichan++) {
 		if (Ichan < n_filters) {
 			filters[Ichan].enable(true);  //enable the individual filter
@@ -233,15 +257,24 @@ int AudioFilterbankFIR_F32::set_n_filters(int val) {
 			filters[Ichan].enable(false); //disable the individual filter
 		}
 	}		
-	state.set_n_filters(n_filters);
-	return get_n_filters();
+	return n_filters;
 }
 
 
 int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_rate_Hz, int block_len, float *crossover_freq) {
+	
+	//Serial.println("AudioFilterbankFIR_F32: designFilters: n_chan " + String(n_chan) 
+	//	+ ", n_fir " + String(n_fir) 
+	//	+ ", fs_Hz " + String(sample_rate_Hz) 
+	//	+ ", block len " + String(block_len));
+	//Serial.print("AudioFilterbankFIR_F32: designFilters: freqs (Hz): ");
+	//for (int i=0;i< (n_chan-1); i++) { Serial.print(crossover_freq[i]); Serial.print(", "); } Serial.println();
+	
 	//validate inputs
 	n_chan = set_n_filters(n_chan); //will automatically limit to the max allowed number of filters
 	if (n_chan <= 0) { enable(false); return -1; }  //invalid inputs
+
+	//Serial.println("AudioFilterbankFIR_F32: designFilters: updated n_chan " + String(n_chan));
 	
 	//sort and enforce minimum seperation of the crossover frequencies
 	float freqs_Hz[n_chan];
@@ -250,17 +283,32 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	for (int i=0; i<n_crossover;i++) { freqs_Hz[i] = crossover_freq[i]; } //copy to known-writable memory
 	sortFrequencies(freqs_Hz, n_crossover);	  //sort the frequencies from smallest to highest
 	enforce_minimum_spacing_of_crossover_freqs(freqs_Hz, n_crossover, min_freq_seperation_fac);  //nudge the frequencies if they are too close (does this protect against going over nyquist?)
+
+	//Serial.print("AudioFilterbankFIR_F32: designFilters: sorted/nudged: freqs (Hz): ");
+	//for (int i=0; i < n_crossover; i++) { Serial.print(crossover_freq[i]); Serial.print(", "); } Serial.println();
+
 	
 	//allocate memory (temporarily) for the filter coefficients
 	float filter_coeff[n_chan][n_fir];
 	if (filter_coeff == NULL) { enable(false); return -1; }  //failed to allocate memory
 	
 	//call the designer...only for N_FIR up to 1024...but will it really work if it is that big??  64, 96, 128 are more normal
+	//Serial.println("AudioFilterbankFIR_F32: designFilters: creating coefficients...");
+	AudioConfigFIRFilterBank_F32 filterbankDesigner;
 	int ret_val = filterbankDesigner.createFilterCoeff(n_chan, n_fir, sample_rate_Hz, freqs_Hz, (float *)filter_coeff);
-	if (ret_val < 0) { enable(false); return -1; } //failed to compute coefficients
+	if (ret_val < 0) { 
+		Serial.println("AudioFilterbankFIR_F32: designFilters: createFilterCoeff failed with code " + String(ret_val));
+		enable(false); 
+		return -1; //failed to compute coefficients
+	} 
 	
 	//copy the coefficients over to the individual filters
-	for (int i=0; i< n_chan; i++) filters[i].begin(filter_coeff[i], n_fir, block_len);
+	//Serial.println("AudioFilterbankFIR_F32: designFilters: setting coefficients for each filter...");
+	for (int i=0; i<n_chan; i++) {
+		int foo = filters[i].begin(filter_coeff[i], n_fir, block_len);
+		//Serial.println("AudioFilterbankFIR_F32: designFilters: filter " + String(i) + ", begin = " + String(foo));
+		//filters[i].printCoeff(n_fir/2-4, n_fir/2+5);
+	}
 			
 	//copy the crossover frequencies to the state
 	state.set_crossover_freq_Hz(freqs_Hz, n_crossover); //n_crossover is n_chan-1
@@ -270,6 +318,7 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	
 	//normal return
 	enable(true);
+	//Serial.println("AudioFilterbankFIR_F32: designFilters: returning normally at end.");
 	return 0;
 }
 
@@ -291,7 +340,8 @@ void AudioFilterbankBiquad_F32::update(void) {
 	audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
 	if (!block) return;
 
-	//loop over each output
+	//loop over each filter
+	int n_filters = state.get_n_filters();
 	int any_error;
 	audio_block_f32_t *block_new;
 	for (int Ichan = 0; Ichan < n_filters; Ichan++) {
@@ -303,8 +353,8 @@ void AudioFilterbankBiquad_F32::update(void) {
 					AudioStream_F32::transmit(block_new,Ichan);
 				}
 			}
-			AudioStream_F32::release(block_new);
 		}
+		AudioStream_F32::release(block_new);
 	}
 	
 	//release the original audio block
@@ -313,7 +363,7 @@ void AudioFilterbankBiquad_F32::update(void) {
 
 int AudioFilterbankBiquad_F32::set_n_filters(int val) {
 	val = min(val, AudioFilterbankBiquad_MAX_NUM_FILTERS); 
-	n_filters = val;
+	int n_filters = state.set_n_filters(val);
 	for (int Ichan = 0; Ichan < AudioFilterbankBiquad_MAX_NUM_FILTERS; Ichan++) {
 		if (Ichan < n_filters) {
 			filters[Ichan].enable(true);  //enable the individual filter
@@ -321,13 +371,13 @@ int AudioFilterbankBiquad_F32::set_n_filters(int val) {
 			filters[Ichan].enable(false); //disable the individual filter
 		}
 	}		
-	state.set_n_filters(n_filters);
-	return get_n_filters();
+	return n_filters;
 }
 
 
 
 int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq) {
+
 	//check the input values
 	if ((n_iir % 2) == 1) {  //is it an odd number?
 		Serial.println("AudioFilterBankIIR_F32: designFilters: *** WARNING ***");
@@ -366,6 +416,7 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	
 	//call the designer
 	float td_msec = 0.000;  //assumed max delay (?) for the time-alignment process?
+	AudioConfigIIRFilterBank_F32 filterbankDesigner;
 	int ret_val = filterbankDesigner.createFilterCoeff_SOS(n_chan, n_iir, sample_rate_Hz, td_msec, freqs_Hz,(float *)filter_sos, filter_delay);
 	
 	if (ret_val < 0) { enable(false); return -1; } //failed to compute coefficients
@@ -403,13 +454,13 @@ void AudioFilterbank_UI::printChanMsg(int direction) {  //direction +1 is up, -1
 	Serial.print("   ");
 	for (int i=0; i < min(n_crossover,n_charMap);i++) Serial.print(charMap[i]);	
 	if (direction >= 0) {
-		Serial.print(F(": Change crossover (1-"));
+		Serial.print(F(": Change crossover for channels (1-"));
 		Serial.print(n_crossover);
-		Serial.println(") by " + String(freq_increment_fac,2) + "x");
+		Serial.println(") by " + String(freq_increment_fac,3) + "x");
 	} else {
-		Serial.print(F(": Change crossover (1-"));
+		Serial.print(F(": Change crossover for channels (1-"));
 		Serial.print(n_crossover);
-		Serial.println(") by " + String(1.0/freq_increment_fac,2) + "x");
+		Serial.println(") by " + String(1.0/freq_increment_fac,3) + "x");
 	}
 }
 
@@ -440,7 +491,8 @@ bool AudioFilterbank_UI::processCharacterTriple(char mode_char, char chan_char, 
 	//check to see if they are asking to *increase* the frequency.   If so, which channel is being requested?
 	Ichan = findChan(c,+1); //the +1 searches for characters commanding to *raise* the frequency
 	if (Ichan >= 0) { 
-		n_freqs_changed = this_filterbank->increment_crossover_freq(Ichan,freq_increment_fac); 
+		Serial.println("AudioFilterbank_UI: increasing crossover frequency[" + String(Ichan) + "]...");
+		n_freqs_changed = this_filterbank->increment_crossover_freq(Ichan,freq_increment_fac);		
 		if (n_freqs_changed > 0) was_action_taken = true;
 	}
 	
@@ -448,6 +500,7 @@ bool AudioFilterbank_UI::processCharacterTriple(char mode_char, char chan_char, 
 	if (!was_action_taken) {
 		Ichan = findChan(c,-1);  //the -1 searches for characters commanding to *lower* the frequency
 		if (Ichan >= 0) {
+			Serial.println("AudioFilterbank_UI: decreasing crossover frequency[" + String(Ichan) + "]...");
 			n_freqs_changed = this_filterbank->increment_crossover_freq(Ichan,1.0f/freq_increment_fac); 
 			if (n_freqs_changed > 0) was_action_taken = true;
 		}
@@ -460,7 +513,6 @@ bool AudioFilterbank_UI::processCharacterTriple(char mode_char, char chan_char, 
 			printCrossoverFreqs();
 		} else {
 			sendOneFreq(Ichan);
-			Serial.println("AudioFilterbank_UI: Chan " + String(Ichan) + " crossover (Hz): " + String(this_filterbank->state.get_crossover_freq_Hz(Ichan),0));
 		}
 	}
 	
@@ -471,6 +523,7 @@ bool AudioFilterbank_UI::processCharacterTriple(char mode_char, char chan_char, 
 //raise (or lower) the cross-over frequency.  If so, return which channel is being commanded to
 //change.  Return -1 if no match is found.
 int AudioFilterbank_UI::findChan(char c, int direction) {  //direction is +1 (raise) or -1 (lower)
+
 	//check inputs
 	if (!((direction == -1) || (direction == +1))) return -1;  //-1 means "not found"
 	
@@ -523,12 +576,11 @@ TR_Card* AudioFilterbank_UI::addCard_crossoverFreqs(TR_Page *page_h) {
 	int n_crossover = this_filterbank->get_n_filters()-1; //n_crossover is always n_filter - 1
 	
 	for (int i=0; i < min(n_crossover,n_charMap); i++) {
-		String i_str = String(i);  //counts from zero
-		card_h->addButton(i_str, "", 				    "",                3);  //label, command, id, width
-		card_h->addButton("-", 	 prefix+charMapDown[i], "",                3);  //label, command, id, width
-		card_h->addButton("",    "",                    freq_id_str+i_str, 3);  //label, command, id, width
-		card_h->addButton("+", 	 prefix+charMapUp[i],   "",                3);  //label, command, id, width
-		
+		String label = String(i+1) + String("-") + String(i+2);
+		card_h->addButton(label, "", 				    "",                    3);  //label, command, id, width
+		card_h->addButton("-",   prefix+charMapDown[i], "",                    3);  //label, command, id, width
+		card_h->addButton("",    "",                    freq_id_str+String(i), 3);  //label, command, id, width
+		card_h->addButton("+",   prefix+charMapUp[i],   "",                    3);  //label, command, id, width
 	}
 
 	return card_h;   	
