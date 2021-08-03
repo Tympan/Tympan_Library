@@ -31,28 +31,7 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 		//initialize the FIR filter by giving it the filter coefficients
 		bool begin(void) { return begin(coeff_passthru, 1, AUDIO_BLOCK_SAMPLES); }
 		bool begin(const float32_t *cp, const int _n_coeffs) { return begin(cp, _n_coeffs, AUDIO_BLOCK_SAMPLES); } //assume that the block size is the maximum
-		bool begin(const float32_t *cp, const int _n_coeffs, const int block_size) {  //or, you can provide it with the block size
-			coeff_p = cp;
-			n_coeffs = _n_coeffs;
-			
-			// Initialize FIR instance (ARM DSP Math Library)
-			if (coeff_p && (coeff_p != FIR_F32_PASSTHRU) && n_coeffs <= FIR_MAX_COEFFS) {
-				arm_fir_init_f32(&fir_inst, n_coeffs, (float32_t *)coeff_p,  &StateF32[0], block_size);
-				configured_block_size = block_size;
-				//Serial.print("AudioFilterFIR_F32: FIR is initialized. N_FIR = "); Serial.print(n_coeffs);
-				//Serial.print(", Block Size = "); Serial.println(block_size);
-			//} else {
-			//	Serial.print("AudioFilterFIR_F32: *** ERROR ***: Cound not initialize. N_FIR = "); Serial.print(n_coeffs);
-			//	Serial.print(", Block Size = "); Serial.println(block_size);
-			//	coeff_p = NULL;
-				
-				is_armed = true;
-				is_enabled = true;
-			} else {
-				is_enabled = false;
-			}
-			return get_is_enabled();
-		}
+		bool begin(const float32_t *cp, const int _n_coeffs, const int block_size);   //or, you can provide it with the block size
 		void end(void) {  coeff_p = NULL; enable(false); }
 		void update(void);
 		int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update(); returns zero if OK
@@ -70,6 +49,8 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 		bool get_is_enabled(void) { return is_enabled; }
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
+		
+		void printCoeff(int start_ind, int end_ind);
 		
 	protected:
 		audio_block_f32_t *inputQueueArray[1];

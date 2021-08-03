@@ -9,6 +9,27 @@
 
 #include "AudioFilterFIR_F32.h"
 
+bool AudioFilterFIR_F32::begin(const float32_t *cp, const int _n_coeffs, const int block_size) {  //or, you can provide it with the block size
+	coeff_p = cp;
+	n_coeffs = _n_coeffs;
+	
+	// Initialize FIR instance (ARM DSP Math Library)
+	if (coeff_p && (coeff_p != FIR_F32_PASSTHRU) && n_coeffs <= FIR_MAX_COEFFS) {
+		//initialize the ARM FIR module
+		arm_fir_init_f32(&fir_inst, n_coeffs, (float32_t *)coeff_p,  &StateF32[0], block_size);
+		configured_block_size = block_size;
+		
+		is_armed = true;
+		is_enabled = true;
+	} else {
+		is_enabled = false;
+	}
+	
+	//Serial.println("AudioFilterFIR_F32: begin complete " + String(is_armed) + " " + String(is_enabled) + " " + String(get_is_enabled()));
+	
+	return get_is_enabled();
+}
+
 
 void AudioFilterFIR_F32::update(void)
 {
@@ -65,4 +86,15 @@ int AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_
 	block_new->id = block->id;	
 	
 	return 0;
+}
+
+void AudioFilterFIR_F32::printCoeff(int start_ind, int end_ind) {
+	start_ind = min(n_coeffs-1,max(0,start_ind));
+	end_ind = min(n_coeffs-1,max(0,end_ind));
+	Serial.print("AudioFilterFIR_F32: printCoeff [" + String(start_ind) + ", " + String(end_ind) + "): ");
+	for (int i=start_ind; i<end_ind; i++) {
+		Serial.print(coeff_p[i],4); 
+		Serial.print(", ");
+	}
+	Serial.println();				
 }
