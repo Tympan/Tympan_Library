@@ -294,7 +294,6 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	
 	//call the designer...only for N_FIR up to 1024...but will it really work if it is that big??  64, 96, 128 are more normal
 	//Serial.println("AudioFilterbankFIR_F32: designFilters: creating coefficients...");
-	AudioConfigFIRFilterBank_F32 filterbankDesigner;
 	int ret_val = filterbankDesigner.createFilterCoeff(n_chan, n_fir, sample_rate_Hz, freqs_Hz, (float *)filter_coeff);
 	if (ret_val < 0) { 
 		Serial.println("AudioFilterbankFIR_F32: designFilters: createFilterCoeff failed with code " + String(ret_val));
@@ -416,7 +415,6 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	
 	//call the designer
 	float td_msec = 0.000;  //assumed max delay (?) for the time-alignment process?
-	AudioConfigIIRFilterBank_F32 filterbankDesigner;
 	int ret_val = filterbankDesigner.createFilterCoeff_SOS(n_chan, n_iir, sample_rate_Hz, td_msec, freqs_Hz,(float *)filter_sos, filter_delay);
 	
 	if (ret_val < 0) { enable(false); return -1; } //failed to compute coefficients

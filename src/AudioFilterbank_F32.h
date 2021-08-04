@@ -15,6 +15,8 @@
 #define _AudioFilterbank_f32_h
 
 #include <Arduino.h>
+#include <AudioStream_F32.h>
+#incldue <AudioSettings_F32.h>
 #include <AudioFilterFIR_F32.h> 		  //from Tympan_Library
 #include <AudioConfigFIRFilterBank_F32.h> //from Tympan_Library
 #include <AudioFilterBiquad_F32.h> 		  //from Tympan_Library
@@ -106,7 +108,7 @@ class AudioFilterbankFIR_F32 : public AudioFilterbankBase_F32 {
 		virtual int designFilters(int n_chan, int n_fir, float sample_rate_Hz, int block_len, float *crossover_freq);
 
 		//core classes for designing and implementing the filters
-		//AudioConfigFIRFilterBank_F32 filterbankDesigner;
+		AudioConfigFIRFilterBank_F32 filterbankDesigner;
 		AudioFilterFIR_F32 filters[AudioFilterbankFIR_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
 		
 	private:
@@ -127,7 +129,7 @@ class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 		virtual int designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq);
 
 		//core classes for designing and implementing the filters
-		//AudioConfigIIRFilterBank_F32 filterbankDesigner;
+		AudioConfigIIRFilterBank_F32 filterbankDesigner;
 		AudioFilterBiquad_F32 filters[AudioFilterbankBiquad_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
 		
 	private:
