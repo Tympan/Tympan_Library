@@ -101,11 +101,11 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
 		state_ppk = 0; //initialize
 	}
 
-    void setSampleRate_Hz(const float &fs_Hz) {
+    float setSampleRate_Hz(const float &fs_Hz) {
 		//change params that follow sample rate
-		
-		sample_rate_Hz = fs_Hz;
+		return sample_rate_Hz = fs_Hz;
 	}
+	float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	
 	void resetStates(void) { state_ppk = 1.0; }
 	float getCurrentLevel(void) { return state_ppk; } 
