@@ -18,10 +18,11 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E);  //do TympanRev::D (Teensy 3.6) or TympanRev::E (Teensy 4.1)
-AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Tympan AIC.
-AudioEffectGain_F32       gain1, gain2;  //Applies digital gain to audio data.
-AudioOutputI2S_F32        i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
+Tympan                    myTympan(TympanRev::E);     //do TympanRev::D or TympanRev::E
+AudioInputI2S_F32         i2s_in;                     //Digital audio in *from* the Teensy Audio Board ADC.
+AudioEffectGain_F32       gain1;                      //Applies digital gain to audio data.  Left.
+AudioEffectGain_F32       gain2;                      //Applies digital gain to audio data.  Right.
+AudioOutputI2S_F32        i2s_out;                    //Digital audio out *to* the Teensy Audio Board DAC.
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, gain1, 0);    //connect the Left input
@@ -42,8 +43,8 @@ float digital_gain_dB = 0.0;      //this will be set by the app
 void setup() {
 
   //begin the serial comms (for debugging)
-  myTympan.beginBothSerial();delay(3000);
-  myTympan.println("BasicGain_wApp: starting setup()...");
+  myTympan.beginBothSerial();delay(1000);
+  Serial.println("BasicGain_wApp: starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10); 
@@ -59,6 +60,8 @@ void setup() {
   //Set the desired volume levels
   myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
+  gain1.setGain_dB(digital_gain_dB);       //set the digital gain of the Left-channel
+  gain2.setGain_dB(digital_gain_dB);       //set the digital gainof the Right-channel gain processor  
 
   //setup BLE
   while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
@@ -90,7 +93,7 @@ void loop() {
 
 //respond to serial commands
 void respondToByte(char c) {
-  myTympan.print("Received character "); myTympan.println(c);
+  Serial.print("Received character "); Serial.println(c);
   
   switch (c) {
     case 'J': case 'j':
@@ -114,7 +117,7 @@ void respondToByte(char c) {
 // Please don't put commas or colons in your ID strings!
 void printTympanRemoteLayout(void) {
   if (myGUI.get_nPages() < 1) createTympanRemoteLayout();  //create the GUI, if it hasn't already been created
-  myTympan.println(myGUI.asString());
+  Serial.println(myGUI.asString());
   ble.sendMessage(myGUI.asString());
   setButtonText("gainIndicator", String(digital_gain_dB));
 }
@@ -127,7 +130,7 @@ void createTympanRemoteLayout(void) {
   TR_Card *card_h;  //dummy handle for a card
 
   //Add first page to GUI
-  page_h = myGUI.addPage("MyFirstPage");
+  page_h = myGUI.addPage("Basic Gain Demo");
       //Add a card under the first page
       card_h = page_h->addCard("Change Loudness");
           //Add a "-" digital gain button with the Label("-"); Command("K"); Internal ID ("minusButton"); and width (4)
@@ -155,14 +158,14 @@ void changeGain(float change_in_gain_dB) {
 
 //Print gain levels 
 void printGainLevels(void) {
-  myTympan.print("Analog Input Gain (dB) = "); 
-  myTympan.println(input_gain_dB); //print text to Serial port for debugging
-  myTympan.print("Digital Gain (dB) = "); 
-  myTympan.println(digital_gain_dB); //print text to Serial port for debugging
+  Serial.print("Analog Input Gain (dB) = "); 
+  Serial.println(input_gain_dB); //print text to Serial port for debugging
+  Serial.print("Digital Gain (dB) = "); 
+  Serial.println(digital_gain_dB); //print text to Serial port for debugging
 }
 
 void setButtonText(String btnId, String text) {
   String str = "TEXT=BTN:" + btnId + ":"+text;
-  myTympan.println(str);
+  Serial.println(str);
   ble.sendMessage(str);
 }
