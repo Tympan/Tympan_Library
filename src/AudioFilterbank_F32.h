@@ -16,7 +16,7 @@
 
 #include <Arduino.h>
 #include <AudioStream_F32.h>
-#incldue <AudioSettings_F32.h>
+#include <AudioSettings_F32.h>
 #include <AudioFilterFIR_F32.h> 		  //from Tympan_Library
 #include <AudioConfigFIRFilterBank_F32.h> //from Tympan_Library
 #include <AudioFilterBiquad_F32.h> 		  //from Tympan_Library
@@ -24,8 +24,7 @@
 #include <SerialManager_UI.h>			  //from Tympan_Library
 #include <TympanRemoteFormatter.h> 		  //from Tympan_Library
 
-#define AudioFilterbankFIR_MAX_NUM_FILTERS 8       //maximum number of filters to allow
-#define AudioFilterbankBiquad_MAX_NUM_FILTERS 12      //maximum number of filters to allow
+#define AudioFilterbank_MAX_NUM_FILTERS 8       //maximum number of filters to allow
 #define AudioFilterbankBiquad_MAX_IIR_FILT_ORDER 6    //oveall desired filter order (note: in Matlab, an "N=3" bandpass is actually a 6th-order filter to be broken up into biquads
 #define AudioFilterbankBiquad_COEFF_PER_BIQUAD  6     //3 "b" coefficients and 3 "a" coefficients per biquad
 
@@ -36,9 +35,9 @@ class AudioFilterbankState {
 		AudioFilterbankState(void) { crossover_freq_Hz = new float[max_n_filters]; };
 		~AudioFilterbankState(void) { delete crossover_freq_Hz; }
 		
-		int filter_order = 6; 				//order of each filter being designed.  Should be overwritten!
-		float sample_rate_Hz = 44100.f;		//sample rate used during filter design.  Should be overwritten!
-		int audio_block_len = 128;				//audio block length sometimes used in initializing the filter states.  Should be overwritten!
+		int filter_order = 6; 			//order of each filter being designed.  Should be overwritten!
+		float sample_rate_Hz = 44100.f;	//sample rate used during filter design.  Should be overwritten!
+		int audio_block_len = 128;		//audio block length sometimes used in initializing the filter states.  Should be overwritten!
 		
 		int set_crossover_freq_Hz(float *freq_Hz, int n_crossover);  //n_crossover is n_filters-1
 		float get_crossover_freq_Hz(int Ichan);
@@ -53,11 +52,10 @@ class AudioFilterbankState {
 		
 
 	protected:
-		int max_n_filters = AudioFilterbankFIR_MAX_NUM_FILTERS;  //should correspond to the length of crossover_freq_Hz
-		float *crossover_freq_Hz;  //this really only needs to be [nfilters-1] in length, but we'll generally allocate [nfilters] just to avoid mistaken overruns
-		int n_filters = AudioFilterbankFIR_MAX_NUM_FILTERS;      //should correspond to however many of the filters are actually being employed by the AuioFilterbank
-		
-		
+		int max_n_filters = AudioFilterbank_MAX_NUM_FILTERS;  //should correspond to the length of crossover_freq_Hz
+		int n_filters = AudioFilterbank_MAX_NUM_FILTERS;      //should correspond to however many of the filters are actually being employed by the AuioFilterbank
+		float *crossover_freq_Hz;  //this really only needs to be [max_n_filters-1] in length, but we'll generally allocate [max_n_filters] just to avoid mistaken overruns
+	
 };
 
 //This is a parent class for the FIR filterbank and IIR (biquad) filterbank.  This class defines an interfaces
@@ -84,7 +82,7 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 	protected: 
 		audio_block_f32_t *inputQueueArray[1];  //required as part of AudioStream_F32.  One input.
 		bool is_enabled = false;
-		//int n_filters = AudioFilterbankFIR_MAX_NUM_FILTERS; //how many filters are actually being used.  Must be less than AudioFilterbankFIR_MAX_NUM_FILTERS
+		//int n_filters = AudioFilterbank_MAX_NUM_FILTERS; //how many filters are actually being used.  Must be less than AudioFilterbank_MAX_NUM_FILTERS
 		float min_freq_seperation_fac = powf(2.0f,1.0f/6.0f);  //minimum seperation of the filter crossover frequencies
 		
 		//helper functions
@@ -109,7 +107,7 @@ class AudioFilterbankFIR_F32 : public AudioFilterbankBase_F32 {
 
 		//core classes for designing and implementing the filters
 		AudioConfigFIRFilterBank_F32 filterbankDesigner;
-		AudioFilterFIR_F32 filters[AudioFilterbankFIR_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
+		AudioFilterFIR_F32 filters[AudioFilterbank_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
 		
 	private:
 
@@ -130,7 +128,7 @@ class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 
 		//core classes for designing and implementing the filters
 		AudioConfigIIRFilterBank_F32 filterbankDesigner;
-		AudioFilterBiquad_F32 filters[AudioFilterbankBiquad_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
+		AudioFilterBiquad_F32 filters[AudioFilterbank_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
 		
 	private:
 
@@ -155,7 +153,9 @@ class AudioFilterbank_UI : public SerialManager_UI {
 	public:
 		//AudioFilterbank_UI(void) : SerialManager_UI() {};
 		AudioFilterbank_UI(AudioFilterbankBase_F32 *_this_filterbank) : 
-			SerialManager_UI(), this_filterbank(_this_filterbank) {};
+			SerialManager_UI(), this_filterbank(_this_filterbank) {
+				freq_id_str = String(getIDchar()) + freq_id_str; //prepend with a unique character to this instance
+			};
 		
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI

@@ -28,7 +28,9 @@ class SerialManager_UI {
 	virtual TR_Page* addPage_default(TympanRemoteFormatter *gui) { return NULL; }
 
 	// predefined helper functions, which you can override
+	virtual char getIDchar() { return ID_char; }
 	virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + String("x"); }  //your class can use any and every String-able character in place of "x"...so, you class can have *a lot* of commands
+	
 	
     //attach the SerialManager
     void setSerialManager(SerialManagerBase *_sm);

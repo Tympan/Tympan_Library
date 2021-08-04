@@ -224,7 +224,7 @@ void AudioFilterbankFIR_F32::update(void) {
 	audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
 	if (!block) return;
 
-	Serial.println("AudioFilterbankFIR_F32: update: entering...");
+	//Serial.println("AudioFilterbankFIR_F32: update: entering...");
 
 	//loop over each filter
 	int n_filters = state.get_n_filters();
@@ -248,9 +248,9 @@ void AudioFilterbankFIR_F32::update(void) {
 }
 
 int AudioFilterbankFIR_F32::set_n_filters(int val) {
-	val = min(val, AudioFilterbankFIR_MAX_NUM_FILTERS); 
+	val = min(val, AudioFilterbank_MAX_NUM_FILTERS); 
 	int n_filters = state.set_n_filters(val);
-	for (int Ichan = 0; Ichan < AudioFilterbankFIR_MAX_NUM_FILTERS; Ichan++) {
+	for (int Ichan = 0; Ichan < AudioFilterbank_MAX_NUM_FILTERS; Ichan++) {
 		if (Ichan < n_filters) {
 			filters[Ichan].enable(true);  //enable the individual filter
 		} else {
@@ -303,11 +303,7 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	
 	//copy the coefficients over to the individual filters
 	//Serial.println("AudioFilterbankFIR_F32: designFilters: setting coefficients for each filter...");
-	for (int i=0; i<n_chan; i++) {
-		int foo = filters[i].begin(filter_coeff[i], n_fir, block_len);
-		//Serial.println("AudioFilterbankFIR_F32: designFilters: filter " + String(i) + ", begin = " + String(foo));
-		//filters[i].printCoeff(n_fir/2-4, n_fir/2+5);
-	}
+	for (int i=0; i<n_chan; i++) filters[i].begin(filter_coeff[i], n_fir, block_len);
 			
 	//copy the crossover frequencies to the state
 	state.set_crossover_freq_Hz(freqs_Hz, n_crossover); //n_crossover is n_chan-1
@@ -361,9 +357,9 @@ void AudioFilterbankBiquad_F32::update(void) {
 }
 
 int AudioFilterbankBiquad_F32::set_n_filters(int val) {
-	val = min(val, AudioFilterbankBiquad_MAX_NUM_FILTERS); 
+	val = min(val, AudioFilterbank_MAX_NUM_FILTERS); 
 	int n_filters = state.set_n_filters(val);
-	for (int Ichan = 0; Ichan < AudioFilterbankBiquad_MAX_NUM_FILTERS; Ichan++) {
+	for (int Ichan = 0; Ichan < AudioFilterbank_MAX_NUM_FILTERS; Ichan++) {
 		if (Ichan < n_filters) {
 			filters[Ichan].enable(true);  //enable the individual filter
 		} else {
