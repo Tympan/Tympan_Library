@@ -255,13 +255,12 @@ String TympanRemoteFormatter::asString(void)  {
 
 	s = F("JSON={'icon':'tympan.png',");
 
-
 	// Add pages
 	s += "'pages':[";
-	bool anyCustomPages = false;  //we don't know yet
+	//bool anyCustomPages = false;  //we don't know yet
 	TR_Page* page = getFirstPage();
 	if (page != NULL) {
-		anyCustomPages = true;
+		//anyCustomPages = true;
 		
 		//write the first page
 		s += page->asString();
