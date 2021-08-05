@@ -5,6 +5,7 @@
 #include "AudioSettings_F32.h"
 #include "Tympan.h"
 #include "SerialManager_UI.h"  //for the UI stuff
+#include "SerialManagerBase.h" //for the UI stuff
 
 class TympanStateBase {
 	
@@ -52,11 +53,12 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 	public:
 		TympanStateBase_UI(AudioSettings_F32 *given_settings, Print *given_serial) : 
 			TympanStateBase(given_settings, given_serial), SerialManager_UI() {};
-
+		TympanStateBase_UI(AudioSettings_F32 *given_settings, Print *given_serial, SerialManagerBase *_sm) : 
+			TympanStateBase(given_settings, given_serial), SerialManager_UI(_sm) {};
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI
 		virtual void printHelp(void) {
-				String prefix = getPrefix();
+				String prefix = getPrefix(); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 				Serial.println(F(" State: Prefix = ") + prefix);
 				Serial.println(F("   c/C: Enable/Disable printing of CPU and Memory usage"));
 		};
@@ -79,7 +81,7 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 				  setCPUButtons();
 				  break;
 				default:
-					return_val = false;  //we did not process this character
+				  return_val = false;  //we did not process this character
 			}
 			return return_val;	
 		};
@@ -90,12 +92,13 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 		// /////////////////////////////////	
 		
 		//create the button sets for the TympanRemote's GUI
-		virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + String("x"); }
 		virtual TR_Card* addCard_cpuReporting(TR_Page *page_h) {
+			return addCard_cpuReporting(page_h, getPrefix());
+		}
+		virtual TR_Card* addCard_cpuReporting(TR_Page *page_h, String prefix) {
 			if (page_h == NULL) return NULL;
 			TR_Card *card_h = page_h->addCard(String("CPU Usage (%)"));
 			if (card_h == NULL) return NULL;
-			String prefix = getPrefix();
 			
 			card_h->addButton("Start", prefix+"c", "cpuStart", 4);  //label, command, id, width
 			card_h->addButton(""     , "",         "cpuValue", 4);  //label, command, id, width //display the CPU value
@@ -123,6 +126,7 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 			//has enough time passed to update everything?
 			if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
 			if ((curTime_millis - lastUpdate_millis) >= updatePeriod_millis) { //is it time to update the user interface?
+				Serial.println("TympanStateBase: printCPUtoGUI: sending " + String(getCPUUsage(),1));
 				setButtonText("cpuValue", String(getCPUUsage(),1));
 				lastUpdate_millis = curTime_millis; //we will use this value the next time around.
 			}

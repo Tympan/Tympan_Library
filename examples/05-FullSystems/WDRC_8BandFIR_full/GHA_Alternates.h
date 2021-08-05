@@ -35,4 +35,3 @@ BTNRH_WDRC::CHA_WDRC gha_fullon = {5.f, // attack time (ms)
   1.f,      // compression ratio...set to 1.0 to make linear (to defeat)
   104.0     // limiting threshold...hardwired to compression ratio of 10.0
 };
-

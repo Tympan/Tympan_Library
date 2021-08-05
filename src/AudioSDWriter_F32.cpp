@@ -260,7 +260,7 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
 // ////////////////////////////////////////////// Implement the UI methods
 
 void AudioSDWriter_F32_UI::printHelp(void) {
-	String prefix = getPrefix();
+	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 	Serial.println(F(" AudioSDWriter: Prefix = ") + prefix);
 	Serial.println(F("   r,s,d: SD record/stop/deleteAll")); 
 };
@@ -308,11 +308,13 @@ void AudioSDWriter_F32_UI::setSDRecordingButtons(bool activeButtonsOnly) {
 };
 
 TR_Card* AudioSDWriter_F32_UI::addCard_sdRecord(TR_Page *page_h) {
+	return addCard_sdRecord(page_h, getPrefix());
+}
+TR_Card* AudioSDWriter_F32_UI::addCard_sdRecord(TR_Page *page_h, String prefix) {
 	if (page_h == NULL) return NULL;
 	TR_Card *card_h = page_h->addCard(F("Record Audio to SD Card"));
 	if (card_h == NULL) return NULL;
-	String prefix = getPrefix();
-
+	
 	card_h->addButton("Start", prefix+"r", "recordStart", 6);  //label, command, id, width
 	card_h->addButton("Stop",  prefix+"s", "",            6);  //label, command, id, width
 	card_h->addButton("",      "",         "sdFname",     12); //label, command, id, width  //display the filename

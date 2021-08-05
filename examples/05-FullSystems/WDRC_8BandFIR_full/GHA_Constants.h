@@ -36,7 +36,3 @@ BTNRH_WDRC::CHA_WDRC gha = {5.f, // attack time (ms)
   1.f,      // compression ratio...set to 1.0 to make linear (to defeat)
   98.0      // output limiting threshold...hardwired to compression ratio of 10.0
 };
-
-
-
-
