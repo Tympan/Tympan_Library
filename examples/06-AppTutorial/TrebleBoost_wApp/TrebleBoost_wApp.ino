@@ -2,11 +2,11 @@
 *   TrebleBoost_wApp
 *
 *   Created: Chip Audette, OpenAudio, August 2021
-*   Purpose: Process audio by applying a high-pass filter followed by gain.  Include App interaction.
+*   Purpose: Process audio by applying a high-pass filter followed by gain.  Includes App interaction.
 *
 *   TympanRemote App: https://play.google.com/store/apps/details?id=com.creare.tympanRemote
 *
-*   As a tutorial on how to interact with the mobile phone App, you should first explote the previous
+*   As a tutorial on how to interact with the mobile phone App, you should first explore the previous
 *   example, which was "BasicGain_wApp".
 *
 *   Here in "TrebleBoost_wApp", we started with the example sketch "01-Basic\TrebleBoost" and added
