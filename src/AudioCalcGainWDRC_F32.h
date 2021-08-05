@@ -71,7 +71,9 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       AudioStream_F32::release(env_dB_block);
     }
 
-	void WDRC_circuit_gain_preComputedParams(float *env_dB, float *gain_out, const int n) {
+	// Here is a faster method, but it gives the wrong answers.  The transition points (the knee points) are correct
+	// but the computed gains are wrong
+/* 	void WDRC_circuit_gain_preComputedParams(float *env_dB, float *gain_out, const int n) {
 		float *pdb = env_dB; //just rename it to keep the code below unchanged (input SPL dB)
 		float gdb;
 		for (int k = 0; k < n; k++) {  //loop over each sample
@@ -89,7 +91,16 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
 			//y[k] = x[k] * undb2(gdb); //apply the gain
 		}
 		last_gain = gain_out[n-1];  //hold this value, in case the user asks for it later (not needed for the algorithm)
+	} */
+	
+	//instead, for now, let's just point to the full code and accept the computational penalty
+	void WDRC_circuit_gain_preComputedParams(float *env_dB, float *gain_out, const int n) {
+		WDRC_circuit_gain(env_dB, gain_out, n, 
+			exp_cr, exp_end_knee, 
+			tkgn, tk, cr, bolt);
+		
 	}
+
 
     //original call to WDRC_circuit
     //void WDRC_circuit(float *x, float *y, float *pdb, int n, float tkgn, float tk, float cr, float bolt)
@@ -98,8 +109,8 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     void WDRC_circuit_gain(float *env_dB, float *gain_out, const int n,
         const float exp_cr, const float exp_end_knee,
         const float tkgn, const float tk, const float cr, const float bolt) 
-      //exp_cr = compression ratio for expansion
-      //exp_end_knee = kneepoint for end of the expansion region
+		//exp_cr = compression ratio for expansion
+		//exp_end_knee = kneepoint for end of the expansion region
     	//tkgn = gain (dB?) at start of compression (ie, gain for linear behavior?)
     	//tk = compression start kneepoint (pre-compression, dB SPL?)
     	//cr = compression ratio
@@ -159,7 +170,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       //setParams(gha.maxdB, gha.tkgain, gha.cr, gha.tk, gha.bolt); //also sets calcEnvelope
       setParams_from_CHA_WDRC(&gha);
     }
-    void setParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {
+    void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha) { //ignores any sample rate that is in GHA
       setParams(gha->maxdB, gha->exp_cr, gha->exp_end_knee, gha->tkgain, gha->cr, gha->tk, gha->bolt); //also sets calcEnvelope
     }
     void setParams(float _maxdB, float _exp_cr, float _exp_end_knee, float _tkgain, float _cr, float _tk, float _bolt) {
@@ -266,3 +277,4 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
 };
 
 #endif
+
