@@ -1,5 +1,5 @@
 /*
- * AudioCalcGainWDRC_F32: Wide Dynamic Rnage Compressor
+ * AudioEffectCompWDRC_F32: Wide Dynamic Rnage Compressor
  * 
  * Created: Chip Audette (OpenAudio) Feb 2017
  * Derived From: WDRC_circuit from CHAPRO from BTNRC: https://github.com/BTNRH/chapro
@@ -39,36 +39,44 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
     //here is the method called automatically by the audio library
     void update(void) {
-      //receive the input audio data
-      audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
-      if (!block) return;
-      
-      //allocate memory for the output of our algorithm
-      audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
-      if (!out_block) return;
-      
-      //do the algorithm
-      cha_agc_channel(block->data, out_block->data, block->length);
-	  
-	  //copy the audio_block id
-	  out_block->id = block->id;
-      
-      // transmit the block and release memory
-      AudioStream_F32::transmit(out_block); // send the FIR output
-      AudioStream_F32::release(out_block);
-      AudioStream_F32::release(block);
+		//receive the input audio data
+		audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
+		if (!block) return;
+
+		//allocate memory for the output of our algorithm
+		audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
+		if (!out_block) { AudioStream_F32::release(block); return; }
+
+		//do the algorithm
+		int is_error = processAudioBlock(block,out_block); //anything other than a zero is an error
+		
+		// transmit the block and release memory
+		if (!is_error) AudioStream_F32::transmit(out_block); // send the output
+		AudioStream_F32::release(out_block);
+		AudioStream_F32::release(block);
     }
 
+	//here is a standard method for executing the guts of the algorithm without having to call update()
+	//This is the access point used by the compressor bank class, for example, since the compressor bank
+	//handles the audio_block manipulation normally done by update()
+	//
+	//This method uses audio_block_f32_t as its inputs and outputs, to be consistent with all the other
+	//"processAudioBlock()" methods that are used in many other of my audio-processing classes
+	int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block) {
+		if ((!block) || (!out_block)) return -1;  //-1 is error
+		
+		compress(block->data, out_block->data, block->length);
+		
+		//copy the audio_block info
+		out_block->id = block->id;
+		out_block->length = block->length;
+		
+		return 0;  //0 is OK
+	}
 
-    //here is the function that does all the work
-    void cha_agc_channel(float *input, float *output, int cs) {  
-      //compress(input, output, cs, &prev_env,
-      //  CHA_DVAR.alfa, CHA_DVAR.beta, CHA_DVAR.tkgain, CHA_DVAR.tk, CHA_DVAR.cr, CHA_DVAR.bolt, CHA_DVAR.maxdB);
-      compress(input, output, cs);
-    }
-
-    //void compress(float *x, float *y, int n, float *prev_env,
-    //    float &alfa, float &beta, float &tkgn, float &tk, float &cr, float &bolt, float &mxdB)
+    //Here is the function that actually does all the work
+	//This method uses simply float arrays as the inptus and outputs, so that this is maximally compatible
+	//with other ways of using this class.
      void compress(float *x, float *y, int n)    
      //x, input, audio waveform data
      //y, output, audio waveform data after compression
@@ -111,15 +119,17 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       setParams_from_CHA_WDRC(&gha);
     }
 
-    //set all of the parameters for the compressor using the CHA_WDRC structure
-    //assumes that the sample rate has already been set!!!
-    void setParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {
+    //set all of the parameters for the compressor using the CHA_WDRC "GHA" structure
+	void configureFromGHA(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &gha) { setSampleRate_Hz(fs_Hz);  setParams_from_CHA_WDRC(&gha); }
+	void configureFromGHA(const BTNRH_WDRC::CHA_WDRC &gha) { setParams_from_CHA_WDRC(&gha); }  //assumes that the sample rate has already been set!!!
+    void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha) {  //assumes that the sample rate has already been set!!!
       //configure the envelope calculator...assumes that the sample rate has already been set!
       calcEnvelope.setAttackRelease_msec(gha->attack,gha->release); //these are in milliseconds
 
       //configure the compressor
       calcGain.setParams_from_CHA_WDRC(gha);
     }
+	
 
     //set all of the user parameters for the compressor...assuming no expansion regime
     //assumes that the sample rate has already been set!!!
@@ -139,11 +149,12 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       calcGain.setParams(maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
     }
 
-    void setSampleRate_Hz(const float _fs_Hz) {
+    float setSampleRate_Hz(const float _fs_Hz) {
       //pass this data on to its components that care
-      given_sample_rate_Hz = _fs_Hz;
-      calcEnvelope.setSampleRate_Hz(_fs_Hz);
+      //given_sample_rate_Hz = _fs_Hz;
+      return calcEnvelope.setSampleRate_Hz(_fs_Hz);
     }
+	float getSampleRate_Hz(void) { return calcEnvelope.getSampleRate_Hz(); }
 
     float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 
@@ -184,7 +195,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
     
   private:
     audio_block_f32_t *inputQueueArray[1];
-    float given_sample_rate_Hz;
+    //float given_sample_rate_Hz;
 };
 
 
