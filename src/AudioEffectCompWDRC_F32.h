@@ -56,10 +56,16 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 		AudioStream_F32::release(block);
     }
 
+	//here is a standard method for executing the guts of the algorithm without having to call update()
+	//This is the access point used by the compressor bank class, for example, since the compressor bank
+	//handles the audio_block manipulation normally done by update()
+	//
+	//This method uses audio_block_f32_t as its inputs and outputs, to be consistent with all the other
+	//"processAudioBlock()" methods that are used in many other of my audio-processing classes
 	int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block) {
 		if ((!block) || (!out_block)) return -1;  //-1 is error
 		
-		cha_agc_channel(block->data, out_block->data, block->length);
+		compress(block->data, out_block->data, block->length);
 		
 		//copy the audio_block info
 		out_block->id = block->id;
@@ -68,15 +74,9 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 		return 0;  //0 is OK
 	}
 
-    //here is the function that does all the work
-    void cha_agc_channel(float *input, float *output, int cs) {  
-      //compress(input, output, cs, &prev_env,
-      //  CHA_DVAR.alfa, CHA_DVAR.beta, CHA_DVAR.tkgain, CHA_DVAR.tk, CHA_DVAR.cr, CHA_DVAR.bolt, CHA_DVAR.maxdB);
-      compress(input, output, cs);
-    }
-
-    //void compress(float *x, float *y, int n, float *prev_env,
-    //    float &alfa, float &beta, float &tkgn, float &tk, float &cr, float &bolt, float &mxdB)
+    //Here is the function that actually does all the work
+	//This method uses simply float arrays as the inptus and outputs, so that this is maximally compatible
+	//with other ways of using this class.
      void compress(float *x, float *y, int n)    
      //x, input, audio waveform data
      //y, output, audio waveform data after compression
