@@ -14,21 +14,42 @@
 
 class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later header file, but I need this here to avoid circularity
 
-#include <Arduino.h>
-#include "AudioStream_F32.h"
-#include <arm_math.h>
-#include "AudioCalcEnvelope_F32.h"
+#include <Arduino.h>				//from Arduino installation
+#include "AudioStream_F32.h"		//from Tympan_Library
+#include <arm_math.h>				//Should be included with Teensyduino installation
+#include "AudioCalcEnvelope_F32.h"	//from Tympan_Library
 #include "AudioCalcGainWDRC_F32.h"  //has definition of CHA_WDRC
-#include "BTNRH_WDRC_Types.h"
+#include "BTNRH_WDRC_Types.h"		//from Tympan_Library
+#include <SerialManager_UI.h>       //from Tympan_Library
 
 
-//This class helps manage some of the configuration and state information of the AudioEffectCompWDRC_F32 classes.
-//By having this class, it tries to put everything in one place 
-//It is also helpful for managing the GUI on the TympanRemote mobile App.
+//Define an interface for the WDRC compressor for its state-tracking class to use. This 
+//avoids the problem of the state-tracking class being dependent upon the definition of the
+//WDRC class while the WDRC class also being dependent upon the definition of the state-
+//tracking class.  For some reason, a forward declaration didn't work so I'll do this instead.
+//
+//Here are all the WDRC get() methods that will help us keep track of the WDRC configuration
+class WDRCinterface {
+	public:
+		virtual float getSampleRate_Hz(void) =0;
+		virtual float getAttack_msec(void) =0;
+		virtual float getRelease_msec(void) =0;
+		virtual float getMaxdB(void) =0;  //used by getScaleFactor_dBSPL_at_dBFS()
+		virtual float getExpansionCompRatio(void) =0;
+		virtual float getKneeExpansion_dBSPL(void)=0;
+		virtual float getGain_dB(void) =0; //used by getLinearGain_dB()
+		virtual float getCompRatio(void) =0;
+		virtual float getKneeCompressor_dBSPL(void) =0;
+		virtual float getKneeLimiter_dBSPL(void) =0;
+};
+
+
+//This class helps manage some of the configuration and state information of the AudioEffectCompWDRC_F32
+//class.  By having this class, it tries to put everything in one place.  It is also helpful for
+//managing the GUI on the TympanRemote mobile App.
 class AudioCompWDRCState {
 	public:
 		AudioCompWDRCState(void) { };
-		~AudioCompWDRCState(void) { };
 		
 		//The compressor is tricky because it has many configuration parameters that I'd like to track here in
 		//this State-tracking class because I want to access them via the App's GUI.  But, if I keep a local copy
@@ -47,67 +68,48 @@ class AudioCompWDRCState {
 	
 		//get parameter values from the compressors
 		float getSampleRate_Hz(void) { return compressor->getSampleRate_Hz(); }
-		float getAttack_msec(int i=0) { if (i < get_n_chan()) { return compressor->getAttack_msec(); } else { return 0.0f; }};
-		float getRelease_msec(int i=0) { if (i < get_n_chan()) { return compressor->getRelease_msec(); } else { return 0.0f; }};
-		float getScaleFactor_dBSPL_at_dBFS(int i=0) { if (i < get_n_chan()) { return compressor->getMaxdB(); } else { return 0.0f; }};
-		float getExpansionCompRatio(int i=0) { if (i < get_n_chan()) { return compressor->getExpansionCompRatio(); } else { return 0.0f; }};
-		float getKneeExpansion_dBSPL(int i=0) { if (i < get_n_chan()) { return compressor->getKneeExpansion_dBSPL(); } else { return 0.0f; }};
-		float getLinearGain_dB(int i=0) { if (i < get_n_chan()) { return compressor->getGain_dB(); } else { return 0.0f; }};
-		float getCompRatio(int i=0) { if (i < get_n_chan()) { return compressor->getCompRatio(); } else { return 0.0f; }};
-		float getKneeCompressor_dBSPL(int i=0) { if (i < get_n_chan()) { return compressor->getKneeCompressor_dBSPL(); } else { return 0.0f; }};
-		float getKneeLimiter_dBSPL(int i=0) { if (i < get_n_chan()) { return compressor->getKneeLimiter_dBSPL(); } else { return 0.0f; }};
+		float getAttack_msec(void) { return compressor->getAttack_msec(); };
+		float getRelease_msec(void) { return compressor->getRelease_msec(); };
+		float getScaleFactor_dBSPL_at_dBFS(void) { return compressor->getMaxdB(); };
+		float getExpansionCompRatio(void) { return compressor->getExpansionCompRatio(); };
+		float getKneeExpansion_dBSPL(void) { return compressor->getKneeExpansion_dBSPL(); };
+		float getLinearGain_dB(void) { return compressor->getGain_dB(); };
+		float getCompRatio(void) { return compressor->getCompRatio(); };
+		float getKneeCompressor_dBSPL(void) { return compressor->getKneeCompressor_dBSPL(); };
+		float getKneeLimiter_dBSPL(void) { return compressor->getKneeLimiter_dBSPL(); };
 
 		//These methods are not used to directly maintain the state of the AudioEffectCompWDRC.
 		//They are supporting methods
-		void setCompressor(AudioEffectCompWDRC_F32 &c); //also defines max_n_chan
+		void setCompressor(WDRCinterface *c) { compressor = c; }  //get pointer
 
 
 	protected:
-		AudioEffectCompWDRC_F32 *compressor;  //will be an array of pointers to our compressors
-		
-
-	protected:
-//int max_n_filters = AudioFilterbank_MAX_NUM_FILTERS;  //should correspond to the length of crossover_freq_Hz
-//		int n_filters = AudioFilterbank_MAX_NUM_FILTERS;      //should correspond to however many of the filters are actually being employed by the AuioFilterbank
-//		float *crossover_freq_Hz;  //this really only needs to be [max_n_filters-1] in length, but we'll generally allocate [max_n_filters] just to avoid mistaken overruns
-	
+		WDRCinterface *compressor;  //will be an array of pointers to our compressors
 };
 
-
-
-class AudioEffectCompWDRC_F32 : public AudioStream_F32
+class AudioEffectCompWDRC_F32 : public AudioStream_F32, WDRCinterface
 {
-	//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
-	//GUI: shortName: CompressWDRC
+//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
+//GUI: shortName: CompressWDRC
   public:
-    AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
-      setSampleRate_Hz(AUDIO_SAMPLE_RATE);
+    AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray), WDRCinterface() { //need to modify this for user to set sample rate
+      setSampleRate_Hz(AUDIO_SAMPLE_RATE);  //use the default sample rate from the Teensy Audio library
       setDefaultValues();
     }
 
-    AudioEffectCompWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+    AudioEffectCompWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray), WDRCinterface() { //need to modify this for user to set sample rate
       setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
 
-    //here is the method called automatically by the audio library
-    void update(void) {
-		//receive the input audio data
-		audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
-		if (!block) return;
+	//initialize with the default values
+	void setDefaultValues(void);
 
-		//allocate memory for the output of our algorithm
-		audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
-		if (!out_block) { AudioStream_F32::release(block); return; }
+	
+	// ////////////////////////// These are the methods where the audio processing work gets done
 
-		//do the algorithm
-		int is_error = processAudioBlock(block,out_block); //anything other than a zero is an error
-		
-		// transmit the block and release memory
-		if (!is_error) AudioStream_F32::transmit(out_block); // send the output
-		AudioStream_F32::release(out_block);
-		AudioStream_F32::release(block);
-    }
+    //here is the method that is called automatically by the audio library
+    void update(void);
 
 	//here is a standard method for executing the guts of the algorithm without having to call update()
 	//This is the access point used by the compressor bank class, for example, since the compressor bank
@@ -115,119 +117,47 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	//
 	//This method uses audio_block_f32_t as its inputs and outputs, to be consistent with all the other
 	//"processAudioBlock()" methods that are used in many other of my audio-processing classes
-	int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block) {
-		if ((!block) || (!out_block)) return -1;  //-1 is error
-		
-		compress(block->data, out_block->data, block->length);
-		
-		//copy the audio_block info
-		out_block->id = block->id;
-		out_block->length = block->length;
-		
-		return 0;  //0 is OK
-	}
+	int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block);
 
     //Here is the function that actually does all the work
 	//This method uses simply float arrays as the inptus and outputs, so that this is maximally compatible
 	//with other ways of using this class.
-     void compress(float *x, float *y, int n)    
-     //x, input, audio waveform data
-     //y, output, audio waveform data after compression
-     //n, input, number of samples in this audio block
-    {        
-        // find smoothed envelope
-        audio_block_f32_t *envelope_block = AudioStream_F32::allocate_f32();
-        if (!envelope_block) return;
-        calcEnvelope.smooth_env(x, envelope_block->data, n);
-        //float *xpk = envelope_block->data; //get pointer to the array of (empty) data values
+     void compress(float *x, float *y, int n);
 
-        //calculate gain
-        audio_block_f32_t *gain_block = AudioStream_F32::allocate_f32();
-        if (!gain_block) return;
-        calcGain.calcGainFromEnvelope(envelope_block->data, gain_block->data, n);
-        
-        //apply gain
-        arm_mult_f32(x, gain_block->data, y, n);
+	// ///////////////////////// These are the methods used to configure or otherwise interact with this class
 
-        // release memory
-        AudioStream_F32::release(envelope_block);
-        AudioStream_F32::release(gain_block);
-    }
-
-
-    void setDefaultValues(void) {
-      //set default values...taken from CHAPRO, GHA_Demo.c  from "amplify()"...ignores given sample rate
-      //assumes that the sample rate has already been set!!!!
-      BTNRH_WDRC::CHA_WDRC gha = {1.0f, // attack time (ms)
-        50.0f,     // release time (ms)
-        24000.0f,  // fs, sampling rate (Hz), THIS IS IGNORED!
-        119.0f,    // maxdB, maximum signal (dB SPL)
-        1.0f,      // compression ratio for lowest-SPL region (ie, the expansion region)
-        0.0f,      // expansion ending kneepoint (set small to defeat the expansion)
-        0.0f,      // tkgain, compression-start gain
-        105.0f,    // tk, compression-start kneepoint
-        10.0f,     // cr, compression ratio
-        105.0f     // bolt, broadband output limiting threshold
-      };
-      setParams_from_CHA_WDRC(&gha);
-    }
+    float setSampleRate_Hz(const float _fs_Hz) {return calcEnvelope.setSampleRate_Hz(_fs_Hz); }
+	float getSampleRate_Hz(void) { return calcEnvelope.getSampleRate_Hz(); }
 
     //set all of the parameters for the compressor using the CHA_WDRC "GHA" structure
 	void configureFromGHA(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &gha) { setSampleRate_Hz(fs_Hz);  setParams_from_CHA_WDRC(&gha); }
 	void configureFromGHA(const BTNRH_WDRC::CHA_WDRC &gha) { setParams_from_CHA_WDRC(&gha); }  //assumes that the sample rate has already been set!!!
-    void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha) {  //assumes that the sample rate has already been set!!!
-      //configure the envelope calculator...assumes that the sample rate has already been set!
-      calcEnvelope.setAttackRelease_msec(gha->attack,gha->release); //these are in milliseconds
-
-      //configure the compressor
-      calcGain.setParams_from_CHA_WDRC(gha);
-    }
+    void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha);
 	
-
     //set all of the user parameters for the compressor...assuming no expansion regime
     //assumes that the sample rate has already been set!!!
-	void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt) {
-		float exp_cr = 1.0, exp_end_knee = -200.0;  //this should disable the exansion regime
-		setParams(attack_ms, release_ms, maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
-	}
+	void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt);
 
     //set all of the user parameters for the compressor...assumes that there is an expansion regime
     //assumes that the sample rate has already been set!!!
-    void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt) {
-      
-      //configure the envelope calculator...assumes that the sample rate has already been set!
-      calcEnvelope.setAttackRelease_msec(attack_ms,release_ms);
+    void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt);
 
-      //configure the WDRC gains
-      calcGain.setParams(maxdB, exp_cr, exp_end_knee, tkgain, comp_ratio, tk, bolt);
-    }
 
-    float setSampleRate_Hz(const float _fs_Hz) {
-      //pass this data on to its components that care
-      //given_sample_rate_Hz = _fs_Hz;
-      return calcEnvelope.setSampleRate_Hz(_fs_Hz);
-    }
-	float getSampleRate_Hz(void) { return calcEnvelope.getSampleRate_Hz(); }
-
-    float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
-
-    //set the linear gain of the system
-    float setGain_dB(float linear_gain_dB) {
-      return calcGain.setGain_dB(linear_gain_dB);
-    }
-    //increment the linear gain
-    float incrementGain_dB(float increment_dB) {
-      return calcGain.incrementGain_dB(increment_dB);
-    }    
-    //returns the linear gain of the system
-    float getGain_dB(void) {
-      return calcGain.getGain_dB();
-    }
+    //set, increment, or get the linear gain of the system
+    float setGain_dB(float linear_gain_dB) { return calcGain.setGain_dB(linear_gain_dB); }
+    float incrementGain_dB(float increment_dB) { return calcGain.incrementGain_dB(increment_dB); }    
+    float getGain_dB(void) { return calcGain.getGain_dB(); }
 	float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
+    float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 	
+	//set or get the other parameters
 	void setAttackRelease_msec(float32_t attack_ms, float32_t release_ms) {
 		calcEnvelope.setAttackRelease_msec(attack_ms, release_ms);
 	}
+	float setAttack_msec(float attack_ms) { return calcEnvelope.setAttack_msec(attack_ms); }
+	float getAttack_msec(void) { return calcEnvelope.getAttack_msec(); }
+	float setRelease_msec(float release_ms) { return calcEnvelope.setRelease_msec(release_ms); }
+	float getRelease_msec(void) { return calcEnvelope.getRelease_msec(); }
 	float setMaxdB(float32_t foo) { return calcGain.setMaxdB(foo); }
 	float getMaxdB(void) { return calcGain.getMaxdB(); }
 	float setKneeExpansion_dBSPL(float32_t _knee) { return calcGain.setKneeExpansion_dBSPL(_knee); }
@@ -240,19 +170,60 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float getCompRatio(void) { return calcGain.getCompRatio(); }
 	float setKneeLimiter_dBSPL(float32_t foo) { return calcGain.setKneeLimiter_dBSPL(foo); }
 	float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
-	float getAttack_msec(void) { return calcEnvelope.getAttack_msec(); }
-	float getRelease_msec(void) { return calcEnvelope.getRelease_msec(); }
 	
+	
+	// /////////////////////////////////////////////////  Here are the public data members
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
-    
 	AudioCompWDRCState state;
-	
+
   private:
     audio_block_f32_t *inputQueueArray[1];
-    //float given_sample_rate_Hz;
+};
+
+
+
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// UI Versions of the Class
+//
+// This "UI" version of the class adds no signal processing functionality.  Instead, it adds to the
+// class simply to make it easier to add a menu-based or App-based interface to configure and to 
+// control the audio-processing in AudioEffectCompWDRC_F32 above.
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//This is the base class to be inherited by the FIR and Biquad versions
+class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, SerialManager_UI {
+	public:
+		//AudioFilterbank_UI(void) : SerialManager_UI() {};
+		AudioEffectCompWDRC_F32_UI(void) : 	AudioEffectCompWDRC_F32(), SerialManager_UI() {	};
+		
+		
+		// ///////// here are the methods that you must implement from SerialManager_UI
+		virtual void printHelp(void) {};
+		//virtual bool processCharacter(char c); //not used here
+		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
+		virtual void setFullGUIState(bool activeButtonsOnly = false)  {}; 
+	
+	/*
+		//create the button sets for the TympanRemote's GUI
+		TR_Card *addCard_crossoverFreqs(TR_Page *page_h);
+		TR_Page *addPage_crossoverFreqs(TympanRemoteFormatter *gui);
+		TR_Page *addPage_default(TympanRemoteFormatter *gui) {return addPage_crossoverFreqs(gui); };
+		
+*/
+		
+	protected:
+
+		//GUI names and whatnot
+		//String freq_id_str = String("cfreq");
+		
 };
 
 
 #endif
     
+

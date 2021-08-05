@@ -98,8 +98,8 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     void WDRC_circuit_gain(float *env_dB, float *gain_out, const int n,
         const float exp_cr, const float exp_end_knee,
         const float tkgn, const float tk, const float cr, const float bolt) 
-      //exp_cr = compression ratio for expansion
-      //exp_end_knee = kneepoint for end of the expansion region
+		//exp_cr = compression ratio for expansion
+		//exp_end_knee = kneepoint for end of the expansion region
     	//tkgn = gain (dB?) at start of compression (ie, gain for linear behavior?)
     	//tk = compression start kneepoint (pre-compression, dB SPL?)
     	//cr = compression ratio
