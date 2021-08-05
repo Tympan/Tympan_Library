@@ -5,11 +5,25 @@
 *   Purpose: Process audio using Tympan by applying gain.
 *      Also, illustrate how to change Tympan setting via the TympanRemote App.
 *
-*   Blue potentiometer adjusts the digital gain applied to the audio signal.
+*   TympanRemote App: https://play.google.com/store/apps/details?id=com.creare.tympanRemote
 *
-*   Uses default sample rate of 44100 Hz with Block Size of 128
+*   As a tutorial on how to interact with the mobile phone App, this example should be your
+*   first step.  In this example, we started with the example sketch "01-Basic\BasicGain" and
+*   added functionality to interact with the App.  
 *
-*   TympanRemote App: https://play.google.com/store/apps/details?id=com.creare.tympanRemote&hl=en_US
+*   Because BasicGain was such a basic example (it only applied gain, which would change
+*   the overal loudness from the Tympan), this "BasicGain_wApp" is similarly basic.  It
+*   shows you how to change the loudness of the Tympan from the App.  
+*
+*   Like any App-enabled sketch, this example shows you:
+*      * How to use Tympan code here to define a graphical interface (GUI) in the App
+*      * How to transmit that GUI to the App
+*      * How to respond to the commands coming back from the App
+*
+*   The core of each of these three elements can be see in these functions:
+*      * Define the GUI: see "createTympanRemoteLayout()"
+*      * Transmit the GUI: see "printTympanRemoteLayout"
+*      * Respond to commands: see "respondsToByte()" and the functions it calls
 *
 *   MIT License.  use at your own risk.
 */
