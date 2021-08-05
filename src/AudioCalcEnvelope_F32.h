@@ -84,16 +84,39 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
 	
 	//convert time constants from seconds to unitless parameters, from CHAPRO, agc_prepare.c
 	void setAttackRelease_msec(const float atk_msec, const float rel_msec) {
+		//given_attack_msec = atk_msec;
+		//given_release_msec = rel_msec;
+		
+		// // convert ANSI attack & release times to filter time constants
+        //float ansi_atk = 0.001f * atk_msec * sample_rate_Hz / 2.425f; 
+        //float ansi_rel = 0.001f * rel_msec * sample_rate_Hz / 1.782f; 
+        //alfa = (float) (ansi_atk / (1.0f + ansi_atk));
+        //beta = (float) (ansi_rel / (1.0f + ansi_rel));
+		//one_minus_alfa = 1.0f - alfa;
+		setAttack_msec(atk_msec);
+		setRelease_msec(rel_msec);
+	}
+	float setAttack_msec(const float atk_msec) {
 		given_attack_msec = atk_msec;
-		given_release_msec = rel_msec;
 		
 		// convert ANSI attack & release times to filter time constants
         float ansi_atk = 0.001f * atk_msec * sample_rate_Hz / 2.425f; 
-        float ansi_rel = 0.001f * rel_msec * sample_rate_Hz / 1.782f; 
         alfa = (float) (ansi_atk / (1.0f + ansi_atk));
-        beta = (float) (ansi_rel / (1.0f + ansi_rel));
-		one_minus_alfa = 1.0f - alfa;
+		one_minus_alfa = 1.0f - alfa;	
+		
+		return given_attack_msec;
 	}
+	float getAttack_msec(void) { return given_attack_msec; }
+	float setRelease_msec(const float rel_msec) {
+		given_release_msec = rel_msec;
+		
+		// convert ANSI attack & release times to filter time constants
+        float ansi_rel = 0.001f * rel_msec * sample_rate_Hz / 1.782f; 
+        beta = (float) (ansi_rel / (1.0f + ansi_rel));
+		
+		return given_release_msec;
+	}
+	float getRelease_msec(void) { return given_release_msec; }
 
 	void setDefaultValues(void) {
 		float32_t attack_msec = 5.0f;
@@ -110,8 +133,7 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
 	
 	void resetStates(void) { state_ppk = 1.0; }
 	float getCurrentLevel(void) { return state_ppk; } 
-	float getAttack_msec(void) { return given_attack_msec; }
-	float getRelease_msec(void) { return given_release_msec; }
+
   private:
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
 	float32_t sample_rate_Hz;
