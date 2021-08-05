@@ -29,6 +29,7 @@
 #define AudioFilterbankBiquad_COEFF_PER_BIQUAD  6     //3 "b" coefficients and 3 "a" coefficients per biquad
 
 //This class helps manage some of the configuration and state information of the AudioFilterbank classes.
+//By having this class, it tries to put everything in one place 
 //It is also helpful for managing the GUI on the TympanRemote mobile App.
 class AudioFilterbankState {
 	public:
@@ -45,6 +46,11 @@ class AudioFilterbankState {
 
 		int set_n_filters(int n);
 		int get_n_filters(void) { return n_filters; }
+		
+				
+		
+		/// These functions are only for internal work by this class; these functions do not hold any 
+		/// state or configuration information about the AudioFilterbank class.
 		
 		//keep track of the maximum number of filters...the user shouldn't have to worry about this
 		int set_max_n_filters(int n);
