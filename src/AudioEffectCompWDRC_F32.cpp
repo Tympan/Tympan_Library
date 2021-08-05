@@ -2,6 +2,57 @@
 
 #include <AudioEffectCompWDRC_F32.h>
 
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+// AudioCompWDRCState Methods
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//get parameter values from the compressors
+float AudioCompWDRCState::getSampleRate_Hz(void) { return compressor->getSampleRate_Hz(); }
+float AudioCompWDRCState::getAttack_msec(void) { return compressor->getAttack_msec(); };
+float AudioCompWDRCState::getRelease_msec(void) { return compressor->getRelease_msec(); };
+float AudioCompWDRCState::getScaleFactor_dBSPL_at_dBFS(void) { return compressor->getMaxdB(); };
+float AudioCompWDRCState::getExpansionCompRatio(void) { return compressor->getExpansionCompRatio(); };
+float AudioCompWDRCState::getKneeExpansion_dBSPL(void) { return compressor->getKneeExpansion_dBSPL(); };
+float AudioCompWDRCState::getLinearGain_dB(void) { return compressor->getGain_dB(); };
+float AudioCompWDRCState::getCompRatio(void) { return compressor->getCompRatio(); };
+float AudioCompWDRCState::getKneeCompressor_dBSPL(void) { return compressor->getKneeCompressor_dBSPL(); };
+float AudioCompWDRCState::getKneeLimiter_dBSPL(void) { return compressor->getKneeLimiter_dBSPL(); };
+
+//These methods are not used to directly maintain the state of the AudioEffectCompWDRC.
+//They are supporting methods
+void AudioCompWDRCState::setCompressor(AudioEffectCompWDRC_F32 *c) { compressor = c; }  //get pointer
+void AudioCompWDRCState::printWDRCParameters(void) {
+	Serial.println("WDRC Parameters: ");
+	Serial.println("  Sample rate (Hz) = " + String(getSampleRate_Hz(),0));
+	Serial.println("  Attack (msec) = " + String(getAttack_msec(),0));
+	Serial.println("  Release (msec) = " + String(getRelease_msec(),0));
+	Serial.println("  Scale Factor (dBSPL at dB FS) = " + String(getScaleFactor_dBSPL_at_dBFS(),0));
+	Serial.println("  Expansion Knee (dB SPL) = " + String(getKneeExpansion_dBSPL(),0));
+	Serial.println("  Expansion CR = " + String(getExpansionCompRatio(),2));
+	Serial.println("  Linear Gain (dB) = " + String(getLinearGain_dB(),0));
+	Serial.println("  Compression Knee (dB SPL) = " + String(getKneeCompressor_dBSPL(),0));
+	Serial.println("  Compression Ratio = " + String(getCompRatio(),2));
+	Serial.println("  Limiter Knee (dB SPL) = " + String(getKneeLimiter_dBSPL(),0));
+}
+  
+
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+// AudioEffectCompWDRC_F32 Methods
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 void AudioEffectCompWDRC_F32::setDefaultValues(void) {
 	state.setCompressor(this);
 	

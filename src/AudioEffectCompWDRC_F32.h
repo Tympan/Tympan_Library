@@ -23,25 +23,7 @@ class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later hea
 #include <SerialManager_UI.h>       //from Tympan_Library
 
 
-//Define an interface for the WDRC compressor for its state-tracking class to use. This 
-//avoids the problem of the state-tracking class being dependent upon the definition of the
-//WDRC class while the WDRC class also being dependent upon the definition of the state-
-//tracking class.  For some reason, a forward declaration didn't work so I'll do this instead.
-//
-//Here are all the WDRC get() methods that will help us keep track of the WDRC configuration
-class WDRCinterface {
-	public:
-		virtual float getSampleRate_Hz(void) =0;
-		virtual float getAttack_msec(void) =0;
-		virtual float getRelease_msec(void) =0;
-		virtual float getMaxdB(void) =0;  //used by getScaleFactor_dBSPL_at_dBFS()
-		virtual float getExpansionCompRatio(void) =0;
-		virtual float getKneeExpansion_dBSPL(void)=0;
-		virtual float getGain_dB(void) =0; //used by getLinearGain_dB()
-		virtual float getCompRatio(void) =0;
-		virtual float getKneeCompressor_dBSPL(void) =0;
-		virtual float getKneeLimiter_dBSPL(void) =0;
-};
+class AudioEffectCompWDRC_F32;  //forward declare.  to be fully defined later in this file
 
 
 //This class helps manage some of the configuration and state information of the AudioEffectCompWDRC_F32
@@ -67,50 +49,37 @@ class AudioCompWDRCState {
 		//all of the other methods in the main class.
 	
 		//get parameter values from the compressors
-		float getSampleRate_Hz(void) { return compressor->getSampleRate_Hz(); }
-		float getAttack_msec(void) { return compressor->getAttack_msec(); };
-		float getRelease_msec(void) { return compressor->getRelease_msec(); };
-		float getScaleFactor_dBSPL_at_dBFS(void) { return compressor->getMaxdB(); };
-		float getExpansionCompRatio(void) { return compressor->getExpansionCompRatio(); };
-		float getKneeExpansion_dBSPL(void) { return compressor->getKneeExpansion_dBSPL(); };
-		float getLinearGain_dB(void) { return compressor->getGain_dB(); };
-		float getCompRatio(void) { return compressor->getCompRatio(); };
-		float getKneeCompressor_dBSPL(void) { return compressor->getKneeCompressor_dBSPL(); };
-		float getKneeLimiter_dBSPL(void) { return compressor->getKneeLimiter_dBSPL(); };
+		float getSampleRate_Hz(void);
+		float getAttack_msec(void);
+		float getRelease_msec(void);
+		float getScaleFactor_dBSPL_at_dBFS(void);
+		float getExpansionCompRatio(void);
+		float getKneeExpansion_dBSPL(void);
+		float getLinearGain_dB(void);
+;		float getCompRatio(void);
+		float getKneeCompressor_dBSPL(void);
+		float getKneeLimiter_dBSPL(void);
 
 		//These methods are not used to directly maintain the state of the AudioEffectCompWDRC.
-		//They are supporting methods
-		void setCompressor(WDRCinterface *c) { compressor = c; }  //get pointer
-		void void printWDRCParameters(void) {
-			Serial.println("WDRC Params: ");
-			Serial.println("  Sample rate (Hz) = " + String(getSampleRate_Hz(),0));
-			Serial.println("  Attack (msec) = " + String(getAttack_msec(),0));
-			Serial.println("  Release (msec) = " + String(getRelease_msec(),0));
-			Serial.println("  Scale Factor (dBSPL at dB FS) = " + String(getScaleFactor_dBSPL_at_dBFS(),0));
-			Serial.println("  Expansion Knee (dB SPL) = " + String(getKneeExpansion_dBSPL(),0));
-			Serial.println("  Expansion CR = " + String(getExpansionCompRatio(),2));
-			Serial.println("  Linear Gain (dB) = " + String(getLinearGain_dB(),0));
-			Serial.println("  Compression Knee (dB SPL) = " + String(getKneeCompressor_dBSPL(),0));
-			Serial.println("  Compression Ratio = " + String(getCompRatio(),2));
-			Serial.println("  Limiter Knee (dB SPL) = " + String(getKneeLimiter_dBSPL(),0));
+		//They are supporting methods.
+		void setCompressor(AudioEffectCompWDRC_F32 *c);
+		void printWDRCParameters(void);
   
-}
-
 	protected:
-		WDRCinterface *compressor;  //will be an array of pointers to our compressors
+		AudioEffectCompWDRC_F32 *compressor;  //will be an array of pointers to our compressors
 };
 
-class AudioEffectCompWDRC_F32 : public AudioStream_F32, WDRCinterface
+class AudioEffectCompWDRC_F32 : public AudioStream_F32
 {
 //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
 //GUI: shortName: CompressWDRC
   public:
-    AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray), WDRCinterface() { //need to modify this for user to set sample rate
+    AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
       setSampleRate_Hz(AUDIO_SAMPLE_RATE);  //use the default sample rate from the Teensy Audio library
       setDefaultValues();
     }
 
-    AudioEffectCompWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray), WDRCinterface() { //need to modify this for user to set sample rate
+    AudioEffectCompWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
       setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
