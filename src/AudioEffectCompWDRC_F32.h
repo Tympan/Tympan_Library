@@ -163,7 +163,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
         24000.0f,  // fs, sampling rate (Hz), THIS IS IGNORED!
         119.0f,    // maxdB, maximum signal (dB SPL)
         1.0f,      // compression ratio for lowest-SPL region (ie, the expansion region)
-        0.0f,      // expansion ending kneepoint (see small to defeat the expansion)
+        0.0f,      // expansion ending kneepoint (set small to defeat the expansion)
         0.0f,      // tkgain, compression-start gain
         105.0f,    // tk, compression-start kneepoint
         10.0f,     // cr, compression ratio

@@ -69,11 +69,12 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
         //xpk = *ppk;                     // start with previous xpk
 		xpk = state_ppk;
         for (k = 0; k < n; k++) {
-          xab = (x[k] >= 0.0f) ? x[k] : -x[k];
+          xab = (x[k] >= 0.0f) ? x[k] : -x[k]; //rectify the current sample (same as xab = abs(x[k]))
           if (xab >= xpk) {
               xpk = alfa * xpk + one_minus_alfa * xab;
           } else {
-              xpk = beta * xpk;
+              //xpk = beta * xpk + one_minus_beta * xab; //WEA's guess
+			  xpk = beta * xpk;   //but this is what BTNRH actually uses
           }
           y[k] = xpk;
         }
@@ -90,7 +91,7 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
         float ansi_atk = 0.001f * atk_msec * sample_rate_Hz / 2.425f; 
         float ansi_rel = 0.001f * rel_msec * sample_rate_Hz / 1.782f; 
         alfa = (float) (ansi_atk / (1.0f + ansi_atk));
-        beta = (float) (ansi_rel / (10.f + ansi_rel));
+        beta = (float) (ansi_rel / (1.0f + ansi_rel));
 		one_minus_alfa = 1.0f - alfa;
 	}
 
@@ -115,7 +116,7 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
 	float32_t sample_rate_Hz;
 	float32_t given_attack_msec, given_release_msec;
-	float32_t alfa, beta, one_minus_alfa;  //time constants, but in terms of samples, not seconds
+	float32_t alfa, beta, one_minus_alfa, one_minus_beta;  //time constants, but in terms of samples, not seconds
 	float32_t state_ppk = 1.0f;
 };
 
