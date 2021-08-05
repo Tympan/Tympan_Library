@@ -165,27 +165,90 @@ void AudioEffectCompWDRC_F32::setParams(float attack_ms, float release_ms, float
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
+void AudioEffectCompWDRC_F32_UI::printHelp(void) {
+	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	Serial.println(F(" AudioEffectCompWDRC: Prefix = ") + prefix);
+	Serial.println(F("   a,A: Incr/decrease attack time (") + String(getAttack_msec(),0) + "msec)"); 
+	Serial.println(F("   r,R: Incr/decrease release time (") + String(getRelease_msec(),0) + "msec)");
+	Serial.println(F("   m,M: Incr/decrease scale factor (") + String(getMaxdB(),0) + "dBSPL at 0 dBFS)");
+	Serial.println(F("   x,X: Incr/decrease expansion comp ratio (") + String(getExpansionCompRatio(),2) + ")");
+	Serial.println(F("   z,Z: Incr/decrease expansion knee (") + String(getKneeExpansion_dBSPL(),0) + "dB SPL)");
+	Serial.println(F("   g,G: Incr/decrease linear gain (") + String(getGain_dB(),0) + "dB)");
+	Serial.println(F("   c,C: Incr/decrease compression ratio (") + String(getCompRatio(),2) + ")");
+	Serial.println(F("   k,K: Incr/decrease compression knee (") + String(getKneeCompressor_dBSPL(),0) + "dB SPL)");;
+	Serial.println(F("   l,L: Incr/decrease limiter knee (") + String(getKneeLimiter_dBSPL(),0) + "dB SPL)");;
+	
+}; 
+
 bool AudioEffectCompWDRC_F32_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
 	
 	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
 	if (mode_char != ID_char) return false;
 
-
-	bool was_action_taken = false;
-
 	//we ignore the chan_char and only work with the data_char
-	char c = data_char;
-
-	switch (c) {
-		//add the switch yard
-		//
-		//......To Do!!!!!!!!!!!!!
+	bool return_val = true;  //assume that we will find this character
+	switch (data_char) {    
+		case 'a':
+			incrementAttack(time_incr_fac);
+			break;
+		case 'A':
+			incrementAttack(1.0f/time_incr_fac);
+			break;
+		case 'r':
+			incrementRelease(time_incr_fac);
+			break;
+		case 'R':
+			incrementRelease(1.0f/time_incr_fac);
+			break;
+		case 'm':
+			incrementMaxdB(1.0);
+			break;
+		case 'M':
+			incrementMaxdB(-1.0);
+			break;
+		case 'x':
+			incrementExpCR(cr_fac);
+			break;
+		case 'X':
+			incrementExpCR(-cr_fac);
+			break;
+		case 'z':
+			incrementExpKnee(knee_fac);
+			break;
+		case 'Z':
+			incrementExpKnee(-knee_fac);
+			break;
+		case 'g':
+			incrementGain_dB(gain_fac);
+			break;
+		case 'G':
+			incrementGain_dB(-gain_fac);
+			break;
+		case 'c':
+			incrementCompRatio(cr_fac);
+			break;
+		case 'C':
+			incrementCompRatio(1./cr_fac);
+			break;
+		case 'k':
+			incrementKnee(knee_fac);
+			break;
+		case 'K':
+			incrementKnee(-knee_fac);
+			break;
+		case 'l':
+			incrementLimiter(1.0);
+			break;
+		case 'L':
+			incrementLimiter(-1.0);
+			break;
+		default:
+			return_val = false;  //we did not process this character
 	}
+
 	
-	
-	//Update the GUI in the App
-	//
-	//.....To Do!!!!!!!!!!!
-	
-	return was_action_taken;
+	return return_val;	
+
 }
+

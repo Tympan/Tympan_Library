@@ -21,6 +21,7 @@ class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later hea
 #include "AudioCalcGainWDRC_F32.h"  //has definition of CHA_WDRC
 #include "BTNRH_WDRC_Types.h"		//from Tympan_Library
 #include <SerialManager_UI.h>       //from Tympan_Library
+#include <TympanRemoteFormatter.h> 	//from Tympan_Library
 
 
 class AudioEffectCompWDRC_F32;  //forward declare.  to be fully defined later in this file
@@ -127,7 +128,6 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
     //set, increment, or get the linear gain of the system
     float setGain_dB(float linear_gain_dB) { return calcGain.setGain_dB(linear_gain_dB); }
-    float incrementGain_dB(float increment_dB) { return calcGain.incrementGain_dB(increment_dB); }    
     float getGain_dB(void) { return calcGain.getGain_dB(); }
 	float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
     float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
@@ -152,6 +152,16 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float getCompRatio(void) { return calcGain.getCompRatio(); }
 	float setKneeLimiter_dBSPL(float32_t foo) { return calcGain.setKneeLimiter_dBSPL(foo); }
 	float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
+	
+	float incrementAttack(float fac) { return setAttack_msec(getAttack_msec() * fac); };
+	float incrementRelease(float fac) { return setRelease_msec(getAttack_msec() * fac); };
+	float incrementMaxdB(float fac) { return setMaxdB(getMaxdB() + fac); }
+	float incrementExpCR(float fac) { return setExpansionCompRatio(getExpansionCompRatio() * fac); }
+	float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() * fac); }
+	float incrementGain_dB(float increment_dB) { return setGain_dB(getGain_dB() + increment_dB); }    
+    float incrementCompRatio(float fac) { return setCompRatio(getCompRatio() * fac); }
+	float incrementKnee(float fac) {return setKneeCompressor_dBSPL(getKneeCompressor_dBSPL() + fac);}
+	float incrementLimiter(float fac) {return setKneeLimiter_dBSPL(getKneeLimiter_dBSPL() + fac);};
 	
 	
 	// /////////////////////////////////////////////////  Here are the public data members
@@ -185,7 +195,7 @@ class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, SerialManager
 		
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI
-		virtual void printHelp(void) {};
+		virtual void printHelp(void);
 		//virtual bool processCharacter(char c); //not used here
 		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
 		virtual void setFullGUIState(bool activeButtonsOnly = false)  {}; 
@@ -197,13 +207,23 @@ class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, SerialManager
 		TR_Page *addPage_default(TympanRemoteFormatter *gui) {return addPage_crossoverFreqs(gui); };
 		
 */
+	
+	
+		//here are the factors to use to increment
+		float time_incr_fac = pow(2.0,1.0/4.0);
+		float cr_fac = 0.1;
+		float knee_fac = 3.0;
+		float gain_fac = 3.0;
 		
+	
 	protected:
 
 		//GUI names and whatnot
 		//String freq_id_str = String("cfreq");
 		
 };
+
+
 
 
 #endif
