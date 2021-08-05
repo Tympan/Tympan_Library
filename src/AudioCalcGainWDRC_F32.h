@@ -159,7 +159,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       //setParams(gha.maxdB, gha.tkgain, gha.cr, gha.tk, gha.bolt); //also sets calcEnvelope
       setParams_from_CHA_WDRC(&gha);
     }
-    void setParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {
+    void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha) { //ignores any sample rate that is in GHA
       setParams(gha->maxdB, gha->exp_cr, gha->exp_end_knee, gha->tkgain, gha->cr, gha->tk, gha->bolt); //also sets calcEnvelope
     }
     void setParams(float _maxdB, float _exp_cr, float _exp_end_knee, float _tkgain, float _cr, float _tk, float _bolt) {
