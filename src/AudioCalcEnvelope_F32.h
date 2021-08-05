@@ -90,7 +90,7 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
         float ansi_atk = 0.001f * atk_msec * sample_rate_Hz / 2.425f; 
         float ansi_rel = 0.001f * rel_msec * sample_rate_Hz / 1.782f; 
         alfa = (float) (ansi_atk / (1.0f + ansi_atk));
-        beta = (float) (ansi_rel / (10.f + ansi_rel));
+        beta = (float) (ansi_rel / (1.0f + ansi_rel));
 		one_minus_alfa = 1.0f - alfa;
 	}
 
