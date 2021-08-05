@@ -81,7 +81,20 @@ class AudioCompWDRCState {
 		//These methods are not used to directly maintain the state of the AudioEffectCompWDRC.
 		//They are supporting methods
 		void setCompressor(WDRCinterface *c) { compressor = c; }  //get pointer
-
+		void void printWDRCParameters(void) {
+			Serial.println("WDRC Params: ");
+			Serial.println("  Sample rate (Hz) = " + String(getSampleRate_Hz(),0));
+			Serial.println("  Attack (msec) = " + String(getAttack_msec(),0));
+			Serial.println("  Release (msec) = " + String(getRelease_msec(),0));
+			Serial.println("  Scale Factor (dBSPL at dB FS) = " + String(getScaleFactor_dBSPL_at_dBFS(),0));
+			Serial.println("  Expansion Knee (dB SPL) = " + String(getKneeExpansion_dBSPL(),0));
+			Serial.println("  Expansion CR = " + String(getExpansionCompRatio(),2));
+			Serial.println("  Linear Gain (dB) = " + String(getLinearGain_dB(),0));
+			Serial.println("  Compression Knee (dB SPL) = " + String(getKneeCompressor_dBSPL(),0));
+			Serial.println("  Compression Ratio = " + String(getCompRatio(),2));
+			Serial.println("  Limiter Knee (dB SPL) = " + String(getKneeLimiter_dBSPL(),0));
+  
+}
 
 	protected:
 		WDRCinterface *compressor;  //will be an array of pointers to our compressors
