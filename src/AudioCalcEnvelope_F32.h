@@ -118,3 +118,5 @@ class AudioCalcEnvelope_F32 : public AudioStream_F32
 	float32_t alfa, beta, one_minus_alfa;  //time constants, but in terms of samples, not seconds
 	float32_t state_ppk = 1.0f;
 };
+
+#endif
