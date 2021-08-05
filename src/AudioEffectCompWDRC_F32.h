@@ -22,6 +22,59 @@ class AudioCalcGainWDRC_F32;  //forward declared.  Actually defined in later hea
 #include "BTNRH_WDRC_Types.h"
 
 
+//This class helps manage some of the configuration and state information of the AudioEffectCompWDRC_F32 classes.
+//By having this class, it tries to put everything in one place 
+//It is also helpful for managing the GUI on the TympanRemote mobile App.
+class AudioCompWDRCState {
+	public:
+		AudioCompWDRCState(void) { };
+		~AudioCompWDRCState(void) { };
+		
+		//The compressor is tricky because it has many configuration parameters that I'd like to track here in
+		//this State-tracking class because I want to access them via the App's GUI.  But, if I keep a local copy
+		//of the parameter values, I need to do a lot of management to ensure that they are in-sync with the underlying
+		//audio processing classes.  
+		//
+		//So, instead, I'm going to just get the values from the classes themsevles.
+		//
+		//This means that, instead of having a bunch of state variables (int, float, whatever) here in this
+		//state-tracking class, I'll have a bunch of get() methods.  I could have just asked for these values
+		//directly from the AudioEffectCompWDRC_F32 class without have introducting this state-tracking class
+		//as an intermediary.  I chose to introduce this class because *all* of the UI-enabled classes use some
+		//sort of state-tracking class.  Also, by putting all these critical get() methods in one place here 
+		//in the State, it is very clear which are the most important parameters, without getting distracted by
+		//all of the other methods in the main class.
+	
+		//get parameter values from the compressors
+		float getSampleRate_Hz(void) { return compressor->getSampleRate_Hz(); }
+		float getAttack_msec(int i=0) { if (i < get_n_chan()) { return compressor->getAttack_msec(); } else { return 0.0f; }};
+		float getRelease_msec(int i=0) { if (i < get_n_chan()) { return compressor->getRelease_msec(); } else { return 0.0f; }};
+		float getScaleFactor_dBSPL_at_dBFS(int i=0) { if (i < get_n_chan()) { return compressor->getMaxdB(); } else { return 0.0f; }};
+		float getExpansionCompRatio(int i=0) { if (i < get_n_chan()) { return compressor->getExpansionCompRatio(); } else { return 0.0f; }};
+		float getKneeExpansion_dBSPL(int i=0) { if (i < get_n_chan()) { return compressor->getKneeExpansion_dBSPL(); } else { return 0.0f; }};
+		float getLinearGain_dB(int i=0) { if (i < get_n_chan()) { return compressor->getGain_dB(); } else { return 0.0f; }};
+		float getCompRatio(int i=0) { if (i < get_n_chan()) { return compressor->getCompRatio(); } else { return 0.0f; }};
+		float getKneeCompressor_dBSPL(int i=0) { if (i < get_n_chan()) { return compressor->getKneeCompressor_dBSPL(); } else { return 0.0f; }};
+		float getKneeLimiter_dBSPL(int i=0) { if (i < get_n_chan()) { return compressor->getKneeLimiter_dBSPL(); } else { return 0.0f; }};
+
+		//These methods are not used to directly maintain the state of the AudioEffectCompWDRC.
+		//They are supporting methods
+		void setCompressor(AudioEffectCompWDRC_F32 &c); //also defines max_n_chan
+
+
+	protected:
+		AudioEffectCompWDRC_F32 *compressor;  //will be an array of pointers to our compressors
+		
+
+	protected:
+//int max_n_filters = AudioFilterbank_MAX_NUM_FILTERS;  //should correspond to the length of crossover_freq_Hz
+//		int n_filters = AudioFilterbank_MAX_NUM_FILTERS;      //should correspond to however many of the filters are actually being employed by the AuioFilterbank
+//		float *crossover_freq_Hz;  //this really only needs to be [max_n_filters-1] in length, but we'll generally allocate [max_n_filters] just to avoid mistaken overruns
+	
+};
+
+
+
 class AudioEffectCompWDRC_F32 : public AudioStream_F32
 {
 	//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
@@ -193,6 +246,8 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
     
+	AudioCompWDRCState state;
+	
   private:
     audio_block_f32_t *inputQueueArray[1];
     //float given_sample_rate_Hz;
