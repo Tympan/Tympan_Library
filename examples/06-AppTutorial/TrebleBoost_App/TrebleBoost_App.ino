@@ -4,6 +4,23 @@
 *   Created: Chip Audette, OpenAudio, August 2021
 *   Purpose: Process audio by applying a high-pass filter followed by gain.  Include App interaction.
 *
+*   As a tutorial on how to interact with the mobile phone App, you should first explote the previous
+*   example, which was "BasicGain_wApp".
+*
+*   Here in "TrebleBoost_wApp", we started with the example sketch "01-Basic\BasicGain" and added
+*   the App functionality.  It starts with the same features of "BasicGain_wApp" and adds new
+*   App-related features so that you can see a more complicated example.
+*
+*   Like the previous example shows you:
+*      * How to use Tympan code here to define a graphical interface (GUI) in the App
+*      * How to transmit that GUI to the App
+*      * How to respond to the commands coming back from the App
+*
+*   This example extends the previous example by:
+*      * Adding more buttons groups ("cards") to the previous example's GUI
+*      * Adding another page to the GUI
+*      * Adding a button that you can illuminate to indicate state 
+*
 *   MIT License.  use at your own risk.
 */
 
