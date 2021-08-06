@@ -40,9 +40,10 @@ void AudioCompWDRCState::printWDRCParameters(void) {
 	Serial.println("  Compression Ratio = " + String(getCompRatio(),2));
 	Serial.println("  Limiter Knee (dB SPL) = " + String(getKneeLimiter_dBSPL(),0));
 }
-  
-
-
+ 
+ 
+ 
+ 
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 
@@ -184,7 +185,7 @@ void AudioEffectCompWDRC_F32_UI::printHelp(void) {
 bool AudioEffectCompWDRC_F32_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
 	
 	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
-	if (mode_char != ID_char) return false;
+	if (mode_char != ID_char) return false;  //ID_char is from SerialManager_UI.h
 
 	//we ignore the chan_char and only work with the data_char
 	bool return_val = true;  //assume that we will find this character
@@ -247,8 +248,91 @@ bool AudioEffectCompWDRC_F32_UI::processCharacterTriple(char mode_char, char cha
 			return_val = false;  //we did not process this character
 	}
 
-	
 	return return_val;	
-
 }
 
+
+
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+// TympanRemoteLayout GUI Methods
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_attackRelease(TR_Page *page_h) {
+	if (page_h == NULL) return NULL;
+	TR_Card *card_h = page_h->addCard("Attack/Release (msec)");
+	if (card_h == NULL) return NULL;
+
+	String prefix = getPrefix();   //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	String field_name1 = ID_char + String("att");
+	String field_name2 = ID_char + String("rel");
+
+	card_h->addButton("Att", "",          "",          3);  //label, command, id, width
+	card_h->addButton("-",   prefix+"A",  "",          3);  //label, command, id, width
+	card_h->addButton("",    "",          field_name1, 3);  //label, command, id, width
+	card_h->addButton("+",   prefix+"a",  "",          3);  //label, command, id, width
+
+	card_h->addButton("Rel", "",          "",          3);  //label, command, id, width
+	card_h->addButton("-",   prefix+"R",  "",          3);  //label, command, id, width
+	card_h->addButton("",    "",          field_name2, 3);  //label, command, id, width
+	card_h->addButton("+",   prefix+"r",  "",          3);  //label, command, id, width
+
+	return card_h;   	
+};
+
+//Make a bunch of up-down card groups
+//note that the addCardPreset_UpDown is in SerialManager_UI.h...and it automatically prepends the prefix() to the cmd chars
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_attack(  TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Attack (msec)",      "att",     "A", "a");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_release( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Release (msec)",     "rel",     "R", "r");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_scaleFac(TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Scale (dBSPL at dBFS)","maxdB", "M", "m");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_expComp( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Expan CR (x:1)",     "expCR",   "X", "x");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_expKnee( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Expan Knee (dB SPL)","expCR",   "Z", "z");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_linGain( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Linear Gain (dB)",   "linGain", "G", "g");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_compRat( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Comp Ratio (x:1)",   "compRat", "C", "c");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_compKnee(TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Comp Knee (dB SPL)", "compKnee","K", "k");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_limKnee( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Limit Knee (dB SPL)","limKnee", "L", "l");};
+
+
+//This page leaves off the attack, release, and maxDB, which all tend to be global.
+//This page only does the WDRC parameters that are generally tailored per compressor
+TR_Page* AudioEffectCompWDRC_F32_UI::addPage_compParams(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("WDRC Parameters");
+	if (page_h == NULL) return NULL;
+	
+	addCard_expComp(page_h);
+	addCard_expKnee(page_h);
+	addCard_expKnee(page_h);
+	addCard_linGain(page_h);
+	addCard_compKnee(page_h);
+	addCard_compRat(page_h);
+	addCard_limKnee(page_h);
+	
+	return page_h;
+}; 
+	
+//This page does ALL parameters
+TR_Page* AudioEffectCompWDRC_F32_UI::addPage_allParams(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("WDRC Parameters");
+	if (page_h == NULL) return NULL;
+	
+	addCard_attack(page_h);
+	addCard_release(page_h);
+	addCard_scaleFac(page_h);
+	addCard_expComp(page_h);
+	addCard_expKnee(page_h);
+	addCard_expKnee(page_h);
+	addCard_linGain(page_h);
+	addCard_compKnee(page_h);
+	addCard_compRat(page_h);
+	addCard_limKnee(page_h);
+
+	return page_h;	
+}

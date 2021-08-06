@@ -190,36 +190,40 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 //This is the base class to be inherited by the FIR and Biquad versions
 class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, SerialManager_UI {
 	public:
-		//AudioFilterbank_UI(void) : SerialManager_UI() {};
 		AudioEffectCompWDRC_F32_UI(void) : 	AudioEffectCompWDRC_F32(), SerialManager_UI() {	};
-		
+		AudioEffectCompWDRC_F32_UI(AudioSettings_F32 settings): AudioEffectCompWDRC_F32(settings), SerialManager_UI() {	};
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI
 		virtual void printHelp(void);
 		//virtual bool processCharacter(char c); //not used here
 		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
 		virtual void setFullGUIState(bool activeButtonsOnly = false)  {}; 
+		// ///////// end of required methods
 	
-	/*
 		//create the button sets for the TympanRemote's GUI
-		TR_Card *addCard_crossoverFreqs(TR_Page *page_h);
-		TR_Page *addPage_crossoverFreqs(TympanRemoteFormatter *gui);
-		TR_Page *addPage_default(TympanRemoteFormatter *gui) {return addPage_crossoverFreqs(gui); };
-		
-*/
-	
-	
-		//here are the factors to use to increment
+		TR_Card* addCard_attackRelease(TR_Page *page_h);
+		TR_Card* addCard_attack(  TR_Page *page_h);
+		TR_Card* addCard_release( TR_Page *page_h); 
+		TR_Card* addCard_scaleFac(TR_Page *page_h); 
+		TR_Card* addCard_expComp( TR_Page *page_h);
+		TR_Card* addCard_expKnee( TR_Page *page_h);
+		TR_Card* addCard_linGain( TR_Page *page_h); 
+		TR_Card* addCard_compRat( TR_Page *page_h);
+		TR_Card* addCard_compKnee(TR_Page *page_h);
+		TR_Card* addCard_limKnee( TR_Page *page_h);
+
+		TR_Page* addPage_compParams(TympanRemoteFormatter *gui);
+		TR_Page* addPage_allParams(TympanRemoteFormatter *gui);
+		TR_Page* addPage_default(TympanRemoteFormatter *gui) { return addPage_allParams(gui); };
+			
+		//here are the factors to use to increment different AudioEffectCompWDRC_F32 parameters
 		float time_incr_fac = pow(2.0,1.0/4.0);
 		float cr_fac = 0.1;
 		float knee_fac = 3.0;
 		float gain_fac = 3.0;
-		
 	
 	protected:
 
-		//GUI names and whatnot
-		//String freq_id_str = String("cfreq");
 		
 };
 
