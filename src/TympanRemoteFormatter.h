@@ -79,6 +79,9 @@ class TR_Card {
       return s;
     }
 
+	String getName(void) { return name; }
+	void setName(String s) { name = s; }
+
   private:
     TR_Button buttons[TR_MAX_N_BUTTONS];
     int nButtons;
@@ -130,6 +133,9 @@ class TR_Page {
       
       return s;
     }
+	
+	String getName(void) { return name; }
+	void setName(String s) { name = s; }
 
   private:
     TR_Card cards[TR_MAX_N_CARDS];
