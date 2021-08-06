@@ -24,7 +24,7 @@
 #include <SerialManager_UI.h>			  //from Tympan_Library
 #include <TympanRemoteFormatter.h> 		  //from Tympan_Library
 
-#define AudioFilterbank_MAX_NUM_FILTERS 8       //maximum number of filters to allow
+#define AudioFilterbank_MAX_NUM_FILTERS 8      //maximum number of filters to allow
 #define AudioFilterbankBiquad_MAX_IIR_FILT_ORDER 6    //oveall desired filter order (note: in Matlab, an "N=3" bandpass is actually a 6th-order filter to be broken up into biquads
 #define AudioFilterbankBiquad_COEFF_PER_BIQUAD  6     //3 "b" coefficients and 3 "a" coefficients per biquad
 
@@ -73,6 +73,7 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 	public:
 		AudioFilterbankBase_F32(void): AudioStream_F32(1,inputQueueArray) { } 
 		AudioFilterbankBase_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray) { }
+		~AudioFilterbankBase_F32(void) { delete filter_coeff; }
 		
 		virtual void enable(bool _enable = true) { is_enabled = _enable; }
 		
@@ -94,7 +95,9 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		//helper functions
 		static int enforce_minimum_spacing_of_crossover_freqs(float *freqs_Hz, int n_crossover, float min_seperation_fac,  int direction = 1); //direction = 1 to move unacceptable freqs higher, -1 to move them lower
 		static void sortFrequencies(float *freq_Hz, int n_filts);
-
+		
+		float *filter_coeff;
+		float n_coeff_allocated = 0;
 };
 
 
@@ -195,7 +198,7 @@ class AudioFilterbank_UI : public SerialManager_UI {
 
 		//GUI names and whatnot
 		String freq_id_str = String("cfreq");
-		
+
 };
 
 //FIR filterbank with built-in UI support
