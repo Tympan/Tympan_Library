@@ -32,7 +32,7 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E);     //do TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::E, audio_settings);     //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32         i2s_in;                     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioEffectGain_F32       gain1;                      //Applies digital gain to audio data.  Left.
 AudioEffectGain_F32       gain2;                      //Applies digital gain to audio data.  Right.
@@ -110,8 +110,8 @@ void respondToByte(char c) {
   Serial.print("Received character "); Serial.println(c);
   
   switch (c) {
-    case 'J': case 'j':
-      printTympanRemoteLayout();
+    case 'J': case 'j':           //The TympanRemote app sends a 'J' to the Tympan when it connects
+      printTympanRemoteLayout();  //in resonse, the Tympan sends the definition of the GUI that we'd like
       break;
     case 'k':
       changeGain(3.0);

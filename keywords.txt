@@ -55,8 +55,9 @@ AudioConvert_I16toF32	KEYWORD1
 AudioConvert_F32toI16	KEYWORD1
 
 AudioEffectCompressor_F32	KEYWORD1
-AudioEffectCompWDRC_F32	KEYWORD1
+AudioEffectCompWDRC_F32		KEYWORD1
 AudioEffectCompDecWDRC_F32	KEYWORD1
+AudioEffectCompWDRC_F32_UI	KEYWORD1
 
 AudioEffectDelay_F32	KEYWORD1
 
