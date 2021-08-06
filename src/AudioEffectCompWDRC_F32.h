@@ -154,12 +154,16 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
 	
 	float incrementAttack(float fac) { return setAttack_msec(getAttack_msec() * fac); };
-	float incrementRelease(float fac) { return setRelease_msec(getAttack_msec() * fac); };
+	float incrementRelease(float fac) { return setRelease_msec(getRelease_msec() * fac); };
 	float incrementMaxdB(float fac) { return setMaxdB(getMaxdB() + fac); }
-	float incrementExpCR(float fac) { return setExpansionCompRatio(getExpansionCompRatio() * fac); }
-	float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() * fac); }
+	float incrementExpCR(float fac) {
+		Serial.println("AudioEffectCompWDRC_F32: incrementExpCR: " + String(getExpansionCompRatio()) + ", " + String(fac));
+		Serial.println("    : new val = " + String(getExpansionCompRatio() + fac) + ", " + String(max(0.1f,getExpansionCompRatio() + fac)));
+		return setExpansionCompRatio(max(0.1f,getExpansionCompRatio() + fac)); 
+	}
+	float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() + fac); }
 	float incrementGain_dB(float increment_dB) { return setGain_dB(getGain_dB() + increment_dB); }    
-    float incrementCompRatio(float fac) { return setCompRatio(getCompRatio() * fac); }
+    float incrementCompRatio(float fac) { return setCompRatio(max(0.1f, getCompRatio() + fac)); }
 	float incrementKnee(float fac) {return setKneeCompressor_dBSPL(getKneeCompressor_dBSPL() + fac);}
 	float incrementLimiter(float fac) {return setKneeLimiter_dBSPL(getKneeLimiter_dBSPL() + fac);};
 	
@@ -197,7 +201,7 @@ class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, public Serial
 		virtual void printHelp(void);
 		//virtual bool processCharacter(char c); //not used here
 		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
-		virtual void setFullGUIState(bool activeButtonsOnly = false)  {}; 
+		virtual void setFullGUIState(bool activeButtonsOnly = false); 
 		// ///////// end of required methods
 	
 		//create the button sets for the TympanRemote's GUI
@@ -215,12 +219,23 @@ class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, public Serial
 		TR_Page* addPage_compParams(TympanRemoteFormatter *gui);
 		TR_Page* addPage_allParams(TympanRemoteFormatter *gui);
 		TR_Page* addPage_default(TympanRemoteFormatter *gui) { return addPage_allParams(gui); };
+		
+		//methods to update the GUI fields
+		void updateCard_attack(void);
+		void updateCard_release(void); 
+		void updateCard_scaleFac(void); 
+		void updateCard_expComp(void);
+		void updateCard_expKnee(void);
+		void updateCard_linGain(void); 
+		void updateCard_compRat(void);
+		void updateCard_compKnee(void);
+		void updateCard_limKnee(void);
 			
 		//here are the factors to use to increment different AudioEffectCompWDRC_F32 parameters
 		float time_incr_fac = pow(2.0,1.0/4.0);
 		float cr_fac = 0.1;
-		float knee_fac = 3.0;
-		float gain_fac = 3.0;
+		float knee_fac = 2.0;
+		float gain_fac = 2.0;
 	
 	protected:
 
