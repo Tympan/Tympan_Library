@@ -150,9 +150,23 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float getKneeCompressor_dBSPL(void) { return calcGain.getKneeCompressor_dBSPL(); }
 	float setCompRatio(float32_t foo) { return calcGain.setCompRatio(foo); }
 	float getCompRatio(void) { return calcGain.getCompRatio(); }
+	float setKneeLimiter_dBSPL(float32_t foo) { return calcGain.setKneeLimiter_dBSPL(foo); }
+	float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
+	
+	float incrementAttack(float fac) { return setAttack_msec(getAttack_msec() * fac); };
+	float incrementRelease(float fac) { return setRelease_msec(getRelease_msec() * fac); };
+	float incrementMaxdB(float fac) { return setMaxdB(getMaxdB() + fac); }
+	float incrementExpCR(float fac) {
+		Serial.println("AudioEffectCompWDRC_F32: incrementExpCR: " + String(getExpansionCompRatio()) + ", " + String(fac));
+		Serial.println("    : new val = " + String(getExpansionCompRatio() + fac) + ", " + String(max(0.1f,getExpansionCompRatio() + fac)));
+		return setExpansionCompRatio(max(0.1f,getExpansionCompRatio() + fac)); 
+	}
+	float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() + fac); }
+	float incrementGain_dB(float increment_dB) { return setGain_dB(getGain_dB() + increment_dB); }    
     float incrementCompRatio(float fac) { return setCompRatio(max(0.1f, getCompRatio() + fac)); }
 	float incrementKnee(float fac) {return setKneeCompressor_dBSPL(getKneeCompressor_dBSPL() + fac);}
 	float incrementLimiter(float fac) {return setKneeLimiter_dBSPL(getKneeLimiter_dBSPL() + fac);};
+	
 	
 	// /////////////////////////////////////////////////  Here are the public data members
     AudioCalcEnvelope_F32 calcEnvelope;
