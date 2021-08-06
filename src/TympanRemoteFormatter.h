@@ -89,37 +89,6 @@ class TR_Page {
 //		nCards++; //increment to next card
 //		return _inCard;
 //	}
-    TR_Card *addCard(String name) {
-		if (nCards >= TR_MAX_N_CARDS) return NULL;  //too many already!
-		TR_Card *card;
-
-		card = &(cards[nCards]);
-		card->name = name;
-		nCards++;
-
-		return card;
-    }
-
-    String asString() {
-      String s;
-      int i;
-      
-      s = "{'title':'"+name+"'";
-      if (nCards > 0) {
-        s += ",'cards':[";
-        s += cards[0].asString();
-      }
-      for (i=1; i<nCards; i++) {
-        s += ",";
-        s += cards[i].asString();        
-      }
-      if (nCards > 0) {
-        s += "]";        
-      }
-      s += "}";
-      
-      return s;
-    }
 	
 	String getName(void) { return name; }
 	void setName(String s) { name = s; }
@@ -127,7 +96,6 @@ class TR_Page {
     
 	TR_Card* addCard(String name);
 	TR_Card* getFirstCard(void);
-	
     String asString(void);
 	
 	//TR_Card *firstCard = NULL;
