@@ -110,8 +110,8 @@ void respondToByte(char c) {
   Serial.print("Received character "); Serial.println(c);
   
   switch (c) {
-    case 'J': case 'j':
-      printTympanRemoteLayout();
+    case 'J': case 'j':           //The TympanRemote app sends a 'J' to the Tympan when it connects
+      printTympanRemoteLayout();  //in resonse, the Tympan sends the definition of the GUI that we'd like
       break;
     case 'k':
       changeGain(3.0);
