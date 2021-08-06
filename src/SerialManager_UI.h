@@ -4,6 +4,8 @@
 
 #include <Arduino.h> //for String
 //#include "SerialManagerBase.h"
+#include <TympanRemoteFormatter.h>
+
 class SerialManagerBase;  //forward declaration
 
 class SerialManager_UI {
@@ -25,6 +27,22 @@ class SerialManager_UI {
 
 	// predefined helper functions, which you can override
 	virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + String("x"); }  //your class can use any and every String-able character in place of "x"...so, you class can have *a lot* of commands
+	
+	virtual TR_Card *addCardPreset_UpDown(TR_Page *page_h, const String card_title, const String field_name, const String down_cmd, const String up_cmd) {
+		if (page_h == NULL) return NULL;
+		TR_Card *card_h = page_h->addCard(card_title);
+		if (card_h == NULL) return NULL;
+
+		String prefix = getPrefix();   //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+		String field_name1 = ID_char + field_name;
+
+		card_h->addButton("-",   prefix+down_cmd,  "",         4);  //label, command, id, width
+		card_h->addButton("",    "",               field_name1, 4);  //label, command, id, width
+		card_h->addButton("+",   prefix+up_cmd,   "",          4);  //label, command, id, width
+
+		return card_h;
+	}
+
 	
     //attach the SerialManager
     void setSerialManager(SerialManagerBase *_sm);
