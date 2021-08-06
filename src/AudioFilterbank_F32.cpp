@@ -460,7 +460,7 @@ void AudioFilterbank_UI::printChanMsg(int direction) {  //direction +1 is up, -1
 
 
 void AudioFilterbank_UI::printHelp(void) {
-	Serial.println(F(" Filterbank: Prefix = ") + String(quadchar_start_char) + String(ID_char) + String("x"));
+	Serial.println(F(" Filterbank: Prefix = ") + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 	printChanMsg(1);  //upward changes
 	printChanMsg(-1); //downward changes
 }
@@ -468,7 +468,7 @@ void AudioFilterbank_UI::printHelp(void) {
 bool AudioFilterbank_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
 	
 	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
-	if (mode_char != ID_char) return false;
+	if (mode_char != ID_char) return false;  //ID_char is from SerialManager_UI.h
 
 	//check to see if we have filters configured.  If not, return;
 	int n_crossover = (this_filterbank->state.get_n_filters()) - 1;
