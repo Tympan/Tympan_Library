@@ -188,7 +188,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
 
 //This is the base class to be inherited by the FIR and Biquad versions
-class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, SerialManager_UI {
+class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, public SerialManager_UI {
 	public:
 		AudioEffectCompWDRC_F32_UI(void) : 	AudioEffectCompWDRC_F32(), SerialManager_UI() {	};
 		AudioEffectCompWDRC_F32_UI(AudioSettings_F32 settings): AudioEffectCompWDRC_F32(settings), SerialManager_UI() {	};
