@@ -306,13 +306,12 @@ TR_Page* AudioEffectCompWDRC_F32_UI::addPage_compParams(TympanRemoteFormatter *g
 	TR_Page *page_h = gui->addPage("WDRC Parameters");
 	if (page_h == NULL) return NULL;
 	
-	addCard_expComp(page_h);
-	addCard_expKnee(page_h);
-	addCard_expKnee(page_h);
-	addCard_linGain(page_h);
+	addCard_expComp( page_h);
+	addCard_expKnee( page_h);
+	addCard_linGain( page_h);
 	addCard_compKnee(page_h);
-	addCard_compRat(page_h);
-	addCard_limKnee(page_h);
+	addCard_compRat( page_h);
+	addCard_limKnee( page_h);
 	
 	return page_h;
 }; 
@@ -323,16 +322,15 @@ TR_Page* AudioEffectCompWDRC_F32_UI::addPage_allParams(TympanRemoteFormatter *gu
 	TR_Page *page_h = gui->addPage("WDRC Parameters");
 	if (page_h == NULL) return NULL;
 	
-	addCard_attack(page_h);
-	addCard_release(page_h);
+	addCard_attack(  page_h);
+	addCard_release( page_h);
 	addCard_scaleFac(page_h);
-	addCard_expComp(page_h);
-	addCard_expKnee(page_h);
-	addCard_expKnee(page_h);
-	addCard_linGain(page_h);
+	addCard_expComp( page_h);
+	addCard_expKnee( page_h);
+	addCard_linGain( page_h);
 	addCard_compKnee(page_h);
-	addCard_compRat(page_h);
-	addCard_limKnee(page_h);
+	addCard_compRat( page_h);
+	addCard_limKnee( page_h);
 
 	return page_h;	
 }
