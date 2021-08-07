@@ -28,10 +28,14 @@ int AudioFilterbankState::set_crossover_freq_Hz(float *freq_Hz, int n_crossover)
 	if (n_crossover < 0) return -1;  //-1 is error
 	
 	//make sure that we have space
-	int assumed_n_filters = n_crossover + 1;
-	if (assumed_n_filters > max_n_filters) {   //allocate more space
-		int ret_val = set_max_n_filters(assumed_n_filters);  //n_crossover is n_filter - 1
-		if (ret_val < 0) return ret_val; //return if it returned an error
+	int assumed_n_filters = n_crossover + 1; //n_crossover is always 1 less than number of filters
+	if (get_max_n_filters() < assumed_n_filters) {
+		int ret_val = set_max_n_filters(assumed_n_filters);
+		if (ret_val < 0) {
+			Serial.println(F("AudioFilterbankState: set_crossover_freq_Hz: *** ERROR ***"));
+			Serial.println(F("    : could not allocate memory.  Returning early."));
+			return ret_val;
+		}
 	}
 	
 	//if the number of filters is greater than zero, copy the freuqencies.
@@ -66,7 +70,7 @@ int AudioFilterbankState::get_crossover_freq_Hz(float *freq_Hz, int n_requested_
 // This method doesn't change the algorithm's actual audio processing.
 // To change the actual audio processing, do AudioFilterbankFIR_F32::designFilters or AudioFilterbankBiquad_F32::designFilters
 int AudioFilterbankState::set_n_filters(int n) {
-	if ((n < 0) || (n > max_n_filters)) return -1; //this is an error
+	if ((n < 0) || (n > get_max_n_filters())) return -1; //this is an error
 	n_filters = n;
 	return n_filters; 
 }
@@ -80,18 +84,11 @@ int AudioFilterbankState::set_max_n_filters(int n) {
 	if ((n < 1) || (n > 64)) return -1; //-1 is an error
 	
 	//compare to current setting
-	if (n <= max_n_filters) return 0;  //nothing to do, so return...zero is OK
+	crossover_freq_Hz.resize(n);
 	
-	//we do need to expand, so first delete the current frequencies
-	if (crossover_freq_Hz != NULL) delete crossover_freq_Hz; 
-	max_n_filters = 0; n_filters = 0;
+	//check state of allocation
+	if (crossover_freq_Hz.size() != n) return -1;  //didn't allocate enough space!
 	
-	//create new array
-	crossover_freq_Hz = new float[n];
-	if (crossover_freq_Hz == NULL) return -1; //-1 is an error
-	
-	//looks good!  let's return
-	max_n_filters = n;
 	return 0;  //zero is OK;
 }
 
@@ -215,6 +212,15 @@ void AudioFilterbankBase_F32::sortFrequencies(float *freq_Hz, int n_freqs) {
 //}
 
 
+int AudioFilterbankFIR_F32::int set_max_n_filters(int n_max_chan) {
+	if (n_max_chan < 0) return;
+	filters.resize(n_max_chan).shrink_to_fit();
+	int new_max_n_size = filters.size();
+	
+	state.set_max_n_filters(new_max_n_size);
+	if (new_max_n_size < get_n_filters()) set_n_filters(new_max_n_size);
+}
+
 void AudioFilterbankFIR_F32::update(void) {
 
 	//return if not enabled
@@ -255,9 +261,9 @@ void AudioFilterbankFIR_F32::update(void) {
 }
 
 int AudioFilterbankFIR_F32::set_n_filters(int val) {
-	val = min(val, AudioFilterbank_MAX_NUM_FILTERS); 
-	int n_filters = state.set_n_filters(val);
-	for (int Ichan = 0; Ichan < AudioFilterbank_MAX_NUM_FILTERS; Ichan++) {
+	int new_n_filters = min(val, filters.size()); 
+	int n_filters = state.set_n_filters(new_n_filters);
+	for (int Ichan = 0; Ichan < new_n_filters; Ichan++) {
 		if (Ichan < n_filters) {
 			filters[Ichan].enable(true);  //enable the individual filter
 		} else {
@@ -339,6 +345,14 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int AudioFilterbankBiquad_F32::int set_max_n_filters(int n_max_chan) {
+	if (n_max_chan < 0) return;
+	filters.resize(n_max_chan).shrink_to_fit();
+	int new_max_n_size = filters.size();
+	
+	state.set_max_n_filters(new_max_n_size);
+	if (new_max_n_size < get_n_filters()) set_n_filters(new_max_n_size);
+}
 
 void AudioFilterbankBiquad_F32::update(void) {
 
