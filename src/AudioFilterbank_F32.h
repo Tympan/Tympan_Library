@@ -23,6 +23,7 @@
 #include <AudioConfigIIRFilterBank_F32.h> //from Tympan_Library
 #include <SerialManager_UI.h>			  //from Tympan_Library
 #include <TympanRemoteFormatter.h> 		  //from Tympan_Library
+#include <vector>
 
 //define AudioFilterbank_MAX_NUM_FILTERS 8      //maximum number of filters to allow
 #define AudioFilterbankBiquad_MAX_IIR_FILT_ORDER 6    //oveall desired filter order (note: in Matlab, an "N=3" bandpass is actually a 6th-order filter to be broken up into biquads
@@ -60,7 +61,7 @@ class AudioFilterbankState {
 	protected:
 		//int max_n_filters = 0;  //should correspond to the length of crossover_freq_Hz
 		int n_filters = 0;      //should correspond to however many of the filters are actually being employed by the AuioFilterbank
-		vector<float> crossover_freq_Hz;  //this really only needs to be [max_n_filters-1] in length, but we'll generally allocate [max_n_filters] just to avoid mistaken overruns
+		std::vector<float> crossover_freq_Hz;  //this really only needs to be [max_n_filters-1] in length, but we'll generally allocate [max_n_filters] just to avoid mistaken overruns
 	
 };
 
@@ -73,16 +74,13 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 	public:
 		AudioFilterbankBase_F32(void): AudioStream_F32(1,inputQueueArray) { } 
 		AudioFilterbankBase_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray) { }
-		AudioFilterbankBase_F32(const AudioSettings_F32 &settings, int n_chan) : AudioStream_F32(1,inputQueueArray) {
-			set_max_n_filters(n_chan);
-		}
 		~AudioFilterbankBase_F32(void) { delete filter_coeff; }
 		
 		virtual void enable(bool _enable = true) { is_enabled = _enable; }
 		
 		//virtual void update(void) = 0;  //already required by AudioStream_F32 to be implemented in a child class
 		virtual int set_n_filters(int val) = 0;  //must implement this in a child class
-		virtual void set_max_n_filters(int n_chan) = 0; //must implement this in a child class
+		virtual int set_max_n_filters(int n_chan) = 0; //must implement this in a child class
 		virtual int designFilters(int n_chan, int n_order, float sample_rate_Hz, int block_len, float *crossover_freq) = 0;  //must implement this in a child class
 		
 		int increment_crossover_freq(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close...and update the filter design
@@ -113,18 +111,20 @@ class AudioFilterbankFIR_F32 : public AudioFilterbankBase_F32 {
 	public:
 		AudioFilterbankFIR_F32(void) : AudioFilterbankBase_F32() { }
 		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { }
-		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings, int n_chan) : AudioFilterbankBase_F32(settings, n_chan) {	}
+		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings, int n_chan) : AudioFilterbankBase_F32(settings) {
+			set_max_n_filters(n_chan);
+		}
 
 
 		virtual void update(void);
 		virtual int set_n_filters(int val);
-		void set_max_n_filters(int val);
+		int set_max_n_filters(int val);
 		virtual int designFilters(int n_chan, int n_fir, float sample_rate_Hz, int block_len, float *crossover_freq);
 
 		//core classes for designing and implementing the filters
 		AudioConfigFIRFilterBank_F32 filterbankDesigner;
 		//AudioFilterFIR_F32 filters[AudioFilterbank_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
-		vector<AudioFilterFIR_F32> filters;
+		std::vector<AudioFilterFIR_F32> filters;
 		
 	private:
 
@@ -138,17 +138,19 @@ class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 	public:
 		AudioFilterbankBiquad_F32(void) : AudioFilterbankBase_F32() { }
 		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { }
-		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings, int n_chan) : AudioFilterbankBase_F32(settings,n_chan) { }
+		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings, int n_chan) : AudioFilterbankBase_F32(settings) { 
+			set_max_n_filters(n_chan);
+		}
 
 		virtual void update(void);
 		virtual int set_n_filters(int val);
-		void set_max_n_filters(int val);
+		int set_max_n_filters(int val);
 		virtual int designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq);
 
 		//core classes for designing and implementing the filters
 		AudioConfigIIRFilterBank_F32 filterbankDesigner;
 		//AudioFilterBiquad_F32 filters[AudioFilterbank_MAX_NUM_FILTERS]; //every filter instance consumes memory to hold its states, which are numerous for an FIR filter
-		vector<AudioFilterBiquad_F32> filters;
+		std::vector<AudioFilterBiquad_F32> filters;
 		
 	private:
 

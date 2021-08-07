@@ -87,7 +87,7 @@ int AudioFilterbankState::set_max_n_filters(int n) {
 	crossover_freq_Hz.resize(n);
 	
 	//check state of allocation
-	if (crossover_freq_Hz.size() != n) return -1;  //didn't allocate enough space!
+	if ((int)crossover_freq_Hz.size() != n) return -1;  //didn't allocate enough space!
 	
 	return 0;  //zero is OK;
 }
@@ -212,13 +212,15 @@ void AudioFilterbankBase_F32::sortFrequencies(float *freq_Hz, int n_freqs) {
 //}
 
 
-int AudioFilterbankFIR_F32::int set_max_n_filters(int n_max_chan) {
-	if (n_max_chan < 0) return;
-	filters.resize(n_max_chan).shrink_to_fit();
-	int new_max_n_size = filters.size();
+int AudioFilterbankFIR_F32::set_max_n_filters(int n_max_chan) {
+	if (n_max_chan < 0) return filters.size();
+	filters.resize(n_max_chan);
+	filters.shrink_to_fit();
+	int new_max_n_size = (int)filters.size();
 	
 	state.set_max_n_filters(new_max_n_size);
 	if (new_max_n_size < get_n_filters()) set_n_filters(new_max_n_size);
+	return (int)filters.size();
 }
 
 void AudioFilterbankFIR_F32::update(void) {
@@ -261,7 +263,7 @@ void AudioFilterbankFIR_F32::update(void) {
 }
 
 int AudioFilterbankFIR_F32::set_n_filters(int val) {
-	int new_n_filters = min(val, filters.size()); 
+	int new_n_filters = min(val, (int)filters.size()); 
 	int n_filters = state.set_n_filters(new_n_filters);
 	for (int Ichan = 0; Ichan < new_n_filters; Ichan++) {
 		if (Ichan < n_filters) {
@@ -345,13 +347,15 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int AudioFilterbankBiquad_F32::int set_max_n_filters(int n_max_chan) {
-	if (n_max_chan < 0) return;
-	filters.resize(n_max_chan).shrink_to_fit();
-	int new_max_n_size = filters.size();
+int AudioFilterbankBiquad_F32::set_max_n_filters(int n_max_chan) {
+	if (n_max_chan < 0) return (int)filters.size();
+	filters.resize(n_max_chan);
+	filters.shrink_to_fit();
+	int new_max_n_size = (int)filters.size();
 	
 	state.set_max_n_filters(new_max_n_size);
 	if (new_max_n_size < get_n_filters()) set_n_filters(new_max_n_size);
+	return (int)filters.size();
 }
 
 void AudioFilterbankBiquad_F32::update(void) {
@@ -385,9 +389,9 @@ void AudioFilterbankBiquad_F32::update(void) {
 }
 
 int AudioFilterbankBiquad_F32::set_n_filters(int val) {
-	val = min(val, AudioFilterbank_MAX_NUM_FILTERS); 
-	int n_filters = state.set_n_filters(val);
-	for (int Ichan = 0; Ichan < AudioFilterbank_MAX_NUM_FILTERS; Ichan++) {
+	int new_n_filters = min(val, (int)filters.size()); 
+	int n_filters = state.set_n_filters(new_n_filters);
+	for (int Ichan = 0; Ichan < new_n_filters; Ichan++) {
 		if (Ichan < n_filters) {
 			filters[Ichan].enable(true);  //enable the individual filter
 		} else {
