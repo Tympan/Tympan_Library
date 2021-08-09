@@ -10,9 +10,9 @@
 *   example, which was "TrebleBoost_wApp".
 *
 *   Here in "TrebleBoost_wApp_Alt", we changed none of the signal processing of "TrebleBoost_wApp".
-*      Instead, we just refactored the code to seperate the different pieces of code into different
-*      files so that it is easier to keep the pieces of code seperate.  This aids in readability
-*      and encapsulation.  By seperating the code into seperate files it makes it possible to create
+*      Instead, we just refactored the code to separate the different pieces of code into different
+*      files so that it is easier to keep the pieces of code separate.  This aids in readability
+*      and encapsulation.  By separating the code into separate files it makes it possible to create
 *      much more complex programs than would be possible with everything lumped together in one file.
 *
 *   Like any App-enabled sketch, this example shows you:
