@@ -3,6 +3,7 @@
 void AudioMixer4_F32::update(void) {
   audio_block_f32_t *in, *out=NULL;
 
+	
   //get the first available channel
   int channel = 0;
   while  (channel < 4) {
@@ -97,6 +98,7 @@ int AudioMixer4_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32
 }
 
 void AudioMixer8_F32::update(void) {
+		
   audio_block_f32_t *in;
   audio_block_f32_t *out=allocate_f32();
   if (!out) return;  //there was no memory available
@@ -108,7 +110,9 @@ void AudioMixer8_F32::update(void) {
 	  if (in) break;
 	  channel++;
   }
-  if (!in) return;  //there was no data available.  so exit.
+  if (!in) {AudioStream_F32::release(out); return;}  //there was no data available.  so exit.
+  
+  //process the first channel
   arm_scale_f32(in->data, multiplier[channel], out->data, in->length);  //there was data, so scale it per the multiplier
   out->length = in->length;
   AudioStream_F32::release(in);
@@ -136,4 +140,5 @@ void AudioMixer8_F32::update(void) {
     AudioStream_F32::transmit(out);
     AudioStream_F32::release(out);
   }
+
 }
