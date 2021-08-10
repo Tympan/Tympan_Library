@@ -232,8 +232,6 @@ void AudioFilterbankFIR_F32::update(void) {
 	audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
 	if (!block) return;
 
-	//Serial.println("AudioFilterbankFIR_F32: update: entering...");
-
 	//loop over each filter
 	int n_filters = state.get_n_filters();
 	int any_error;
@@ -247,18 +245,20 @@ void AudioFilterbankFIR_F32::update(void) {
 					AudioStream_F32::transmit(block_new,Ichan);
 				} else {
 					//Serial.print(F("AudioFilterBankFIR_F32: update: error in processAudioBlock for filter "));
-					//Serial.println(Ichan);
+					Serial.println(Ichan);
 				}
 			} else {
 				//Serial.print(F("AudioFilterBankFIR_F32: update: filter is not enabled: Ichan = "));	Serial.println(Ichan);
 			}
 		} else {
-			//Serial.println(F("AudioFilterBankFIR_F32: update: Could not audio memory (block_new)"));
+			//Serial.println(F("AudioFilterBankFIR_F32: update: Could not allocate audio memory (block_new, Ichan= ") + String(Ichan) + ")");
 		}
+		//Serial.println(F("AudioFilterBankFIR_F32: update: releasing block_new..."));
 		AudioStream_F32::release(block_new);
 	}
 	
 	//release the original audio block
+	//Serial.println(F("AudioFilterBankFIR_F32: update: releasing block..."));
 	AudioStream_F32::release(block);
 }
 
@@ -317,7 +317,7 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	//Serial.println("AudioFilterbankFIR_F32: designFilters: creating coefficients...");
 	int ret_val = filterbankDesigner.createFilterCoeff(n_chan, n_fir, sample_rate_Hz, freqs_Hz, (float *)filter_coeff);
 	if (ret_val < 0) { 
-		Serial.println("AudioFilterbankFIR_F32: designFilters: createFilterCoeff failed with code " + String(ret_val));
+		Serial.println(F("AudioFilterbankFIR_F32: designFilters: createFilterCoeff failed with code ") + String(ret_val));
 		enable(false); 
 		return -1; //failed to compute coefficients
 	} 
@@ -334,8 +334,9 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	state.audio_block_len = block_len;
 	
 	//normal return
+	//Serial.println("AudioFilterbank_F32: designFilters: enabling...");
 	enable(true);
-	//Serial.println("AudioFilterbankFIR_F32: designFilters: returning normally at end.");
+	
 	return 0;
 }
 
