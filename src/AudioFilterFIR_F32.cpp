@@ -37,8 +37,10 @@ void AudioFilterFIR_F32::update(void)
 
 	if (!is_enabled) return;
 
+	//Serial.println("AudioFilterFIR_F32: update: starting...");
+
 	block = AudioStream_F32::receiveReadOnly_f32();
-	if (!block) return;
+	if (!block) return;  //no data to get
 
 	// If there's no coefficient table, give up.  
 	if (coeff_p == NULL) {
@@ -57,15 +59,16 @@ void AudioFilterFIR_F32::update(void)
 
 	// get a block for the FIR output
 	block_new = AudioStream_F32::allocate_f32();
-	if (block_new) {
-		//apply the filter
-		processAudioBlock(block,block_new);
+	if (!block_new) { AudioStream_F32::release(block); return; } //failed to allocate
+	
+	//apply the filter
+	processAudioBlock(block,block_new);
 
-		//transmit the data
-		AudioStream_F32::transmit(block_new); // send the FIR output
-		AudioStream_F32::release(block_new);
-	}
-	AudioStream_F32::release(block);
+	//transmit the data and release the memory blocks
+	AudioStream_F32::transmit(block_new); // send the FIR output
+	AudioStream_F32::release(block_new);  // release the memory
+	AudioStream_F32::release(block);	  // release the memory
+	
 }
 
 int AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
