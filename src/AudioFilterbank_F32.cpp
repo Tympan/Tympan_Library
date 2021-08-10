@@ -234,12 +234,11 @@ void AudioFilterbankFIR_F32::update(void) {
 
 	//loop over each filter
 	int n_filters = state.get_n_filters();
-	int any_error;
 	for (int Ichan = 0; Ichan < n_filters; Ichan++) {
 		audio_block_f32_t * block_new = AudioStream_F32::allocate_f32();
 		if (block_new != NULL) {			
 			if (filters[Ichan].get_is_enabled()) {
-				any_error = filters[Ichan].processAudioBlock(block,block_new);
+				int any_error = filters[Ichan].processAudioBlock(block,block_new);
 				if (!any_error) {
 					//Serial.println("AudioFilterBank_F32: update: transmit " + String(Ichan));
 					AudioStream_F32::transmit(block_new,Ichan);
@@ -287,10 +286,11 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	//for (int i=0;i< (n_chan-1); i++) { Serial.print(crossover_freq[i]); Serial.print(", "); } Serial.println();
 	
 	//validate inputs
-	n_chan = set_n_filters(n_chan); //will automatically limit to the max allowed number of filters
 	if (n_chan <= 0) { enable(false); return -1; }  //invalid inputs
 
-	//Serial.println("AudioFilterbankFIR_F32: designFilters: updated n_chan " + String(n_chan));
+	//ensure we have enough space
+	if (n_chan < state.get_max_n_filters()) set_max_n_filters(n_chan);
+	n_chan = set_n_filters(n_chan);
 	
 	//sort and enforce minimum seperation of the crossover frequencies
 	float freqs_Hz[n_chan];  //we really only need n_chan-1 for the n_crossover, but let's leave it as n_chan)
@@ -304,8 +304,6 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	//for (int i=0; i < n_crossover; i++) { Serial.print(crossover_freq[i]); Serial.print(", "); } Serial.println();
 
 	//allocate memory (temporarily) for the filter coefficients
-	//float filter_coeff[n_chan][n_fir];
-	//if (filter_coeff == NULL) { enable(false); return -1; }  //failed to allocate memory	
 	int n_coeff_needed = n_chan * n_fir;
 	if (n_coeff_needed > n_coeff_allocated) {
 		if (filter_coeff != NULL) delete filter_coeff;
@@ -349,8 +347,9 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 int AudioFilterbankBiquad_F32::set_max_n_filters(int n_max_chan) {
-	if (n_max_chan < 0) return (int)filters.size();
+	if (n_max_chan < 0) return filters.size();
 	filters.resize(n_max_chan);
 	filters.shrink_to_fit();
 	int new_max_n_size = (int)filters.size();
@@ -371,20 +370,24 @@ void AudioFilterbankBiquad_F32::update(void) {
 
 	//loop over each filter
 	int n_filters = state.get_n_filters();
-	int any_error;
-	audio_block_f32_t *block_new;
 	for (int Ichan = 0; Ichan < n_filters; Ichan++) {
-		block_new = AudioStream_F32::allocate_f32();
-		if (!block_new) {			
+		audio_block_f32_t *block_new = AudioStream_F32::allocate_f32();
+		if (block_new != NULL) {			
 			if (filters[Ichan].get_is_enabled()) {
-				any_error = filters[Ichan].processAudioBlock(block,block_new);
+				int any_error = filters[Ichan].processAudioBlock(block,block_new);
 				if (!any_error) {
 					AudioStream_F32::transmit(block_new,Ichan);
+				} else {
+					//there was an error
 				}
+			} else {
+				//the filter was not enabled
 			}
+		} else {
+			//the memory wasn't allocated
 		}
 		AudioStream_F32::release(block_new);
-	}
+	} // end loop over channels
 	
 	//release the original audio block
 	AudioStream_F32::release(block);
