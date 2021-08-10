@@ -663,7 +663,7 @@ void AudioOutputI2S_F32::update(void)
 	audio_block_f32_t *block_f32;
 	audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
 	audio_block_f32_t *block2_f32_scaled = AudioStream_F32::allocate_f32();
-	if ((!block_f32_scaled) || (!block2_f32_scaled)) {
+	if ((block_f32_scaled==NULL) || (block2_f32_scaled==NULL)) {
 		//couldn't get some working memory.  Return.
 		if (block_f32_scaled) AudioStream_F32::release(block_f32_scaled);
 		if (block2_f32_scaled) AudioStream_F32::release(block2_f32_scaled);
@@ -672,7 +672,7 @@ void AudioOutputI2S_F32::update(void)
 	
 	//now that we have our working memory, proceed with getting the audio data and processing
 	block_f32 = receiveReadOnly_f32(0); // input 0 = left channel
-	if (block_f32) {
+	if (block_f32 != NULL) {
 		if (block_f32->length != audio_block_samples) {
 			Serial.print("AudioOutputI2S_F32: *** WARNING ***: audio_block says len = ");
 			Serial.print(block_f32->length);
@@ -723,7 +723,7 @@ void AudioOutputI2S_F32::update(void)
 	
 	block_f32_scaled = block2_f32_scaled;  //this is simply renaming the pre-allocated buffer
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
-	if (block_f32) {
+	if (block_f32 != NULL) {
 		//scale F32 to Int32
 		//block_f32_scaled = AudioStream_F32::allocate_f32();
 		//scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);

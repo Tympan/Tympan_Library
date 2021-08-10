@@ -59,7 +59,7 @@ void AudioFilterFIR_F32::update(void)
 
 	// get a block for the FIR output
 	block_new = AudioStream_F32::allocate_f32();
-	if (!block_new) { AudioStream_F32::release(block); return; } //failed to allocate
+	if (block_new == NULL) { AudioStream_F32::release(block); return; } //failed to allocate
 	
 	//apply the filter
 	processAudioBlock(block,block_new);
@@ -72,7 +72,7 @@ void AudioFilterFIR_F32::update(void)
 }
 
 int AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
-	if (!is_enabled || !block || !block_new) return -1;
+	if ((is_enabled == NULL) || (block==NULL) || (block_new==NULL)) return -1;
 	
 	//check to make sure our FIR instance has the right size
 	if (block->length != configured_block_size) {

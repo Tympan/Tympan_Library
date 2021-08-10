@@ -28,7 +28,7 @@ class AudioEffectGain_F32 : public AudioStream_F32
 		//Serial.println("AudioEffectGain_F32: updating.");  //for debugging.
 		audio_block_f32_t *block;
 		block = AudioStream_F32::receiveWritable_f32();
-		if (!block) return;
+		if (block == NULL) return;
 
 		//apply the gain
 		//for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) block->data[i] = gain * (block->data[i]); //non DSP way to do it
