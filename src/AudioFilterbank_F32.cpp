@@ -230,28 +230,29 @@ void AudioFilterbankFIR_F32::update(void) {
 
 	//get the input audio
 	audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
-	if (!block) return;
+	if (block == NULL) return;
 
 	//loop over each filter
 	int n_filters = state.get_n_filters();
 	int any_error;
-	audio_block_f32_t *block_new;
 	for (int Ichan = 0; Ichan < n_filters; Ichan++) {
-		block_new = AudioStream_F32::allocate_f32();
-		if (!block_new) {			
+		audio_block_f32_t * block_new = AudioStream_F32::allocate_f32();
+		if (block_new != NULL) {			
 			if (filters[Ichan].get_is_enabled()) {
 				any_error = filters[Ichan].processAudioBlock(block,block_new);
 				if (!any_error) {
+					//Serial.println("AudioFilterBank_F32: update: transmit " + String(Ichan));
 					AudioStream_F32::transmit(block_new,Ichan);
 				} else {
 					//Serial.print(F("AudioFilterBankFIR_F32: update: error in processAudioBlock for filter "));
-					Serial.println(Ichan);
+					//Serial.println(Ichan);
 				}
 			} else {
 				//Serial.print(F("AudioFilterBankFIR_F32: update: filter is not enabled: Ichan = "));	Serial.println(Ichan);
 			}
 		} else {
-			//Serial.println(F("AudioFilterBankFIR_F32: update: Could not allocate audio memory (block_new, Ichan= ") + String(Ichan) + ")");
+			//Serial.print(F("AudioFilterBankFIR_F32: update: Could not allocate memory (block_new, Ichan= ") + String(Ichan) + ")");
+			//Serial.println(F(", mem used = ") + String(f32_memory_used));			
 		}
 		//Serial.println(F("AudioFilterBankFIR_F32: update: releasing block_new..."));
 		AudioStream_F32::release(block_new);
