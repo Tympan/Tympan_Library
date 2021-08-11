@@ -24,7 +24,7 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::C
 
   //overwrite the one-point SPL calibration based on the value in the DSL data structure
   myState.overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
-
+     
 }
 
 void setupAudioProcessing(void) {
