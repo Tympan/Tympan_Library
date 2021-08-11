@@ -26,7 +26,7 @@ BTNRH_WDRC::CHA_DSL dsl = {5,  // attack (ms)
 // Again, it sounds OK to WEA, but YMMV.
 //from GHA_Demo.c  from "amplify()"   Used for broad-band limiter.
 BTNRH_WDRC::CHA_WDRC gha = {1.0, // attack time (ms)
-  53.0,    // release time (ms)
+  50.0,    // release time (ms)
   24000.0,  // sampling rate (Hz)...ignored.  Set globally in the main program.
   115.0,    // maxdB.  calibration.  dB SPL for signal at 0dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   1.0,      // compression ratio for lowest-SPL region (ie, the expansion region) (should be < 1.0.  set to 1.0 for linear)
