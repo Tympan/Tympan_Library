@@ -617,7 +617,8 @@ TR_Card* AudioFilterbank_UI::addCard_crossoverFreqs(TR_Page *page_h) {
 	int n_crossover = this_filterbank->get_n_filters()-1; //n_crossover is always n_filter - 1
 	
 	for (int i=0; i < min(n_crossover,n_charMap); i++) {
-		String label = String(i+1) + String("-") + String(i+2);
+		//String label = String(i+1) + String("-") + String(i+2); //showing lower and upper channel ("1-2", "2-3", "3-4", etc)
+		String label = String(i+1); //showing just the lower channel ("1-2", "2-3", "3-4", etc)
 		card_h->addButton(label, "", 				    "",                    3);  //label, command, id, width
 		card_h->addButton("-",   prefix+charMapDown[i], "",                    3);  //label, command, id, width
 		card_h->addButton("",    "",                    freq_id_str+String(i), 3);  //label, command, id, width
