@@ -97,9 +97,9 @@ class AudioEffectCompBankWDRC_F32 : public AudioStream_F32 {
 		//track states
 		AudioCompBankStateWDRC_F32 state;
 		
-		// ///////////////////////// set / get methods
+		// /////////////////////////////// set / get methods
 		
-		//get parameter values from the compressors
+		// get parameter values from the compressors
 		float getAttack_msec(int i=0) { if (i < get_n_chan()) { return compressors[i].getAttack_msec(); } else { return 0.0f; }};
 		float getRelease_msec(int i=0) { if (i < get_n_chan()) { return compressors[i].getRelease_msec(); } else { return 0.0f; }};
 		float getMaxdB(int i=0) { if (i < get_n_chan()) { return compressors[i].getMaxdB(); } else { return 0.0f; }};
@@ -109,13 +109,19 @@ class AudioEffectCompBankWDRC_F32 : public AudioStream_F32 {
 		float getCompRatio(int i=0) { if (i < get_n_chan()) { return compressors[i].getCompRatio(); } else { return 0.0f; }};
 		float getKneeCompressor_dBSPL(int i=0) { if (i < get_n_chan()) { return compressors[i].getKneeCompressor_dBSPL(); } else { return 0.0f; }};
 		float getKneeLimiter_dBSPL(int i=0) { if (i < get_n_chan()) { return compressors[i].getKneeLimiter_dBSPL(); } else { return 0.0f; }};
+
+		float getScaleFactor_dBSPL_at_dBFS(int i=0) { return getMaxdB(i); }  //another name for getMaxdB
+		float getLinearGain_dB(int i=0) { return getGain_dB(i); }   //another name for getGain_dB
+
 		
-		//set parameter values to the all the compressors (ie, parameters that you might want to set globally)
-		float setAttack_msec_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setAttack_msec(val,i); }
-		float setRelease_msec_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setRelease_msec(val,i); }
-		float setMaxdB_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setMaxdB(val,i); }
+		// set parameter values to the all the compressors (ie, parameters that you might want to set globally)
+		float setAttack_msec_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setAttack_msec(val,i); return getAttack_msec(); }
+		float setRelease_msec_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setRelease_msec(val,i); return getRelease_msec(); }
+		float setMaxdB_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setMaxdB(val,i); return getMaxdB(); }
+
+		float setScaleFactor_dBSPL_at_dBFS_all(float val) { return setMaxdB_all(val); } //another name for setMaxdB_all
 		
-		//set parameter values for a particular compressor
+		// set parameter values for a particular compressor
 		float setAttack_msec(float val, int i) { if (i < get_n_chan()) { return compressors[i].setAttack_msec(val); } else { return 0.0f; }};
 		float setRelease_msec(float val, int i) { if (i < get_n_chan()) { return compressors[i].setRelease_msec(val); } else { return 0.0f; }};
 		float setMaxdB(float val, int i) { if (i < get_n_chan()) { return compressors[i].setMaxdB(val); } else { return 0.0f; }};
@@ -126,6 +132,9 @@ class AudioEffectCompBankWDRC_F32 : public AudioStream_F32 {
 		float setKneeCompressor_dBSPL(float val, int i) { if (i < get_n_chan()) { return compressors[i].setKneeCompressor_dBSPL(val); } else { return 0.0f; }};
 		float setKneeLimiter_dBSPL(float val, int i) { if (i < get_n_chan()) { return compressors[i].setKneeLimiter_dBSPL(val); } else { return 0.0f; }};
 				
+		float setScaleFactor_dBSPL_at_dBFS(float val, int i) { return setMaxdB(val,i); }  //another name for setMaxdB
+		float setLinearGain_dB(float val, int i) { return setGain_dB(val,i); }  //another name for setGain_dB
+
 	
 		//here are the compressors...replace with a vector?
 		//AudioEffectCompWDRC_F32 compressors[__MAX_NUM_COMP];
