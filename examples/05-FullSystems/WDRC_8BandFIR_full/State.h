@@ -27,7 +27,7 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     AudioEffectCompBankWDRCState *compbank;
 
     //keep track of the signal levels in teh different bands
-    float overall_cal_dBSPL_at0dBFS = 115.0f; //dB SPL at full scale (0dB FS).  This will be set by the GHA_Constants or GHA_Alternates
+    float overall_cal_dBSPL_at0dBFS = 115.0f; //dB SPL at full scale (0dB FS).  This will be set by the DSL_GHA_Preset0.h or DSL_GHA_Preset1.h
     bool enable_printAveSignalLevels = false;
     bool printAveSignalLevels_as_dBSPL = false;
     float aveSignalLevels_dBFS[N_CHAN];

@@ -2,8 +2,8 @@
 
 
 //define our hearing aid prescription...allow toggling between two presents
-#include "GHA_Constants.h"  //this sets dsl and gha settings, which will be the defaults
-#include "GHA_Alternates.h"  //this sets alternate dsl and gha, which can be switched in via commands
+#include "DSL_GHA_Preset0.h"  //this sets dsl and gha settings, which will be the defaults
+#include "DSL_GHA_Preset1.h"  //this sets alternative dsl and gha, which can be switched in via commands
 
 //define the filterbank size
 #define N_FIR 96
@@ -12,21 +12,17 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::C
      const int n_chan, const int n_fir, const AudioSettings_F32 &settings)
 {
 
-  //set the per-channel filter coefficients
+  //set the per-channel filter coefficients (using our filterbank class)
   filterbank.designFilters(n_chan, n_fir, settings.sample_rate_Hz, settings.audio_block_samples, (float *)this_dsl.cross_freq);
 
-  //setup all of the per-channel compressors
-  #if USE_NEW_COMPBANK
-    compbank.configureFromDSLandGHA(settings.sample_rate_Hz,  this_dsl, this_gha);
-  #else
-    configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
-  #endif
+  //setup all of the per-channel compressors (using our compressor bank class)
+  compbank.configureFromDSLandGHA(settings.sample_rate_Hz,  this_dsl, this_gha);
 
-  //setup the broad band compressor (limiter)
+  //setup the broad band compressor (typically used as a limiter)
   //configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, compBroadband);
   compBroadband.configureFromGHA(settings.sample_rate_Hz, this_gha);
 
-  //overwrite the one-point calibration based on the dsl data structure
+  //overwrite the one-point SPL calibration based on the value in the DSL data structure
   myState.overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
 
 }
