@@ -101,6 +101,7 @@ gain			KEYWORD2
 mute			KEYWORD2
 switchChannel		KEYWORD2
 AudioMixer8_F32		KEYWORD1
+AudioMixer16_F32	KEYWORD1
 AudioMathAdd_F32	KEYWORD1
 AudioMathMultiply_F32	KEYWORD1
 AudioMathOffset_F32	KEYWORD1
