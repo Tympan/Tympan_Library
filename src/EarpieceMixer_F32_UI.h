@@ -20,12 +20,13 @@ class EarpieceMixer_F32_UI : public EarpieceMixer_F32, public SerialManager_UI {
 		// /////////////////////////////////
 
 		//create the button sets for the TympanRemote's GUI
-		TR_Card *addCard_audioSource(TR_Page *page_h);
-		TR_Card *addCard_frontRearMics(TR_Page *page_h);
-		TR_Card *addCard_frontMicDelay(TR_Page *page_h);
-		TR_Card *addCard_rearMicDelay(TR_Page *page_h);
-		TR_Card *addCard_rearMicGain(TR_Page *page_h);
-		TR_Page *addPage_digitalEarpieces(TympanRemoteFormatter *gui);
+		virtual TR_Card* addCard_audioSource(TR_Page *page_h);
+		virtual TR_Card* addCard_frontRearMics(TR_Page *page_h);
+		virtual TR_Card* addCard_frontMicDelay(TR_Page *page_h);
+		virtual TR_Card* addCard_rearMicDelay(TR_Page *page_h);
+		virtual TR_Card* addCard_rearMicGain(TR_Page *page_h);
+		virtual TR_Page* addPage_digitalEarpieces(TympanRemoteFormatter *gui);
+		virtual TR_Page* addPage_default(TympanRemoteFormatter *gui) { return addPage_digitalEarpieces(gui); }
 
 		//all other methods
 		void setInputConfigButtons(bool activeButtonsOnly = false);    

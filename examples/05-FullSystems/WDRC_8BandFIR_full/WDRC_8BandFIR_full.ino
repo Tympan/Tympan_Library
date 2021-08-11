@@ -1,17 +1,28 @@
 /*
   WDRC_8BandFIR_full
 
-  Created: Chip Audette (OpenAudio), Feb 2017 (Updated July 2021)
+  Created: Chip Audette (OpenAudio), August 2021
     Primarly built upon CHAPRO "Generic Hearing Aid" from
     Boys Town National Research Hospital (BTNRH): https://github.com/BTNRH/chapro
 
-  Purpose: Implements 8-band WDRC compressor.  Mono.  No feedback cancellation.
+  Purpose: Implements 8-band WDRC compressor.
+  
+  Features: 
+    * 8-Band FIR Filterbank
+	* Each channel has its own WDRC compressor
+	* Ends with a broadband WDRC compressor (used as a limiter)
+	* Can write raw and processed audio to SD card
+	* Can control via TympanRemote App or via USB Serial
+	* Mono (pushed to both ears)
+	* Does not use Tympan digital earpieces
+    * Does not include feedback cancellation
+	* Does not include prescription saving
+	* It can switch between two presets, both of which you can change
+		* A NORMAL preset
+		* a FULL-ON GAIN preset
      
-  User Controls:
+  Hardware Controls:
     Potentiometer on Tympan controls the broadband gain.
-    Additional controls via USB Serial and via TympanRemote App (BLE)
-
-  Records raw and processed audio to the SD card.
 
   MIT License.  use at your own risk.
 */
@@ -21,7 +32,7 @@
 
 
 // Define the audio settings
-const float sample_rate_Hz = 24000.0f ; //24000 or 44117.64706f (or other frequencies in the table in AudioOutputI2S_F32
+const float sample_rate_Hz = 24000.0f ; //24000 or 32000 or 44100 (or other frequencies in the table in AudioOutputI2S_F32
 const int audio_block_samples = 16;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
@@ -49,6 +60,7 @@ void setupTympanHardware(void) {
 
   //activate the Tympan's audio interface
   myTympan.enable();
+  connectClassesToOverallState();
 
   //setup DC-blocking highpass filter running in the ADC hardware itself
   float cutoff_Hz = 40.0;  //set the default cutoff frequency for the highpass filter
@@ -63,8 +75,24 @@ void setupTympanHardware(void) {
   setOutputGain_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
   float default_mic_input_gain_dB = 15.0f; //gain on the microphone
   setInputGain_dB(default_mic_input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
+  setDigitalGain_dB(myState.digital_gain_dB); // set gain low
 }
 
+
+void connectClassesToOverallState(void) {
+  myState.filterbank = &filterbank.state;
+  myState.compbank = &compbank.state;
+}
+
+//set up the serial manager
+void setupSerialManager(void) {
+  //register all the UI elements here
+  serialManager.add_UI_element(&myState);
+  serialManager.add_UI_element(&filterbank);
+  serialManager.add_UI_element(&compbank);
+  serialManager.add_UI_element(&compBroadband);
+  serialManager.add_UI_element(&audioSDWriter);
+}
 
 // ///////////////// Main setup() and loop() as required for all Arduino programs
 
@@ -72,12 +100,13 @@ void setupTympanHardware(void) {
 int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default vol_knob_gain_dB set a few lines below
 void setup() {
   myTympan.beginBothSerial();
-  Serial.println("WDRC_8BandFIR_Full: setup():...");
+  if (Serial) Serial.print(CrashReport);
+  Serial.println("WDRC_FIRbank_Compbank: setup():...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
 
   // Audio connections require memory
-  AudioMemory_F32(40,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
+  AudioMemory_F32(80,audio_settings);  //allocate Float32 audio data blocks (primary memory used for audio processing)
 
   // Enable the audio shield, select input, and enable output
   setupTympanHardware();  //see code earlier in this file
@@ -87,6 +116,9 @@ void setup() {
 
   //setup BLE
   delay(1000); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(1000); //Assumes the default Bluetooth firmware. You can override!
+  
+  //setup the serial manager
+  setupSerialManager();
 
   //Set the state of the LEDs
   myTympan.setRedLED(HIGH);  myTympan.setAmberLED(LOW);
@@ -94,14 +126,16 @@ void setup() {
   //prepare the SD writer for the format that we want and any error statements
   audioSDWriter.setSerial(&myTympan);
   audioSDWriter.setNumWriteChannels(2);     //can record 2 or 4 channels
-  Serial.print("Setup: SD configured for " + String(audioSDWriter.getNumWriteChannels()) + " channels.");
- 
+  Serial.println("Setup: SD configured for " + String(audioSDWriter.getNumWriteChannels()) + " channels.");
+
   //update the potentiometer settings
-	if (USE_VOLUME_KNOB) servicePotentiometer(millis());  //see code later in this file
+	//if (USE_VOLUME_KNOB) servicePotentiometer(millis());  //see code later in this file
   
   //End of setup
   Serial.println("Setup complete.");
   serialManager.printHelp();
+
+  filterbank.enable(true);
 
 } //end setup()
 
@@ -119,14 +153,14 @@ void loop() {
   }
 
   //service the BLE advertising state
-   ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
+  ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
 
   //service the SD recording
   serviceSD();
 
   //service the LEDs
   serviceLEDs(millis());
-  
+
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
   
@@ -137,6 +171,7 @@ void loop() {
   //print info about the signal processing
   updateAveSignalLevels(millis());
   if (myState.enable_printAveSignalLevels) myState.printAveSignalLevels(millis(),3000);
+ 
 
 } //end loop()
 
@@ -267,7 +302,7 @@ void updateAveSignalLevels(unsigned long curTime_millis) {
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
     for (int i=0; i<N_CHAN; i++) { //loop over each band
-      myState.aveSignalLevels_dBFS[i] = (1.0f-update_coeff)*myState.aveSignalLevels_dBFS[i] + update_coeff*expCompLim[i].getCurrentLevel_dB(); //running average
+      myState.aveSignalLevels_dBFS[i] = (1.0f-update_coeff)*myState.aveSignalLevels_dBFS[i] + update_coeff*compbank.compressors[i].getCurrentLevel_dB(); //running average
     }
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
   }
@@ -292,7 +327,7 @@ void printGainSettings(void) {
   Serial.print("Input PGA = "); Serial.print(myState.input_gain_dB,1);
   Serial.print(", Per-Channel = ");
   for (int i=0; i<N_CHAN; i++) {
-    Serial.print(expCompLim[i].getGain_dB(),1);
+    Serial.print(compbank.getLinearGain_dB(i),1); //gets the linear gain setting
     Serial.print(", ");
   }
   Serial.print("Knob = "); Serial.print(myState.digital_gain_dB,1);

@@ -41,10 +41,12 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
       if (coeff_p && (coeff_p != IIR_F32_PASSTHRU) && n_stages <= IIR_MAX_STAGES) {
         //https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html
         arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, (float32_t *)coeff_p,  &StateF32[0]);
+		is_armed = true;enable(true);
       }
     }
     virtual void end(void) {
       coeff_p = NULL;
+	  enable(false);
     }
 	
 	virtual void clearCoeffArray(void) {
@@ -151,10 +153,25 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 	}
     
     virtual void update(void);
+	virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new);
 	virtual float32_t getCutoffFrequency_Hz(void) { return cutoff_Hz; }
+	
+	bool enable(bool enable = true) { 
+		if (enable == true) {
+			if (is_armed) {  //don't allow it to enable if it can't actually run the filters
+				is_enabled = enable;
+				return get_is_enabled();
+			}
+		}
+		is_enabled = false;
+		return get_is_enabled();
+	}
+	bool get_is_enabled(void) { return is_enabled; }
    
   protected:
     audio_block_f32_t *inputQueueArray[1];
+	bool is_armed = false;   //has the ARM_MATH filter class been initialized ever?
+	bool is_enabled = false; //do you want this filter to execute?
     float32_t coeff[5 * IIR_MAX_STAGES]; //no filtering. actual filter coeff set later
 	float32_t sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
 	float32_t cutoff_Hz = -999;

@@ -34,18 +34,22 @@ class AudioFilterIIR_F32 : public AudioStream_F32
 			n_coeff = 1;
 			b_coeff[0] = 1.0;
 			a_coeff[0] = 1.0;
+			
+			is_armed = true;
 
 		}
-		void disable(void) {  n_coeff=0; }
+		void disable(void) {  n_coeff=0; enable(false); is_armed = false;}
 			
 		//initialize this IIR filter by giving it the filter coefficients (which are copied locally)
 		int begin(void) { initCoefficientsToPassthru();	return 0; }
 		int begin(const float32_t *_b_coeff, const float32_t *_a_coeff, const int _n_coeff) { 
 			if ((n_coeff < 0) | (n_coeff > IIR_MAX_N_COEFF)) {
+				enable(false);
 				return -1;
 			}
 			if (n_coeff == 0) { 
 				initCoefficientsToPassthru(); 
+				enable(true);
 				return 0;
 			} 
 			
@@ -53,16 +57,33 @@ class AudioFilterIIR_F32 : public AudioStream_F32
 			copyCoeff(_a_coeff, a_coeff, _n_coeff);
 			n_coeff = _n_coeff;
 			resetFilterStates();
+			is_armed=true;
+			enable(true);
 			return 0;
 		}
 		void end(void) {  initCoefficientsToPassthru(); disable(); }
 		void update(void);
+		int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update();  returns 0 if OK
 		void resetFilterStates(void) { for (int i=0; i<IIR_MAX_N_COEFF; i++) filter_states[i]=0.0; }
+
+		bool enable(bool enable = true) { 
+			if (enable == true) {
+				if (is_armed) {  //don't allow it to enable if it can't actually run the filters
+					is_enabled = enable;
+					return get_is_enabled();
+				}
+			}
+			is_enabled = false;
+			return get_is_enabled();
+		}
+		bool get_is_enabled(void) { return is_enabled; }
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
 		
 	private:
 		audio_block_f32_t *inputQueueArray[1];
+		bool is_armed = false;   //has the ARM_MATH filter class been initialized ever?
+		bool is_enabled = false; //do you want this filter to execute?
 		
 		int copyCoeff(const float *in, float *out, int n_coeff) {
 			if ((n_coeff > 0) & (n_coeff <= IIR_MAX_N_COEFF)) {

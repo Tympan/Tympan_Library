@@ -663,7 +663,7 @@ void AudioOutputI2S_F32::update(void)
 	audio_block_f32_t *block_f32;
 	audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32();
 	audio_block_f32_t *block2_f32_scaled = AudioStream_F32::allocate_f32();
-	if ((!block_f32_scaled) || (!block2_f32_scaled)) {
+	if ((block_f32_scaled==NULL) || (block2_f32_scaled==NULL)) {
 		//couldn't get some working memory.  Return.
 		if (block_f32_scaled) AudioStream_F32::release(block_f32_scaled);
 		if (block2_f32_scaled) AudioStream_F32::release(block2_f32_scaled);
@@ -672,7 +672,7 @@ void AudioOutputI2S_F32::update(void)
 	
 	//now that we have our working memory, proceed with getting the audio data and processing
 	block_f32 = receiveReadOnly_f32(0); // input 0 = left channel
-	if (block_f32) {
+	if (block_f32 != NULL) {
 		if (block_f32->length != audio_block_samples) {
 			Serial.print("AudioOutputI2S_F32: *** WARNING ***: audio_block says len = ");
 			Serial.print(block_f32->length);
@@ -695,60 +695,63 @@ void AudioOutputI2S_F32::update(void)
 		//	Serial.println(block_f32_scaled->data[30]);
 		//	count=0;
 		//}
-		
-		
-		//now process the data blocks
-		__disable_irq();
-		if (block_left_1st == NULL) {
-			block_left_1st = block_f32_scaled;
-			block_left_offset = 0;
-			__enable_irq();
-		} else if (block_left_2nd == NULL) {
-			block_left_2nd = block_f32_scaled;
-			__enable_irq();
-		} else {
-			audio_block_f32_t *tmp = block_left_1st;
-			block_left_1st = block_left_2nd;
-			block_left_2nd = block_f32_scaled;
-			block_left_offset = 0;
-			__enable_irq();
-			AudioStream_F32::release(tmp);
-		}
-		AudioStream_F32::transmit(block_f32,0);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,0);//echo the incoming audio out the outputs
 	} else {
-		//this branch should never get called, but if it does, let's release the buffer that was never used
-		AudioStream_F32::release(block_f32_scaled);
+		//fill with zeros
+		for (int i=0; i<audio_block_samples; i++) block_f32_scaled->data[i] = 0.0f;
 	}
+		
+	//now process the data blocks
+	__disable_irq();
+	if (block_left_1st == NULL) {
+		block_left_1st = block_f32_scaled;
+		block_left_offset = 0;
+		__enable_irq();
+	} else if (block_left_2nd == NULL) {
+		block_left_2nd = block_f32_scaled;
+		__enable_irq();
+	} else {
+		audio_block_f32_t *tmp = block_left_1st;
+		block_left_1st = block_left_2nd;
+		block_left_2nd = block_f32_scaled;
+		block_left_offset = 0;
+		__enable_irq();
+		AudioStream_F32::release(tmp);
+	}
+	AudioStream_F32::release(block_f32); 
+
 	
 	block_f32_scaled = block2_f32_scaled;  //this is simply renaming the pre-allocated buffer
 	block_f32 = receiveReadOnly_f32(1); // input 1 = right channel
-	if (block_f32) {
+	if (block_f32 != NULL) {
 		//scale F32 to Int32
 		//block_f32_scaled = AudioStream_F32::allocate_f32();
 		//scale_f32_to_i32(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
-		
-		__disable_irq();
-		if (block_right_1st == NULL) {
-			block_right_1st = block_f32_scaled;
-			block_right_offset = 0;
-			__enable_irq();
-		} else if (block_right_2nd == NULL) {
-			block_right_2nd = block_f32_scaled;
-			__enable_irq();
-		} else {
-			audio_block_f32_t *tmp = block_right_1st;
-			block_right_1st = block_right_2nd;
-			block_right_2nd = block_f32_scaled;
-			block_right_offset = 0;
-			__enable_irq();
-			AudioStream_F32::release(tmp);
-		}
-		AudioStream_F32::transmit(block_f32,1);	AudioStream_F32::release(block_f32); //echo the incoming audio out the outputs
+		AudioStream_F32::transmit(block_f32,1);//echo the incoming audio out the outputs
 	} else {
-		//this branch should never get called, but if it does, let's release the buffer that was never used
-		AudioStream_F32::release(block_f32_scaled);
+		//fill with zeros
+		for (int i=0; i<audio_block_samples; i++) block_f32_scaled->data[i] = 0.0f;
 	}
+		
+	__disable_irq();
+	if (block_right_1st == NULL) {
+		block_right_1st = block_f32_scaled;
+		block_right_offset = 0;
+		__enable_irq();
+	} else if (block_right_2nd == NULL) {
+		block_right_2nd = block_f32_scaled;
+		__enable_irq();
+	} else {
+		audio_block_f32_t *tmp = block_right_1st;
+		block_right_1st = block_right_2nd;
+		block_right_2nd = block_f32_scaled;
+		block_right_offset = 0;
+		__enable_irq();
+		AudioStream_F32::release(tmp);
+	}
+	AudioStream_F32::release(block_f32); 
+
 }
 
 #if defined(KINETISK) || defined(KINETISL)

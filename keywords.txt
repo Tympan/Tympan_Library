@@ -56,6 +56,9 @@ AudioConvert_F32toI16	KEYWORD1
 
 AudioEffectCompressor_F32	KEYWORD1
 AudioEffectCompWDRC_F32		KEYWORD1
+AudioEffectCompBankWDRC_F32		KEYWORD1
+AudioEffectCompBankWDRC_F32_UI		KEYWORD1
+AudioEffectCompBankWDRCState		KEYWORD1
 AudioEffectCompDecWDRC_F32	KEYWORD1
 AudioEffectCompWDRC_F32_UI	KEYWORD1
 
@@ -75,6 +78,13 @@ setShift_bins			KEYWORD2
 getShift_bins			KEYWORD2
 getShift_Hz			KEYWORD2
 
+AudioFilterbankFIR_F32		KEYWORD1
+AudioFilterbankFIR_F32_UI	KEYWORD1
+AudioFilterbankBiquad_F32	KEYWORD1
+AudioFilterbankBiquad_F32_UI	KEYWORD1
+AudioFilterbankState		KEYWORD1
+designFilters			KEYWORD2
+
 AudioFilterBiquad_F32	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1
@@ -93,6 +103,7 @@ gain			KEYWORD2
 mute			KEYWORD2
 switchChannel		KEYWORD2
 AudioMixer8_F32		KEYWORD1
+AudioMixer16_F32	KEYWORD1
 AudioMathAdd_F32	KEYWORD1
 AudioMathMultiply_F32	KEYWORD1
 AudioMathOffset_F32	KEYWORD1

@@ -76,11 +76,11 @@ void AudioEffectCompWDRC_F32::setDefaultValues(void) {
 void AudioEffectCompWDRC_F32::update(void) {
 	//receive the input audio data
 	audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
-	if (!block) return;
+	if (block == NULL) return;
 
 	//allocate memory for the output of our algorithm
 	audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
-	if (!out_block) { AudioStream_F32::release(block); return; }
+	if (out_block == NULL) { AudioStream_F32::release(block); return; }
 
 	//do the algorithm
 	int is_error = processAudioBlock(block,out_block); //anything other than a zero is an error
@@ -92,7 +92,7 @@ void AudioEffectCompWDRC_F32::update(void) {
 }
 
 int AudioEffectCompWDRC_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block) {
-	if ((!block) || (!out_block)) return -1;  //-1 is error
+	if ((block == NULL) || (out_block == NULL)) return -1;  //-1 is error
 	
 	compress(block->data, out_block->data, block->length);
 	
@@ -110,13 +110,13 @@ void AudioEffectCompWDRC_F32::compress(float *x, float *y, int n)
 {        
 	// find smoothed envelope
 	audio_block_f32_t *envelope_block = AudioStream_F32::allocate_f32();
-	if (!envelope_block) return;
+	if (envelope_block == NULL) return;  //failed to allocate
 	calcEnvelope.smooth_env(x, envelope_block->data, n);
 	//float *xpk = envelope_block->data; //get pointer to the array of (empty) data values
 
 	//calculate gain
 	audio_block_f32_t *gain_block = AudioStream_F32::allocate_f32();
-	if (!gain_block) return;
+	if (gain_block == NULL) return;  //failed to allocate
 	calcGain.calcGainFromEnvelope(envelope_block->data, gain_block->data, n);
 	
 	//apply gain
@@ -333,7 +333,7 @@ TR_Card* AudioEffectCompWDRC_F32_UI::addCard_expKnee( TR_Page *page_h) { return 
 TR_Card* AudioEffectCompWDRC_F32_UI::addCard_linGain( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Linear Gain (dB)",   "linGain", "G", "g");};
 TR_Card* AudioEffectCompWDRC_F32_UI::addCard_compRat( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Compression Ratio (x:1)",   "compRat", "C", "c");};
 TR_Card* AudioEffectCompWDRC_F32_UI::addCard_compKnee(TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Compressor Knee (dB SPL)", "compKnee","K", "k");};
-TR_Card* AudioEffectCompWDRC_F32_UI::addCard_limKnee( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Limitter Knee (dB SPL)","limKnee", "L", "l");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_limKnee( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Limiter Knee (dB SPL)","limKnee", "L", "l");};
 
 
 	

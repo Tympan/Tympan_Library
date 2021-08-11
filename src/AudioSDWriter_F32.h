@@ -142,42 +142,10 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     }
 
     void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
-    int setWriteDataType(WriteDataType type) {
-      Print *serial_ptr = &Serial1;
-      int write_nbytes = DEFAULT_SDWRITE_BYTES;
-
-      //get info from previous objects
-      if (buffSDWriter) {
-        serial_ptr = buffSDWriter->getSerial();
-        write_nbytes = buffSDWriter->getWriteSizeBytes();
-      }
-
-      //make the full method call
-      return setWriteDataType(type, serial_ptr, write_nbytes);
-    }
-	int setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps=-1) {
-		stopRecording();
-		writeDataType = type;
-		if (!buffSDWriter) {
-			if (!sd) {
-				sd = new SdFs();
-			}
-			
-			//Serial.println("AudioSDWriter_F32: setWriteDataType: creating buffSDWriter...");
-			buffSDWriter = new BufferedSDWriter(sd, serial_ptr, writeSizeBytes);
-			if (buffSDWriter) {
-				buffSDWriter->setNChanWAV(numWriteChannels);
-				if (bufferLength_samps >= 0) {
-					allocateBuffer(bufferLength_samps); //leave empty for default buffer size
-				} else {
-					//if we don't allocateBuffer() here, it simply lets BufferedSDWrite create it last-minute
-				}
-			} else {
-				Serial.print("AudioSDWriter_F32: setWriteDataType: *** ERROR *** Could not create buffered SD writer.");
-			}
-		}
-		if (buffSDWriter == NULL) { return -1; } else { return 0; };
-	}
+	
+    int setWriteDataType(WriteDataType type);
+	int setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps=-1);
+	
     void setWriteSizeBytes(const int n) {  //512Bytes is most efficient for SD
       if (buffSDWriter) buffSDWriter->setWriteSizeBytes(n);
     }
@@ -267,6 +235,20 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     }
 };
 
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// UI Versions of the Classes
+//
+// These versions of the classes add no signal processing functionality.  Instead, they add to the
+// classes simply to make it easier to add a menu-based or App-based interface to configure and 
+// control the audio-processing classes above.
+//
+// If you want to add a GUI, you might consider using the classes below instead of the classes above.
+// Again, the signal processing is exactly the same either way.
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Here's a class that wraps AudioSDWriter_F32 with some functions to interact
 // via a serial menu and via the Tympan_Remote App.
 class AudioSDWriter_F32_UI : public AudioSDWriter_F32, public SerialManager_UI {
@@ -305,9 +287,10 @@ class AudioSDWriter_F32_UI : public AudioSDWriter_F32, public SerialManager_UI {
 		// /////////////////////////////////	
 		
 		//create the button sets for the TympanRemote's GUI
-		virtual TR_Card *addCard_sdRecord(TR_Page *page_h);
-		virtual TR_Card *addCard_sdRecord(TR_Page *, String);
-		virtual TR_Page *addPage_sdRecord(TympanRemoteFormatter *gui);
+		virtual TR_Card* addCard_sdRecord(TR_Page *page_h);
+		virtual TR_Card* addCard_sdRecord(TR_Page *, String);
+		virtual TR_Page* addPage_sdRecord(TympanRemoteFormatter *gui);
+		virtual TR_Page* addPage_default(TympanRemoteFormatter *gui) { return addPage_sdRecord(gui); };
 		virtual void setSDRecordingButtons(bool activeButtonsOnly = false);
 };
 
