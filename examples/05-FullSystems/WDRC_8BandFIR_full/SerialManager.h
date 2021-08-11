@@ -8,8 +8,12 @@
 //classes from the main sketch that might be used here
 extern Tympan myTympan;               //defined in main *.ino file
 extern State myState;
+extern AudioFilterbankFIR_F32_UI filterbank;
+extern AudioEffectCompBankWDRC_F32_UI compbank;
+extern AudioEffectCompWDRC_F32_UI compBroadband;
+extern AudioSDWriter_F32_UI audioSDWriter;
+
 extern const int N_CHAN;
-extern AudioEffectCompWDRC_F32 expCompLim[];
 extern AudioControlTestAmpSweep_F32 ampSweepTester;
 extern AudioControlTestFreqSweep_F32 freqSweepTester;
 extern AudioControlTestFreqSweep_F32 freqSweepTester_filterbank;
@@ -18,7 +22,7 @@ extern AudioControlTestFreqSweep_F32 freqSweepTester_filterbank;
 extern float incrementDigitalGain(float);
 extern void printGainSettings(void);
 extern void togglePrintAveSignalLevels(bool);
-extern int incrementDSLConfiguration(void);
+extern int setDSLConfiguration(int);
 extern float incrementChannelGain(int, float);
 
 
@@ -33,7 +37,8 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
     void setFullGUIState(bool activeButtonsOnly = false);
     bool processCharacter(char c);  //this is called by SerialManagerBase.respondToByte(char c)
     void updateGainDisplay(void);
-    void setSDRecordingButtons(void);
+    void updatePresetDisplay(void);
+    //void setSDRecordingButtons(void);
 
     float channelGainIncrement_dB = 2.5f;  
   private:
@@ -42,46 +47,22 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
    
 };
 
-#define MAX_CHANS 8
-void printChanUpMsg(int N_CHAN) {
-  char fooChar[] = "12345678";
-  Serial.print(" ");
-  for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
-    Serial.print(fooChar[i]); 
-    if (i < (N_CHAN-1)) Serial.print(",");
-  }
-  Serial.print(": Increase linear gain of given channel (1-");
-  Serial.print(N_CHAN);
-  Serial.print(") by ");
-}
-void printChanDownMsg(int N_CHAN) {
-  char fooChar[] = "!@#$%^&*";
-  Serial.print(" ");
-  for (int i=0;i<min(MAX_CHANS,N_CHAN);i++) {
-    Serial.print(fooChar[i]); 
-    if (i < (N_CHAN-1)) Serial.print(",");
-  }
-  Serial.print(": Decrease linear gain of given channel (1-");
-  Serial.print(N_CHAN);
-  Serial.print(") by ");
-}
 void SerialManager::printHelp(void) {  
   Serial.println();
   Serial.println("SerialManager Help: Available Commands:");
-  Serial.println(" h: Print this help");
-  Serial.println(" g: Print the gain settings of the device.");
-  Serial.println(" c/C: Enable/Disable printing of CPU and Memory usage");
-  Serial.println(" l: Toggle printing of pre-gain per-channel signal levels (dBFS)");
-  Serial.println(" L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')");
-  Serial.println(" A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement.");
-  Serial.println(" F: Self-Generated Test: Frequency sweep.  End-to-End Measurement.");
-  Serial.println(" f: Self-Generated Test: Frequency sweep.  Measure filterbank.");
-  Serial.print(" k: Increase the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
-  Serial.print(" K: Decrease the gain of all channels (ie, knob gain) by "); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
-  printChanUpMsg(N_CHAN);  Serial.print(channelGainIncrement_dB); Serial.println(" dB");
-  printChanDownMsg(N_CHAN);  Serial.print(channelGainIncrement_dB); Serial.println(" dB");
-  Serial.println(" D: Toggle between DSL configurations: NORMAL vs FULL-ON");
-  Serial.println(" r/s: Begin/stop SD audio recording");
+  Serial.println(F(" General: No Prefix"));
+  Serial.println(F("   h: Print this help"));
+  Serial.println(F("   g: Print the gain settings of the device."));
+  //Serial.println("   c/C: Enable/Disable printing of CPU and Memory usage");
+  Serial.println(F("   l: Toggle printing of pre-gain per-channel signal levels (dBFS)"));
+  Serial.println(F("   L: Toggle printing of pre-gain per-channel signal levels (dBSPL, per DSL 'maxdB')"));
+  Serial.println(F("   A: Self-Generated Test: Amplitude sweep.  End-to-End Measurement."));
+  Serial.println(F("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement."));
+  Serial.println(F("   f: Self-Generated Test: Frequency sweep.  Measure filterbank."));
+  Serial.print(F(  "   k/K: Incr/Decrease overall gain by ")); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
+  Serial.println(F("   d/D: Switch between presets: NORMAL vs FULL-ON"));
+  //Serial.println(F(" r/s: Begin/stop SD audio recording"));
+  SerialManagerBase::printHelp();  ////in here, it automatically loops over the different UI elements issuing printHelp()
   Serial.println();
 }
 
@@ -101,39 +82,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'k':
       incrementDigitalGain(channelGainIncrement_dB); break;
     case 'K':   //which is "shift k"
-      incrementDigitalGain(-channelGainIncrement_dB);  break;
-    case '1':
-      incrementChannelGain(1-1, channelGainIncrement_dB); break;
-    case '2':
-      incrementChannelGain(2-1, channelGainIncrement_dB); break;
-    case '3':
-      incrementChannelGain(3-1, channelGainIncrement_dB); break;
-    case '4':
-      incrementChannelGain(4-1, channelGainIncrement_dB); break;
-    case '5':
-      incrementChannelGain(5-1, channelGainIncrement_dB); break;
-    case '6':
-      incrementChannelGain(6-1, channelGainIncrement_dB); break;
-    case '7':
-      incrementChannelGain(7-1, channelGainIncrement_dB); break;
-    case '8':      
-      incrementChannelGain(8-1, channelGainIncrement_dB); break;    
-    case '!':  //which is "shift 1"
-      incrementChannelGain(1-1, -channelGainIncrement_dB); break;
-    case '@':  //which is "shift 2"
-      incrementChannelGain(2-1, -channelGainIncrement_dB); break;
-    case '#':  //which is "shift 3"
-      incrementChannelGain(3-1, -channelGainIncrement_dB); break;
-    case '$':  //which is "shift 4"
-      incrementChannelGain(4-1, -channelGainIncrement_dB); break;
-    case '%':  //which is "shift 5"
-      incrementChannelGain(5-1, -channelGainIncrement_dB); break;
-    case '^':  //which is "shift 6"
-      incrementChannelGain(6-1, -channelGainIncrement_dB); break;
-    case '&':  //which is "shift 7"
-      incrementChannelGain(7-1, -channelGainIncrement_dB); break;
-    case '*':  //which is "shift 8"
-      incrementChannelGain(8-1, -channelGainIncrement_dB); break;          
+      incrementDigitalGain(-channelGainIncrement_dB);  break;          
     case 'A':
       //amplitude sweep test
       { //limit the scope of any variables that I create here
@@ -146,20 +95,18 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       ampSweepTester.begin();
       while (!ampSweepTester.available()) {delay(100);};
       Serial.println("Press 'h' for help...");
+      break;     
+    case 'd':
+      Serial.println("Command Received: changing to 1st DSL configuration...you will lose any custom gain values...");
+      //incrementDSLConfiguration();
+      setDSLConfiguration(1-1);
+      setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
       break;
-    case 'c':      
-      Serial.println("Received: printing memory and CPU usage.");
-      myState.flag_printCPUandMemory = true;
-      setButtonState("cpuStart",myState.flag_printCPUandMemory);
-      break;     
-    case 'C':
-      Serial.println("Received: stopping printing memory and CPU usage.");
-      myState.flag_printCPUandMemory = false;
-      setButtonState("cpuStart",myState.flag_printCPUandMemory);
-      break;     
     case 'D':
-      Serial.println("Command Received: changing DSL configuration...you will lose any custom gain values...");
-      incrementDSLConfiguration();
+      Serial.println("Command Received: changing 2st DSL configuration...you will lose any custom gain values...");
+      //incrementDSLConfiguration();
+      setDSLConfiguration(2-1);
+      setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
       break;
     case 'F':
       //frequency sweep test...end-to-end
@@ -210,19 +157,10 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       myTympan.setHPFonADC(true,new_val,fs_Hz);
       Serial.print("Command received: Decreasing ADC HP Cutoff to "); Serial.print(myTympan.getHPCutoff_Hz());Serial.println(" Hz");   
       break;
-    }
-    case 'r':
-      Serial.println("Received: begin SD recording");
-      audioSDWriter.startRecording();
-      setSDRecordingButtons();
-      break;
-    case 's':
-      Serial.println("Received: stop SD recording");
-      audioSDWriter.stopRecording();
-      setSDRecordingButtons();
-      break;    
+    }    
     default:
-      ret_val = false;
+      ret_val = SerialManagerBase::processCharacter(c);  //in here, it automatically loops over the different UI elements
+      break; 
   }
   return ret_val;
 }
@@ -230,11 +168,13 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
 
 // Print the layout for the Tympan Remote app, in a JSON-ish string
 void SerialManager::printTympanRemoteLayout(void) {
-    if (myGUI.get_nPages() < 1) createTympanRemoteLayout();  //create the GUI, if it hasn't already been created
-    String s = myGUI.asString();
-    Serial.println(s);
-    ble->sendMessage(s); //ble is held by SerialManagerBase
-    setFullGUIState();
+    bool is_GUI_created_here = false;
+    if (myGUI.get_nPages() < 1) { createTympanRemoteLayout(); is_GUI_created_here=true; }  //create the GUI, if it hasn't already been created
+    String s = myGUI.asString();                      //compose the string that holds the JSON describing the GUI
+    if (is_GUI_created_here) myGUI.deleteAllPages();  //myGUI might use a fair bit of RAM...so free up the RAM, if we can
+    Serial.println(s);                                //print the JSON for the GUI to the USB Serial (for debugging)
+    ble->sendMessage(s);                              //print the JSON to Bluetooth (ble is held by SerialManagerBase)
+    setFullGUIState();                                //send all the state values to fill in the GUI's blank spaces
 }
 
 //define the GUI for the App
@@ -245,47 +185,69 @@ void SerialManager::createTympanRemoteLayout(void) {
   TR_Card *card_h;  //dummy handle for a card
 
   //Add first page to GUI
-  page_h = myGUI.addPage("WDRC 8-Band, Full System");
-  
-      //Add a button group ("card")
+  page_h = myGUI.addPage("WDRC " + String(N_CHAN) + "-Band System");
+
+      //Add a button group ("card") for Volume
       card_h = page_h->addCard("Volume Knob (dB)");
-          //Add a "-" digital gain button with the Label("-"); Command("K"); Internal ID ("minusButton"); and width (4)
-          card_h->addButton("-","K","minusButton",4);  //displayed string, command, button ID, button width (out of 12)
+          //Add a "-" digital gain button with the Label("-"); Command("K"); Internal ID (none needed); and width (4)
+          card_h->addButton("-", "K", "",   4);  //displayed string, command, button ID, button width (out of 12)
 
-          //Add an indicator that's a button with no command:  Label (value of the digital gain); Command (""); Internal ID ("gain indicator"); width (4).
-          card_h->addButton("","","gainIndicator",4);  //displayed string (blank for now), command (blank), button ID, button width (out of 12)
+          //Add an indicator that's a button with no command:  Label (value of the digital gain); Command (""); Internal ID ("gain"); width (4).
+          card_h->addButton("",  "", "gain",4);  //displayed string (blank for now), command (blank), button ID, button width (out of 12)
   
-          //Add a "+" digital gain button with the Label("+"); Command("K"); Internal ID ("minusButton"); and width (4)
-          card_h->addButton("+","k","plusButton",4);   //displayed string, command, button ID, button width (out of 12)
+          //Add a "+" digital gain button with the Label("+"); Command("K"); Internal ID (none needed); and width (4)
+          card_h->addButton("+", "k", "",   4);  //displayed string, command, button ID, button width (out of 12)
 
+      //Add a button group ("card") for Presets
+      card_h = page_h->addCard("Parameter Presets");
+          //Add two buttons for the two presets
+          card_h->addButton("Normal",      "d", "preset0", 6);  //displayed string, command, button ID, button width (out of 12)
+          card_h->addButton("Full-On Gain","D", "preset1", 6);  //displayed string, command, button ID, button width (out of 12)
+      
       //Add a button group ("card") for the CPU reporting...use a button set that is built into myState for you!
-      myState.addCard_cpuReporting(page_h, String("")); //see TympanStateBase.h  assumes use of 'c' and 'C' for on and off
-
+      card_h = myState.addCard_cpuReporting(page_h);
+      
       //Add a button group for SD recording...use a button set that is built into AudioSDWriter_F32_UI for you!
-      audioSDWriter.addCard_sdRecord(page_h, String(""));  //see AudioSDwriter_F32.h  assumes use of 'r' and 's'
+      card_h = audioSDWriter.addCard_sdRecord(page_h);
+
+  //add second page to GUI
+  page_h = filterbank.addPage_default(&myGUI); //use its predefined page for controlling the digital earpieces
+
+  //add compressor bank pages to GUI
+  page_h = compbank.addPage_globals(&myGUI);
+  page_h = compbank.addPage_linearGain(&myGUI);
+  page_h = compbank.addPage_compKnee(&myGUI);
+  page_h = compbank.addPage_compRatio(&myGUI);
+  page_h = compbank.addPage_limKnee(&myGUI);
+
+  //add a page for the broadband compressor
+  page_h = compBroadband.addPage_default(&myGUI);
+  page_h->setName("Broadband Compressor");  //I'm overwriting the default name so that we know that this is the right WDRC compressor
         
   //add some pre-defined pages to the GUI...these are pre-defined within the App itself
   myGUI.addPredefinedPage("serialMonitor");
   //myGUI.addPredefinedPage("serialPlotter");
 }
 
-void SerialManager::setFullGUIState(bool activeButtonsOnly) {
-  updateGainDisplay();
-  myState.setCPUButtons(); //see TympanStateBase.h...it's a built-in update routine for the built-in CPU buttons that I created earlier
-  setSDRecordingButtons();  
-}
-
 void SerialManager::updateGainDisplay(void) {
-  setButtonText("gainIndicator",String(myState.digital_gain_dB,1));
+  setButtonText("gain",String(myState.digital_gain_dB,1)); //send a new string to the button with id "gain"
 }
 
-void SerialManager::setSDRecordingButtons(void) {
-  if (audioSDWriter.getState() == AudioSDWriter_F32::STATE::RECORDING) {
-    setButtonState("recordStart",true);
-  } else {
-    setButtonState("recordStart",false);
+void SerialManager::updatePresetDisplay(void) {
+  for (int i=0; i<= myState.MAX_DSL_SETTING; i++) {
+    String id = String("preset") + String(i);
+    bool state = false;
+    if (i==myState.current_dsl_config) state=true;
+    setButtonState(id,state);
   }
-  setButtonText("sdFname",audioSDWriter.getCurrentFilename());
+}
+
+void SerialManager::setFullGUIState(bool activeButtonsOnly) {
+  updatePresetDisplay();
+  updateGainDisplay();
+
+  //update all of the individual UI elements
+  SerialManagerBase::setFullGUIState(activeButtonsOnly); //in here, it automatically loops over the different UI elements
 }
 
 #endif
