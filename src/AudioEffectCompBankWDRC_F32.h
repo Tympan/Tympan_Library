@@ -96,6 +96,36 @@ class AudioEffectCompBankWDRC_F32 : public AudioStream_F32 {
 	
 		//track states
 		AudioCompBankStateWDRC_F32 state;
+		
+		// ///////////////////////// set / get methods
+		
+		//get parameter values from the compressors
+		float getAttack_msec(int i=0) { if (i < get_n_chan()) { return compressors[i].getAttack_msec(); } else { return 0.0f; }};
+		float getRelease_msec(int i=0) { if (i < get_n_chan()) { return compressors[i].getRelease_msec(); } else { return 0.0f; }};
+		float getMaxdB(int i=0) { if (i < get_n_chan()) { return compressors[i].getMaxdB(); } else { return 0.0f; }};
+		float getExpansionCompRatio(int i=0) { if (i < get_n_chan()) { return compressors[i].getExpansionCompRatio(); } else { return 0.0f; }};
+		float getKneeExpansion_dBSPL(int i=0) { if (i < get_n_chan()) { return compressors[i].getKneeExpansion_dBSPL(); } else { return 0.0f; }};
+		float getGain_dB(int i=0) { if (i < get_n_chan()) { return compressors[i].getGain_dB(); } else { return 0.0f; }};
+		float getCompRatio(int i=0) { if (i < get_n_chan()) { return compressors[i].getCompRatio(); } else { return 0.0f; }};
+		float getKneeCompressor_dBSPL(int i=0) { if (i < get_n_chan()) { return compressors[i].getKneeCompressor_dBSPL(); } else { return 0.0f; }};
+		float getKneeLimiter_dBSPL(int i=0) { if (i < get_n_chan()) { return compressors[i].getKneeLimiter_dBSPL(); } else { return 0.0f; }};
+		
+		//set parameter values to the all the compressors (ie, parameters that you might want to set globally)
+		float setAttack_msec_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setAttack_msec(val,i); }
+		float setRelease_msec_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setRelease_msec(val,i); }
+		float setMaxdB_all(float val) { for (int i=0; i < state.get_max_n_chan(); i++) setMaxdB(val,i); }
+		
+		//set parameter values for a particular compressor
+		float setAttack_msec(float val, int i) { if (i < get_n_chan()) { return compressors[i].setAttack_msec(val); } else { return 0.0f; }};
+		float setRelease_msec(float val, int i) { if (i < get_n_chan()) { return compressors[i].setRelease_msec(val); } else { return 0.0f; }};
+		float setMaxdB(float val, int i) { if (i < get_n_chan()) { return compressors[i].setMaxdB(val); } else { return 0.0f; }};
+		float setExpansionCompRatio(float val, int i) { if (i < get_n_chan()) { return compressors[i].setExpansionCompRatio(val); } else { return 0.0f; }};
+		float setKneeExpansion_dBSPL(float val, int i) { if (i < get_n_chan()) { return compressors[i].setKneeExpansion_dBSPL(val); } else { return 0.0f; }};
+		float setGain_dB(float val, int i) { if (i < get_n_chan()) { return compressors[i].setGain_dB(val); } else { return 0.0f; }};
+		float setCompRatio(float val, int i) { if (i < get_n_chan()) { return compressors[i].setCompRatio(val); } else { return 0.0f; }};
+		float setKneeCompressor_dBSPL(float val, int i) { if (i < get_n_chan()) { return compressors[i].setKneeCompressor_dBSPL(val); } else { return 0.0f; }};
+		float setKneeLimiter_dBSPL(float val, int i) { if (i < get_n_chan()) { return compressors[i].setKneeLimiter_dBSPL(val); } else { return 0.0f; }};
+				
 	
 		//here are the compressors...replace with a vector?
 		//AudioEffectCompWDRC_F32 compressors[__MAX_NUM_COMP];
