@@ -84,12 +84,13 @@ public:
     float multiplier[8];
 };
 
+#define MIXER_N_CHAN_MAX 16
 class AudioMixer16_F32 : public AudioStream_F32 {
 //GUI: inputs:16, outputs:1  //this line used for automatic generation of GUI node
 //GUI: shortName:Mixer16
 public:
-    AudioMixer16_F32() : AudioStream_F32(n_chan, inputQueueArray) { setDefaultValues();}
-    AudioMixer16_F32(const AudioSettings_F32 &settings) : AudioStream_F32(8, inputQueueArray) { setDefaultValues();}
+    AudioMixer16_F32() : AudioStream_F32(MIXER_N_CHAN_MAX, inputQueueArray) { setDefaultValues();}
+    AudioMixer16_F32(const AudioSettings_F32 &settings) : AudioStream_F32(MIXER_N_CHAN_MAX, inputQueueArray) { setDefaultValues();}
 	
 	void setDefaultValues(void) {
       for (int i=0; i<n_chan; i++) multiplier[i] = 1.0;
@@ -111,9 +112,9 @@ public:
 	} 
 
   private:
-	const int n_chan = 16;
-    audio_block_f32_t *inputQueueArray[8];
-    float multiplier[8];
+	const int n_chan = MIXER_N_CHAN_MAX;
+    audio_block_f32_t *inputQueueArray[MIXER_N_CHAN_MAX];
+    float multiplier[MIXER_N_CHAN_MAX];
 };
 
 #endif
