@@ -31,6 +31,11 @@
 //here are the libraries that we need
 #include <Tympan_Library.h>  //include the Tympan Library
 
+//set the sample rate and block size
+const float sample_rate_Hz = 44100.0f ; //24000 or 44100 (or 44117, or other frequencies in the table in AudioOutputI2S_F32)
+const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
+AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
+
 //create audio library objects for handling the audio
 Tympan                    myTympan(TympanRev::E, audio_settings);     //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32         i2s_in;                     //Digital audio in *from* the Teensy Audio Board ADC.
