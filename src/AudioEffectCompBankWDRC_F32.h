@@ -197,11 +197,22 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 
 		//create the button sets for the TympanRemote's GUI
 		TR_Page* addPage_globals(TympanRemoteFormatter *gui);
-		TR_Card* addCard_attack_global(TR_Page *page_h);
-		TR_Card* addCard_release_global(TR_Page *page_h);
-		TR_Card* addCard_scaleFac_global(TR_Page *page_h);
-		//TR_Page *addPage_linearGain(TympanRemoteFormatter *gui);
-		//TR_Page *addPage_default(TympanRemoteFormatter *gui) {return addPage_crossoverFreqs(gui); };
+		TR_Card* addCard_attack_global(   TR_Page *page_h);
+		TR_Card* addCard_release_global(  TR_Page *page_h);
+		TR_Card* addCard_scaleFac_global( TR_Page *page_h);
+		
+
+		TR_Page* addPage_attack(       TympanRemoteFormatter *gui);
+		TR_Page* addPage_release(      TympanRemoteFormatter *gui);
+		TR_Page* addPage_scaleFac(     TympanRemoteFormatter *gui);
+		TR_Page* addPage_expCompRatio( TympanRemoteFormatter *gui);
+		TR_Page* addPage_expKnee(      TympanRemoteFormatter *gui);
+		TR_Page* addPage_linearGain(   TympanRemoteFormatter *gui);
+		TR_Page* addPage_compRatio(    TympanRemoteFormatter *gui);
+		TR_Page* addPage_compKnee(     TympanRemoteFormatter *gui);
+		TR_Page* addPage_limKnee(      TympanRemoteFormatter *gui);
+		
+		TR_Page* addPage_default(TympanRemoteFormatter *gui) {return addPage_globals(gui); };
 
 		//methods to update the GUI fields
 		void updateCard_attack_global(void); 
@@ -210,13 +221,26 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		void updateCard_attack(int i); 
 		void updateCard_release(int i); 
 		void updateCard_scaleFac(int i); 
-		void updateCard_expComp(int i); 
+		void updateCard_expCR(int i); 
 		void updateCard_expKnee(int i); 
 		void updateCard_linGain(int i); 
 		void updateCard_compRat(int i); 
 		void updateCard_compKnee(int i); 
 		void updateCard_limKnee(int i); 
 			
+		bool flag_send_global_attack = false;
+		bool flag_send_global_release = false;
+		bool flag_send_global_scaleFac = false;
+		bool flag_send_perBand_attack = false;	
+		bool flag_send_perBand_release = false;		
+		bool flag_send_perBand_scaleFac = false;		
+		bool flag_send_perBand_expCR = false;		
+		bool flag_send_perBand_expKnee = false;		
+		bool flag_send_perBand_linGain = false;		
+		bool flag_send_perBand_compRat = false;		
+		bool flag_send_perBand_compKnee = false;		
+		bool flag_send_perBand_limKnee = false;		
+		
 		//here are the factors to use to increment different AudioEffectCompWDRC_F32 parameters
 		float time_incr_fac = pow(2.0,1.0/4.0);
 		float cr_fac = 0.1;

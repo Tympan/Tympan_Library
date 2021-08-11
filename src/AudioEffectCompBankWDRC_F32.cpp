@@ -192,7 +192,7 @@ void AudioEffectCompBankWDRC_F32_UI::printHelp(void) {
 	Serial.println(F(" WDRC Compressor Bank: Prefix = ") + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 	Serial.println(F("   a/A: incr/decrease global attack time (") + String(state.getAttack_msec(),1) + " msec)");
 	Serial.println(F("   r/R: incr/decrease global release time (") + String(state.getRelease_msec(),0) + " msec)");
-	Serial.println(F("   m,M: Incr/decrease global scale factor (") + String(getMaxdB(),0) + "dBSPL at 0 dBFS)");
+	Serial.println(F("   m,M: Incr/decrease global scale factor (") + String(getMaxdB(),0) + " dBSPL at 0 dBFS)");
 }
 
 
@@ -200,6 +200,8 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacterTriple(char mode_char, char
 	
 	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
 	if (mode_char != ID_char) return false;  //ID_char is from SerialManager_UI.h
+
+	//Serial.println("AudioEffectCompBankWDRC_F32_UI: processCharacterTriple: " + String(mode_char) + String(chan_char) + String(data_char));
 
 	//we ignore the chan_char and only work with the data_char
 	bool return_val = true;  //assume that we will find this character
@@ -240,12 +242,12 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacter_global(char data_char) {
 			break;
 		case 'm':
 			incrementMaxdB_all(1.0);
-			Serial.println(self_id + String("changed global scale factor to ") + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			Serial.println(self_id + String(": changed global scale factor to ") + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
 			updateCard_scaleFac_global();  //send updated value to the GUI
 			break;
 		case 'M':
 			incrementMaxdB_all(-1.0);
-			Serial.println(self_id + String("changed global scale factor to ") + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			Serial.println(self_id + String(": changed global scale factor to ") + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
 			updateCard_scaleFac_global();  //send updated value to the GUI
 			break;
 		default:
@@ -258,6 +260,8 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacter_global(char data_char) {
 bool AudioEffectCompBankWDRC_F32_UI::processCharacter_perChannel(char data_char, int chan) {
 	bool return_val = true;
 	String self_id = "AudioEffectCompBankWDRC_F32"; //used when printing messages to Serial Monitor
+	
+	//Serial.println(self_id + ": processCharacter_perChannel: " + String(data_char) + String(chan));
 	
 	switch (data_char) {    
 		case 'a':
@@ -282,72 +286,72 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacter_perChannel(char data_char,
 			break;
 		case 'm':
 			incrementMaxdB(1.0, chan);
-			Serial.println(self_id + String("changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			Serial.println(self_id + String(": changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
 			updateCard_scaleFac(chan);  //send updated value to the GUI
 			break;
 		case 'M':
 			incrementMaxdB(-1.0, chan);
-			Serial.println(self_id + String("changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			Serial.println(self_id + String(": changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
 			updateCard_scaleFac(chan);  //send updated value to the GUI
 			break;
 		case 'x':
 			incrementExpCR(cr_fac, chan);
-			Serial.println(self_id + String("changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
-			updateCard_expComp(chan);  //send updated value to the GUI
+			Serial.println(self_id + String(": changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
+			updateCard_expCR(chan);  //send updated value to the GUI
 			break;
 		case 'X':
 			incrementExpCR(-cr_fac, chan);
-			Serial.println(self_id + String("changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
-			updateCard_expComp(chan);  //send updated value to the GUI
+			Serial.println(self_id + String(": changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
+			updateCard_expCR(chan);  //send updated value to the GUI
 			break;
 		case 'z':
 			incrementExpKnee(knee_fac, chan);
-			Serial.println(self_id + String("changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
 			updateCard_expKnee(chan);  //send updated value to the GUI
 			break;
 		case 'Z':
 			incrementExpKnee(-knee_fac, chan);
-			Serial.println(self_id + String("changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
 			updateCard_expKnee(chan);  //send updated value to the GUI
 			break;
 		case 'g':
 			incrementGain_dB(gain_fac, chan);
-			Serial.println(self_id + String("changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
+			Serial.println(self_id + String(": changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
 			updateCard_linGain(chan);  //send updated value to the GUI
 			break;
 		case 'G':
 			incrementGain_dB(-gain_fac, chan);
-			Serial.println(self_id + String("changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
+			Serial.println(self_id + String(": changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
 			updateCard_linGain(chan);  //send updated value to the GUI
 			break;
 		case 'c':
 			incrementCompRatio(cr_fac, chan);
-			Serial.println(self_id + String("changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
+			Serial.println(self_id + String(": changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
 			updateCard_compRat(chan);  //send updated value to the GUI
 			break;
 		case 'C':
 			incrementCompRatio(-cr_fac, chan);
-			Serial.println(self_id + String("changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
+			Serial.println(self_id + String(": changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
 			updateCard_compRat(chan);  //send updated value to the GUI
 			break;
 		case 'k':
 			incrementKnee(knee_fac, chan);
-			Serial.println(self_id + String("changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
 			updateCard_compKnee(chan);  //send updated value to the GUI
 			break;
 		case 'K':
 			incrementKnee(-knee_fac, chan);
-			Serial.println(self_id + String("changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
 			updateCard_compKnee(chan);  //send updated value to the GUI
 			break;
 		case 'l':
 			incrementLimiter(1.0, chan);
-			Serial.println(self_id + String("changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
 			updateCard_limKnee(chan);   //send updated value to the GUI
 			break;
 		case 'L':
 			incrementLimiter(-1.0, chan);
-			Serial.println(self_id + String("changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
 			updateCard_limKnee(chan);   //send updated value to the GUI
 			break; 
 		default:
@@ -391,21 +395,116 @@ int AudioEffectCompBankWDRC_F32_UI::findChan(char c, int direction) {  //directi
 
 TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_globals(TympanRemoteFormatter *gui) {
 	if (gui == NULL) return NULL;
-	TR_Page *page_h = gui->addPage("Compressor Bank, Global Parameters");
+	TR_Page *page_h = gui->addPage(String("Compressor Bank, Global Parameters"));
 	if (page_h == NULL) return NULL;
 	
 	addCard_attack_global(page_h);
 	addCard_release_global(page_h);
 	addCard_scaleFac_global(page_h);
-	
+
 	return page_h;
 }
 
-TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_attack_global(  TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Attack Time (msec)",  "att",    "A", "a");};
-TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_release_global( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Release Time (msec)", "rel",    "R", "r");};
-TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_scaleFac_global(TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Scale (dBSPL at dBFS)","maxdB", "M", "m");};
+TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_attack_global(  TR_Page *page_h) { 
+	flag_send_global_attack=true;
+	return addCardPreset_UpDown(page_h, "Attack Time (msec)",  "att",    "A", "a");
+};
+TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_release_global( TR_Page *page_h) { 
+	flag_send_global_release=true;
+	return addCardPreset_UpDown(page_h, "Release Time (msec)", "rel",    "R", "r");
+};
+TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_scaleFac_global(TR_Page *page_h) { 
+	flag_send_global_scaleFac=true;
+	return addCardPreset_UpDown(page_h, "Scale (dBSPL at dBFS)","maxdB", "M", "m");
+};
 
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_attack(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Attack Time (msec)", "att", "A", "a", get_n_chan());
+	flag_send_perBand_attack = true;    //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
 
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_release(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Release Time (msec)", "rel", "R", "r", get_n_chan());
+	flag_send_perBand_release = true;    //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
+
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_scaleFac(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Scale (dBSPL at dBFS)", "maxdB", "M", "m", get_n_chan());
+	flag_send_perBand_scaleFac = true;    //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
+
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_expCompRatio(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Expansion CR (x:1)", "expCR", "X", "x", get_n_chan());
+	flag_send_perBand_expCR = true;    //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
+
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_expKnee(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Expansion Knee (dB SPL)", "expKnee", "Z", "z", get_n_chan());
+	flag_send_perBand_expKnee = true;    //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
+
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_linearGain(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Linear Gain (dB)", "linGain", "G", "g", get_n_chan());
+	flag_send_perBand_linGain = true;    //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
+
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_compRatio(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Compression Ratio (x:1)", "compRat", "C", "c", get_n_chan());
+	flag_send_perBand_compRat = true;   //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_compKnee(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Comp. Knee (dB SPL)", "compKnee", "K", "k", get_n_chan());
+	flag_send_perBand_compKnee = true;   //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_limKnee(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank");
+	if (page_h == NULL) return NULL;
+	
+	addCardPreset_UpDown_multiChan(page_h, "Limiter Knee (dB SPL)", "limKnee", "L", "l", get_n_chan());
+	flag_send_perBand_limKnee = true;   //tells updateAll to send the values associated with these buttons
+	return page_h;
+}
 
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -421,16 +520,16 @@ TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_scaleFac_global(TR_Page *page_h
 void AudioEffectCompBankWDRC_F32_UI::updateCard_attack(int i)  { 
 	float val = getAttack_msec(i); String str_val = String(val,1);
 	if (val >= 10.0f) str_val = String(val,0); //less resolution of < 10 msec
-	updateCardPreset_UpDown("att"+String(i),str_val); //this method is in SerialManager_UI.h
+	updateCardPreset_UpDown("att",str_val,i); //this method is in SerialManager_UI.h
 }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_release(int i) { updateCardPreset_UpDown("rel"+String(i),     String(getRelease_msec(i),0)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_scaleFac(int i){ updateCardPreset_UpDown("maxdB"+String(i),   String(getMaxdB(i),0)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_expComp(int i) { updateCardPreset_UpDown("expCR"+String(i),   String(getExpansionCompRatio(i),2)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_expKnee(int i) { updateCardPreset_UpDown("expKnee"+String(i), String(getKneeExpansion_dBSPL(i),0)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_linGain(int i) { updateCardPreset_UpDown("linGain"+String(i), String(getGain_dB(i),0)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_compRat(int i) { updateCardPreset_UpDown("compRat"+String(i), String(getCompRatio(i),2)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_compKnee(int i){ updateCardPreset_UpDown("compKnee"+String(i),String(getKneeCompressor_dBSPL(i),0)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_limKnee(int i) { updateCardPreset_UpDown("limKnee"+String(i), String(getKneeLimiter_dBSPL(i),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_release(int i) { updateCardPreset_UpDown("rel",     String(getRelease_msec(i),0),        i); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_scaleFac(int i){ updateCardPreset_UpDown("maxdB",   String(getMaxdB(i),0),               i); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_expCR(int i)   { updateCardPreset_UpDown("expCR",   String(getExpansionCompRatio(i),2),  i); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_expKnee(int i) { updateCardPreset_UpDown("expKnee", String(getKneeExpansion_dBSPL(i),0), i); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_linGain(int i) { updateCardPreset_UpDown("linGain", String(getGain_dB(i),0),             i); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_compRat(int i) { updateCardPreset_UpDown("compRat", String(getCompRatio(i),2),           i); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_compKnee(int i){ updateCardPreset_UpDown("compKnee",String(getKneeCompressor_dBSPL(i),0),i); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_limKnee(int i) { updateCardPreset_UpDown("limKnee", String(getKneeLimiter_dBSPL(i),0),   i); }
 
 //Make global versions
 void AudioEffectCompBankWDRC_F32_UI::updateCard_attack_global(void)  { 
@@ -438,27 +537,27 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_attack_global(void)  {
 	if (val >= 10.0f) str_val = String(val,0); //less resolution of < 10 msec
 	updateCardPreset_UpDown("att",str_val); //this method is in SerialManager_UI.h
 }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_release_global(void) { updateCardPreset_UpDown("rel",     String(getRelease_msec(),0)); }
-void AudioEffectCompBankWDRC_F32_UI::updateCard_scaleFac_global(void){ updateCardPreset_UpDown("maxdB",   String(getMaxdB(),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_release_global(void) { updateCardPreset_UpDown("rel",  String(getRelease_msec(),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_scaleFac_global(void){ updateCardPreset_UpDown("maxdB",String(getMaxdB(),0)); }
 
 
 //Update all the fields
  void AudioEffectCompBankWDRC_F32_UI::setFullGUIState(bool activeButtonsOnly) {
 	//update the parameters that are assumed to be globally the same
-	updateCard_attack_global();
-	updateCard_release_global(); 
-	updateCard_scaleFac_global();
+	if (flag_send_global_attack) updateCard_attack_global();
+	if (flag_send_global_release) updateCard_release_global(); 
+	if (flag_send_global_scaleFac) updateCard_scaleFac_global();
 	
 	//update the parameters that are assumed to be per-band
 	for (int i=0; i< get_n_chan(); i++) {
-		//updateCard_attack(i);
-		//updateCard_release(i); 
-		//updateCard_scaleFac(i); 
-		updateCard_expComp(i);
-		updateCard_expKnee(i);
-		updateCard_linGain(i); 
-		updateCard_compRat(i);
-		updateCard_compKnee(i);
-		updateCard_limKnee(i);	 
+		if (flag_send_perBand_attack) updateCard_attack(i);
+		if (flag_send_perBand_release) updateCard_release(i); 
+		if (flag_send_perBand_scaleFac) updateCard_scaleFac(i); 
+		if (flag_send_perBand_expCR) updateCard_expCR(i);
+		if (flag_send_perBand_expKnee) updateCard_expKnee(i);
+		if (flag_send_perBand_linGain) updateCard_linGain(i); 
+		if (flag_send_perBand_compRat) updateCard_compRat(i);
+		if (flag_send_perBand_compKnee) updateCard_compKnee(i);
+		if (flag_send_perBand_limKnee) updateCard_limKnee(i);	 
 	}
  }
