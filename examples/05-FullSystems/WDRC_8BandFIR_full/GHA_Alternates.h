@@ -10,7 +10,7 @@
 
 //per-band processing parameters...all compression/expansion is defeated.  Just gain is left.
 BTNRH_WDRC::CHA_DSL dsl_fullon = {5,  // attack (ms)
-  300,  // release (ms)
+  50,  // release (ms)
   115,  //maxdB.  calibration at 1kHz?  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   0,    // 0=left, 1=right...ignored
   8,    //num channels...ignored.  8 is always assumed
@@ -24,8 +24,8 @@ BTNRH_WDRC::CHA_DSL dsl_fullon = {5,  // attack (ms)
 };
 
 // Here is the broadband limiter for the full-on gain condition.  Only the "bolt" (last value) needs to be iterated.
-BTNRH_WDRC::CHA_WDRC gha_fullon = {5.f, // attack time (ms)
-  300.f,    // release time (ms)
+BTNRH_WDRC::CHA_WDRC gha_fullon = {1.f, // attack time (ms)
+  50.f,    // release time (ms)
   24000.f,  // sampling rate (Hz)...ignored.  Set globally in the main program.
   115.f,    // maxdB.  calibration.  dB SPL for signal at 0dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   1.0,      // compression ratio for lowest-SPL region (ie, the expansion region) (should be < 1.0.  set to 1.0 for linear)
