@@ -71,9 +71,10 @@ int AudioEffectCompBankWDRC_F32::set_max_n_chan(int n_max_chan) {
 
 
 int AudioEffectCompBankWDRC_F32::configureFromDSLandGHA(float fs_Hz, const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha) {
+	int n_chan_to_load = this_dsl.nchannel;
+	Serial.println("AudioEffectCompBankWDRC_F32: configureFromDSLandGHA: this_dsl.nchannel = " + String(this_dsl.nchannel) + ", MAX = " + String(state.get_max_n_chan()));
 	
 	//sorta check the validity of inputs
-	int n_chan_to_load = this_dsl.nchannel;
 	if ((n_chan_to_load < 1) || (n_chan_to_load >= __MAX_NUM_COMP)) {
 		Serial.println(F("AudioEffectCompBankWDRC_F32: configureFromDSLandGHA: *** ERROR ***"));
 		Serial.println(F("    : dsl.nchannel = ") + String(n_chan_to_load) + " must be 1 to " + String(__MAX_NUM_COMP));
@@ -266,92 +267,92 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacter_perChannel(char data_char,
 	switch (data_char) {    
 		case 'a':
 			incrementAttack(time_incr_fac, chan);
-			Serial.println(self_id + String(": changed attack ") + String(chan) + " to " + String(getAttack_msec(),0) + " msec"); 
+			Serial.println(self_id + String(": changed attack ") + String(chan) + " to " + String(getAttack_msec(chan),0) + " msec"); 
 			updateCard_attack(chan);  //send updated value to the GUI
 			break;
 		case 'A':
 			incrementAttack(1.0f/time_incr_fac, chan);
-			Serial.println(self_id + String(": changed attack ") + String(chan) + " to " + String(getAttack_msec(),0) + " msec"); 
+			Serial.println(self_id + String(": changed attack ") + String(chan) + " to " + String(getAttack_msec(chan),0) + " msec"); 
 			updateCard_attack(chan);  //send updated value to the GUI
 			break;
 		case 'r':
 			incrementRelease(time_incr_fac, chan);
-			Serial.println(self_id + String(": changed release ") + String(chan) + " to " + String(getRelease_msec(),0) + " msec");
+			Serial.println(self_id + String(": changed release ") + String(chan) + " to " + String(getRelease_msec(chan),0) + " msec");
 			updateCard_release(chan);  //send updated value to the GUI
 			break;
 		case 'R':
 			incrementRelease(1.0f/time_incr_fac, chan);
-			Serial.println(self_id + String(": changed release ") + String(chan) + " to " + String(getRelease_msec(),0) + " msec");
+			Serial.println(self_id + String(": changed release ") + String(chan) + " to " + String(getRelease_msec(chan),0) + " msec");
 			updateCard_release(chan);  //send updated value to the GUI
 			break;
 		case 'm':
 			incrementMaxdB(1.0, chan);
-			Serial.println(self_id + String(": changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			Serial.println(self_id + String(": changed scale factor ") + String(chan) + " to " + String(getMaxdB(chan),0) + " dBSPL at 0 dBFS");
 			updateCard_scaleFac(chan);  //send updated value to the GUI
 			break;
 		case 'M':
 			incrementMaxdB(-1.0, chan);
-			Serial.println(self_id + String(": changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			Serial.println(self_id + String(": changed scale factor ") + String(chan) + " to " + String(getMaxdB(chan),0) + " dBSPL at 0 dBFS");
 			updateCard_scaleFac(chan);  //send updated value to the GUI
 			break;
 		case 'x':
 			incrementExpCR(cr_fac, chan);
-			Serial.println(self_id + String(": changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
+			Serial.println(self_id + String(": changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(chan),2));
 			updateCard_expCR(chan);  //send updated value to the GUI
 			break;
 		case 'X':
 			incrementExpCR(-cr_fac, chan);
-			Serial.println(self_id + String(": changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
+			Serial.println(self_id + String(": changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(chan),2));
 			updateCard_expCR(chan);  //send updated value to the GUI
 			break;
 		case 'z':
 			incrementExpKnee(knee_fac, chan);
-			Serial.println(self_id + String(": changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(chan),0) + " dB SPL");
 			updateCard_expKnee(chan);  //send updated value to the GUI
 			break;
 		case 'Z':
 			incrementExpKnee(-knee_fac, chan);
-			Serial.println(self_id + String(": changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(chan),0) + " dB SPL");
 			updateCard_expKnee(chan);  //send updated value to the GUI
 			break;
 		case 'g':
 			incrementGain_dB(gain_fac, chan);
-			Serial.println(self_id + String(": changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
+			Serial.println(self_id + String(": changed linear gain ") + String(chan) + " to " + String(getGain_dB(chan),0) + " dB");
 			updateCard_linGain(chan);  //send updated value to the GUI
 			break;
 		case 'G':
 			incrementGain_dB(-gain_fac, chan);
-			Serial.println(self_id + String(": changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
+			Serial.println(self_id + String(": changed linear gain ") + String(chan) + " to " + String(getGain_dB(chan),0) + " dB");
 			updateCard_linGain(chan);  //send updated value to the GUI
 			break;
 		case 'c':
 			incrementCompRatio(cr_fac, chan);
-			Serial.println(self_id + String(": changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
+			Serial.println(self_id + String(": changed compression ratio ") + String(chan) + " to " + String(getCompRatio(chan),2));
 			updateCard_compRat(chan);  //send updated value to the GUI
 			break;
 		case 'C':
 			incrementCompRatio(-cr_fac, chan);
-			Serial.println(self_id + String(": changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
+			Serial.println(self_id + String(": changed compression ratio ") + String(chan) + " to " + String(getCompRatio(chan),2));
 			updateCard_compRat(chan);  //send updated value to the GUI
 			break;
 		case 'k':
 			incrementKnee(knee_fac, chan);
-			Serial.println(self_id + String(": changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(chan),0) + " dB SPL");
 			updateCard_compKnee(chan);  //send updated value to the GUI
 			break;
 		case 'K':
 			incrementKnee(-knee_fac, chan);
-			Serial.println(self_id + String(": changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(chan),0) + " dB SPL");
 			updateCard_compKnee(chan);  //send updated value to the GUI
 			break;
 		case 'l':
 			incrementLimiter(1.0, chan);
-			Serial.println(self_id + String(": changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(chan),0) + " dB SPL");
 			updateCard_limKnee(chan);   //send updated value to the GUI
 			break;
 		case 'L':
 			incrementLimiter(-1.0, chan);
-			Serial.println(self_id + String(": changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
+			Serial.println(self_id + String(": changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(chan),0) + " dB SPL");
 			updateCard_limKnee(chan);   //send updated value to the GUI
 			break; 
 		default:
