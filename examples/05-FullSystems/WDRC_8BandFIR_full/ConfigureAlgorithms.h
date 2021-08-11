@@ -11,16 +11,12 @@
 void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
      const int n_chan, const int n_fir, const AudioSettings_F32 &settings)
 {
-
+     
   //set the per-channel filter coefficients
   filterbank.designFilters(n_chan, n_fir, settings.sample_rate_Hz, settings.audio_block_samples, (float *)this_dsl.cross_freq);
 
   //setup all of the per-channel compressors
-  #if USE_NEW_COMPBANK
-    compbank.configureFromDSLandGHA(settings.sample_rate_Hz,  this_dsl, this_gha);
-  #else
-    configurePerBandWDRCs(n_chan, settings.sample_rate_Hz, this_dsl, this_gha, expCompLim);
-  #endif
+  compbank.configureFromDSLandGHA(settings.sample_rate_Hz,  this_dsl, this_gha);
 
   //setup the broad band compressor (limiter)
   //configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, compBroadband);
@@ -28,7 +24,7 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::C
 
   //overwrite the one-point calibration based on the dsl data structure
   myState.overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
-
+     
 }
 
 void setupAudioProcessing(void) {
