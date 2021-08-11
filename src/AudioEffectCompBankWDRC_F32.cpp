@@ -64,6 +64,8 @@ int AudioEffectCompBankWDRC_F32::set_max_n_chan(int n_max_chan) {
 	
 	state.setCompressors(compressors);
 	if (new_max_n_size < get_n_chan()) set_n_chan(new_max_n_size);
+	//if (get_n_chan() == 0) set_n_chan(new_max_n_size);
+	
 	return (int)compressors.size();
 }
 
@@ -115,7 +117,11 @@ int AudioEffectCompBankWDRC_F32::configureFromDSLandGHA(float fs_Hz, const BTNRH
 		compressors[i].setSampleRate_Hz(fs);
 		compressors[i].setParams(atk,rel,maxdB,exp_cr,exp_end_knee,tkgain,comp_ratio,tk,bolt);
 	}
-		
+	
+	//Serial.println(F("AudioEffectCompBankWDRC_F32: configureFromDSLandGHA: n_chan_to_load = ") + String(n_chan_to_load));
+	set_n_chan(n_chan_to_load);
+	is_enabled = true;
+	
 	return n_chan_to_load;  //returns number of channels loaded from the DSL
 	
 }
@@ -142,11 +148,12 @@ void AudioEffectCompBankWDRC_F32::update(void) {
 				
 				//if we had no error, transmit the processed data
 				if (!is_error) AudioStream_F32::transmit(out_block, Ichan);
+
+			} else {
+				//Serial.println(F("AudioEffectCompBankWDRC_F32: update: could not allocate out_block ") + String(Ichan));
 			}
-			
 			AudioStream_F32::release(out_block);  //release the memory block that we requested 
-		}
-		
+		} 
 		AudioStream_F32::release(block); //release the memory block that we requested
 	} 
 }
@@ -161,5 +168,12 @@ int AudioEffectCompBankWDRC_F32::set_n_chan(int val) {
 			//compressors[Ichan].enable(false); //disable the individual compressor [there is no such method?]
 		}
 	}		
+	
+	if (n_chan>0) {
+		is_enabled = true;
+	} else {
+		is_enabled = false;
+	}
+	
 	return n_chan;
 }
