@@ -333,7 +333,7 @@ TR_Card* AudioEffectCompWDRC_F32_UI::addCard_expKnee( TR_Page *page_h) { return 
 TR_Card* AudioEffectCompWDRC_F32_UI::addCard_linGain( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Linear Gain (dB)",   "linGain", "G", "g");};
 TR_Card* AudioEffectCompWDRC_F32_UI::addCard_compRat( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Compression Ratio (x:1)",   "compRat", "C", "c");};
 TR_Card* AudioEffectCompWDRC_F32_UI::addCard_compKnee(TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Compressor Knee (dB SPL)", "compKnee","K", "k");};
-TR_Card* AudioEffectCompWDRC_F32_UI::addCard_limKnee( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Limitter Knee (dB SPL)","limKnee", "L", "l");};
+TR_Card* AudioEffectCompWDRC_F32_UI::addCard_limKnee( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Limiter Knee (dB SPL)","limKnee", "L", "l");};
 
 
 	

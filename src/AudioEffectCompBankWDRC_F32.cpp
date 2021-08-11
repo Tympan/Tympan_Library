@@ -24,7 +24,7 @@
 //Tell this state-tracking class which compressors to reference when asking for the different
 //state parameter values (so as we don't actually need to keep a local copy of each and every
 //parameter of the compressors)
-void AudioCompBankStateWDRC_F32::setCompressors(std::vector<AudioEffectCompWDRC_F32> &c) {
+void AudioEffectCompBankWDRCState::setCompressors(std::vector<AudioEffectCompWDRC_F32> &c) {
 		
 	//make big enough
 	compressors.resize(c.size());
@@ -40,7 +40,7 @@ void AudioCompBankStateWDRC_F32::setCompressors(std::vector<AudioEffectCompWDRC_
 // This method sets the value of the number of compressors being employed, as being tracked by this state-tracking class.
 // This method doesn't change the algorithm's actual audio processing.
 // To change the actual audio processing, do AudioEffectCompBankWDRC_F32::set_n_chan()
-int AudioCompBankStateWDRC_F32::set_n_chan(int n) {
+int AudioEffectCompBankWDRCState::set_n_chan(int n) {
 	if (compressors.size() == 0) return 0;
 	if ((n < 0) || (n > get_max_n_chan())) return -1; //this is an error
 	n_chan = n;
@@ -177,3 +177,288 @@ int AudioEffectCompBankWDRC_F32::set_n_chan(int val) {
 	
 	return n_chan;
 }
+
+
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+// Compbank UI Methods
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void AudioEffectCompBankWDRC_F32_UI::printHelp(void) {
+	Serial.println(F(" WDRC Compressor Bank: Prefix = ") + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	Serial.println(F("   a/A: incr/decrease global attack time (") + String(state.getAttack_msec(),1) + " msec)");
+	Serial.println(F("   r/R: incr/decrease global release time (") + String(state.getRelease_msec(),0) + " msec)");
+	Serial.println(F("   m,M: Incr/decrease global scale factor (") + String(getMaxdB(),0) + "dBSPL at 0 dBFS)");
+}
+
+
+bool AudioEffectCompBankWDRC_F32_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
+	
+	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
+	if (mode_char != ID_char) return false;  //ID_char is from SerialManager_UI.h
+
+	//we ignore the chan_char and only work with the data_char
+	bool return_val = true;  //assume that we will find this character
+	if (chan_char == global_char) {
+		return_val = processCharacter_global(data_char);
+	} else {
+		int chan = findChan(chan_char);
+		return_val = processCharacter_perChannel(data_char, chan);
+	}
+	return return_val;
+}
+
+bool AudioEffectCompBankWDRC_F32_UI::processCharacter_global(char data_char) {
+	bool return_val = true;
+	String self_id = "AudioEffectCompBankWDRC_F32"; //used when printing messages to Serial Monitor
+		
+	//set global parameters
+	switch (data_char) {    
+		case 'a':
+			incrementAttack_all(time_incr_fac);
+			Serial.println(self_id + String(": changed global attack to ") + String(getAttack_msec(),0) + " msec"); 
+			updateCard_attack_global();  //send updated value to the GUI
+			break;
+		case 'A':
+			incrementAttack_all(1.0f/time_incr_fac);
+			Serial.println(self_id + String(": changed global attack to ") + String(getAttack_msec(),0) + " msec"); 
+			updateCard_attack_global();  //send updated value to the GUI
+			break;
+		case 'r':
+			incrementRelease_all(time_incr_fac);
+			Serial.println(self_id + String(": changed global release to ") + String(getRelease_msec(),0) + " msec");
+			updateCard_release_global();  //send updated value to the GUI
+			break;
+		case 'R':
+			incrementRelease_all(1.0f/time_incr_fac);
+			Serial.println(self_id + String(": changed global release to ") + String(getRelease_msec(),0) + " msec");
+			updateCard_release_global();  //send updated value to the GUI
+			break;
+		case 'm':
+			incrementMaxdB_all(1.0);
+			Serial.println(self_id + String("changed global scale factor to ") + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			updateCard_scaleFac_global();  //send updated value to the GUI
+			break;
+		case 'M':
+			incrementMaxdB_all(-1.0);
+			Serial.println(self_id + String("changed global scale factor to ") + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			updateCard_scaleFac_global();  //send updated value to the GUI
+			break;
+		default:
+			return_val = false;  //we did not process this character
+	}
+	
+	return return_val;
+}
+
+bool AudioEffectCompBankWDRC_F32_UI::processCharacter_perChannel(char data_char, int chan) {
+	bool return_val = true;
+	String self_id = "AudioEffectCompBankWDRC_F32"; //used when printing messages to Serial Monitor
+	
+	switch (data_char) {    
+		case 'a':
+			incrementAttack(time_incr_fac, chan);
+			Serial.println(self_id + String(": changed attack ") + String(chan) + " to " + String(getAttack_msec(),0) + " msec"); 
+			updateCard_attack(chan);  //send updated value to the GUI
+			break;
+		case 'A':
+			incrementAttack(1.0f/time_incr_fac, chan);
+			Serial.println(self_id + String(": changed attack ") + String(chan) + " to " + String(getAttack_msec(),0) + " msec"); 
+			updateCard_attack(chan);  //send updated value to the GUI
+			break;
+		case 'r':
+			incrementRelease(time_incr_fac, chan);
+			Serial.println(self_id + String(": changed release ") + String(chan) + " to " + String(getRelease_msec(),0) + " msec");
+			updateCard_release(chan);  //send updated value to the GUI
+			break;
+		case 'R':
+			incrementRelease(1.0f/time_incr_fac, chan);
+			Serial.println(self_id + String(": changed release ") + String(chan) + " to " + String(getRelease_msec(),0) + " msec");
+			updateCard_release(chan);  //send updated value to the GUI
+			break;
+		case 'm':
+			incrementMaxdB(1.0, chan);
+			Serial.println(self_id + String("changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			updateCard_scaleFac(chan);  //send updated value to the GUI
+			break;
+		case 'M':
+			incrementMaxdB(-1.0, chan);
+			Serial.println(self_id + String("changed scale factor ") + String(chan) + " to " + String(getMaxdB(),0) + " dBSPL at 0 dBFS");
+			updateCard_scaleFac(chan);  //send updated value to the GUI
+			break;
+		case 'x':
+			incrementExpCR(cr_fac, chan);
+			Serial.println(self_id + String("changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
+			updateCard_expComp(chan);  //send updated value to the GUI
+			break;
+		case 'X':
+			incrementExpCR(-cr_fac, chan);
+			Serial.println(self_id + String("changed expansion comp ratio ") + String(chan) + " to " + String(getExpansionCompRatio(),2));
+			updateCard_expComp(chan);  //send updated value to the GUI
+			break;
+		case 'z':
+			incrementExpKnee(knee_fac, chan);
+			Serial.println(self_id + String("changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
+			updateCard_expKnee(chan);  //send updated value to the GUI
+			break;
+		case 'Z':
+			incrementExpKnee(-knee_fac, chan);
+			Serial.println(self_id + String("changed expansion knee ") + String(chan) + " to " + String(getKneeExpansion_dBSPL(),0) + " dB SPL");
+			updateCard_expKnee(chan);  //send updated value to the GUI
+			break;
+		case 'g':
+			incrementGain_dB(gain_fac, chan);
+			Serial.println(self_id + String("changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
+			updateCard_linGain(chan);  //send updated value to the GUI
+			break;
+		case 'G':
+			incrementGain_dB(-gain_fac, chan);
+			Serial.println(self_id + String("changed linear gain ") + String(chan) + " to " + String(getGain_dB(),0) + " dB");
+			updateCard_linGain(chan);  //send updated value to the GUI
+			break;
+		case 'c':
+			incrementCompRatio(cr_fac, chan);
+			Serial.println(self_id + String("changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
+			updateCard_compRat(chan);  //send updated value to the GUI
+			break;
+		case 'C':
+			incrementCompRatio(-cr_fac, chan);
+			Serial.println(self_id + String("changed compression ratio ") + String(chan) + " to " + String(getCompRatio(),2));
+			updateCard_compRat(chan);  //send updated value to the GUI
+			break;
+		case 'k':
+			incrementKnee(knee_fac, chan);
+			Serial.println(self_id + String("changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
+			updateCard_compKnee(chan);  //send updated value to the GUI
+			break;
+		case 'K':
+			incrementKnee(-knee_fac, chan);
+			Serial.println(self_id + String("changed compression knee ") + String(chan) + " to " + String(getKneeCompressor_dBSPL(),0) + " dB SPL");
+			updateCard_compKnee(chan);  //send updated value to the GUI
+			break;
+		case 'l':
+			incrementLimiter(1.0, chan);
+			Serial.println(self_id + String("changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
+			updateCard_limKnee(chan);   //send updated value to the GUI
+			break;
+		case 'L':
+			incrementLimiter(-1.0, chan);
+			Serial.println(self_id + String("changed limiter knee ") + String(chan) + " to " + String(getKneeLimiter_dBSPL(),0) + " dB SPL");
+			updateCard_limKnee(chan);   //send updated value to the GUI
+			break; 
+		default:
+			return_val = false;  //we did not process this character
+	}
+
+	return return_val;	
+}
+
+//Given a character, see if it corresponds to any of the characters associated with a request to
+//raise (or lower) the cross-over frequency.  If so, return which channel is being commanded to
+//change.  Return -1 if no match is found.
+int AudioEffectCompBankWDRC_F32_UI::findChan(char c, int direction) {  //direction is +1 (raise) or -1 (lower)
+
+	//check inputs
+	if (!((direction == -1) || (direction == +1))) return -1;  //-1 means "not found"
+	
+	//define the targets to search across
+	char *charTest = charMapUp; 
+	if (direction < 0) charTest = charMapDown; 
+	
+	//begin the search
+	int Ichan = 0;
+	while (Ichan < n_charMap) {
+		if (c == charTest[Ichan]) return Ichan;
+		Ichan++;
+	}
+	return -1; //-1 means "not found"
+}
+
+
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+// TympanRemoteLayout GUI Methods
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_globals(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("Compressor Bank, Global Parameters");
+	if (page_h == NULL) return NULL;
+	
+	addCard_attack_global(page_h);
+	addCard_release_global(page_h);
+	addCard_scaleFac_global(page_h);
+	
+	return page_h;
+}
+
+TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_attack_global(  TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Attack Time (msec)",  "att",    "A", "a");};
+TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_release_global( TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Release Time (msec)", "rel",    "R", "r");};
+TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_scaleFac_global(TR_Page *page_h) { return addCardPreset_UpDown(page_h, "Scale (dBSPL at dBFS)","maxdB", "M", "m");};
+
+
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+// Methods to update the fields in the GUI
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//Make a bunch of methods to update the value of the parameter value shown in the app.
+//Because these were all created using "addCardPreset_UpDown()", let's use the related
+//method  "updateCardPreset_UpDown()", which also lives in SerialManager_UI.h
+void AudioEffectCompBankWDRC_F32_UI::updateCard_attack(int i)  { 
+	float val = getAttack_msec(i); String str_val = String(val,1);
+	if (val >= 10.0f) str_val = String(val,0); //less resolution of < 10 msec
+	updateCardPreset_UpDown("att"+String(i),str_val); //this method is in SerialManager_UI.h
+}
+void AudioEffectCompBankWDRC_F32_UI::updateCard_release(int i) { updateCardPreset_UpDown("rel"+String(i),     String(getRelease_msec(i),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_scaleFac(int i){ updateCardPreset_UpDown("maxdB"+String(i),   String(getMaxdB(i),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_expComp(int i) { updateCardPreset_UpDown("expCR"+String(i),   String(getExpansionCompRatio(i),2)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_expKnee(int i) { updateCardPreset_UpDown("expKnee"+String(i), String(getKneeExpansion_dBSPL(i),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_linGain(int i) { updateCardPreset_UpDown("linGain"+String(i), String(getGain_dB(i),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_compRat(int i) { updateCardPreset_UpDown("compRat"+String(i), String(getCompRatio(i),2)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_compKnee(int i){ updateCardPreset_UpDown("compKnee"+String(i),String(getKneeCompressor_dBSPL(i),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_limKnee(int i) { updateCardPreset_UpDown("limKnee"+String(i), String(getKneeLimiter_dBSPL(i),0)); }
+
+//Make global versions
+void AudioEffectCompBankWDRC_F32_UI::updateCard_attack_global(void)  { 
+	float val = getAttack_msec(); String str_val = String(val,1);
+	if (val >= 10.0f) str_val = String(val,0); //less resolution of < 10 msec
+	updateCardPreset_UpDown("att",str_val); //this method is in SerialManager_UI.h
+}
+void AudioEffectCompBankWDRC_F32_UI::updateCard_release_global(void) { updateCardPreset_UpDown("rel",     String(getRelease_msec(),0)); }
+void AudioEffectCompBankWDRC_F32_UI::updateCard_scaleFac_global(void){ updateCardPreset_UpDown("maxdB",   String(getMaxdB(),0)); }
+
+
+//Update all the fields
+ void AudioEffectCompBankWDRC_F32_UI::setFullGUIState(bool activeButtonsOnly) {
+	//update the parameters that are assumed to be globally the same
+	updateCard_attack_global();
+	updateCard_release_global(); 
+	updateCard_scaleFac_global();
+	
+	//update the parameters that are assumed to be per-band
+	for (int i=0; i< get_n_chan(); i++) {
+		//updateCard_attack(i);
+		//updateCard_release(i); 
+		//updateCard_scaleFac(i); 
+		updateCard_expComp(i);
+		updateCard_expKnee(i);
+		updateCard_linGain(i); 
+		updateCard_compRat(i);
+		updateCard_compKnee(i);
+		updateCard_limKnee(i);	 
+	}
+ }
