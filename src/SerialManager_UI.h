@@ -31,7 +31,7 @@ class SerialManager_UI {
 
 	// predefined helper functions, which you can override
 	virtual char getIDchar() { return ID_char; }
-	virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + String("x"); }  //your class can use any and every String-able character in place of "x"...so, you class can have *a lot* of commands
+	virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + prefix_placeholder_char; }  //your class can use any and every String-able character in place of "x"...so, you class can have *a lot* of commands
 	
 	// here is a method to create the very-common card (button group) to create display a parameter value
 	// and to adjust its value with a plus and minus button.  Very common!
@@ -69,6 +69,7 @@ class SerialManager_UI {
     virtual void setButtonState(String btnId, bool newState, bool sendNow = true);
     virtual void setButtonText(String btnId, String text);
     virtual void sendTxBuffer(void);
+	char prefix_placeholder_char = 'x';
   private:
     static char next_ID_char;
 };
