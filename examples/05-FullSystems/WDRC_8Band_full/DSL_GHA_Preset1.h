@@ -9,9 +9,9 @@
 // the point of the output sounding bad.  The only thing to adjust is the compression-start gain.
 
 //per-band processing parameters...all compression/expansion is defeated.  Just gain is left.
-BTNRH_WDRC::CHA_DSL dsl_fullon = {5,  // attack (ms)
-  50,      // release (ms)
-  115,     // maxdB.  calibration at 1kHz?  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
+BTNRH_WDRC::CHA_DSL dsl_fullon = {5.0,  // attack (ms)
+  50.0,    // release (ms)
+  115.0,   // maxdB.  calibration at 1kHz?  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   0,       // 0=left, 1=right...ignored
   N_CHAN,  // num channels
   {317.1666, 502.9734, 797.6319, 1264.9, 2005.9, 3181.1, 5044.7},   // cross frequencies (Hz)

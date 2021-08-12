@@ -8,7 +8,7 @@
 //classes from the main sketch that might be used here
 extern Tympan myTympan;               //defined in main *.ino file
 extern State myState;
-extern AudioFilterbankFIR_F32_UI filterbank;
+//extern AudioFilterbank_UI filterbank; //this doesn't work, sadly.
 extern AudioEffectCompBankWDRC_F32_UI compbank;
 extern AudioEffectCompWDRC_F32_UI compBroadband;
 extern AudioSDWriter_F32_UI audioSDWriter;
@@ -30,7 +30,9 @@ extern float incrementChannelGain(int, float);
 class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialManagerBase for more functions!
   public:
     SerialManager(BLE *_ble) : SerialManagerBase(_ble) {};
-      
+
+    void attachFilterbank(AudioFilterbank_UI *fb) { filterbank_ptr = fb; } 
+         
     void printHelp(void);
     void createTympanRemoteLayout(void); 
     void printTympanRemoteLayout(void); 
@@ -42,8 +44,8 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
 
     float channelGainIncrement_dB = 2.5f;  
   private:
-
     TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
+    AudioFilterbank_UI* filterbank_ptr = NULL;
    
 };
 
@@ -211,7 +213,7 @@ void SerialManager::createTympanRemoteLayout(void) {
       card_h = audioSDWriter.addCard_sdRecord(page_h);
 
   //add second page to GUI
-  page_h = filterbank.addPage_default(&myGUI); //use its predefined page for controlling the digital earpieces
+  if (filterbank_ptr != NULL) page_h = filterbank_ptr->addPage_default(&myGUI); //use its predefined page for controlling the digital earpieces
 
   //add compressor bank pages to GUI
   page_h = compbank.addPage_globals(&myGUI);

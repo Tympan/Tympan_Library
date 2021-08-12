@@ -6,14 +6,16 @@
 #include "DSL_GHA_Preset1.h"  //this sets alternative dsl and gha, which can be switched in via commands
 
 //define the filterbank size
-#define N_FIR 96
+extern const int N_FILT_ORDER;   // should have been set with the order of the filters (high for FIR, low for IIR)
+extern String FILT_TYPE;         // should have been set with a string describing the type of filter
 
 void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
-     const int n_chan, const int n_fir, const AudioSettings_F32 &settings)
+     const int n_chan, const int n_filt_order, const AudioSettings_F32 &settings)
 {
 
   //set the per-channel filter coefficients (using our filterbank class)
-  filterbank.designFilters(n_chan, n_fir, settings.sample_rate_Hz, settings.audio_block_samples, (float *)this_dsl.cross_freq);
+  Serial.println("setupFromDSLandGHA: " + String(FILT_TYPE) + " filterbank with " + String(n_chan) + " channels (order=" + String(n_filt_order) + ")");
+  filterbank.designFilters(n_chan, n_filt_order, settings.sample_rate_Hz, settings.audio_block_samples, (float *)this_dsl.cross_freq);
 
   //setup all of the per-channel compressors (using our compressor bank class)
   compbank.configureFromDSLandGHA(settings.sample_rate_Hz,  this_dsl, this_gha);
@@ -33,9 +35,9 @@ void setupAudioProcessing(void) {
 
   //setup processing based on the DSL and GHA prescriptions
   if (myState.current_dsl_config == State::DSL_NORMAL) {
-    setupFromDSLandGHA(dsl, gha, N_CHAN, N_FIR, audio_settings);
+    setupFromDSLandGHA(dsl, gha, N_CHAN, N_FILT_ORDER, audio_settings);
   } else if (myState.current_dsl_config == State::DSL_FULLON) {
-    setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FIR, audio_settings);
+    setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FILT_ORDER, audio_settings);
   }
 }
 
@@ -52,10 +54,10 @@ int setDSLConfiguration(int config) {
   switch (myState.current_dsl_config) {
     case (State::DSL_NORMAL):
       Serial.println("setDSLConfiguration: changing to NORMAL dsl configuration");
-      setupFromDSLandGHA(dsl, gha, N_CHAN, N_FIR, audio_settings);  break;
+      setupFromDSLandGHA(dsl, gha, N_CHAN, N_FILT_ORDER, audio_settings);  break;
     case (State::DSL_FULLON):
       Serial.println("setDSLConfiguration: changing to FULL-ON dsl configuration");
-      setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FIR, audio_settings); break;
+      setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FILT_ORDER, audio_settings); break;
   } 
   return  myState.current_dsl_config;
 }

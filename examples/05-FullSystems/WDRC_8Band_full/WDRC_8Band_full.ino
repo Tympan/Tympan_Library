@@ -1,5 +1,5 @@
 /*
-  WDRC_8BandFIR_full
+  WDRC_8Band_full
 
   Created: Chip Audette (OpenAudio), August 2021
     Primarly built upon CHAPRO "Generic Hearing Aid" from
@@ -8,7 +8,7 @@
   Purpose: Implements 8-band WDRC compressor.
   
   Features: 
-    * 8-Band FIR Filterbank
+    * 8-Band FIR or IIR (Biquad SOS) Filterbank.  You choose in AudioConnections.h!
     * Each channel has its own WDRC compressor
     * Ends with a broadband WDRC compressor (used as a limiter)
     * Can write raw and processed audio to SD card
@@ -25,19 +25,18 @@
     Potentiometer on Tympan controls the broadband gain.
 
   Changing Number of Channels:
-    As written, you can use 8 channels or fewer.  Simply change N_CHAN.  However, if you want
-    *more* channels than the 8 shown here, simply go to DSL_GHA_Preset0.h and DSL_GHA_Preset1.h, 
-    and add entries in each row beyond the 8 entries that are already there.  Then, come back to
-    this file and change the value of N_CHAN.  Using those DSL_GHA files, you can configure up
-    to 16 channels.  If you want more than 16 channels, that'll take a bit more effort. Ask the
-    question in the Tympan forum!
+    As written, you can use 8 channels or fewer.  Simply change N_CHAN down below.  However, if 
+    you want *more* channels than the 8 shown here, simply go to DSL_GHA_Preset0.h and  
+    DSL_GHA_Preset1.h, and add entries in each row beyond the 8 entries that are already there.
+    Then, come back to this file and change the value of N_CHAN.  Using those DSL_GHA files, you
+    can configure up to 16 channels.  If you want more than 16 channels, that'll take a bit more
+    effort. Ask the question in the Tympan forum!
 
   MIT License.  use at your own risk.
 */
 
 // Include all the of the needed libraries
 #include <Tympan_Library.h>
-
 
 // Define the audio settings
 const float sample_rate_Hz = 24000.0f ; //24000 or 32000 or 44100 (or other frequencies in the table in AudioOutputI2S_F32
@@ -46,13 +45,12 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Define the number of channels! Make sure DSL_GHA_Preset0.h and DSL_GHA_Preset1.h have enough values
 // (it needs N_CHAN or more values) defined for each compressor parameter.  If not, it'll bomb at run time!
-const int N_CHAN = 8;    
+const int N_CHAN = 8;     // number of frequency bands (channels)
 
 // Create audio classes and make audio connections
 Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
 #include "AudioConnections.h"                      //let's put them in their own file for clarity
-                         // number of frequency bands (channels)
-
+                        
 // Create classes for controlling the system
 #include      "SerialManager.h"
 #include      "State.h"                            //must be after N_CHAN is defined
@@ -102,6 +100,11 @@ void setupSerialManager(void) {
   serialManager.add_UI_element(&compbank);
   serialManager.add_UI_element(&compBroadband);
   serialManager.add_UI_element(&audioSDWriter);
+
+  //and add a special extra line here because of my desire to NOT hardcode the filter type
+  //this approach of attaching the filterbank to the serialManager allows me to use the 
+  //polymorphism that I designed into the filterbank so that I don't have to hardcode things.
+  serialManager.attachFilterbank(&filterbank);  //see SerialManager.h for what this does
 }
 
 // ///////////////// Main setup() and loop() as required for all Arduino programs

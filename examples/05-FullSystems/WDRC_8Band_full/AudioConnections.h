@@ -2,11 +2,29 @@
 #include "State.h"
 extern State myState;
 
+
+// Do you want to use IIR (Biquad) filters for the filterbank or FIR filters for the filterbank?
+#define USE_IIR_FILTERS true  //if true, uses IIR filters. If false uses FIR filters
+
+#if (USE_IIR_FILTERS==true)
+    const int N_FILT_ORDER = 6;
+    String FILT_TYPE = String("IIR");  
+#else
+    const int N_FILT_ORDER = 96;
+    String FILT_TYPE = String("FIR");
+#endif
+
+
+// ///////////////////////////////////  Defining the audio classes
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
-AudioFilterbankFIR_F32_UI      filterbank(audio_settings);   //a filterbank holding the filters to break up the audio into multiple bands
+#if (USE_IIR_FILTERS)
+  AudioFilterbankBiquad_F32_UI   filterbank(audio_settings);   //a filterbank holding the filters to break up the audio into multiple bands  
+#else  
+  AudioFilterbankFIR_F32_UI      filterbank(audio_settings);   //a filterbank holding the filters to break up the audio into multiple bands
+#endif
 AudioEffectCompBankWDRC_F32_UI compbank(audio_settings);     //a cmopressor bank holding the WDRC compressors
 AudioMixer16_F32               mixer1(audio_settings);       //mixer to reconstruct the broadband audio after the per-band processing
 AudioEffectGain_F32            broadbandGain(audio_settings);//broad band gain (could be part of compressor below)
@@ -21,9 +39,10 @@ AudioControlTestAmpSweep_F32     ampSweepTester(audio_settings,audioTestGenerato
 AudioControlTestFreqSweep_F32    freqSweepTester(audio_settings,audioTestGenerator,audioTestMeasurement);
 AudioControlTestFreqSweep_F32    freqSweepTester_filterbank(audio_settings,audioTestGenerator,audioTestMeasurement_FIR);
 
-//make the audio connections
+// ///////////////////////////////////  Make the connections between the audio classes
 #define N_MAX_CONNECTIONS 150  //some large number greater than the number of connections that we'll ever make
 AudioConnection_F32 *patchCord[N_MAX_CONNECTIONS];
+
 int makeAudioConnections(void) { //call this in setup() or somewhere like that
   int count=0;
 
