@@ -10,10 +10,17 @@
 
 //per-band processing parameters...all compression/expansion is defeated.  Just gain is left.
 BTNRH_WDRC::CHA_DSL dsl_fullon = {5,  // attack (ms)
+  50,      // release (ms)
   115,     // maxdB.  calibration at 1kHz?  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   0,       // 0=left, 1=right...ignored
   N_CHAN,  // num channels
   {317.1666, 502.9734, 797.6319, 1264.9, 2005.9, 3181.1, 5044.7},   // cross frequencies (Hz)
+  {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},           // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
+  {45.0, 45.0, 33.0, 32.0, 36.0, 34.0, 36.0, 40.0},   // expansion-end kneepoint.  not relevant when there is no expansion or compression.
+  {40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0},   // compression-start gain.  Tweak these values up until it sounds bad!
+  {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},           // compression ratio.  Set to 1.0 to defeat.
+  {50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0},   // compression-start kneepoint (input dB SPL).  not relevant when there is no compression
+  {200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0}   // limiting threshold (comp ratio 10). set to large value to defeat.
 };
 
 // Here is the broadband limiter for the full-on gain condition.  Only the "bolt" (last value) needs to be iterated.
