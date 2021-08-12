@@ -111,7 +111,7 @@ int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default 
 void setup() {
   myTympan.beginBothSerial();
   if (Serial) Serial.print(CrashReport);
-  Serial.println("WDRC_FIRbank_Compbank: setup():...");
+  Serial.println("WDRC_8Band_Full: setup():...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
 
