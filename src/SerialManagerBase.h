@@ -1,12 +1,53 @@
+/* 
+	SerialManagerBase.h
+	
+	Created: Chip Audette, OpenAudio, 2021
+	
+	Purpose: Be the base class for implementing a SerialManager in your Tympan sketch.
+	   This base class encapsulates much of the functionality that is likely helpful
+	   to everyone's SerialManager implementation.  Why recreate the wheel every time?
+	   This base class already implements the most commonly needed portions of that wheel!
+	   
+	BLE Communication: By using this base class, you can re-use the BLE communication
+	   methods without having to implement them yourself.  They're not complicated, but
+	   why go through the effort.  In particular, this base class provides:
+		   * setButtonState
+		   * setButtonText
+		   
+	Compliant "UI" elements:  The bulk of this base class is aimed at implementing a
+	   range of common communication methods from the App to the Tympan.  You get the
+	   benefit of these pre-written routines if your own Audio classes are able to
+	   tell this SerialManagerBase that they exist and that they can respond appropriately.
+	   This means that:
+	   
+	       * Your audio processing class (or whatever) must inherit from SerialManager_UI
+		     and implement the methods required by that SerialManager_UI.  These are 
+			 methods like printHelp() and processCharacterTriple() and setFullGUIState().
+			 Several of the Tympan_Library's most important classes already have these 
+			 SerialManager_UI methods implemented, so you don't have to do anything!
+		   * In your sketch (in your program), you register each instance of your class 
+		     with your SerialManager via the SerialManagerBase method add_UI_element().
+			 This tells the SerialManager that your class instances exist and that they
+			 are ready to interact!
+		   * In your sketch (in your program), you create a Tympan Remote GUI, and that
+		     the command characters that you set for each GUI element agree with the
+			 command characters that you wrote when you implemented your class's 
+			 processCharacterTriple().  Or, if you're using one of the Tympan_Library classes
+			 that alrady implement SerialManager_UI, it probably already has an App GUI that
+			 has been pre-written for you!  You can simply invoke those pre-written elements!
+			 
+	License: MIT License.  Use at your own risk.  Have fun!
+
+*/
+
 
 #ifndef SerialManagerBase_h
 #define SerialManagerBase_h
 
 #include <Arduino.h> //for Serial and String
-//include <Tympan_Library.h> // for BLE library
 #include "BLE/ble.h"
 //#include "SerialManager_UI.h"
-class SerialManager_UI;  //forward declare
+class SerialManager_UI;  //forward declare.  Assume SerialManager_UI.h will be included elsewhere
 
 #define MAX_DATASTREAM_LENGTH 1024
 #define DATASTREAM_START_CHAR (char)0x02
