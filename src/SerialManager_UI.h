@@ -87,7 +87,10 @@ class SerialManager_UI {
     //attach the SerialManager
     void setSerialManager(SerialManagerBase *_sm);
     SerialManagerBase *getSerialManager(void);
-    
+	
+	//useful value
+	const int capOffset = 41 - 61; //given lower case, add this value to get the upper case
+
   protected:
     char ID_char;                    //see SerialManager_UI.cpp for where it gets initializedd
     static char quadchar_start_char; //see SerialManager_UI.cpp for where it gets initializedd
