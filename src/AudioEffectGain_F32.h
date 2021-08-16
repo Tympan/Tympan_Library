@@ -27,17 +27,33 @@ class AudioEffectGain_F32 : public AudioStream_F32
     virtual void update(void) {
 		//Serial.println("AudioEffectGain_F32: updating.");  //for debugging.
 		audio_block_f32_t *block;
-		block = AudioStream_F32::receiveWritable_f32();
+		block = AudioStream_F32::receiveReadOnly_f32();
 		if (block == NULL) return;
+		
+		//allocate memory for the output of our algorithm
+		audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
+		if (out_block == NULL) { AudioStream_F32::release(block); return; }
 
 		//apply the gain
-		//for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) block->data[i] = gain * (block->data[i]); //non DSP way to do it
-		arm_scale_f32(block->data, gain, block->data, block->length); //use ARM DSP for speed!
+		processAudioBlock(block, out_block);
 
 		//transmit the block and be done
 		AudioStream_F32::transmit(block);
 		AudioStream_F32::release(block);
     }
+	
+	virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block) {
+		if ((block == NULL) || (out_block == NULL)) return -1;  //-1 is error
+	
+		//apply the gain
+		//for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) block->data[i] = gain * (block->data[i]); //non DSP way to do it
+		arm_scale_f32(block->data, gain, out_block->data, block->length); //use ARM DSP for speed!
+		
+		out_block->id = block->id;
+		out_block->length = block->length;
+
+		return 0;
+	}
 
     //methods to set parameters of this module
     virtual float setGain(float g) { return gain = g;}
