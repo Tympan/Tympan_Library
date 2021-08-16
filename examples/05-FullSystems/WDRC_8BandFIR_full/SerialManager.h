@@ -215,10 +215,7 @@ void SerialManager::createTympanRemoteLayout(void) {
 
   //add compressor bank pages to GUI
   page_h = compbank.addPage_globals(&myGUI);
-  page_h = compbank.addPage_linearGain(&myGUI);
-  page_h = compbank.addPage_compKnee(&myGUI);
-  page_h = compbank.addPage_compRatio(&myGUI);
-  page_h = compbank.addPage_limKnee(&myGUI);
+  page_h = compbank.addPage_persist_perChan(&myGUI);
 
   //add a page for the broadband compressor
   page_h = compBroadband.addPage_default(&myGUI);
