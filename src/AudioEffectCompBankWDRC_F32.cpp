@@ -210,6 +210,8 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacterTriple(char mode_char, char
 		return_val = processCharacter_global(data_char);
 	} else if (chan_char == persistCharTrigger) {
 		state_persistentMode = data_char; //assume the data char is the new persistent mode
+		updateCard_persistentChooseMode();
+		updateCard_persist_perChan_all();
 		return_val = true;  //assume that it is always a valid character
 	} else {
 		int chan = findChan(chan_char);
@@ -530,7 +532,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_limKnee(TympanRemoteFormatter *
 
 TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_chooseMode(TR_Page *page_h) {
 	if (page_h == NULL) return NULL;
-	TR_Card *card_h = page_h->addCard("WDRC Parameter");
+	TR_Card *card_h = page_h->addCard("Choose Parameter");
 	if (card_h == NULL) return NULL;
 
 	String prefix = getPrefix();     //3 character code.  getPrefix() is here in SerialManager_UI.h, unless it is over-ridden in the child class somewhere
@@ -541,19 +543,29 @@ TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_chooseMode(TR_Page *page_h) {
 	//card_h->addButton("Release (msec)",          prefix+"r", ID+"m_rel",   12); //label, command, id, width...this is the minus button
 	//card_h->addButton("Scale (dBSPL at dBFS)",   prefix+"m", ID+"m_maxdB", 12); //label, command, id, width...this is the minus button
 
-	card_h->addButton("Expansion CR (x:1)",      prefix+"x", ID+"m_expCR",   12); //label, command, id, width...this is the minus button
-	card_h->addButton("Expansion Knee (dB SPL)", prefix+"z", ID+"m_expKnee", 12); //label, command, id, width...this is the minus button
-	card_h->addButton("Linear Gain (dB)",        prefix+"g", ID+"m_linGain", 12); //label, command, id, width...this is the minus button
-	card_h->addButton("Compress Ratio (x:1)",    prefix+"c", ID+"m_compRat", 12); //label, command, id, width...this is the minus button
-	card_h->addButton("Compress Knee (dB SPL)",  prefix+"k", ID+"m_compKnee",12); //label, command, id, width...this is the minus button
-	card_h->addButton("Limiter Knee (dB SPL)",   prefix+"l", ID+"m_limKnee", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Expansion Comp Ratio",  prefix+"x", ID+"m_expCR",   12); //label, command, id, width...this is the minus button
+	card_h->addButton("Expansion Kneepoint",   prefix+"z", ID+"m_expKnee", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Linear Gain",           prefix+"g", ID+"m_linGain", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Compression Ratio",     prefix+"c", ID+"m_compRat", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Compression Kneepoint", prefix+"k", ID+"m_compKnee",12); //label, command, id, width...this is the minus button
+	card_h->addButton("Limiter Kneepoint",     prefix+"l", ID+"m_limKnee", 12); //label, command, id, width...this is the minus button
 	
 	flag_send_persistent_chooseMode = true;
 	return card_h;
 }
 
 TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_persist_perChan(TR_Page *page_h) {
-	TR_Card *card_h = addCardPreset_UpDown_multiChan(page_h, "Values", "perChan", persistDown, persistUp, get_n_chan());
+	//addCardPreset_UpDown_multiChan(page_h, "", "perChan", persistDown, persistUp, get_n_chan());
+
+	if (page_h == NULL) return NULL;
+	TR_Card *card_h = page_h->addCard("");
+	if (card_h == NULL) return NULL;
+	
+	//add a "button" to act as the title
+	String ID = String(ID_char);
+	card_h->addButton("", "", ID+"m_title", 12);  //label, command, id, width...this is the minus button
+	addButtons_presetUpDown_multiChan(card_h, "perChan", persistDown, persistUp, get_n_chan());
+
 	flag_send_persistent_multiChan = true;   //tells updateAll to send the values associated with these buttons
 	return card_h;
 }
@@ -656,6 +668,44 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persistentChooseMode(bool active
 	if (send_val) setButtonState(ID+str,true);
 }
 
+void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_title(void) {
+	bool send_val = true;
+	String title;
+	switch (state_persistentMode) {
+		case 'a':
+			title = String("Attack (msec)");
+			break;
+		case 'r':
+			title = String("Release (msec)");
+			break;
+		case 'm':
+			title = String("Scale (dBSPL at dBFS)");
+			break;
+		case 'x':
+			title = String("Expansion CR (x:1)");
+			break;
+		case 'z':
+			title = String("Expansion Knee (dB SPL)");
+			break;
+		case 'g':
+			title = String("Linear Gain (dB)");
+			break;
+		case 'c':
+			title = String("Comress. Ratio (x:1)");
+			break;
+		case 'k':
+			title = String("Compress. Knee (dB SPL)");
+			break;
+		case 'l':
+			title = String("Limiter Knee (dB SPL)");
+			break;
+		default:
+			send_val = false;
+			break;
+	}
+	if (send_val) setButtonText(String(ID_char)+"m_title", title);
+}
+
 void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {
 	bool send_val = true;
 	String str;
@@ -694,6 +744,15 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {
 	if (send_val) updateCardPreset_UpDown("perChan", str, i);	
 }
 
+void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_all(bool activeButtonsOnly) {
+	updateCard_persist_perChan_title();
+	
+	//update the parameters that are assumed to be per-band
+	for (int i=0; i< get_n_chan(); i++) {
+		if (flag_send_persistent_multiChan) updateCard_persist_perChan(i);	 
+	}	
+}
+
 //Update all the fields
  void AudioEffectCompBankWDRC_F32_UI::setFullGUIState(bool activeButtonsOnly) {
 	//update the parameters that are assumed to be globally the same
@@ -718,7 +777,5 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {
 	if (flag_send_persistent_chooseMode) updateCard_persistentChooseMode(activeButtonsOnly);
 	
 	//update the parameters that are assumed to be per-band
-	for (int i=0; i< get_n_chan(); i++) {
-		if (flag_send_persistent_multiChan) updateCard_persist_perChan(i);	 
-	}	
+	updateCard_persist_perChan_all();	
  }

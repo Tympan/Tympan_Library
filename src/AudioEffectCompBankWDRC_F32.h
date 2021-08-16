@@ -250,6 +250,8 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		bool flag_send_persistent_multiChan = false;
 		void updateCard_persistentChooseMode(bool activeButtonsOnly = false);
 		void updateCard_persist_perChan(int i);
+		void updateCard_persist_perChan_all(bool activeButtonsOnly = false);
+		void updateCard_persist_perChan_title(void);
 		
 		//overall default page, if sometone just blindly calls addPage_default();
 		TR_Page* addPage_default(TympanRemoteFormatter *gui) {return addPage_persist_perChan(gui); };
@@ -281,7 +283,7 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		char persistCharTrigger = '-'; //used a channel number to command a change in the persistent mode state
 		char persistDown = '<';
 		char persistUp   = '>';
-		char state_persistentMode = 'l'; //default to linear gain
+		char state_persistentMode = 'g'; //default to linear gain
 
 		//GUI names and whatnot
 		char global_char = prefix_placeholder_char; // in SerialManager_UI.h
