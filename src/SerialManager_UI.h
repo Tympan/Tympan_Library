@@ -39,21 +39,33 @@ class SerialManager_UI {
 		if (page_h == NULL) return NULL;
 		TR_Card *card_h = page_h->addCard(card_title);
 		if (card_h == NULL) return NULL;
-
+		
+		addButtons_presetUpDown(card_h, field_name, down_cmd, up_cmd);
+		return card_h;
+	}
+	virtual void addButtons_presetUpDown(TR_Card *card_h, const String field_name, const String down_cmd, const String up_cmd) {
+		if (card_h == NULL) return;
+	
 		String prefix = getPrefix();    //3 character code.  getPrefix() is here in SerialManager_UI.h, unless it is over-ridden in the child class somewhere
 		String field_name1 = ID_char + field_name;  //prepend the field name with the unique ID_char to that it is only associated with a particular instance of the class
 
 		card_h->addButton("-",   prefix+down_cmd, "",          4); //label, command, id, width...this is the minus button
 		card_h->addButton("",    "",              field_name1, 4); //label, command, id, width...this text to display the value 
 		card_h->addButton("+",   prefix+up_cmd,   "",          4); //label, command, id, width...this is the plus button
-
-		return card_h;
 	}
+	
 	// here is a multi channel version of the up-down button display
 	virtual TR_Card* addCardPreset_UpDown_multiChan(TR_Page *page_h, const String card_title, const String field_name, const String down_cmd, const String up_cmd, int n_chan) {
 		if (page_h == NULL) return NULL;
 		TR_Card *card_h = page_h->addCard(card_title);
 		if (card_h == NULL) return NULL;
+
+		addButtons_presetUpDown_multiChan(card_h, field_name, down_cmd, up_cmd, n_chan);
+		return card_h;
+	}
+	
+	virtual void addButtons_presetUpDown_multiChan(TR_Card *card_h, const String field_name, const String down_cmd, const String up_cmd, int n_chan) {
+		if (card_h == NULL) return;
 
 		String prefix = getPrefix();   //3 character code.  getPrefix() is here in SerialManager_UI.h, unless it is over-ridden in the child class somewhere
 
@@ -67,7 +79,6 @@ class SerialManager_UI {
 			card_h->addButton("",    "",                 fn_wChan, 4);  //label, command, id, width...this text to display the value 
 			card_h->addButton("+",   pre_wChan+up_cmd,   "",       3);  //label, command, id, width...this is the plus button
 		}
-		return card_h;
 	}
 
 
@@ -87,7 +98,10 @@ class SerialManager_UI {
     //attach the SerialManager
     void setSerialManager(SerialManagerBase *_sm);
     SerialManagerBase *getSerialManager(void);
-    
+	
+	//useful value
+	const int capOffset = 65 - 97; //given lower case, add this value to get the upper case
+
   protected:
     char ID_char;                    //see SerialManager_UI.cpp for where it gets initializedd
     static char quadchar_start_char; //see SerialManager_UI.cpp for where it gets initializedd

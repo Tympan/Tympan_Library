@@ -194,14 +194,14 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		virtual bool processCharacter_global(char data_char);
 		virtual bool processCharacter_perChannel(char data_char, int chan);
 		
-
+		// ////////// Traditional Mode of Operating
+		
 		//create the button sets for the TympanRemote's GUI
 		TR_Page* addPage_globals(TympanRemoteFormatter *gui);
 		TR_Card* addCard_attack_global(   TR_Page *page_h);
 		TR_Card* addCard_release_global(  TR_Page *page_h);
 		TR_Card* addCard_scaleFac_global( TR_Page *page_h);
-		
-
+	
 		TR_Page* addPage_attack(       TympanRemoteFormatter *gui);
 		TR_Page* addPage_release(      TympanRemoteFormatter *gui);
 		TR_Page* addPage_scaleFac(     TympanRemoteFormatter *gui);
@@ -212,8 +212,9 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		TR_Page* addPage_compKnee(     TympanRemoteFormatter *gui);
 		TR_Page* addPage_limKnee(      TympanRemoteFormatter *gui);
 		
-		TR_Page* addPage_default(TympanRemoteFormatter *gui) {return addPage_globals(gui); };
+		//TR_Page* addPage_default(TympanRemoteFormatter *gui) {return addPage_globals(gui); };
 
+		
 		//methods to update the GUI fields
 		void updateCard_attack_global(void); 
 		void updateCard_release_global(void);
@@ -241,6 +242,22 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		bool flag_send_perBand_compKnee = false;		
 		bool flag_send_perBand_limKnee = false;		
 		
+		// //////////////////////// Persistent mode
+		TR_Card* addCard_chooseMode(     TR_Page *page_h);
+		TR_Card* addCard_persist_perChan(TR_Page *page_h);
+		TR_Page* addPage_persist_perChan(TympanRemoteFormatter *gui);
+		bool flag_send_persistent_chooseMode = false;
+		bool flag_send_persistent_multiChan = false;
+		void updateCard_persistentChooseMode(bool activeButtonsOnly = false);
+		void updateCard_persist_perChan(int i);
+		void updateCard_persist_perChan_all(bool activeButtonsOnly = false);
+		void updateCard_persist_perChan_title(void);
+		
+		//overall default page, if sometone just blindly calls addPage_default();
+		TR_Page* addPage_default(TympanRemoteFormatter *gui) {return addPage_persist_perChan(gui); };
+
+		
+		
 		//here are the factors to use to increment different AudioEffectCompWDRC_F32 parameters
 		float time_incr_fac = pow(2.0,1.0/4.0);
 		float cr_fac = 0.1;
@@ -262,6 +279,11 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		const int n_charMap = COMPBANK_N_CHARMAP;
 		char charMapUp[COMPBANK_N_CHARMAP]   = "0123456789abcdefghijklmnopqrstuvwxyz"; //characters for raising
 		char charMapDown[COMPBANK_N_CHARMAP] = ")!@#$%^&*(ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //characters for lowering
+		
+		char persistCharTrigger = '-'; //used a channel number to command a change in the persistent mode state
+		char persistDown = '<';
+		char persistUp   = '>';
+		char state_persistentMode = 'g'; //default to linear gain
 
 		//GUI names and whatnot
 		char global_char = prefix_placeholder_char; // in SerialManager_UI.h
