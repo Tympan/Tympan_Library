@@ -7,7 +7,7 @@ AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to
 
 //create audio objects for the algorithm
 AudioFilterbankFIR_F32_UI      filterbank(audio_settings);   //a filterbank holding the filters to break up the audio into multiple bands
-AudioEffectCompBankWDRC_F32_UI compbank(audio_settings);     //a cmopressor bank holding the WDRC compressors
+AudioEffectCompBankWDRC_F32_UI compbank(audio_settings);     //a compressor bank holding the WDRC compressors
 AudioMixer16_F32               mixer1(audio_settings);       //mixer to reconstruct the broadband audio after the per-band processing
 AudioEffectGain_F32            broadbandGain(audio_settings);//broad band gain (could be part of compressor below)
 AudioEffectCompWDRC_F32_UI     compBroadband(audio_settings);//broadband compressor
