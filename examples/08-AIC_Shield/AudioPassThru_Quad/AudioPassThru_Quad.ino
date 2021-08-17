@@ -20,8 +20,8 @@ const int audio_block_samples = 128;     //do not make bigger than audio_block_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // define classes to control the Tympan and the AIC_Shield
-Tympan                        myTympan;    //note: Rev C is not compatible with the AIC shield
-AICShield                     aicShield;   //note: Rev C is not compatible with the AIC shield
+Tympan      myTympan(TympanRev::E, audio_settings);    //choose TympanRev::D or TympanRev::E
+AICShield   aicShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E  
 
 // define audio classes
 AudioInputI2SQuad_F32         i2s_in(audio_settings);        //Digital audio *from* the Tympan AIC.
