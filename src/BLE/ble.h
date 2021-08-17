@@ -17,11 +17,13 @@ public:
     size_t sendMessage(const String &s);
 	//size_t sendMessage(const char* c_str, const int len); //use this if you need to send super long strings (more than 1797 characters)
     size_t recvMessage(String *s);
-    size_t recvBLE(String *s);
+    size_t recvBLE(String *s, bool printResponse = false);
+	bool interpretAnyOpenOrClosedMsg(String tmp, bool printDebug=false);
 	bool isAdvertising(bool printResponse = false);
     bool isConnected(bool printResponse = false);
     bool waitConnect(int time = -1);
-	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000);
+	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000, bool printDebugMsgs=false);
+
 };
 
 #endif
