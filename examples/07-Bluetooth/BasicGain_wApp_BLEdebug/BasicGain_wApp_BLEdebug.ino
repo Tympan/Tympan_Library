@@ -51,7 +51,7 @@ void setup() {
 
   //begin the serial comms (for debugging)
   myTympan.beginBothSerial();delay(1000);
-  Serial.println("BasicGain_wApp: starting setup()...");
+  Serial.println("BasicGain_wApp_BLEdebug: starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10); 
@@ -96,8 +96,11 @@ void loop() {
   }
 
   //service the BLE advertising state
-  if (PRINT_BLE_DEBUG) printBleStatus(millis(), 5000);
-  if (flag_autoAdvertise) ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
+  if (flag_autoAdvertise) {
+    ble.updateAdvertising(millis(),5000,PRINT_BLE_DEBUG); //check every 5000 msec to ensure it is advertising (if not connected)
+  } else {
+    if (PRINT_BLE_DEBUG) printBleStatus(millis(), 5000);
+  }
 
 } //end loop();
 
