@@ -679,7 +679,7 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_title(void) {
 			title = String("Release (msec)");
 			break;
 		case 'm':
-			title = String("Scale (dBSPL at dBFS)");
+			title = String("Scale (dB SPL at dB FS)");
 			break;
 		case 'x':
 			title = String("Expansion CR (x:1)");
@@ -691,7 +691,7 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_title(void) {
 			title = String("Linear Gain (dB)");
 			break;
 		case 'c':
-			title = String("Comress. Ratio (x:1)");
+			title = String("Compress. Ratio (x:1)");
 			break;
 		case 'k':
 			title = String("Compress. Knee (dB SPL)");
@@ -723,7 +723,8 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {
 			str=String(getExpansionCompRatio(i),2);
 			break;
 		case 'z':
-			str=String(getKneeExpansion_dBSPL(i),0);
+			str=String(getKneeExpansion_
+				   (i),0);
 			break;
 		case 'g':
 			str=String(getGain_dB(i),0);
