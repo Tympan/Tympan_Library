@@ -723,8 +723,7 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {
 			str=String(getExpansionCompRatio(i),2);
 			break;
 		case 'z':
-			str=String(getKneeExpansion_
-				   (i),0);
+			str=String(getKneeExpansion_dBSPL(i),0);
 			break;
 		case 'g':
 			str=String(getGain_dB(i),0);
