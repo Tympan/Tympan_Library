@@ -149,7 +149,6 @@ class AICShieldBase : public AudioControlAIC3206
 		}
 		AICShieldBase(const AICShieldPins &_pins) :
 			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
-				Serial.print("resetAIC "); Serial.println(_pins.resetAIC);
 			setupPins(_pins);
 		}
 		AICShieldBase(const AICShieldPins &_pins, bool _debugToSerial) :
