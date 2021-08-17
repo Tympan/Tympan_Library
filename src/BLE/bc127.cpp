@@ -155,7 +155,7 @@ BC127::opResult BC127::status(bool printResponse)
 	if (printResponse) {
 		Serial.print("BC127: status response: ");
 		Serial.print(getCmdResponse());  //this should be CR terminated
-		Serial.println();
+		if (BC127_firmware_ver > 6) Serial.println();
 	}
 	return ret_val;	
 }
@@ -215,7 +215,7 @@ BC127::opResult BC127::version(bool printResponse)
 	if (printResponse) {
 		Serial.print("BC127: version response: ");
 		Serial.print(getCmdResponse());  //this should be CR terminated
-		Serial.println();
+		if (BC127_firmware_ver > 6) Serial.println();
 	}
 	return ret_val;
 }

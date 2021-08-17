@@ -334,7 +334,7 @@ bool BLE::isAdvertising(bool printResponse)
 		if (printResponse) {
 			Serial.print("BLE: isAdvertising() response: ");
 			Serial.print(s);
-			Serial.println();
+			if (BC127_firmware_ver > 6) Serial.println();
 		}
         //return s.startsWith("STATE CONNECTED"); //original
 		if (s.indexOf("ADVERTISING") == -1) { //if it finds -1, then it wasn't found
@@ -362,7 +362,7 @@ bool BLE::isConnected(bool printResponse)
 		if (printResponse) {
 			Serial.print("BLE: isConnected()   response: ");
 			Serial.print(s);
-			Serial.println();
+			if (BC127_firmware_ver > 6) Serial.println();
 		}
         
 		//if (s.indexOf("LINK 14 CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This version is prob better (more specific for BLE) but only would work for V6 and above
