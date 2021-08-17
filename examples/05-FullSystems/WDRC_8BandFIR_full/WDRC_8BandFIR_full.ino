@@ -46,12 +46,12 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Define the number of channels! Make sure DSL_GHA_Preset0.h and DSL_GHA_Preset1.h have enough values
 // (it needs N_CHAN or more values) defined for each compressor parameter.  If not, it'll bomb at run time!
-const int N_CHAN = 8;    
+const int N_CHAN = 8;                   // number of frequency bands and compression channels
 
 // Create audio classes and make audio connections
 Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
 #include "AudioConnections.h"                      //let's put them in their own file for clarity
-                         // number of frequency bands (channels)
+                         
 
 // Create classes for controlling the system
 #include      "SerialManager.h"
