@@ -52,6 +52,7 @@ void SerialManager_UI::addButtons_presetUpDown(TR_Card *card_h, const String fie
 	card_h->addButton("+",   prefix+up_cmd,   "",          4); //label, command, id, width...this is the plus button
 }
 
+
 // here is a multi channel version of the up-down button display
 TR_Card* SerialManager_UI::addCardPreset_UpDown_multiChan(TR_Page *page_h, const String card_title, const String field_name, const String down_cmd, const String up_cmd, int n_chan) {
 	if (page_h == NULL) return NULL;
@@ -61,7 +62,6 @@ TR_Card* SerialManager_UI::addCardPreset_UpDown_multiChan(TR_Page *page_h, const
 	addButtons_presetUpDown_multiChan(card_h, field_name, down_cmd, up_cmd, n_chan);
 	return card_h;
 }
-
 void SerialManager_UI::addButtons_presetUpDown_multiChan(TR_Card *card_h, const String field_name, const String down_cmd, const String up_cmd, int n_chan) {
 	if (card_h == NULL) return;
 
