@@ -285,9 +285,6 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		char persistUp   = '>';
 		char state_persistentMode = 'g'; //default to linear gain
 
-		//GUI names and whatnot
-		char global_char = prefix_placeholder_char; // in SerialManager_UI.h
-
 };
 
 
