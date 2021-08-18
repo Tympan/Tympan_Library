@@ -393,8 +393,36 @@ bool BLE::isConnected(bool printResponse)
 					}
 				}
 			} else {
+				//for V5.5, here are the kinds of lines that one can see:
+				//
+				// Here are lines with no connection...BLE is last keywoard: either "ADVERTISING" or "IDLE"
+				//  This line has no connections (but everyone is ready):  		STATE CONNECTABLE DISCOVERABLE ADVERTISING
+				//  This line has no connections (BLE advertising off):    		STATE CONNECTABLE DISCOVERABLE IDLE
+				//  This line has no connections (BT Classic off):         		STATE CONNECTABLE ADVERTISING
+				//
+				//  BT Classic is connected but BLE is not (nor advertising):	STATE CONNECTED IDLE
+				//  BT Classic is connected and BLE is not (but is advertising):STATE CONNECTED ADVERTISING
+				//
+				//  and here is BLE connected:                             		STATE CONNECTED CONNECTED
+				
 				//Serial.print("BLE (v5x): ind of 'Connected' = ");
 				//Serial.println(ind);
+				
+				//if we got this far, then at least one CONNECTED is seen.  Let's look for IDLE and ADVERTISING, which
+				//indicate that it's not BLE that is connected
+				ind = s.indexOf("IDLE");
+				if (ind >= 0) {
+					//Serial.println("BLE: isConnected: found IDLE...so NOT connected.");
+					//there is IDLE...so, there is no connection
+					return false;
+				}
+				
+				ind = s.indexOf("ADVERTISING");
+				if (ind >= 0) {
+					//Serial.println("BLE: isConnected: found advertising...so NOT connected.");
+					//there is ADVERTISING...so there is no connection
+					return false;
+				}
 			}
 			
 			//if (printResponse) Serial.println("BLE: isConnected: yes is connected.");
