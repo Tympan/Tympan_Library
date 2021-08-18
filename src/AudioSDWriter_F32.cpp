@@ -2,6 +2,45 @@
 
 #include "AudioSDWriter_F32.h"	
 
+
+int AudioSDWriter_F32::setWriteDataType(WriteDataType type) {
+	Print *serial_ptr = &Serial1;
+	int write_nbytes = DEFAULT_SDWRITE_BYTES;
+
+	//get info from previous objects
+	if (buffSDWriter) {
+		serial_ptr = buffSDWriter->getSerial();
+		write_nbytes = buffSDWriter->getWriteSizeBytes();
+	}
+
+	//make the full method call
+	return setWriteDataType(type, serial_ptr, write_nbytes);
+}
+
+int AudioSDWriter_F32::setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps) {
+	stopRecording();
+	writeDataType = type;
+	if (!buffSDWriter) {
+		if (!sd) {
+			sd = new SdFs();
+		}
+		
+		//Serial.println("AudioSDWriter_F32: setWriteDataType: creating buffSDWriter...");
+		buffSDWriter = new BufferedSDWriter(sd, serial_ptr, writeSizeBytes);
+		if (buffSDWriter) {
+			buffSDWriter->setNChanWAV(numWriteChannels);
+			if (bufferLength_samps >= 0) {
+				allocateBuffer(bufferLength_samps); //leave empty for default buffer size
+			} else {
+				//if we don't allocateBuffer() here, it simply lets BufferedSDWrite create it last-minute
+			}
+		} else {
+			Serial.print("AudioSDWriter_F32: setWriteDataType: *** ERROR *** Could not create buffered SD writer.");
+		}
+	}
+	if (buffSDWriter == NULL) { return -1; } else { return 0; };
+}
+
 void AudioSDWriter_F32::prepareSDforRecording(void) {
   if (current_SD_state == STATE::UNPREPARED) {
 	if (buffSDWriter) {

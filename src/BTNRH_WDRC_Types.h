@@ -12,7 +12,7 @@
 	#include "SDWriter.h"  //to get macro definition of SD_CONFIG
 #endif
 
-#define DSL_MXCH 8  
+#define DSL_MXCH 16  
 	
 namespace BTNRH_WDRC {
 

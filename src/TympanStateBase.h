@@ -112,6 +112,8 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 			addCard_cpuReporting(page_h);
 			return page_h;
 		};
+		virtual TR_Page* addPage_default(TympanRemoteFormatter *gui) {return addPage_globals(gui);}
+		
 		virtual void setCPUButtons(bool activeButtonsOnly = false) {
 			if (flag_printCPUandMemory) {
 				setButtonState("cpuStart",true);

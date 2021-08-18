@@ -80,7 +80,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       setDefaultValues();
     }
 
-    AudioEffectCompWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+    AudioEffectCompWDRC_F32(const AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
       setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
@@ -156,11 +156,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float incrementAttack(float fac) { return setAttack_msec(getAttack_msec() * fac); };
 	float incrementRelease(float fac) { return setRelease_msec(getRelease_msec() * fac); };
 	float incrementMaxdB(float fac) { return setMaxdB(getMaxdB() + fac); }
-	float incrementExpCR(float fac) {
-		Serial.println("AudioEffectCompWDRC_F32: incrementExpCR: " + String(getExpansionCompRatio()) + ", " + String(fac));
-		Serial.println("    : new val = " + String(getExpansionCompRatio() + fac) + ", " + String(max(0.1f,getExpansionCompRatio() + fac)));
-		return setExpansionCompRatio(max(0.1f,getExpansionCompRatio() + fac)); 
-	}
+	float incrementExpCR(float fac) { return setExpansionCompRatio(max(0.1f,getExpansionCompRatio() + fac)); }
 	float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() + fac); }
 	float incrementGain_dB(float increment_dB) { return setGain_dB(getGain_dB() + increment_dB); }    
     float incrementCompRatio(float fac) { return setCompRatio(max(0.1f, getCompRatio() + fac)); }
@@ -195,7 +191,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, public SerialManager_UI {
 	public:
 		AudioEffectCompWDRC_F32_UI(void) : 	AudioEffectCompWDRC_F32(), SerialManager_UI() {	};
-		AudioEffectCompWDRC_F32_UI(AudioSettings_F32 settings): AudioEffectCompWDRC_F32(settings), SerialManager_UI() {	};
+		AudioEffectCompWDRC_F32_UI(const AudioSettings_F32 settings): AudioEffectCompWDRC_F32(settings), SerialManager_UI() {	};
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI
 		virtual void printHelp(void);

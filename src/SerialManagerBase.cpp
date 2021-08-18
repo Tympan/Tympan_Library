@@ -2,6 +2,7 @@
 #include "SerialManagerBase.h"
 #include "SerialManager_UI.h"
 
+//Register a UI element with the SerialManager
 SerialManager_UI* SerialManagerBase::add_UI_element(SerialManager_UI *ptr) {
 	if (ptr == NULL) return NULL;
 	
@@ -19,8 +20,9 @@ SerialManager_UI* SerialManagerBase::add_UI_element(SerialManager_UI *ptr) {
 }
 
 void SerialManagerBase::printHelp(void) {
-	if (next_UI_element_ind == 0) return;
+	if (next_UI_element_ind == 0) return; //if there are no registered UI elements, return
 	
+	//Loop over each registered UI element and call its printHelp() method.
 	for (int i=0; i < next_UI_element_ind; i++) {
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			UI_element_ptr[i]->printHelp();
@@ -101,10 +103,15 @@ void SerialManagerBase::respondToByte(char c) {
   }
 }
 
+
 bool SerialManagerBase::processCharacter(char c) {
 	bool ret_val = false;
-	if (next_UI_element_ind == 0) return ret_val;
+	if (next_UI_element_ind == 0) return ret_val;   //if there are no registered UI elements, return
 	
+	// Loop over each registered UI element and try its processCharacter() method.
+	// Their processCharacter() will return TRUE if the character was recognized.
+	// If the TRUE is recevied, processing stops.  If a FALSE is received, this routine
+	// continues on to the next registered UI element.
 	for (int i=0; i < next_UI_element_ind; i++) {
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			ret_val = UI_element_ptr[i]->processCharacter(c);
@@ -154,8 +161,12 @@ void SerialManagerBase::processStream(void) {
 
 bool SerialManagerBase::interpretQuadChar(char mode_char, char chan_char, char data_char) {
 	bool ret_val = false;
-	if (next_UI_element_ind == 0) return ret_val;
+	if (next_UI_element_ind == 0) return ret_val; //if there are no registered UI elements, return
 	
+	// Loop over each registered UI element and try its processCharacterTriple() method.
+	// Their processCharacterTriple() will return TRUE if the character was recognized.
+	// If the TRUE is recevied, processing stops.  If a FALSE is received, this routine
+	// continues on to the next registered UI element.
 	for (int i=0; i < next_UI_element_ind; i++) {
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			ret_val = UI_element_ptr[i]->processCharacterTriple(mode_char, chan_char, data_char);
@@ -166,8 +177,9 @@ bool SerialManagerBase::interpretQuadChar(char mode_char, char chan_char, char d
 }
 
 void SerialManagerBase::setFullGUIState(bool activeButtonsOnly) {
-	if (next_UI_element_ind == 0) return;
+	if (next_UI_element_ind == 0) return; //if there are no registered UI elements, return
 	
+	// Loop over each registered UI element and execute its setFullGUIState method.
 	for (int i=0; i < next_UI_element_ind; i++) {
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			UI_element_ptr[i]->setFullGUIState(activeButtonsOnly);
