@@ -1,9 +1,17 @@
-// Functional Test for Tympan Earpieces and Shield
 //
-// Created: Eric Yuan, Jan 2020 (Updated Aug 2021)
+// EarpieceManualMixing_wSD
+//
+// Created: Eric Yuan, Jan 2020 (Updated by Chip Audette Aug 2021)
+//
+// Purpose: This example uses the earpieces and shows you how to setup your own audio mixers to mix the earpiece's 
+// front and rear microphones.  This example can also record the raw microphone audio to the SD card.
+//
+// You control this sketch through the USB Serial via the Arduino IDE's Serial Monitor.  You can always type an
+// "h" (without quotes) to get the help menu.
+//
 //
 // Hardware: 
-//    Assumes that you're using a Tympan RevD with an Earpiece Shield
+//    Assumes that you're using a Tympan RevE with an Earpiece Shield
 //    and two Tympan earpieces (each with a front and back PDM micrphone) 
 //    connected through the earpiece audio ports (which uses the USB-B Mini connector).
 //
@@ -24,18 +32,17 @@
 // MIT License.  Use at your own risk.  Have fun!
 //
 
-#include <Tympan_Library.h>
-#include "State.h"                          //For enums
-#include "SerialManager.h"                  //For processing serial communication
+//here are the libraries that we need
+#include <Tympan_Library.h>  //include the Tympan Library
 
 //set the sample rate and block size
-const float sample_rate_Hz    = 44100.0f;  //Some allowed values: 16000, 22050, 24000, 32000, 44100, 44118, 48000, or 96000 Hz
-const int audio_block_samples = 128;       //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
+const float sample_rate_Hz = 44100.0f ;  //24000 to 44117 to 96000 (or other frequencies in the table in AudioOutputI2S_F32)
+const int audio_block_samples = 128;     //do not make bigger than audio_block_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
-//setup the  Tympan and EarpieceShield using the default settings
-Tympan                        myTympan(TympanRev::E, audio_settings); //choose TympanRev::D or TympanRev::E
-EarpieceShield                earpieceShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E
+// define classes to control the Tympan and the AIC_Shield
+Tympan           myTympan(TympanRev::E, audio_settings);         //choose TympanRev::D or TympanRev::E
+EarpieceShield   earpieceShield(TympanRev::E, AICShieldRev::A);  //Note that EarpieceShield is defined in the Tympan_Libarary in AICShield.h 
 
 // Instantiate the audio classes
 AudioInputI2SQuad_F32         i2s_in(audio_settings);         //Digital audio *from* the Tympan AIC.
@@ -45,88 +52,38 @@ AudioOutputI2SQuad_F32        i2s_out(audio_settings);        //Digital audio *t
 AudioSDWriter_F32             audioSDWriter(audio_settings);  //this is stereo by default
 
 //Connect the front and rear mics (from each earpiece) to input mixers...note the unusual order (1,0,3,2).  Sorry, but it's true.
-AudioConnection_F32           patchcord1(i2s_in, 1, inputMixerL, 0);    //Left-Front Mic
-AudioConnection_F32           patchcord2(i2s_in, 0, inputMixerL, 1);    //Left-Rear Mic
-AudioConnection_F32           patchcord3(i2s_in, 3, inputMixerR, 0);    //Right-Front Mic
-AudioConnection_F32           patchcord4(i2s_in, 2, inputMixerR, 1);    //Right-Rear Mic
+const int LEFT_FRONT = 1, LEFT_REAR = 0, RIGHT_FRONT = 3, RIGHT_REAR = 2;
+AudioConnection_F32           patchcord1(i2s_in, LEFT_FRONT,  inputMixerL, 0);    //Left-Front Mic
+AudioConnection_F32           patchcord2(i2s_in, LEFT_REAR,   inputMixerL, 1);    //Left-Rear Mic
+AudioConnection_F32           patchcord3(i2s_in, RIGHT_FRONT, inputMixerR, 0);    //Right-Front Mic
+AudioConnection_F32           patchcord4(i2s_in, RIGHT_REAR,  inputMixerR, 1);    //Right-Rear Mic
 
 //Connect the input mixers to both the Tympan and Shield audio outputs
 //NOTE: The left and right RIC is correct, but the headphone jacks have the left and right swapped.  
-AudioConnection_F32           patchcord11(inputMixerL, 0, i2s_out, 1);  //Tympan AIC, left output
-AudioConnection_F32           patchcord12(inputMixerR, 0, i2s_out, 0);  //Tympan AIC, right output
-AudioConnection_F32           patchcord13(inputMixerL, 0, i2s_out, 3);  //Shield AIC, left output
-AudioConnection_F32           patchcord14(inputMixerR, 0, i2s_out, 2);  //Shield AIC, right output
+const int OUT_LEFT_TYMPAN = 0, OUT_RIGHT_TYMPAN = 1, OUT_LEFT_EARPIECE = 3, OUT_RIGHT_EARPIECE = 2;
+AudioConnection_F32           patchcord11(inputMixerL, 0, i2s_out, OUT_LEFT_TYMPAN);    //Tympan AIC, left output
+AudioConnection_F32           patchcord12(inputMixerR, 0, i2s_out, OUT_RIGHT_TYMPAN);   //Tympan AIC, right output
+AudioConnection_F32           patchcord13(inputMixerL, 0, i2s_out, OUT_LEFT_EARPIECE);  //Shield AIC, left output
+AudioConnection_F32           patchcord14(inputMixerR, 0, i2s_out, OUT_RIGHT_EARPIECE); //Shield AIC, right output
 
 //Connect the input mixer to the SD card
-AudioConnection_F32           patchcord21(inputMixerL, 0, audioSDWriter, 0);   //connect Raw audio to queue (to enable SD writing)
-AudioConnection_F32           patchcord22(inputMixerL, 1, audioSDWriter, 1);   //connect Raw audio to queue (to enable SD writing)
-AudioConnection_F32           patchcord23(inputMixerR, 0, audioSDWriter, 2);   //connect Raw audio to queue (to enable SD writing)
-AudioConnection_F32           patchcord24(inputMixerR, 1, audioSDWriter, 3);   //connect Raw audio to queue (to enable SD writing)
+AudioConnection_F32           patchcord21(i2s_in, LEFT_FRONT,  audioSDWriter, 0);   //connect Raw audio to SD writer
+AudioConnection_F32           patchcord22(i2s_in, LEFT_REAR,   audioSDWriter, 1);   //connect Raw audio to SD writer
+AudioConnection_F32           patchcord23(i2s_in, RIGHT_FRONT, audioSDWriter, 2);   //connect Raw audio to SD writer
+AudioConnection_F32           patchcord24(i2s_in, RIGHT_REAR,  audioSDWriter, 3);   //connect Raw audio to SD writer
 
 //control display and serial interaction via USB Serial
+#include "State.h"                          //For enums
+#include "SerialManager.h"                  //For processing serial communication
 SerialManager                 serialManager;
 
-String overall_name = String("Hear-Thru for Functional test of Tympan + Shield + Earpieces with PDM Mics");
 
 //Static Variables
 static float outputVolume_dB = 0.0;
 static float inputGain_dB = 0.0;
 
-// ///////////////// Main setup() and loop() as required for all Arduino programs
-void setup() {
-  myTympan.beginBothSerial(); delay(1000);
-  myTympan.print(overall_name); myTympan.println(": setup():...");
-  myTympan.print("Sample Rate (Hz): "); myTympan.println(audio_settings.sample_rate_Hz);
-  myTympan.print("Audio Block Size (samples): "); myTympan.println(audio_settings.audio_block_samples);
 
-  //allocate the dynamic memory for audio processing blocks
-  AudioMemory_F32(40,audio_settings); //I can only seem to allocate 400 blocks
-
-  //Enable the Tympan and AIC shields to start the audio flowing!
-  myTympan.enable(); 
-  earpieceShield.enable();
-
-  //Set the state of the LEDs
-  myTympan.setRedLED(HIGH);
-  myTympan.setAmberLED(LOW);
-
-  //prepare the SD writer for the format that we want and any error statements
-  audioSDWriter.setSerial(&myTympan);
-  audioSDWriter.setNumWriteChannels(4);             //four channels for this quad recorder, but you could set it to 2
-  audioSDWriter.setWriteDataType(AudioSDWriter::WriteDataType::INT16);  //this is the built-in the default, but here you could change it to FLOAT32
-  Serial.print("SD configured for "); Serial.print(audioSDWriter.getNumWriteChannels()); Serial.println(" channels.");
-
-  //set headphone volume (will be overwritten by the volume pot)
-  setOutputVolume_dB(0.0); //dB, -63.6 to +24 dB in 0.5dB steps.
-
-  //Enable PDM mics
-  setInputSource(INPUT_PDMMICS);
-
-  //For each earpiece, mix front and back mics equally
-  setInputMixer(ALL_MICS, 1.0);
-  
-  //End of setup
-  myTympan.println("Setup: complete."); 
-  serialManager.printHelp();
-
-}
-
-void loop() {
-  //respond to Serial commands
-  while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
-  //while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
-
-  //service the SD recording
-  serviceSD();
-  
-  //service the LEDs
-  serviceLEDs();
-
-  //periodicallly check the potentiometer
-  servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
-}
-
-
+// //////////////// Configure the system
 
 //set the desired input source 
 void setInputSource(Mic_Input micInput) { 
@@ -208,38 +165,63 @@ void setInputMixer(Mic_Channels micChannelName, int gainVal) {
 }
 
 
-// ////////////// Change settings of system
-//here's a function to change the volume settings.   We'll also invoke it from our serialManager
-void incrementInputGain(float increment_dB) {
-  setInputGain_dB(inputGain_dB+increment_dB);
+// ///////////////// Main setup() and loop() as required for all Arduino programs
+void setup() {
+  myTympan.beginBothSerial(); delay(1000);
+  myTympan.println("EarpieceManualMixing_wSD: setup():...");
+  myTympan.print("Sample Rate (Hz): "); myTympan.println(audio_settings.sample_rate_Hz);
+  myTympan.print("Audio Block Size (samples): "); myTympan.println(audio_settings.audio_block_samples);
+
+  //allocate the dynamic memory for audio processing blocks
+  AudioMemory_F32(40,audio_settings); //I can only seem to allocate 400 blocks
+
+  //Enable the Tympan and AIC shields to start the audio flowing!
+  myTympan.enable(); 
+  earpieceShield.enable();
+
+  //Set the state of the LEDs
+  myTympan.setRedLED(HIGH);
+  myTympan.setAmberLED(LOW);
+
+  //prepare the SD writer for the format that we want and any error statements
+  audioSDWriter.setSerial(&myTympan);
+  audioSDWriter.setNumWriteChannels(4);             //four channels for this quad recorder, but you could set it to 2
+  audioSDWriter.setWriteDataType(AudioSDWriter::WriteDataType::INT16);  //this is the built-in the default, but here you could change it to FLOAT32
+  Serial.print("SD configured for "); Serial.print(audioSDWriter.getNumWriteChannels()); Serial.println(" channels.");
+
+  //set headphone volume (will be overwritten by the volume pot)
+  setOutputVolume_dB(0.0); //dB, -63.6 to +24 dB in 0.5dB steps.
+
+  //Enable PDM mics
+  setInputSource(INPUT_PDMMICS);
+
+  //For each earpiece, mix front and back mics equally
+  setInputMixer(ALL_MICS, 1.0);
+  
+  //End of setup
+  myTympan.println("Setup: complete."); 
+  serialManager.printHelp();
+
 }
 
-void setInputGain_dB(float newGain_dB) { 
-  //Record new gain
-  inputGain_dB = newGain_dB;
+void loop() {
+  //respond to Serial commands
+  while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
+  //while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
 
-  //Set gain
-  myTympan.setInputGain_dB(inputGain_dB);   //set the AIC on the main Tympan board
-  earpieceShield.setInputGain_dB(inputGain_dB);  //set the AIC on the Earpiece Shield
-  myTympan.print("Input Gain: "); myTympan.print(inputGain_dB); myTympan.println("dB");
+  //service the SD recording
+  serviceSD();
+  
+  //service the LEDs
+  serviceLEDs(millis());
+
+  //periodicallly check the potentiometer
+  servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 }
 
-//Increment Headphone Output Volume
-void incrementKnobGain(float increment_dB) { 
-  setOutputVolume_dB(outputVolume_dB+increment_dB);
-}
-
-void setOutputVolume_dB(float newVol_dB) {
-  //Update output volume;Limit vol_dB to safe values
-  outputVolume_dB = max(min(newVol_dB, 24.0),-60.0);
-
-  //Set output volume
-  myTympan.volume_dB(outputVolume_dB);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
-  earpieceShield.volume_dB(outputVolume_dB);
-  myTympan.print("Output Volume: "); myTympan.print(outputVolume_dB); myTympan.println("dB");
-}
 
 // ///////////////// Servicing routines
+
 //servicePotentiometer: listens to the blue potentiometer and sends the new pot value
 //  to the audio processing algorithm as a control parameter
 void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
@@ -276,57 +258,44 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
 } //end servicePotentiometer();
 
 
-void serviceLEDs(void) {
-  static int loop_count = 0;
-  loop_count++;
-  
-  if (audioSDWriter.getState() == AudioSDWriter::STATE::UNPREPARED) {
-    if (loop_count > 200000) {  //slow toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } 
-  else if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
-    //let's flicker the LEDs while writing
-    loop_count++;
-    if (loop_count > 20000) { //fast toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } 
-  else {
-    //myTympan.setRedLED(HIGH); myTympan.setAmberLED(LOW); //Go Red
-    if (loop_count > 200000) { //slow toggle
-      loop_count = 0;
-      toggleLEDs(false,true); //just blink the red
-    }
-  }
-}
+//Update the blinking of the LEDs depending upon whether we are (1) running or (2) writing to SD
+void serviceLEDs(unsigned long curTime_millis) {
+  static unsigned long lastUpdate_millis = 0;
+  const unsigned long long_toggle_millis = 1000;
+  const unsigned long short_toggle_millis = 100;
 
-void toggleLEDs(void) {
-  toggleLEDs(true,true);  //toggle both LEDs
-}
+  //handle wrap-around of the clock 
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; 
+
+  //choose how fast or slow to toggle based on recording state
+  unsigned long toggle_millis = long_toggle_millis;
+  if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
+    toggle_millis = short_toggle_millis;
+  }
+
+  //has enough time passed to toggle the LEDs
+  if ((curTime_millis - lastUpdate_millis) > toggle_millis) { //is it time to update the user interface?    
+    toggleLEDs(); //blink both
+    lastUpdate_millis = curTime_millis;
+  }
+} 
+
+
+void toggleLEDs(void) { toggleLEDs(true,true); } //toggle both
 void toggleLEDs(const bool &useAmber, const bool &useRed) {
   static bool LED = false;
   LED = !LED;
   if (LED) {
-    if (useAmber) {
-      myTympan.setAmberLED(true);
-    }
-    if (useRed) {
-      myTympan.setRedLED(false);
-    }
+    if (useAmber) myTympan.setAmberLED(true);
+    if (useRed) myTympan.setRedLED(false);
   } else {
-    if (useAmber) {
-      myTympan.setAmberLED(false);
-    }
-    if (useRed) {
-      myTympan.setRedLED(true);
-    }
+    if (useAmber) myTympan.setAmberLED(false);
+    if (useRed) myTympan.setRedLED(true);
   }
 
   if (!useAmber) myTympan.setAmberLED(false);
   if (!useRed) myTympan.setRedLED(false);
+  
 }
 
 
@@ -376,4 +345,30 @@ void serviceSD(void) {
     }
     i2s_in.clear_isOutOfMemory();
   }
+}
+
+// ////////////// Change settings of system
+
+//here's a function to change the volume settings.   We'll also invoke it from our serialManager
+void incrementInputGain(float increment_dB) { setInputGain_dB(inputGain_dB+increment_dB);}
+void setInputGain_dB(float newGain_dB) { 
+  //Record new gain
+  inputGain_dB = newGain_dB;
+
+  //Set gain
+  myTympan.setInputGain_dB(inputGain_dB);   //set the AIC on the main Tympan board
+  earpieceShield.setInputGain_dB(inputGain_dB);  //set the AIC on the Earpiece Shield
+  myTympan.print("Input Gain: "); myTympan.print(inputGain_dB); myTympan.println("dB");
+}
+
+//Increment Headphone Output Volume
+void incrementKnobGain(float increment_dB) {  setOutputVolume_dB(outputVolume_dB+increment_dB);}
+void setOutputVolume_dB(float newVol_dB) {
+  //Update output volume;Limit vol_dB to safe values
+  outputVolume_dB = max(min(newVol_dB, 24.0),-60.0);
+
+  //Set output volume
+  myTympan.volume_dB(outputVolume_dB);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  earpieceShield.volume_dB(outputVolume_dB);
+  myTympan.print("Output Volume: "); myTympan.print(outputVolume_dB); myTympan.println("dB");
 }
