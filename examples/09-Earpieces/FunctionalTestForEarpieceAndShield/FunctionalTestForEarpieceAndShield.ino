@@ -1,60 +1,69 @@
 // Functional Test for Tympan Earpieces and Shield
 //
-// Created: Eric Yuan, Open Audio, Jan 2020
-//
-// This example code is in the public domain.
+// Created: Eric Yuan, Jan 2020 (Updated Aug 2021)
 //
 // Hardware: 
-//  Assumes that you're using a Tympan RevD with an Earpiece Shield
+//    Assumes that you're using a Tympan RevD with an Earpiece Shield
 //    and two Tympan earpieces (each with a front and back PDM micrphone) 
 //    connected through the earpiece audio ports (which uses the USB-B Mini connector).
 //
-//  Mixing:
-//  The front and back mic for each earpiece will be mixed into a single channel.
-//  The output will be routed to both the Tympan AIC (i2s_out[0,1]) and the 
-//  Shield AIC (i2s_out[2,3]), which can be heard using the earpiece receivers 
-//  or a headphone plugged into the 3.5mm audio jacks on either the Tympan or Shield
+// Mixing:
+//    The front and back mic for each earpiece will be mixed into a single channel.
+//    The output will be routed to both the Tympan AIC (i2s_out[0,1]) and the 
+//    Shield AIC (i2s_out[2,3]), which can be heard using the earpiece receivers 
+//    or a headphone plugged into the 3.5mm audio jacks on either the Tympan or Shield
+//
+//    This example does NOT use the EarpieceMixer class.  The EarpieceMixer class helps
+//    manage all the potential left-right / front-back mixing that you might want to do,
+//    but it also hides how one interacts with the hardware.  This sketch exposes some
+//    of those details.  So, this sketch might be better to learn from, if you care to
+//    learn the details.
+//
+// There is no support for the Tympan Remote App in this sketch
+//
+// MIT License.  Use at your own risk.  Have fun!
+//
 
 #include <Tympan_Library.h>
 #include "State.h"                          //For enums
 #include "SerialManager.h"                  //For processing serial communication
 
 //set the sample rate and block size
-const float sample_rate_Hz    = 44100.0f;  //Allowed values: 8000, 11025, 16000, 22050, 24000, 32000, 44100, 44118, or 48000 Hz
-const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
+const float sample_rate_Hz    = 44100.0f;  //Some allowed values: 16000, 22050, 24000, 32000, 44100, 44118, 48000, or 96000 Hz
+const int audio_block_samples = 128;       //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
-//setup the  Tympan using the default settings
+//setup the  Tympan and EarpieceShield using the default settings
 Tympan                        myTympan(TympanRev::E, audio_settings); //choose TympanRev::D or TympanRev::E
-EarpieceShield                aicShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E
+EarpieceShield                earpieceShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E
 
-// Define audio objects
+// Instantiate the audio classes
 AudioInputI2SQuad_F32         i2s_in(audio_settings);         //Digital audio *from* the Tympan AIC.
 AudioMixer4_F32               inputMixerL(audio_settings);    //For mixing (or not) the two mics in the left earpiece
 AudioMixer4_F32               inputMixerR(audio_settings);    //For mixing (or not) the two mics in the left earpiece
 AudioOutputI2SQuad_F32        i2s_out(audio_settings);        //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
 AudioSDWriter_F32             audioSDWriter(audio_settings);  //this is stereo by default
 
-//Connect the front and rear mics (from each earpiece) to input mixers
-AudioConnection_F32           patchcord1(i2s_in, 1, inputMixerL, 0);  //Left-Front Mic
-AudioConnection_F32           patchcord2(i2s_in, 0, inputMixerL, 1);  //Left-Rear Mic
-AudioConnection_F32           patchcord3(i2s_in, 3, inputMixerR, 0);  //Right-Front Mic
-AudioConnection_F32           patchcord4(i2s_in, 2, inputMixerR, 1);  //Right-Rear Mic
+//Connect the front and rear mics (from each earpiece) to input mixers...note the unusual order (1,0,3,2).  Sorry, but it's true.
+AudioConnection_F32           patchcord1(i2s_in, 1, inputMixerL, 0);    //Left-Front Mic
+AudioConnection_F32           patchcord2(i2s_in, 0, inputMixerL, 1);    //Left-Rear Mic
+AudioConnection_F32           patchcord3(i2s_in, 3, inputMixerR, 0);    //Right-Front Mic
+AudioConnection_F32           patchcord4(i2s_in, 2, inputMixerR, 1);    //Right-Rear Mic
 
 //Connect the input mixers to both the Tympan and Shield audio outputs
 //NOTE: The left and right RIC is correct, but the headphone jacks have the left and right swapped.  
-AudioConnection_F32           patchcord11(inputMixerL, 0, i2s_out, 1); //Tympan AIC, left output
-AudioConnection_F32           patchcord12(inputMixerR, 0, i2s_out, 0); //Tympan AIC, right output
-AudioConnection_F32           patchcord13(inputMixerL, 0, i2s_out, 3); //Shield AIC, left output
-AudioConnection_F32           patchcord14(inputMixerR, 0, i2s_out, 2); //Shield AIC, right output
+AudioConnection_F32           patchcord11(inputMixerL, 0, i2s_out, 1);  //Tympan AIC, left output
+AudioConnection_F32           patchcord12(inputMixerR, 0, i2s_out, 0);  //Tympan AIC, right output
+AudioConnection_F32           patchcord13(inputMixerL, 0, i2s_out, 3);  //Shield AIC, left output
+AudioConnection_F32           patchcord14(inputMixerR, 0, i2s_out, 2);  //Shield AIC, right output
 
 //Connect the input mixer to the SD card
 AudioConnection_F32           patchcord21(inputMixerL, 0, audioSDWriter, 0);   //connect Raw audio to queue (to enable SD writing)
-AudioConnection_F32           patchcord22(inputMixerL, 1, audioSDWriter, 1);  //connect Raw audio to queue (to enable SD writing)
+AudioConnection_F32           patchcord22(inputMixerL, 1, audioSDWriter, 1);   //connect Raw audio to queue (to enable SD writing)
 AudioConnection_F32           patchcord23(inputMixerR, 0, audioSDWriter, 2);   //connect Raw audio to queue (to enable SD writing)
-AudioConnection_F32           patchcord24(inputMixerR, 1, audioSDWriter, 3);  //connect Raw audio to queue (to enable SD writing)
+AudioConnection_F32           patchcord24(inputMixerR, 1, audioSDWriter, 3);   //connect Raw audio to queue (to enable SD writing)
 
-//control display and serial interaction
+//control display and serial interaction via USB Serial
 SerialManager                 serialManager;
 
 String overall_name = String("Hear-Thru for Functional test of Tympan + Shield + Earpieces with PDM Mics");
@@ -75,7 +84,7 @@ void setup() {
 
   //Enable the Tympan and AIC shields to start the audio flowing!
   myTympan.enable(); 
-  aicShield.enable();
+  earpieceShield.enable();
 
   //Set the state of the LEDs
   myTympan.setRedLED(HIGH);
@@ -105,7 +114,7 @@ void setup() {
 void loop() {
   //respond to Serial commands
   while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
-  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
+  //while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
 
   //service the SD recording
   serviceSD();
@@ -125,27 +134,27 @@ void setInputSource(Mic_Input micInput) {
     case INPUT_PCBMICS:
       //Select Input
       myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
-      aicShield.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);
+      earpieceShield.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);
       
     case INPUT_MICJACK_MIC:
       //Select Input
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the mic jack
-      aicShield.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);
+      earpieceShield.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);
       
   case INPUT_MICJACK_LINEIN:
       //Select Input
       myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the mic jack
-      aicShield.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN);
+      earpieceShield.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN);
 
     case INPUT_LINEIN_SE:      
       //Select Input
       myTympan.inputSelect(TYMPAN_INPUT_LINE_IN); // use the line-input through holes
-      aicShield.inputSelect(TYMPAN_INPUT_LINE_IN);
+      earpieceShield.inputSelect(TYMPAN_INPUT_LINE_IN);
       
     case INPUT_PDMMICS:
       //Set the AIC's ADC to digital mic mode. Assign MFP4 to output a clock for the PDM, and MFP3 as the input to the PDM data line
       myTympan.enableDigitalMicInputs(true);
-      aicShield.enableDigitalMicInputs(true);
+      earpieceShield.enableDigitalMicInputs(true);
       break;
   }
 
@@ -154,13 +163,13 @@ void setInputSource(Mic_Input micInput) {
   {
     //Enable Digital Mic (enable analog inputs)
     myTympan.enableDigitalMicInputs(true);
-    aicShield.enableDigitalMicInputs(true);
+    earpieceShield.enableDigitalMicInputs(true);
   }
   else
   {
     //Disable Digital Mic (enable analog inputs)
     myTympan.enableDigitalMicInputs(false);
-    aicShield.enableDigitalMicInputs(false);
+    earpieceShield.enableDigitalMicInputs(false);
   }
     
   //Set input gain in dB
@@ -211,7 +220,7 @@ void setInputGain_dB(float newGain_dB) {
 
   //Set gain
   myTympan.setInputGain_dB(inputGain_dB);   //set the AIC on the main Tympan board
-  aicShield.setInputGain_dB(inputGain_dB);  //set the AIC on the Earpiece Shield
+  earpieceShield.setInputGain_dB(inputGain_dB);  //set the AIC on the Earpiece Shield
   myTympan.print("Input Gain: "); myTympan.print(inputGain_dB); myTympan.println("dB");
 }
 
@@ -226,7 +235,7 @@ void setOutputVolume_dB(float newVol_dB) {
 
   //Set output volume
   myTympan.volume_dB(outputVolume_dB);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
-  aicShield.volume_dB(outputVolume_dB);
+  earpieceShield.volume_dB(outputVolume_dB);
   myTympan.print("Output Volume: "); myTympan.print(outputVolume_dB); myTympan.println("dB");
 }
 
