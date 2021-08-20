@@ -1,3 +1,4 @@
+
 /*
 *   TrebleBoost_wComp_wApp
 *
@@ -13,7 +14,7 @@
 *
 *   Here in "TrebleBoost_wComp_wEarpieces_wApp", we started with the example sketch "TrebleBoost_wComp_wApp" 
 *   and added the earpiece functionality.  The earpieces also have built-in pre-written App GUI elements
-*   that we'll be using here.
+*   that we'll be using here.  (Oh, and I also added SD writing of the raw audio)
 *
 *   Like any App-enabled sketch, this example shows you:
 *      * How to use Tympan code here to define a graphical interface (GUI) in the App
@@ -22,6 +23,7 @@
 *
 *   Compared to the previous example, this sketch:
 *      * Adds the earpieces and their GUI elements
+*      * Adds SD writing of the raw audio from the mics
 *
 *   MIT License.  use at your own risk.
 */
@@ -92,6 +94,7 @@ void connectClassesToOverallState(void) {
   myState.comp1 = &comp1.state;
   myState.comp2 = &comp2.state;
   myState.earpieceMixer = &earpieceMixer.state;
+  
 }
 
 //Again, we're going to use a lot of built-in functionality of the compressor UI classes,
@@ -104,6 +107,7 @@ void setupSerialManager(void) {
   serialManager.add_UI_element(&earpieceMixer);
   serialManager.add_UI_element(&comp1);   //The left compressor
   serialManager.add_UI_element(&comp2);   //The right compressor
+  serialManager.add_UI_element(&audioSDWriter);
 }
 
 // define the setup() function, the function that is called once when the device is booting
@@ -159,6 +163,11 @@ void setup() {
   //configure the left and right compressors with the desired settings
   setupMyCompressors();
 
+  //prepare the SD writer for the format that we want and any error statements
+  audioSDWriter.setSerial(&myTympan);
+  audioSDWriter.setNumWriteChannels(4);     //can record 2 or 4 channels
+  Serial.println("Setup(): SD configured for " + String(audioSDWriter.getNumWriteChannels()) + " channels.");
+
   Serial.println("Setup complete.");
   serialManager.printHelp();
 } //end setup()
@@ -179,6 +188,12 @@ void loop() {
 
   //service the BLE advertising state
   ble.updateAdvertising(millis(),5000); //check every 5000 msec to ensure it is advertising (if not connected)
+
+  //service the SD recording
+  audioSDWriter.serviceSD_withWarnings(i2s_in); //For the warnings, it asks the i2s_in class for some info
+
+  //service the LEDs...blink slow normally, blink fast if recording
+  myTympan.serviceLEDs(millis(),audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING); 
 
   //periodically print the CPU and Memory Usage
   if (myState.flag_printCPUandMemory) myState.printCPUandMemory(millis(), 3000); //print every 3000msec  (method is built into TympanStateBase.h, which myState inherits from)
@@ -210,7 +225,6 @@ void printSignalLevels(unsigned long curTime_millis, unsigned long updatePeriod_
     lastUpdate_millis = curTime_millis;
   } // end if
 }
-
 
 
 // ///////////////// functions used to respond to the commands

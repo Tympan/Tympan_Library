@@ -7,6 +7,8 @@ AudioFilterBiquad_F32       hp_filt2(audio_settings);   //IIR filter doing a hig
 AudioEffectCompWDRC_F32_UI  comp1(audio_settings);      //Compresses the dynamic range of the audio.  Left.  UI enabled!!!
 AudioEffectCompWDRC_F32_UI  comp2(audio_settings);      //Compresses the dynamic range of the audio.  Right. UI enabled!!!
 AudioOutputI2S_F32          i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
+AudioSDWriter_F32_UI        audioSDWriter(audio_settings);//this is stereo by default
+
 
 // Make all of the audio connections
 AudioConnection_F32         patchcord1(i2s_in,0,earpieceMixer,0);
@@ -46,3 +48,9 @@ AudioConnection_F32        patchcord34(comp2, 0, i2s_out, EarpieceShield::OUTPUT
 //   The only rigid, non-flexible routing is that the headphone jack on the EarpieceShield is always outputing
 //   the same audio that is going to the earpieces.  That is simply how they are wired.  There is not flexibility
 //   here (unless you get out your soldering iron!)  :)
+
+// Connect the raw mic audio to the SD writer
+AudioConnection_F32     patchcord41(i2s_in, EarpieceShield::PDM_LEFT_FRONT,  audioSDWriter, 0);    //Left-Front Mic
+AudioConnection_F32     patchcord42(i2s_in, EarpieceShield::PDM_LEFT_REAR,   audioSDWriter, 1);    //Left-Rear Mic
+AudioConnection_F32     patchcord43(i2s_in, EarpieceShield::PDM_RIGHT_FRONT, audioSDWriter, 2);    //Right-Front Mic
+AudioConnection_F32     patchcord44(i2s_in, EarpieceShield::PDM_RIGHT_REAR,  audioSDWriter, 3);    //Right-Rear Mic

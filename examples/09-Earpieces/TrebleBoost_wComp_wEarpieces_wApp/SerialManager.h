@@ -9,6 +9,7 @@
 extern Tympan myTympan;                    //created in the main *.ino file
 extern State myState;                      //created in the main *.ino file
 extern EarpieceMixer_F32_UI earpieceMixer; //created in the main *.ino file
+extern AudioSDWriter_F32_UI audioSDWriter;
 
 //functions in the main sketch that I want to call from here
 extern void incrementHighpassFilters(float);
@@ -153,6 +154,9 @@ void SerialManager::createTympanRemoteLayout(void) {
 
     //Add a button group ("card") for the CPU reporting...use a button group that is built into myState for you!
     card_h = myState.addCard_cpuReporting(page_h);
+
+    //Add a button group for SD recording...use a button set that is built into AudioSDWriter_F32_UI for you!
+    card_h = audioSDWriter.addCard_sdRecord(page_h);
         
   //add some pre-defined pages to the GUI (pages that are built-into the App)
   myGUI.addPredefinedPage("serialPlotter");  //if we send data in the right format, the App will plot the signal levels in real-time!
