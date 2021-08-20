@@ -45,32 +45,29 @@ Tympan           myTympan(TympanRev::E, audio_settings);         //choose Tympan
 EarpieceShield   earpieceShield(TympanRev::E, AICShieldRev::A);  //Note that EarpieceShield is defined in the Tympan_Libarary in AICShield.h 
 
 // Instantiate the audio classes
-AudioInputI2SQuad_F32         i2s_in(audio_settings);         //Digital audio *from* the Tympan AIC.
-AudioMixer4_F32               inputMixerL(audio_settings);    //For mixing (or not) the two mics in the left earpiece
-AudioMixer4_F32               inputMixerR(audio_settings);    //For mixing (or not) the two mics in the left earpiece
-AudioOutputI2SQuad_F32        i2s_out(audio_settings);        //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
-AudioSDWriter_F32             audioSDWriter(audio_settings);  //this is stereo by default
+AudioInputI2SQuad_F32   i2s_in(audio_settings);         //Digital audio *from* the Tympan AIC.
+AudioMixer4_F32         inputMixerL(audio_settings);    //For mixing (or not) the two mics in the left earpiece
+AudioMixer4_F32         inputMixerR(audio_settings);    //For mixing (or not) the two mics in the left earpiece
+AudioOutputI2SQuad_F32  i2s_out(audio_settings);        //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
+AudioSDWriter_F32       audioSDWriter(audio_settings);  //this is stereo by default
 
-//Connect the front and rear mics (from each earpiece) to input mixers...note the unusual order (1,0,3,2).  Sorry, but it's true.
-const int LEFT_FRONT = 1, LEFT_REAR = 0, RIGHT_FRONT = 3, RIGHT_REAR = 2;
-AudioConnection_F32           patchcord1(i2s_in, LEFT_FRONT,  inputMixerL, 0);    //Left-Front Mic
-AudioConnection_F32           patchcord2(i2s_in, LEFT_REAR,   inputMixerL, 1);    //Left-Rear Mic
-AudioConnection_F32           patchcord3(i2s_in, RIGHT_FRONT, inputMixerR, 0);    //Right-Front Mic
-AudioConnection_F32           patchcord4(i2s_in, RIGHT_REAR,  inputMixerR, 1);    //Right-Rear Mic
+//Connect the front and rear mics (from each earpiece) to input mixers...which i2s input is associated with each mic is in EarpieceShield.cpp
+AudioConnection_F32     patchcord1(i2s_in, EarpieceShield::PDM_LEFT_FRONT,  inputMixerL, 0);    //Left-Front Mic
+AudioConnection_F32     patchcord2(i2s_in, EarpieceShield::PDM_LEFT_REAR,   inputMixerL, 1);    //Left-Rear Mic
+AudioConnection_F32     patchcord3(i2s_in, EarpieceShield::PDM_RIGHT_FRONT, inputMixerR, 0);    //Right-Front Mic
+AudioConnection_F32     patchcord4(i2s_in, EarpieceShield::PDM_RIGHT_REAR,  inputMixerR, 1);    //Right-Rear Mic
 
-//Connect the input mixers to both the Tympan and Shield audio outputs
-//NOTE: The left and right RIC is correct, but the headphone jacks have the left and right swapped.  
-const int OUT_LEFT_TYMPAN = 0, OUT_RIGHT_TYMPAN = 1, OUT_LEFT_EARPIECE = 3, OUT_RIGHT_EARPIECE = 2;
-AudioConnection_F32           patchcord11(inputMixerL, 0, i2s_out, OUT_LEFT_TYMPAN);    //Tympan AIC, left output
-AudioConnection_F32           patchcord12(inputMixerR, 0, i2s_out, OUT_RIGHT_TYMPAN);   //Tympan AIC, right output
-AudioConnection_F32           patchcord13(inputMixerL, 0, i2s_out, OUT_LEFT_EARPIECE);  //Shield AIC, left output
-AudioConnection_F32           patchcord14(inputMixerR, 0, i2s_out, OUT_RIGHT_EARPIECE); //Shield AIC, right output
+//Connect the input mixers to both the Tympan and Shield audio outputs...which i2s output is associated with each audio output is in EarpieceShield.cpp  
+AudioConnection_F32     patchcord11(inputMixerL, 0, i2s_out, EarpieceShield::OUTPUT_LEFT_TYMPAN);    //Tympan AIC, left output
+AudioConnection_F32     patchcord12(inputMixerR, 0, i2s_out, EarpieceShield::OUTPUT_RIGHT_TYMPAN);   //Tympan AIC, right output
+AudioConnection_F32     patchcord13(inputMixerL, 0, i2s_out, EarpieceShield::OUTPUT_LEFT_EARPIECE);  //Shield AIC, left output
+AudioConnection_F32     patchcord14(inputMixerR, 0, i2s_out, EarpieceShield::OUTPUT_RIGHT_EARPIECE); //Shield AIC, right output
 
 //Connect the input mixer to the SD card
-AudioConnection_F32           patchcord21(i2s_in, LEFT_FRONT,  audioSDWriter, 0);   //connect Raw audio to SD writer
-AudioConnection_F32           patchcord22(i2s_in, LEFT_REAR,   audioSDWriter, 1);   //connect Raw audio to SD writer
-AudioConnection_F32           patchcord23(i2s_in, RIGHT_FRONT, audioSDWriter, 2);   //connect Raw audio to SD writer
-AudioConnection_F32           patchcord24(i2s_in, RIGHT_REAR,  audioSDWriter, 3);   //connect Raw audio to SD writer
+AudioConnection_F32     patchcord21(i2s_in, EarpieceShield::PDM_LEFT_FRONT,  audioSDWriter, 0);   //connect Raw audio to SD writer
+AudioConnection_F32     patchcord22(i2s_in, EarpieceShield::PDM_LEFT_REAR,   audioSDWriter, 1);   //connect Raw audio to SD writer
+AudioConnection_F32     patchcord23(i2s_in, EarpieceShield::PDM_RIGHT_FRONT, audioSDWriter, 2);   //connect Raw audio to SD writer
+AudioConnection_F32     patchcord24(i2s_in, EarpieceShield::PDM_RIGHT_REAR,  audioSDWriter, 3);   //connect Raw audio to SD writer
 
 //control display and serial interaction via USB Serial
 #include "State.h"                          //For enums
@@ -212,8 +209,8 @@ void loop() {
   //service the SD recording
   serviceSD();
   
-  //service the LEDs
-  serviceLEDs(millis());
+  //service the LEDs...blink slow normally, blink fast if recording
+  myTympan.serviceLEDs(millis(),audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING); 
 
   //periodicallly check the potentiometer
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
@@ -256,47 +253,6 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     
   } // end if
 } //end servicePotentiometer();
-
-
-//Update the blinking of the LEDs depending upon whether we are (1) running or (2) writing to SD
-void serviceLEDs(unsigned long curTime_millis) {
-  static unsigned long lastUpdate_millis = 0;
-  const unsigned long long_toggle_millis = 1000;
-  const unsigned long short_toggle_millis = 100;
-
-  //handle wrap-around of the clock 
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; 
-
-  //choose how fast or slow to toggle based on recording state
-  unsigned long toggle_millis = long_toggle_millis;
-  if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
-    toggle_millis = short_toggle_millis;
-  }
-
-  //has enough time passed to toggle the LEDs
-  if ((curTime_millis - lastUpdate_millis) > toggle_millis) { //is it time to update the user interface?    
-    toggleLEDs(); //blink both
-    lastUpdate_millis = curTime_millis;
-  }
-} 
-
-
-void toggleLEDs(void) { toggleLEDs(true,true); } //toggle both
-void toggleLEDs(const bool &useAmber, const bool &useRed) {
-  static bool LED = false;
-  LED = !LED;
-  if (LED) {
-    if (useAmber) myTympan.setAmberLED(true);
-    if (useRed) myTympan.setRedLED(false);
-  } else {
-    if (useAmber) myTympan.setAmberLED(false);
-    if (useRed) myTympan.setRedLED(true);
-  }
-
-  if (!useAmber) myTympan.setAmberLED(false);
-  if (!useRed) myTympan.setRedLED(false);
-  
-}
 
 
 #define PRINT_OVERRUN_WARNING 1   //set to 1 to print a warning that the there's been a hiccup in the writing to the SD.
