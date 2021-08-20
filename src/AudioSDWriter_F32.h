@@ -199,6 +199,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       if (buffSDWriter) return buffSDWriter->writeBufferedData();
       return false;
     }
+	int serviceSD_withWarnings(void);
 
 	 bool isFileOpen(void) {
       if (buffSDWriter) return buffSDWriter->isFileOpen();
