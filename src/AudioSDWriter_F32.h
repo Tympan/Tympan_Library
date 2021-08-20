@@ -15,7 +15,8 @@
 #include <Arduino.h>  //for Serial
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
-
+#include "input_i2s_f32.h"
+#include "input_i2s_quad_f32.h"
 #include "SDWriter.h"
 #include "SerialManager_UI.h"
 #include "TympanRemoteFormatter.h"
@@ -200,6 +201,10 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       return false;
     }
 	int serviceSD_withWarnings(void);
+	int serviceSD_withWarnings(AudioInputI2S_F32 &i2s_in);
+	int serviceSD_withWarnings(AudioInputI2SQuad_F32 &i2s_in);
+	void checkMemoryI2S(AudioInputI2S_F32 &i2s_in);
+	void checkMemoryI2S(AudioInputI2SQuad_F32 &i2s_in);
 
 	 bool isFileOpen(void) {
       if (buffSDWriter) return buffSDWriter->isFileOpen();
@@ -207,12 +212,12 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     }
 
 	
-  unsigned long getStartTimeMillis(void) { return t_start_millis; };
-  unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
-  SdFs * getSdPtr(void) { 
+	unsigned long getStartTimeMillis(void) { return t_start_millis; };
+	unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
+	SdFs * getSdPtr(void) { 
 	if (!buffSDWriter) return buffSDWriter->getSdPtr(); 
 	return sd;
-  }
+	}
 		
 
   protected:
