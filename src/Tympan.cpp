@@ -67,6 +67,42 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 	forceBTtoDataMode(true);
 };
 
+
+int TympanBase::serviceLEDs(const unsigned int curTime_millis, const bool flag_blink_fast) {
+  static unsigned long lastUpdate_millis = 0;
+  if (lastUpdate_millis > curTime_millis) { lastUpdate_millis = 0; } //account for possible wrap-around
+  unsigned long dT_millis = curTime_millis - lastUpdate_millis;
+  
+  if (flag_blink_fast) {
+    if (dT_millis > 50) {  //fast toggle
+      toggleLEDs();
+      lastUpdate_millis = curTime_millis;
+    }
+  } else {
+    if (dT_millis > 1000) {  //slow toggle
+      toggleLEDs(true,true); //blink both
+      lastUpdate_millis = curTime_millis;
+    }
+  }
+  
+  return 0;
+}
+
+int TympanBase::toggleLEDs(const bool useAmber, const bool useRed) {
+  static bool LED = false;
+  LED = !LED;
+  if (LED) {
+    if (useAmber) setAmberLED(true);
+    if (useRed) setRedLED(false);
+  } else {
+    if (useAmber) setAmberLED(false);
+    if (useRed) setRedLED(true);
+  }
+  if (!useAmber) setAmberLED(false);
+  if (!useRed) setRedLED(false);
+}
+
+
 //void TympanBase::forceBTtoDataMode(bool state) {
 //	if (pins.BT_PIO4 != NOT_A_FEATURE) {
 //		if (state == true) {
