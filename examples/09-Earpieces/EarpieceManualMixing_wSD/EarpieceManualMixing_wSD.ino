@@ -207,7 +207,7 @@ void loop() {
   //while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
 
   //service the SD recording
-  serviceSD();
+  audioSDWriter.serviceSD_withWarnings(i2s_in); //For the warnings, it asks the i2s_in class for some info
   
   //service the LEDs...blink slow normally, blink fast if recording
   myTympan.serviceLEDs(millis(),audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING); 
@@ -255,53 +255,6 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
 } //end servicePotentiometer();
 
 
-#define PRINT_OVERRUN_WARNING 1   //set to 1 to print a warning that the there's been a hiccup in the writing to the SD.
-void serviceSD(void) {
-  static int max_max_bytes_written = 0; //for timing diagnotstics
-  static int max_bytes_written = 0; //for timing diagnotstics
-  static int max_dT_micros = 0; //for timing diagnotstics
-  static int max_max_dT_micros = 0; //for timing diagnotstics
-
-  unsigned long dT_micros = micros();  //for timing diagnotstics
-  int bytes_written = audioSDWriter.serviceSD();
-  dT_micros = micros() - dT_micros;  //timing calculation
-
-  if ( bytes_written > 0 ) {
-    
-    max_bytes_written = max(max_bytes_written, bytes_written);
-    max_dT_micros = max((int)max_dT_micros, (int)dT_micros);
-   
-    if (dT_micros > 10000) {  //if the write took a while, print some diagnostic info
-      max_max_bytes_written = max(max_bytes_written,max_max_bytes_written);
-      max_max_dT_micros = max(max_dT_micros, max_max_dT_micros);
-      
-      Serial.print("serviceSD: bytes written = ");
-      Serial.print(bytes_written); Serial.print(", ");
-      Serial.print(max_bytes_written); Serial.print(", ");
-      Serial.print(max_max_bytes_written); Serial.print(", ");
-      Serial.print("dT millis = "); 
-      Serial.print((float)dT_micros/1000.0,1); Serial.print(", ");
-      Serial.print((float)max_dT_micros/1000.0,1); Serial.print(", "); 
-      Serial.print((float)max_max_dT_micros/1000.0,1);Serial.print(", ");      
-      Serial.println();
-      max_bytes_written = 0;
-      max_dT_micros = 0;     
-    }
-      
-    //print a warning if there has been an SD writing hiccup
-    if (PRINT_OVERRUN_WARNING) {
-      //if (audioSDWriter.getQueueOverrun() || i2s_in.get_isOutOfMemory()) {
-      if (i2s_in.get_isOutOfMemory()) {
-        float approx_time_sec = ((float)(millis()-audioSDWriter.getStartTimeMillis()))/1000.0;
-        if (approx_time_sec > 0.1) {
-          Serial.print("SD Write Warning: there was a hiccup in the writing.");//  Approx Time (sec): ");
-          Serial.println(approx_time_sec );
-        }
-      }
-    }
-    i2s_in.clear_isOutOfMemory();
-  }
-}
 
 // ////////////// Change settings of system
 
