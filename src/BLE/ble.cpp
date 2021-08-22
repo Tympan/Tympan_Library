@@ -1,10 +1,5 @@
 #include "ble.h"
 
-//BLE::BLE(Stream *sp) : BC127(sp)
-//{
-//
-//}
-
 int BLE::begin(void)
 {
 	
@@ -57,21 +52,21 @@ int BLE::begin(void)
 void BLE::setupBLE(int BT_firmware, bool printDebug) 
 {  
 
-	int ret_val;
-	ret_val = set_BC127_firmware_ver(BT_firmware);
-	if (ret_val != BT_firmware) {
-		Serial.println("BLE: setupBLE: *** WARNING ***: given BT_firmware (" + String(BT_firmware) + ") not allowed.");
-		Serial.println("   : assuming firmware " + String(ret_val) + " instead. Continuing...");
-	}
-	ret_val = begin();
-	if (ret_val != 1) {  //via BC127.h, success is a value of 1
-		Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");  Serial.println(ret_val);
-		Serial.println("    : -1 = TIMEOUT ERROR");
-		Serial.println("    :  0 = GENERIC MODULE ERROR");
-	}
-
-	//start the advertising for a connection (whcih will be maintained in serviceBLE())
-	advertise(true);
+    int ret_val;
+    ret_val = set_BC127_firmware_ver(BT_firmware);
+    if (ret_val != BT_firmware)
+    {
+        Serial.println("BLE: setupBLE: *** WARNING ***: given BT_firmware (" + String(BT_firmware) + ") not allowed.");
+        Serial.println("   : assuming firmware " + String(ret_val) + " instead. Continuing...");
+    }
+    ret_val = begin();
+    if (ret_val != 1)
+    { //via BC127.h, success is a value of 1
+        Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");
+        Serial.println(ret_val);
+        Serial.println("    : -1 = TIMEOUT ERROR");
+        Serial.println("    :  0 = GENERIC MODULE ERROR");
+    }
 
 	//print version information...this is for debugging only
 	if (printDebug) Serial.println("BLE: setupBLE: assuming BC127 firmware: " + String(BC127_firmware_ver) + ", Actual is:");
@@ -81,8 +76,8 @@ void BLE::setupBLE(int BT_firmware, bool printDebug)
 
 size_t BLE::sendByte(char c)
 {
-	//Serial.print("BLE: sendBytle: "); Serial.println(c);
-	
+    //Serial.print("BLE: sendBytle: "); Serial.println(c);
+
     String s = String("").concat(c);
     if (send(s))
         return 1;
@@ -92,8 +87,8 @@ size_t BLE::sendByte(char c)
 
 size_t BLE::sendString(const String &s)
 {
-	//Serial.print("BLE: sendString: "); Serial.println(s);
-	
+    //Serial.print("BLE: sendString: "); Serial.println(s);
+
     if (send(s))
         return s.length();
 
@@ -102,88 +97,60 @@ size_t BLE::sendString(const String &s)
 
 size_t BLE::sendMessage(const String &orig_s)
 {
-	String s = orig_s;
-	const int payloadLen = 19;
-	size_t sentBytes = 0;
+    String s = orig_s;
+    const int payloadLen = 19;
+    size_t sentBytes = 0;
 
     String header;
     header = "\xab\xad\xc0\xde"; // ABADCODE, message preamble
     header.concat('\xff');       // message type
 
     // message length
-    if (s.length() >= (0x4000 - 1)) {  //we might have to add a byte later, so call subtract one from the actual limit
+    if (s.length() >= (0x4000 - 1))
+    { //we might have to add a byte later, so call subtract one from the actual limit
         Serial.println("BLE: Message is too long!!! Aborting.");
         return 0;
     }
-    int lenBytes = (s.length()<<1) | 0x8001; //the 0x8001 is avoid the first message having the 2nd-to-last byte being NULL
+    int lenBytes = (s.length() << 1) | 0x8001; //the 0x8001 is avoid the first message having the 2nd-to-last byte being NULL
     header.concat((char)highByte(lenBytes));
-    header.concat((char )lowByte(lenBytes));
-	
-	//check to ensure that there isn't a NULL or a CR in this header
-	if ((header[6] == '\r') || (header[6] == '\0')) {
-		//add a character to the end to avoid an unallowed hex code code in the header
-		//Serial.println("BLE: sendMessage: ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
-		s.concat(' ');  //append a space character
-		
-		//regenerate the size-related information for the header
-		int lenBytes = (s.length()<<1) | 0x8001; //the 0x8001 is avoid the first message having the 2nd-to-last byte being NULL
-		header[5] = ((char)highByte(lenBytes));
-		header[6] = ((char )lowByte(lenBytes));
-	}
+    header.concat((char)lowByte(lenBytes));
+
+    //check to ensure that there isn't a NULL or a CR in this header
+    if ((header[6] == '\r') || (header[6] == '\0'))
+    {
+        //add a character to the end to avoid an unallowed hex code code in the header
+        //Serial.println("BLE: sendMessage: ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
+        s.concat(' '); //append a space character
+
+        //regenerate the size-related information for the header
+        int lenBytes = (s.length() << 1) | 0x8001; //the 0x8001 is avoid the first message having the 2nd-to-last byte being NULL
+        header[5] = ((char)highByte(lenBytes));
+        header[6] = ((char)lowByte(lenBytes));
+    }
 
     //Serial.println("BLE: sendMessage: Header (" + String(header.length()) + " bytes): '" + header + "'");
     //Serial.println("BLE: Message: '" + s + "'");
 
-	//send the packet with the header information
+    //send the packet with the header information
     char buf[16];
     sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
     //Serial.println(buf);
     int a = sendString(header);
-    if (a != 7) Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
+    if (a != 7)  Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
 
-
-/* 	int ind_start = 0, ind_end=0, ind_out;
-	char bu[1+payloadLen+1];  //temporary buffer
-	int packet_counter = 0;
-
-	String foo_s;
-	while (ind_end < len) {
-		//compute indices into our source string
-		ind_start = ind_end;
-		ind_end = ind_start + payloadLen;
-		ind_end = min(ind_end,len);
-		
-		//construct this payload
-		ind_out = 0;
-		bu[ind_out++] = (char)(0xF0 | lowByte(packet_counter++));  //first byte
-		while (ind_start < ind_end) {
-			bu[ind_out++]=c_str[ind_start++];  //payload
-		}
-		bu[ind_out] = '\0';  //trailing byte...null terminated c-style string
-		
-		//send the payload
-		//sentBytes += (sendString(String(bu))-1);
-		foo_s = String(bu);
-		size_t foo = sendString(foo_s);
-		if (foo > 0) sentBytes += (foo-1);
-		//Serial.println("BLE: sendMessage: packet " + String(packet_counter) + ", " + String(ind_start) + ", " + String(ind_end) + ", sentBytes = " + String(foo) + ", " + foo_s);
-		//delay(10);
-		delay(5); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
-	} */
-
-
-	//break up String into packets
+    //break up String into packets
     int numPackets = ceil(s.length() / (float)payloadLen);
-	for (int i = 0; i < numPackets; i++)
+    for (int i = 0; i < numPackets; i++)
     {
         String bu = (char)(0xF0 | lowByte(i));
         bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
-        sentBytes += (sendString(bu)-1);
+        sentBytes += (sendString(bu) - 1);
         delay(4); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
     }
 
-	//Serial.print("BLE: sendMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);
-    if (s.length() == sentBytes) return sentBytes;
+    //Serial.print("BLE: sendMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);
+    if (s.length() == sentBytes)
+        return sentBytes;
 
     return 0;
 }
@@ -193,40 +160,27 @@ size_t BLE::recvMessage(String *s)
     int msgSize = 0;
     int bytesRecvd = 0;
 
-    while (1)
-    {
-        if (available() > 0)
-        {
-            if (recvBLE(s) > 0)
-            {
-                if (s->startsWith("\xab\xad\xc0\xde\xff"))
-                {
-                    msgSize = word(s->charAt(5), s->charAt(6));
-                    Serial.println("BLE: recvMessage: Length of message: '" + String(msgSize) + "'");
+    while (available() > 0)   {
 
-                    char buf[16];
+        if (recvBLE(s) > 0)   {
 
-                    sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", s->charAt(0), s->charAt(1), s->charAt(2), s->charAt(3), s->charAt(4), s->charAt(5), s->charAt(6));
+            if (s->startsWith("\xab\xad\xc0\xde\xff"))   {
 
-                    Serial.println(buf);
+                msgSize = word(s->charAt(5), s->charAt(6));
+                Serial.println("BLE: recvMessage: Length of message: '" + String(msgSize) + "'");
 
-                    int numPackets = ceil(msgSize / 20.0);
+                char buf[16];
+                sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", s->charAt(0), s->charAt(1), s->charAt(2), s->charAt(3), s->charAt(4), s->charAt(5), s->charAt(6));
+                Serial.println(buf);
 
-                    for (int i = 0; i < numPackets; i++)
-                    {
-                        bytesRecvd += recvBLE(s);
-                    }
+                int numPackets = ceil(msgSize / 20.0);
+                for (int i = 0; i < numPackets; i++) bytesRecvd += recvBLE(s);
+                if (bytesRecvd == msgSize) return bytesRecvd;
 
-                    if (bytesRecvd == msgSize)
-                    {
-                        return bytesRecvd;
-                    }
-                }
-                continue;
             }
-
-            break;
+            continue;
         }
+        break;
     }
 
     return 0;
@@ -237,7 +191,7 @@ size_t BLE::recvMessage(String *s)
 		//do nothing
 	} else {
 		//check to see if advertising
-		
+
 		//
 	}
 } */
@@ -250,10 +204,8 @@ size_t BLE::recvBLE(String *s, bool printResponse)
     unsigned long startTime = millis();
 
     // as long as we have time
-    while ((startTime + _timeout) > millis())
-    {
-        if (recv(&tmp) > 0)
-        {
+    while ((startTime + _timeout) > millis())  {
+        if (recv(&tmp) > 0)    {
 			if (printResponse) Serial.println("BLE: recvBLE: received = " + tmp);
 			
 			if (BC127_firmware_ver < 7) {
@@ -323,9 +275,9 @@ bool BLE::interpretAnyOpenOrClosedMsg(String tmp, bool printDebug) {
 
 bool BLE::isAdvertising(bool printResponse)
 {
-	//Ask the BC127 its advertising status. 
-	//in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
-	//in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
+    //Ask the BC127 its advertising status.
+    //in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
+    //in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
     if (status() > 0) //in bc127.cpp.    answer stored in cmdResponse.
     {
 		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
@@ -350,14 +302,13 @@ bool BLE::isAdvertising(bool printResponse)
     }
 
     return false;
-	
 }
 bool BLE::isConnected(bool printResponse)
 {
-	//Ask the BC127 its advertising status.  
-	//in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
-	//in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
-	//   followed by LINK 14 CONNECTED or something like that if the BLE is actually connected to something
+    //Ask the BC127 its advertising status.
+    //in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
+    //in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
+    //   followed by LINK 14 CONNECTED or something like that if the BLE is actually connected to something
     if (status() > 0) //in bc127.cpp.  answer stored in cmdResponse.
     {
 		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
@@ -450,10 +401,10 @@ bool BLE::waitConnect(int time)
             {
                 return true;
             }
-			if (line.startsWith("OPEN_OK 14 BLE")) //V6 and newer
-			{
-				return true;
-			}
+            if (line.startsWith("OPEN_OK 14 BLE")) //V6 and newer
+            {
+                return true;
+            }
 
             // move on to next line
             line = "";
@@ -475,6 +426,4 @@ void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePe
         advertise(true);  //not connected, ensure that we are advertising
       }
     }
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }	
 }

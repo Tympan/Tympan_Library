@@ -26,7 +26,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //setup the  Tympan using the default settings
 Tympan                        myTympan(TympanRev::E, audio_settings); //choose TympanRev::D or TympanRev::E
-EarpieceShield                aicShield(TympanRev::E, AICShield::A);  //choose TympanRev::D or TympanRev::E
+EarpieceShield                aicShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E
 
 // Define audio objects
 AudioInputI2SQuad_F32         i2s_in(audio_settings);         //Digital audio *from* the Tympan AIC.
@@ -105,7 +105,7 @@ void setup() {
 void loop() {
   //respond to Serial commands
   while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
-  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
+  //while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial...there is no App GUI here, so disable reading BT serial
 
   //service the SD recording
   serviceSD();

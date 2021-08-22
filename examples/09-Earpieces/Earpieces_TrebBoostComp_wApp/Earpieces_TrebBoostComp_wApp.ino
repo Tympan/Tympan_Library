@@ -26,7 +26,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //setup the  Tympan using the default settings
 Tympan                        myTympan(TympanRev::E, audio_settings); //choose TympanRev::D or TympanRev::E
-EarpieceShield                aicShield(TympanRev::E, AICShield::A);  //choose TympanRev::D or TympanRev::E
+EarpieceShield                aicShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E
 
 // Define audio objects
 AudioInputI2SQuad_F32         i2s_in(audio_settings);         //Digital audio *from* the Tympan AIC.
@@ -86,7 +86,7 @@ SerialManager                 serialManager;
 State                         myState(&audio_settings, &myTympan);
 //Settings                      defaultSettings;
 
-String overall_name = String("Hear-Thru for Functional test of Tympan + Shield + Earpieces with PDM Mics");
+String overall_name = String("Tympan + Shield + Earpieces with PDM Mics, Treble Boost, and WDRC Compression");
 
 //Static Variables
 static float outputVolume_dB = 0.0;
