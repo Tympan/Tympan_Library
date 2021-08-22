@@ -144,7 +144,14 @@ size_t BLE::sendMessage(const String &orig_s)
     sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
     //Serial.println(buf);
     int a = sendString(header);
-    if (a != 7)  Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
+    if (a != 7)  {
+		//only print if V5 or, if it is V7, if there is a valid connection (noted by a valid BLE_id_num)
+		if ((BC127_firmware_ver < 6) || (BLE_id_num > 0)) {
+			Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
+		}	
+		//if we really do get an error, should we really try to transmit all the packets below?  Seems like we shouldn't.
+	}
+		
 
     //break up String into packets
     int numPackets = ceil(s.length() / (float)payloadLen);
