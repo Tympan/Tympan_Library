@@ -1,6 +1,6 @@
 #include "ble.h"
 
-int BLE::begin(void)
+int BLE::begin(bool doFactoryReset)
 {
 	int ret_val = 0;
 	
@@ -11,14 +11,14 @@ int BLE::begin(void)
 	//myTympan.forceBTtoDataMode(false);
 	_serialPort->print("$");  delay(400);	_serialPort->print("$$$");
 
-	#if 1
-	//restore to factory defaults
-	ret_val = restore();
-	if (ret_val != BC127::SUCCESS) {
-		Serial.print(F("BLE: begin: restore() returned error "));
-		Serial.println(ret_val);
+	if (doFactoryReset) {
+		//restore to factory defaults
+		ret_val = restore();
+		if (ret_val != BC127::SUCCESS) {
+			Serial.print(F("BLE: begin: restore() returned error "));
+			Serial.println(ret_val);
+		}
 	}
-	#endif
 
 	
 	//enable BT_Classic connectable and discoverable, always
@@ -50,14 +50,26 @@ int BLE::begin(void)
 
 void BLE::setupBLE(int BT_firmware, bool printDebug) 
 {  
+	bool doFactoryReset = true;
+	setupBLE(BT_firmware, printDebug, doFactoryReset);
+}
 
+void BLE::setupBLE_noFactoryReset(int BT_firmware, bool printDebug)
+{
+	bool doFactoryReset = false;
+	setupBLE(BT_firmware, printDebug, doFactoryReset);	
+}
+
+void BLE::setupBLE(int BT_firmware, bool printDebug, bool doFactoryReset)
+{
     int ret_val;
     ret_val = set_BC127_firmware_ver(BT_firmware);
     if (ret_val != BT_firmware) {
         Serial.println("BLE: setupBLE: *** WARNING ***: given BT_firmware (" + String(BT_firmware) + ") not allowed.");
         Serial.println("   : assuming firmware " + String(ret_val) + " instead. Continuing...");
     }
-    ret_val = begin(); //via BC127.h, success is a value of 1
+	
+    ret_val = begin(doFactoryReset); //via BC127.h, success is a value of 1
     if (ret_val != 1) { 
         Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");
         Serial.println(ret_val);
@@ -71,8 +83,10 @@ void BLE::setupBLE(int BT_firmware, bool printDebug)
 	//print version information...this is for debugging only
 	if (printDebug) Serial.println("BLE: setupBLE: assuming BC127 firmware: " + String(BC127_firmware_ver) + ", Actual is:");
 	version(printDebug);
-	
 }
+
+
+
 
 size_t BLE::sendByte(char c)
 {
