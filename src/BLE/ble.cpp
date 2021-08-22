@@ -54,7 +54,7 @@ int BLE::begin(void)
 	return ret_val;
 }
 
-void BLE::setupBLE(int BT_firmware) 
+void BLE::setupBLE(int BT_firmware, bool printDebug) 
 {  
 
 	int ret_val;
@@ -73,8 +73,10 @@ void BLE::setupBLE(int BT_firmware)
 	//start the advertising for a connection (whcih will be maintained in serviceBLE())
 	advertise(true);
 
-	//If v7 firmware, make discoverable and connectable to BT classic (does this need to be maintained, if connected?)
-	//if (BC127_firmware_ver >= 7) discoverableConnectableV7(true);
+	//print version information...this is for debugging only
+	if (printDebug) Serial.println("BLE: setupBLE: assuming BC127 firmware: " + String(BC127_firmware_ver) + ", Actual is:");
+	version(printDebug);
+	
 }
 
 size_t BLE::sendByte(char c)
@@ -376,21 +378,16 @@ bool BLE::isConnected(bool printResponse)
 			//it only looks for the first "1" of the possible BLE "4" connections.
 			if (BC127_firmware_ver >= 6) {
 				ind = s.indexOf("LINK 14 CONNECTED");
-				if (ind == -1) {
-					//if (printResponse) Serial.println("BLE (v7): isConnected: not connected...no 'LINK 14 CONNECTED' found");
-					
-					ind = s.indexOf("BLE[CONNECTED]");
-					if (ind == -1) {
-					
-						//ind = s.indexOf("LINK 10 CONNECTED");
-						//if (ind >= 0) {
-						//	Serial.println("BLE: isConnected: *** WARNING ***: no BLE connection but there is a A2DP connection.");						
-						//}					
-					
-						return false;
-					} else {
-						//there is a BLE connection, just no LINK 14 yet.  Weird.  Maybe there's a LINK 10 slowing things down?
-					}
+				int ind2 = s.indexOf("LINK 24 CONNECTED");
+				int ind3 = s.indexOf("LINK 34 CONNECTED");
+				int ind4 = s.indexOf("BLE[CONNECTED]");
+				if ( (ind == -1) && (ind2 == -1) && (ind3 == -1) && (ind4 == -1) ) { //if none are found, we are not connected
+					//no BLE-specific connection message is found.
+					//if (printResponse) Serial.println("BLE (v7): isConnected: not connected...");				
+					return false;
+				} else {
+					//if (printResponse) Serial.println("BLE: isConnected: yes is connected.");
+					return true;
 				}
 			} else {
 				//for V5.5, here are the kinds of lines that one can see:
@@ -408,28 +405,23 @@ bool BLE::isConnected(bool printResponse)
 				//Serial.print("BLE (v5x): ind of 'Connected' = ");
 				//Serial.println(ind);
 				
-				//if we got this far, then at least one CONNECTED is seen.  Let's look for IDLE and ADVERTISING, which
+				//if we got this far, then at least one CONNECTED is seen.  Let's look for IDLE or ADVERTISING, either of which
 				//indicate that it's not BLE that is connected
 				ind = s.indexOf("IDLE");
-				if (ind >= 0) {
-					//Serial.println("BLE: isConnected: found IDLE...so NOT connected.");
+				int ind2 = s.indexOf("ADVERTISING");
+				if ( (ind >= 0) || (ind2 >= 0) ) { //if either are found, we are not connected
+					//Serial.println("BLE: isConnected: found IDLE or ADVERTISING...so NOT connected.");
 					//there is IDLE...so, there is no connection
 					return false;
-				}
-				
-				ind = s.indexOf("ADVERTISING");
-				if (ind >= 0) {
-					//Serial.println("BLE: isConnected: found advertising...so NOT connected.");
-					//there is ADVERTISING...so there is no connection
-					return false;
+				} else {
+					//if (printResponse) Serial.println("BLE: isConnected: yes is connected.");
+					return true;
 				}
 			}
-			
-			//if (printResponse) Serial.println("BLE: isConnected: yes is connected.");
-			return true;
 		}
     }
 
+	//if we got this far, let's assume that we are not connected
     return false;
 }
 

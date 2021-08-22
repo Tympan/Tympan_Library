@@ -11,7 +11,7 @@ class BLE : public BC127
 public:
     BLE(Stream *sp) : BC127(sp) {}
 	int begin(void);
-	void setupBLE(int BT_firmware = 7);  //to be called from the Arduino sketch's setup() routine.  Includes error reporting to Serial
+	void setupBLE(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Includes error reporting to Serial
     size_t sendByte(char c);
     size_t sendString(const String &s);
     size_t sendMessage(const String &s);
