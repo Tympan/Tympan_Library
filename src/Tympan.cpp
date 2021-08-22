@@ -51,9 +51,14 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 		//Now, raise REGEN to enable the rest of the booting
 		digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
 		
-		//wait for booting to finish (how long?!?) and lower REGEN to its normally-low position
-		delay(100);
-		digitalWrite(pins.BT_REGEN,LOW); //then return low
+		if (BT_firmware < 7) {
+			//for V5.5
+			//wait for booting to finish (how long?!?) and lower REGEN to its normally-low position
+			delay(100);
+			digitalWrite(pins.BT_REGEN,LOW); //then return low
+		} else { //such as for Firmware V7
+			//or leave it high...assuming high is normal
+		}
 	}
 	if (pins.BT_nReset != NOT_A_FEATURE) {  //For RN51 and  BC127 modules.  (RevC, RevD, RevE)
 		pinMode(pins.BT_nReset,OUTPUT);
@@ -66,6 +71,42 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 
 	forceBTtoDataMode(true);
 };
+
+
+int TympanBase::serviceLEDs(const unsigned int curTime_millis, const bool flag_blink_fast) {
+  static unsigned long lastUpdate_millis = 0;
+  if (lastUpdate_millis > curTime_millis) { lastUpdate_millis = 0; } //account for possible wrap-around
+  unsigned long dT_millis = curTime_millis - lastUpdate_millis;
+  
+  if (flag_blink_fast) {
+    if (dT_millis > 50) {  //fast toggle
+      toggleLEDs();
+      lastUpdate_millis = curTime_millis;
+    }
+  } else {
+    if (dT_millis > 1000) {  //slow toggle
+      toggleLEDs(true,true); //blink both
+      lastUpdate_millis = curTime_millis;
+    }
+  }
+  
+  return 0;
+}
+
+int TympanBase::toggleLEDs(const bool useAmber, const bool useRed) {
+  static bool LED = false;
+  LED = !LED;
+  if (LED) {
+    if (useAmber) setAmberLED(true);
+    if (useRed) setRedLED(false);
+  } else {
+    if (useAmber) setAmberLED(false);
+    if (useRed) setRedLED(true);
+  }
+  if (!useAmber) setAmberLED(false);
+  if (!useRed) setRedLED(false);
+}
+
 
 //void TympanBase::forceBTtoDataMode(bool state) {
 //	if (pins.BT_PIO4 != NOT_A_FEATURE) {
