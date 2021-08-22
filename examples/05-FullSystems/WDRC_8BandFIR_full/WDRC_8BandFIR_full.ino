@@ -169,8 +169,8 @@ void loop() {
   //service the SD recording
   serviceSD();
 
-  //service the LEDs
-  serviceLEDs(millis());
+  //service the LEDs...blink slow normally, blink fast if recording
+  myTympan.serviceLEDs(millis(),audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING);
 
   //service the potentiometer...if enough time has passed
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
@@ -188,43 +188,6 @@ void loop() {
 
 
 // ///////////////// Servicing routines
-
-void serviceLEDs(unsigned long curTime_millis) {
-  static unsigned long lastUpdate_millis = 0;
-  if (lastUpdate_millis > curTime_millis) { lastUpdate_millis = 0; } //account for possible wrap-around
-  unsigned long dT_millis = curTime_millis - lastUpdate_millis;
-  
-  if (audioSDWriter.getState() == AudioSDWriter::STATE::UNPREPARED) {
-    if (dT_millis > 1000) {  //slow toggle
-      toggleLEDs(true,true); //blink both
-      lastUpdate_millis = curTime_millis;
-    }
-  } else if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
-    if (dT_millis > 50) {  //fast toggle
-      toggleLEDs(true,true); //blink both
-      lastUpdate_millis = curTime_millis;
-    }
-  } else {
-    if (dT_millis > 1000) {  //slow toggle
-      toggleLEDs(true,true); //blink both
-      lastUpdate_millis = curTime_millis;
-    }
-  }
-}
-
-void toggleLEDs(const bool &useAmber, const bool &useRed) {
-  static bool LED = false;
-  LED = !LED;
-  if (LED) {
-    if (useAmber) myTympan.setAmberLED(true);
-    if (useRed) myTympan.setRedLED(false);
-  } else {
-    if (useAmber) myTympan.setAmberLED(false);
-    if (useRed) myTympan.setRedLED(true);
-  }
-  if (!useAmber) myTympan.setAmberLED(false);
-  if (!useRed) myTympan.setRedLED(false);
-}
 
 
 #define PRINT_OVERRUN_WARNING 1   //set to 1 to print a warning that the there's been a hiccup in the writing to the SD.

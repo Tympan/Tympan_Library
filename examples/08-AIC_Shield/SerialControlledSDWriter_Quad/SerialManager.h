@@ -17,8 +17,8 @@ extern const int INPUT_LINEIN_JACK;
 
 //Extern Functions
 extern void setConfiguration(int);
-extern void togglePrintMemoryAndCPU(void);
-extern void setPrintMemoryAndCPU(bool);
+//extern void togglePrintMemoryAndCPU(void);
+//extern void setPrintMemoryAndCPU(bool);
 extern void incrementInputGain(float);
 
 //now, define the Serial Manager class
@@ -42,8 +42,8 @@ void SerialManager::printHelp(void) {
   myTympan.println("SerialManager Help: Available Commands:");
   //myTympan.println("   J: Print the JSON config object, for the Tympan Remote app");
   //myTympan.println("    j: Print the button state for the Tympan Remote app");
-  myTympan.println("   c: Start printing of CPU and Memory usage");
-  myTympan.println("   C: Stop printing of CPU and Memory usage");
+  //myTympan.println("   c: Start printing of CPU and Memory usage");
+  //myTympan.println("   C: Stop printing of CPU and Memory usage");
   myTympan.println("   w: Switch Input to PCB Mics");
   myTympan.println("   W: Switch Input to Headset Mics");
   myTympan.println("   e: Switch Input to LineIn on the Mic Jack");
@@ -62,16 +62,16 @@ void SerialManager::respondToByte(char c) {
   switch (c) {
     case 'h': case '?':
       printHelp(); break;
-    case 'c':
-      myTympan.println("Received: start CPU reporting");
-      setPrintMemoryAndCPU(true);
-      setButtonState("cpuStart",true);
-      break;
-    case 'C':
-      myTympan.println("Received: stop CPU reporting");
-      setPrintMemoryAndCPU(false);
-      setButtonState("cpuStart",false);
-      break;
+//    case 'c':
+//      myTympan.println("Received: start CPU reporting");
+//      setPrintMemoryAndCPU(true);
+//      setButtonState("cpuStart",true);
+//      break;
+//    case 'C':
+//      myTympan.println("Received: stop CPU reporting");
+//      setPrintMemoryAndCPU(false);
+//      setButtonState("cpuStart",false);
+//      break;
     case 'i':
       incrementInputGain(gainIncrement_dB);
       printGainSettings();
