@@ -10,7 +10,7 @@
 class BLE : public BC127
 {
 public:
-    BLE(Stream *sp) : BC127(sp) {}
+    BLE(HardwareSerial *sp) : BC127(sp) {}
 	int begin(bool doFactoryReset = true);
 	void setupBLE(int BT_firmware = 7, bool printDebug = true);            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
     void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
@@ -26,13 +26,18 @@ public:
     bool isConnected(bool printResponse = false);
     bool waitConnect(int time = -1);
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000, bool printDebugMsgs=false);
+	
+protected:
+	int findAndSwitchToBaudrate(bool printDebug=false);
+	void setSerialBaudRate(int new_baud);
+	int checkStatusBLE(bool printDebug=false);
 
 };
 
 class BLE_UI : public BLE, public SerialManager_UI
 {
 	public:
-		BLE_UI(Stream *sp) : BLE(sp), SerialManager_UI() {}
+		BLE_UI(HardwareSerial *sp) : BLE(sp), SerialManager_UI() {}
 
 		// ///////// here are the methods that you must implement from SerialManager_UI
 		virtual void printHelp(void);

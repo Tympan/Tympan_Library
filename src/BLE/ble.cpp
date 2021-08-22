@@ -1,8 +1,19 @@
 #include "ble.h"
 
+const int factory_baudrate = 9600;   //here is one possible starting baudrate for the BLE module
+const int faster_baudrate = 115200; //here is the other possible starting baudrate for the BLE module
+
+
 int BLE::begin(bool doFactoryReset)
 {
+	bool switch_to_faster_baud_rate = true;
 	int ret_val = 0;
+
+	//shorten the timeout period...
+	//any failed trial will hit this a lot, so shorter is better
+	unsigned long orig_timeout = _timeout;
+	unsigned long new_timeout = 1000; //millis
+	setTimeout(new_timeout);
 	
 	//clear the incoming serial buffer
 	while (_serialPort->available()) _serialPort->read();  //clear the serial buffer associated with the BT unit
@@ -10,43 +21,121 @@ int BLE::begin(bool doFactoryReset)
 	//force into command mode (not needed if already in command mode...but historical Tympan units were preloaded to Data mode instead)
 	//myTympan.forceBTtoDataMode(false);
 	_serialPort->print("$");  delay(400);	_serialPort->print("$$$");
+	
+	//find the correct baud rate
+	findAndSwitchToBaudrate(true);
 
 	if (doFactoryReset) {
 		//restore to factory defaults
-		ret_val = restore();
-		if (ret_val != BC127::SUCCESS) {
-			Serial.print(F("BLE: begin: restore() returned error "));
-			Serial.println(ret_val);
-		}
+		Serial.println("BLE: begin: issuing RESTORE....");
+		ret_val = restore();  //this will drop the baud rate down to the factory value (9600)
+		
+		//if (ret_val != BC127::SUCCESS) Serial.println(F("BLE: begin: restore() returned error ") + String(ret_val));
+		setSerialBaudRate(factory_baudrate);
 	}
 
+	//switch BC127 to listen to the serial link from the Tympan to a faster baud rate
+	if (switch_to_faster_baud_rate) {
+		Serial.println("BLE: Begin: setting BC127 baudrate to " + String(faster_baudrate));
+		if (BC127_firmware_ver >= 7) {
+			ret_val = setConfig("UART_CONFIG",String(faster_baudrate) + " OFF 0");
+		} else {
+			ret_val = setConfig("BAUD",String(faster_baudrate));
+		}
+		//if (ret_val != BC127::SUCCESS) {
+		//	Serial.println(F("BLE: begin: setting baud rate returned error ") + String(ret_val));
+		//	switch_to_faster_baud_rate = false;
+		//}
+		
+		//writeConfig();
+		//restore();
+		//delay(1000);
+		
+		//Swtich the serial link to the BC127 to the faster baud rate
+		Serial.println("BLE: Begin: setting Serial link to BC127 to " + String(faster_baudrate));
+		if (switch_to_faster_baud_rate) setSerialBaudRate(faster_baudrate);
+		checkStatusBLE(true);
 	
+	}
+		
 	//enable BT_Classic connectable and discoverable, always
 	if (BC127_firmware_ver >= 7) {
 		ret_val = setConfig("BT_STATE_CONFIG", "1 1");
-		if (ret_val != BC127::SUCCESS) {
-			Serial.print(F("BLE: begin: set BT_STATE_CONFIG returned error "));
-			Serial.println(ret_val);
-		}
+		if (ret_val != BC127::SUCCESS) Serial.println(F("BLE: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
 	}
 	
 	//write the new configuration so that it exists on startup (such as an unexpected restart of the module)
     ret_val = writeConfig();
-	if (ret_val != BC127::SUCCESS) {
-		Serial.print(F("BLE: begin: writeConfig() returned error "));
-		Serial.println(ret_val);
-	}	
+	if (ret_val != BC127::SUCCESS) Serial.println(F("BLE: begin: writeConfig() returned error ") + String(ret_val));
 	
 	//reset
     ret_val = reset();
-	if (ret_val != BC127::SUCCESS) {
-		Serial.print(F("BLE: begin: reset() returned error "));
-		Serial.println(ret_val);
-	}	
+	if (ret_val != BC127::SUCCESS)	Serial.println(F("BLE: begin: reset() returned error ") + String(ret_val));
 
-	
+	setTimeout(orig_timeout);
 	return ret_val;
 }
+
+void BLE::setSerialBaudRate(int new_baud) {
+	_serialPort->flush();
+	_serialPort->end();
+	delay(250);
+	_serialPort->begin(new_baud);
+	delay(250);
+}
+
+//If the baudrate to the BLE modue matches that baudrate that the BLE module expects,
+//we should be able to ask its status and get a valid reply.  So, we don't get a valid
+//reply, the baudrate of Serial1 probably does not match.
+int BLE::checkStatusBLE(bool printDebug) {
+	
+  int ret_val = status(printDebug);
+	if  (printDebug) {
+		Serial.println("BLE: checkStatusBLE: reply code to status = " + String(ret_val));
+		if (ret_val != BC127::SUCCESS) {
+			Serial.println("BLE: checkStatusBLE: status() returned error: " + String(ret_val));
+		} else {
+			Serial.println("BLE: checkStatusBLE: status() returned OK! " + String(ret_val));
+		}
+	}
+	return ret_val;
+}
+
+int BLE::findAndSwitchToBaudrate(bool printDebug) {
+	
+	//shorten the timeout period...
+	//any failed trial will hit this a lot, so shorter is better
+	unsigned long orig_timeout = _timeout;
+	unsigned long new_timeout = 1000; //millis
+	setTimeout(new_timeout);
+	
+	
+	//try factory_baudrate
+	bool ret_val = -1;
+	if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: trying " + String(factory_baudrate));
+	setSerialBaudRate(factory_baudrate);
+	if (checkStatusBLE(true) == BC127::SUCCESS) {
+		if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Success! " + String(factory_baudrate));
+		ret_val = factory_baudrate;
+	} else {
+		//try baudrate2
+		if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Failed. Trying " + String(faster_baudrate));
+		setSerialBaudRate(faster_baudrate);
+		if (checkStatusBLE(true) == BC127::SUCCESS) {
+			if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Success! " + String(faster_baudrate));
+			ret_val = faster_baudrate;
+		} else {
+			if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Failed. Returning  to " + String(factory_baudrate));
+			//switch back to factory baudrate
+			setSerialBaudRate(factory_baudrate);
+			ret_val = -1;
+		}
+	}
+	
+	setTimeout(orig_timeout); //return to original value
+	return ret_val; //it should never get here
+}
+
 
 void BLE::setupBLE(int BT_firmware, bool printDebug) 
 {  
@@ -71,8 +160,7 @@ void BLE::setupBLE(int BT_firmware, bool printDebug, bool doFactoryReset)
 	
     ret_val = begin(doFactoryReset); //via BC127.h, success is a value of 1
     if (ret_val != 1) { 
-        Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");
-        Serial.println(ret_val);
+        Serial.println("BLE: setupBLE: ble did not begin correctly.  error = " + String(ret_val));
         Serial.println("    : -1 = TIMEOUT ERROR");
         Serial.println("    :  0 = GENERIC MODULE ERROR");
     }
