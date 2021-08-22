@@ -34,19 +34,5 @@ protected:
 
 };
 
-class BLE_UI : public BLE, public SerialManager_UI
-{
-	public:
-		BLE_UI(HardwareSerial *sp) : BLE(sp), SerialManager_UI() {}
-
-		// ///////// here are the methods that you must implement from SerialManager_UI
-		virtual void printHelp(void);
-		//virtual bool processCharacter(char c); //not used here
-		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
-		virtual void setFullGUIState(bool activeButtonsOnly = false) {}; 
-		// ///////// end of required methods
-		virtual bool processCharacter(char data_char);
-
-};
 
 #endif
