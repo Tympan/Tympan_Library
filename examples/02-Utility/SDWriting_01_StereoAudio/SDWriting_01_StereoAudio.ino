@@ -7,12 +7,7 @@
       >>> STOP recording by having potentiometer turned below half-way
 
    Set Tympan Rev C or D.  Program in Arduino IDE as a Teensy 3.6.
-
    Set Tympan Rev E.  Program in Arduino IDE as a Teensy 4.1.
-
-   Uses super-fast SD library that is original from Greiman, but which
-      has been forked, made compatible with the Teensy Audio library, and
-      included as part of the Tympan Library.
 
    Created: Chip Audette, OpenAudio, March 2018
     Jun 2018: updated for Tympan RevC or RevD
@@ -93,13 +88,13 @@ void loop() {
   servicePotentiometer(millis(), 100); //service the potentiometer every 100 msec
 
   //service the SD recording
-  serviceSD();
+  audioSDWriter.serviceSD_withWarnings(i2s_in); //For the warnings, it asks the i2s_in class for some info
+
+  //service the LEDs...blink slow normally, blink fast if recording
+  myTympan.serviceLEDs(millis(),audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING); 
 
   //update the memory and CPU usage...if enough time has passed
   myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
-
-  //service the LEDs
-  serviceLEDs();
 
 } //end loop();
 
@@ -159,97 +154,3 @@ void startOrStopSDRecording(float potentiometer_value) {
   }
 }
 
-#define PRINT_OVERRUN_WARNING 1   //set to 1 to print a warning that the there's been a hiccup in the writing to the SD.
-void serviceSD(void) {
-  static int max_max_bytes_written = 0; //for timing diagnotstics
-  static int max_bytes_written = 0; //for timing diagnotstics
-  static int max_dT_micros = 0; //for timing diagnotstics
-  static int max_max_dT_micros = 0; //for timing diagnotstics
-
-  unsigned long dT_micros = micros();  //for timing diagnotstics
-  int bytes_written = audioSDWriter.serviceSD();
-  dT_micros = micros() - dT_micros;  //timing calculation
-
-  if ( bytes_written > 0 ) {
-    
-    max_bytes_written = max(max_bytes_written, bytes_written);
-    max_dT_micros = max((int)max_dT_micros, (int)dT_micros);
-   
-    if (dT_micros > 10000) {  //if the write took a while, print some diagnostic info
-      
-      max_max_bytes_written = max(max_bytes_written,max_max_bytes_written);
-      max_max_dT_micros = max(max_dT_micros, max_max_dT_micros);
-      
-      Serial.print("serviceSD: bytes written = ");
-      Serial.print(bytes_written); Serial.print(", ");
-      Serial.print(max_bytes_written); Serial.print(", ");
-      Serial.print(max_max_bytes_written); Serial.print(", ");
-      Serial.print("dT millis = "); 
-      Serial.print((float)dT_micros/1000.0,1); Serial.print(", ");
-      Serial.print((float)max_dT_micros/1000.0,1); Serial.print(", "); 
-      Serial.print((float)max_max_dT_micros/1000.0,1);Serial.print(", ");      
-      Serial.println();
-      max_bytes_written = 0;
-      max_dT_micros = 0;     
-    }
-      
-    //print a warning if there has been an SD writing hiccup
-    if (PRINT_OVERRUN_WARNING) {
-      //if (audioSDWriter.getQueueOverrun() || i2s_in.get_isOutOfMemory()) {
-      if (i2s_in.get_isOutOfMemory()) {
-        float approx_time_sec = ((float)(millis()-audioSDWriter.getStartTimeMillis()))/1000.0;
-        if (approx_time_sec > 0.1) {
-          myTympan.print("SD Write Warning: there was a hiccup in the writing.");//  Approx Time (sec): ");
-          myTympan.println(approx_time_sec );
-        }
-      }
-    }
-    i2s_in.clear_isOutOfMemory();
-  }
-}
-
-
-void serviceLEDs(void) {
-  static int loop_count = 0;
-  loop_count++;
-  
-  if (audioSDWriter.getState() == AudioSDWriter::STATE::UNPREPARED) {
-    if (loop_count > 200000) {  //slow toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } else if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
-
-    //let's flicker the LEDs while writing
-    loop_count++;
-    if (loop_count > 20000) { //fast toggle
-      loop_count = 0;
-      toggleLEDs(true,true); //blink both
-    }
-  } else {
-    //myTympan.setRedLED(HIGH); myTympan.setAmberLED(LOW); //Go Red
-    if (loop_count > 200000) { //slow toggle
-      loop_count = 0;
-      toggleLEDs(false,true); //just blink the red
-    }
-  }
-}
-
-void toggleLEDs(void) {
-  toggleLEDs(true,true);  //toggle both
-}
-void toggleLEDs(const bool &useAmber, const bool &useRed) {
-  static bool LED = false;
-  LED = !LED;
-  if (LED) {
-    if (useAmber) myTympan.setAmberLED(true);
-    if (useRed) myTympan.setRedLED(false);
-  } else {
-    if (useAmber) myTympan.setAmberLED(false);
-    if (useRed) myTympan.setRedLED(true);
-  }
-
-  if (!useAmber) myTympan.setAmberLED(false);
-  if (!useRed) myTympan.setRedLED(false);
-  
-}
