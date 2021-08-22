@@ -167,6 +167,7 @@ AudioControlTestAmpSweep_F32	KEYWORD1
 AudioControlTestFreqSweep_F32	KEYWORD1
 
 BLE			KEYWORD1
+BLE_UI			KEYWORD1
 BC127			KEYWORD1
 isConnected		KEYWORD2
 isAdvertising		KEYWORD2

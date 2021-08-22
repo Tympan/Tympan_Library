@@ -252,6 +252,9 @@ class TympanBase : public AudioControlAIC3206, public Print
 		//int setCCPEnable28V(int _value) { if (pins.CCP_enable28V != NOT_A_FEATURE) { digitalWrite(pins.CCP_enable28V,_value); return _value; } return NOT_A_FEATURE; }
 		//int setCCPEnableAtten1(int _value) { if (pins.CCP_atten1 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten1,_value); return _value; } return NOT_A_FEATURE; }
 		//int setCCPEnableAtten2(int _value) { if (pins.CCP_atten2 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten2,_value); return _value; } return NOT_A_FEATURE; }
+		int serviceLEDs(const unsigned int , const bool flag_blink_fast = false);
+		int toggleLEDs(const bool useAmber = true, const bool useRed = true);
+		
 		int readPotentiometer(void) {
 			//Serial.print("TympanBase: readPot, pin "); Serial.println(pins.potentiometer);
 			int val = analogRead(pins.potentiometer);
