@@ -105,7 +105,7 @@ void setup() {
 void loop() {
   //respond to Serial commands
   while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
-  while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial
+  //while (Serial1.available()) serialManager.respondToByte((char)Serial1.read()); //BT Serial...there is no App GUI here, so disable reading BT serial
 
   //service the SD recording
   serviceSD();
