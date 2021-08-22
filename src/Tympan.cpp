@@ -51,9 +51,14 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 		//Now, raise REGEN to enable the rest of the booting
 		digitalWrite(pins.BT_REGEN,HIGH); //pull high for normal operation
 		
-		//wait for booting to finish (how long?!?) and lower REGEN to its normally-low position
-		delay(100);
-		digitalWrite(pins.BT_REGEN,LOW); //then return low
+		if (BT_firmware < 7) {
+			//for V5.5
+			//wait for booting to finish (how long?!?) and lower REGEN to its normally-low position
+			delay(100);
+			digitalWrite(pins.BT_REGEN,LOW); //then return low
+		} else { //such as for Firmware V7
+			//or leave it high...assuming high is normal
+		}
 	}
 	if (pins.BT_nReset != NOT_A_FEATURE) {  //For RN51 and  BC127 modules.  (RevC, RevD, RevE)
 		pinMode(pins.BT_nReset,OUTPUT);

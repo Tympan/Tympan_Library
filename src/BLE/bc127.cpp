@@ -71,12 +71,23 @@ BC127::opResult BC127::power(bool mode)
 
 // Makes the device discoverable in Classic Mode
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
+// Is this V5 firmware only????
 BC127::opResult BC127::discoverable(bool mode)
 {
     String modeStr = mode ? String("ON") : String("OFF");
 
     return stdCmd("DISCOVERABLE " + modeStr);
 }
+
+// Makes the device discoverable and connectable in Classic Mode (v7 firmware)
+// Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
+BC127::opResult BC127::discoverableConnectableV7(bool mode)
+{
+    String modeStr = mode ? String("ON") : String("OFF");
+
+    return stdCmd("BT_STATE " + modeStr + " " + modeStr);  //example: BT_STATE ON ON
+}
+
 
 // Retrieves the configuration registers - all or specified by config
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
@@ -122,7 +133,12 @@ BC127::opResult BC127::send(String str)
 		//  the "14" assumes that we're always sending to the
 		//  first ("1", yes they count from "1")  BLE device
 		//	that is connected  (BLE connections are the "4")
-		return stdCmd("SEND 14 " + str); 
+		if (BLE_id_num >= 14) {
+			return stdCmd("SEND " + String(BLE_id_num) + " " + str); 
+		} else {
+			Serial.println("BC127: send: *** ERROR*** no BLE connection ID.  Not sending.");
+		}
+		return MODULE_ERROR; //not really a module error, but we should return an error
 	} else {
 		return stdCmd("SEND " + str);
 	}
@@ -131,10 +147,17 @@ BC127::opResult BC127::send(String str)
 // Retrieves the device connection status
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
 //          _cmdResponse will contain the data on SUCCESS
-BC127::opResult BC127::status()
+BC127::opResult BC127::status(bool printResponse)
 {
     //return stdCmd("STATUS 14"); //this might be better (more specific to BLE) for V6 firmware and above
-	return stdCmd("STATUS");
+	
+    BC127::opResult ret_val = stdCmd("STATUS");
+	if (printResponse) {
+		Serial.print("BC127: status response: ");
+		Serial.print(getCmdResponse());  //this should be CR terminated
+		if (BC127_firmware_ver > 6) Serial.println();
+	}
+	return ret_val;	
 }
 
 // Resets the device to default configuration
@@ -190,8 +213,9 @@ BC127::opResult BC127::version(bool printResponse)
 {
     BC127::opResult ret_val = stdCmd("VERSION");
 	if (printResponse) {
-		Serial.println("BC127: version response: ");
+		Serial.print("BC127: version response: ");
 		Serial.print(getCmdResponse());  //this should be CR terminated
+		if (BC127_firmware_ver > 6) Serial.println();
 	}
 	return ret_val;
 }
