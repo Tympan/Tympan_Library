@@ -2,6 +2,7 @@
 
 int BLE::begin(void)
 {
+	int ret_val = 0;
 	
 	//clear the incoming serial buffer
 	while (_serialPort->available()) _serialPort->read();  //clear the serial buffer associated with the BT unit
@@ -10,14 +11,15 @@ int BLE::begin(void)
 	//myTympan.forceBTtoDataMode(false);
 	_serialPort->print("$");  delay(400);	_serialPort->print("$$$");
 
-	//now do the usual setup stuff
-	int ret_val;
+	#if 1
+	//restore to factory defaults
 	ret_val = restore();
 	if (ret_val != BC127::SUCCESS) {
 		Serial.print(F("BLE: begin: restore() returned error "));
 		Serial.println(ret_val);
-		//return ret_val;
 	}
+	#endif
+
 	
 	//enable BT_Classic connectable and discoverable, always
 	if (BC127_firmware_ver >= 7) {
@@ -25,7 +27,6 @@ int BLE::begin(void)
 		if (ret_val != BC127::SUCCESS) {
 			Serial.print(F("BLE: begin: set BT_STATE_CONFIG returned error "));
 			Serial.println(ret_val);
-			//return ret_val;
 		}
 	}
 	
@@ -34,7 +35,6 @@ int BLE::begin(void)
 	if (ret_val != BC127::SUCCESS) {
 		Serial.print(F("BLE: begin: writeConfig() returned error "));
 		Serial.println(ret_val);
-		//return ret_val;
 	}	
 	
 	//reset
@@ -42,7 +42,6 @@ int BLE::begin(void)
 	if (ret_val != BC127::SUCCESS) {
 		Serial.print(F("BLE: begin: reset() returned error "));
 		Serial.println(ret_val);
-		//return ret_val;
 	}	
 
 	
@@ -423,4 +422,79 @@ void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePe
 		}
 		lastUpdate_millis = curTime_millis; //we will use this value the next time around.
 	}	
+}
+
+
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+// UI Methods
+//
+// 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void BLE_UI::printHelp(void) {
+	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	Serial.println(F(" BLE: Prefix = ") + prefix);
+	Serial.println(F("   s:   Print Bluetooth status"));
+	Serial.println(F("   v:   Print Bluetooth Firmware version info"));
+	Serial.println(F("   d/D: Activate/Deactivate BT Classic discoverable connectable"));
+	Serial.println(F("   a/A: Activate/Deactivate BLE advertising"));
+}
+
+
+bool BLE_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
+	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
+	if (mode_char != ID_char) return false;  //ID_char is from SerialManager_UI.h
+	
+	return processCharacter(data_char);
+}
+
+//respond to serial commands
+bool BLE_UI::processCharacter(char c) {
+
+//	if ((c != '\n') && (c != '\r')) {
+//		Serial.print("BLE: received character from Serial or Bluetooth: "); Serial.println(c);
+//	}
+  
+	bool ret_val = true;
+	switch (c) {
+		case 'a':
+			Serial.println("BLE: activating BLE advertising...");
+			advertise(true);
+			break;
+		case 'A':
+			Serial.println("BLE: de-activating BLE advertising...");
+			advertise(false);
+			break;
+		case 'd':
+			Serial.println("BLE: activating BT Classic discoverable...");
+			if (get_BC127_firmware_ver() >= 7)  {
+				discoverableConnectableV7(true);
+			} else {
+				discoverable(true);
+			}
+			break;
+		case 'D':
+			Serial.println("BLE: de-activating BT Classic discoverable...");
+			if (get_BC127_firmware_ver() >= 7)  {
+				discoverableConnectableV7(false);
+			} else {
+				discoverable(false);
+			}
+			break;     
+		case 's':
+			Serial.println("BLE: printing Bluetooth status...");
+			status(true);
+			break;     
+		case 'v':
+			Serial.println("BLE: printing Bluetooth firmware version info...");
+			version(true);
+			break;
+		default:
+			ret_val = false;
+		
+	}
+	return ret_val;
 }
