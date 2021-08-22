@@ -74,7 +74,6 @@ AudioConnection_F32     patchcord24(i2s_in, EarpieceShield::PDM_RIGHT_REAR,  aud
 #include "SerialManager.h"                  //For processing serial communication
 SerialManager                 serialManager;
 
-
 //Static Variables
 static float outputVolume_dB = 0.0;
 static float inputGain_dB = 0.0;
@@ -84,7 +83,7 @@ static float inputGain_dB = 0.0;
 
 //set the desired input source 
 void setInputSource(Mic_Input micInput) { 
-  switch (micInput){
+  switch (micInput) {
     case INPUT_PCBMICS:
       //Select Input
       myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board microphones
@@ -113,14 +112,11 @@ void setInputSource(Mic_Input micInput) {
   }
 
   // If turning on digital mics, enable them. Otherwise disable them.
-  if (micInput==INPUT_PDMMICS)
-  {
+  if (micInput==INPUT_PDMMICS)  {
     //Enable Digital Mic (enable analog inputs)
     myTympan.enableDigitalMicInputs(true);
     earpieceShield.enableDigitalMicInputs(true);
-  }
-  else
-  {
+  }  else  {
     //Disable Digital Mic (enable analog inputs)
     myTympan.enableDigitalMicInputs(false);
     earpieceShield.enableDigitalMicInputs(false);
