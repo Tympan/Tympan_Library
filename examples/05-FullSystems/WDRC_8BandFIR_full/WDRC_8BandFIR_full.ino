@@ -19,7 +19,7 @@
     * Does not include prescription saving
     * It can switch between two presets, both of which you can change
         * a NORMAL preset ("DSL_GHA_Preset0.h")
-		    * a FULL-ON GAIN preset ("DSL_GHA_Preset1.h")
+        * a FULL-ON GAIN preset ("DSL_GHA_Preset1.h")
      
   Hardware Controls:
     Potentiometer on Tympan controls the broadband gain.
@@ -55,9 +55,9 @@ Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or Tymp
 
 // Create classes for controlling the system
 #include      "SerialManager.h"
-#include      "State.h"                            //must be after N_CHAN is defined
-BLE           ble(&Serial1);                       //create bluetooth BLE
-SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
+#include      "State.h"                //must be after N_CHAN is defined
+BLE_UI        ble(&Serial1);           //create bluetooth BLE class
+SerialManager serialManager(&ble);     //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
 
@@ -77,12 +77,12 @@ void setupTympanHardware(void) {
   myTympan.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
 
   //Choose the desired audio input on the Typman
-  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board micropphones
-  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on-board micropphones
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);    // use the microphone jack - defaults to mic bias 2.5V
   //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
 
   //set volumes
-  setOutputGain_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
+  setOutputGain_dB(0.f);                   // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
   float default_mic_input_gain_dB = 15.0f; //gain on the microphone
   setInputGain_dB(default_mic_input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
   setDigitalGain_dB(myState.digital_gain_dB); // set gain low
@@ -98,6 +98,7 @@ void connectClassesToOverallState(void) {
 void setupSerialManager(void) {
   //register all the UI elements here
   serialManager.add_UI_element(&myState);
+  serialManager.add_UI_element(&ble);
   serialManager.add_UI_element(&filterbank);
   serialManager.add_UI_element(&compbank);
   serialManager.add_UI_element(&compBroadband);
