@@ -170,9 +170,15 @@ BC127::opResult BC127::reset()
 
 // Restores a device to factory settings
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
-BC127::opResult BC127::restore()
+BC127::opResult BC127::restore(bool printResponse)
 {
-    return stdCmd("RESTORE");
+    int ret_val = stdCmd("RESTORE");
+	if (printResponse) {
+		Serial.print("BC127: restore response: ");
+		Serial.print(getCmdResponse());  //this should be CR terminated
+		if (BC127_firmware_ver > 6) Serial.println();
+	}
+	return ret_val;
 }
 
 // Writes the current configuration registers to non-volatile memory
@@ -306,7 +312,7 @@ BC127::opResult BC127::recv(String *msg)
 
 // Convenience method to handle the raw internal stream
 // Returns: _serialPort
-Stream *BC127::getSerial()
+HardwareSerial *BC127::getSerial()
 {
     return _serialPort;
 }

@@ -26,7 +26,7 @@ public:
         SUCCESS             // everything is good
     };
 
-    BC127(Stream *sp, unsigned long timeout = 4000) : _serialPort(sp), _timeout(timeout)
+    BC127(HardwareSerial *sp, unsigned long timeout = 4000) : _serialPort(sp), _timeout(timeout)
     {
         _cmdResponse = String("");
     };
@@ -45,12 +45,12 @@ public:
     opResult exitDataMode(int guardDelay);           // exits Data mode
     opResult getConfig(String config = "");          // returns all or specific config options
     String getCmdResponse();                         // returns the command response string
-    Stream *getSerial();                             // returns _serialPort
+    HardwareSerial *getSerial();                             // returns _serialPort
     opResult help();                                 // prints the help
     opResult power(bool mode = true);                // power cycles the device
     opResult recv(String *msg);                      // grab serial response, by line
     opResult reset();                                // resets the device
-    opResult restore();                              // restores the device to factory defaults
+    opResult restore(bool printResponse = false);    // restores the device to factory defaults
     opResult send(String str);                       // sends a string over the connection profile
     opResult status(bool printResopnse = false);     // returns the connections status
     opResult stdCmd(String cmd);                     // executes a standard command option
@@ -66,7 +66,7 @@ protected:
     // end-of-command delimiter
 	String EOL = String("\r");  //this is changed by set_BC127_firmware_ver()
 
-    Stream *_serialPort;    // port to talk on
+    HardwareSerial *_serialPort;    // port to talk on
     String _cmdResponse;    // response from commands
     unsigned long _timeout; // timeout for command wait
 
