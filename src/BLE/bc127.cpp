@@ -136,7 +136,7 @@ BC127::opResult BC127::send(String str)
 		if (BLE_id_num >= 14) {
 			return stdCmd("SEND " + String(BLE_id_num) + " " + str); 
 		} else {
-			Serial.println("BC127: send: *** ERROR*** no BLE connection ID.  Not sending.");
+			//Serial.println("BC127: send: *** WARNING *** no BLE connection ID.  Not sending.");
 		}
 		return MODULE_ERROR; //not really a module error, but we should return an error
 	} else {
