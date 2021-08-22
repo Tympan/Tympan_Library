@@ -5,6 +5,7 @@
 //include <Tympan_Library.h>
 #include "bc127.h"
 #include "Tympan.h"
+#include "SerialManager_UI.h"
 
 class BLE : public BC127
 {
