@@ -43,7 +43,7 @@ class AICShieldPins {
 		void setAICShieldRev(TympanRev _tympanRev, AICShieldRev _AICRev) {
 			tympanRev = _tympanRev;
 			AICRev = _AICRev;
-
+			
 			switch (tympanRev) { //which Tympan are we connecting to?
 
 				case (TympanRev::D) : case (TympanRev::D4) :   //we're connecting to a Rev D tympan, so the pin numbers below are correct for the TympanD
@@ -149,7 +149,6 @@ class AICShieldBase : public AudioControlAIC3206
 		}
 		AICShieldBase(const AICShieldPins &_pins) :
 			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
-				Serial.print("resetAIC "); Serial.println(_pins.resetAIC);
 			setupPins(_pins);
 		}
 		AICShieldBase(const AICShieldPins &_pins, bool _debugToSerial) :
@@ -214,26 +213,17 @@ class AICShield : public AICShieldBase {
 			AICShieldPins myPins;  //assumes defaults
 			AICShieldBase::setupPins(myPins);
 		}
-		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev) : AICShieldBase() {
-			//initialize the AICShieldBase
-			AICShieldPins myPins(_myRev, _aicRev);
-			AICShieldBase::setupPins(myPins);
+		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev) : 
+			AICShieldBase(AICShieldPins(_myRev,_aicRev)) {
 		}
-		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, bool _debugToSerial) : AICShieldBase(_debugToSerial) {
-			//initialize the AICShieldBase
-			AICShieldPins myPins(_myRev, _aicRev);
-			AICShieldBase::setupPins(myPins);
+		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, bool _debugToSerial) :
+			AICShieldBase(AICShieldPins(_myRev,_aicRev),_debugToSerial) {
 		}
-		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, const AudioSettings_F32 &_as) : AICShieldBase() {
-			//initialize the AICShieldBase
-			AICShieldPins myPins(_myRev, _aicRev);
-			AICShieldBase::setupPins(myPins);
-			AICShieldBase::setAudioSettings(_as);
+		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, const AudioSettings_F32 &_as) : 
+			AICShieldBase(AICShieldPins(_myRev,_aicRev),_as) {
 		}
-		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, const AudioSettings_F32 &_as, bool _debugToSerial) : AICShieldBase(_debugToSerial) {
-			AICShieldPins myPins(_myRev, _aicRev);
-			AICShieldBase::setupPins(myPins);
-			AICShieldBase::setAudioSettings(_as);
+		AICShield(const TympanRev &_myRev, const AICShieldRev &_aicRev, const AudioSettings_F32 &_as, bool _debugToSerial) : 
+			AICShieldBase(AICShieldPins(_myRev,_aicRev),_as,_debugToSerial) {
 		}
 };
 

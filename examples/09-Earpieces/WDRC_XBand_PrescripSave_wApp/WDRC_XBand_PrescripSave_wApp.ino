@@ -68,8 +68,8 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 
 // /////////// Create the audio-processing objects to define the overal architecture (detailed settings are later)
-Tympan                        myTympan(TympanRev::D);   //use TympanRev::D or TympanRev::C
-AICShield                     earpieceShield(TympanRev::D, AICShieldRev::A);
+Tympan                 myTympan(TympanRev::E, audio_settings); //choose TympanRev::D or TympanRev::E
+EarpieceShield         earpieceShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E
 #include "AudioConnections.h"  //this has all of the other audio classes and audio connections
 
 
