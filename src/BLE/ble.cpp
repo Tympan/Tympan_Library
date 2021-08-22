@@ -54,19 +54,20 @@ void BLE::setupBLE(int BT_firmware, bool printDebug)
 
     int ret_val;
     ret_val = set_BC127_firmware_ver(BT_firmware);
-    if (ret_val != BT_firmware)
-    {
+    if (ret_val != BT_firmware) {
         Serial.println("BLE: setupBLE: *** WARNING ***: given BT_firmware (" + String(BT_firmware) + ") not allowed.");
         Serial.println("   : assuming firmware " + String(ret_val) + " instead. Continuing...");
     }
-    ret_val = begin();
-    if (ret_val != 1)
-    { //via BC127.h, success is a value of 1
+    ret_val = begin(); //via BC127.h, success is a value of 1
+    if (ret_val != 1) { 
         Serial.print("BLE: setupBLE: ble did not begin correctly.  error = ");
         Serial.println(ret_val);
         Serial.println("    : -1 = TIMEOUT ERROR");
         Serial.println("    :  0 = GENERIC MODULE ERROR");
     }
+
+	//start the advertising for a connection (whcih will be maintained in serviceBLE())
+	advertise(true);
 
 	//print version information...this is for debugging only
 	if (printDebug) Serial.println("BLE: setupBLE: assuming BC127 firmware: " + String(BC127_firmware_ver) + ", Actual is:");
@@ -77,10 +78,8 @@ void BLE::setupBLE(int BT_firmware, bool printDebug)
 size_t BLE::sendByte(char c)
 {
     //Serial.print("BLE: sendBytle: "); Serial.println(c);
-
     String s = String("").concat(c);
-    if (send(s))
-        return 1;
+    if (send(s)) return 1;
 
     return 0;
 }
@@ -88,9 +87,7 @@ size_t BLE::sendByte(char c)
 size_t BLE::sendString(const String &s)
 {
     //Serial.print("BLE: sendString: "); Serial.println(s);
-
-    if (send(s))
-        return s.length();
+    if (send(s)) return s.length();
 
     return 0;
 }
@@ -106,8 +103,7 @@ size_t BLE::sendMessage(const String &orig_s)
     header.concat('\xff');       // message type
 
     // message length
-    if (s.length() >= (0x4000 - 1))
-    { //we might have to add a byte later, so call subtract one from the actual limit
+    if (s.length() >= (0x4000 - 1))  { //we might have to add a byte later, so call subtract one from the actual limit
         Serial.println("BLE: Message is too long!!! Aborting.");
         return 0;
     }
@@ -116,8 +112,7 @@ size_t BLE::sendMessage(const String &orig_s)
     header.concat((char)lowByte(lenBytes));
 
     //check to ensure that there isn't a NULL or a CR in this header
-    if ((header[6] == '\r') || (header[6] == '\0'))
-    {
+    if ((header[6] == '\r') || (header[6] == '\0')) {
         //add a character to the end to avoid an unallowed hex code code in the header
         //Serial.println("BLE: sendMessage: ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
         s.concat(' '); //append a space character
@@ -140,8 +135,7 @@ size_t BLE::sendMessage(const String &orig_s)
 
     //break up String into packets
     int numPackets = ceil(s.length() / (float)payloadLen);
-    for (int i = 0; i < numPackets; i++)
-    {
+    for (int i = 0; i < numPackets; i++)  {
         String bu = (char)(0xF0 | lowByte(i));
         bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
         sentBytes += (sendString(bu) - 1);
@@ -160,11 +154,11 @@ size_t BLE::recvMessage(String *s)
     int msgSize = 0;
     int bytesRecvd = 0;
 
-    while (available() > 0)   {
+    while (available() > 0) {
 
-        if (recvBLE(s) > 0)   {
+        if (recvBLE(s) > 0) {
 
-            if (s->startsWith("\xab\xad\xc0\xde\xff"))   {
+            if (s->startsWith("\xab\xad\xc0\xde\xff")) {
 
                 msgSize = word(s->charAt(5), s->charAt(6));
                 Serial.println("BLE: recvMessage: Length of message: '" + String(msgSize) + "'");
@@ -417,13 +411,16 @@ bool BLE::waitConnect(int time)
 void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) {
   static unsigned long lastUpdate_millis = 0;
 
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    if (isConnected(printDebugMsgs) == false) { //the true tells it to print the full reply to the serial monitor
-      if (isAdvertising(printDebugMsgs) == false) {//the true tells it to print the full reply to the serial monitor
-        Serial.println("BLE: updateAvertising: activating BLE advertising");
-        advertise(true);  //not connected, ensure that we are advertising
-      }
-    }
+	if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+
+	//has enough time passed to update everything?
+	if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
+		if (isConnected(printDebugMsgs) == false) { //the true tells it to print the full reply to the serial monitor
+			if (isAdvertising(printDebugMsgs) == false) {//the true tells it to print the full reply to the serial monitor
+				Serial.println("BLE: updateAvertising: activating BLE advertising");
+				advertise(true);  //not connected, ensure that we are advertising
+			}
+		}
+		lastUpdate_millis = curTime_millis; //we will use this value the next time around.
+	}	
 }
