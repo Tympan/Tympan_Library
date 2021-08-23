@@ -7,11 +7,7 @@ SerialManager_UI* SerialManagerBase::add_UI_element(SerialManager_UI *ptr) {
 	if (ptr == NULL) return NULL;
 	
 	//add the UI element to its tracking of all UI elements
-	if (next_UI_element_ind >= max_UI_elements) {
-		Serial.println("SerialManagerBase: add_UI_element: *** ERROR ***: cannot add more elements.  At max of " + String(max_UI_elements));
-		return NULL;
-	}
-	UI_element_ptr[next_UI_element_ind++] = ptr;
+	UI_element_ptr.push_back(ptr);
 	
 	//tell the UI element that this is the SerialManager for it to call
 	ptr->setSerialManager(this);
@@ -20,10 +16,11 @@ SerialManager_UI* SerialManagerBase::add_UI_element(SerialManager_UI *ptr) {
 }
 
 void SerialManagerBase::printHelp(void) {
-	if (next_UI_element_ind == 0) return; //if there are no registered UI elements, return
+	if (UI_element_ptr.size() == 0) return;   //if there are no registered UI elements, return
+
 	
 	//Loop over each registered UI element and call its printHelp() method.
-	for (int i=0; i < next_UI_element_ind; i++) {
+	for (int i=0; (unsigned int)i < UI_element_ptr.size(); i++) {		
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			UI_element_ptr[i]->printHelp();
 		}
@@ -106,13 +103,13 @@ void SerialManagerBase::respondToByte(char c) {
 
 bool SerialManagerBase::processCharacter(char c) {
 	bool ret_val = false;
-	if (next_UI_element_ind == 0) return ret_val;   //if there are no registered UI elements, return
+	if (UI_element_ptr.size() == 0) return ret_val;   //if there are no registered UI elements, return
 	
 	// Loop over each registered UI element and try its processCharacter() method.
 	// Their processCharacter() will return TRUE if the character was recognized.
 	// If the TRUE is recevied, processing stops.  If a FALSE is received, this routine
 	// continues on to the next registered UI element.
-	for (int i=0; i < next_UI_element_ind; i++) {
+	for (int i=0; (unsigned int)i < UI_element_ptr.size() ; i++) {
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			ret_val = UI_element_ptr[i]->processCharacter(c);
 			if (ret_val) return ret_val;
@@ -161,13 +158,13 @@ void SerialManagerBase::processStream(void) {
 
 bool SerialManagerBase::interpretQuadChar(char mode_char, char chan_char, char data_char) {
 	bool ret_val = false;
-	if (next_UI_element_ind == 0) return ret_val; //if there are no registered UI elements, return
+	if (UI_element_ptr.size() == 0) return ret_val;
 	
 	// Loop over each registered UI element and try its processCharacterTriple() method.
 	// Their processCharacterTriple() will return TRUE if the character was recognized.
 	// If the TRUE is recevied, processing stops.  If a FALSE is received, this routine
 	// continues on to the next registered UI element.
-	for (int i=0; i < next_UI_element_ind; i++) {
+	for (int i=0; (unsigned int)i < UI_element_ptr.size() ; i++) {
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			ret_val = UI_element_ptr[i]->processCharacterTriple(mode_char, chan_char, data_char);
 			if (ret_val) return ret_val;
@@ -177,10 +174,10 @@ bool SerialManagerBase::interpretQuadChar(char mode_char, char chan_char, char d
 }
 
 void SerialManagerBase::setFullGUIState(bool activeButtonsOnly) {
-	if (next_UI_element_ind == 0) return; //if there are no registered UI elements, return
+	if (UI_element_ptr.size() == 0) return;	
 	
 	// Loop over each registered UI element and execute its setFullGUIState method.
-	for (int i=0; i < next_UI_element_ind; i++) {
+	for (int i=0; (unsigned int)i < UI_element_ptr.size() ; i++) {
 		if (UI_element_ptr[i]) { //make sure it isn't NULL
 			UI_element_ptr[i]->setFullGUIState(activeButtonsOnly);
 		}

@@ -86,6 +86,7 @@
 
 #include <Arduino.h> //for Serial and String
 #include "BLE/ble.h"
+#include <vector>
 //#include "SerialManager_UI.h"
 class SerialManager_UI;  //forward declare.  Assume SerialManager_UI.h will be included elsewhere
 
@@ -134,9 +135,8 @@ class SerialManagerBase {
     char GUI_persistent_mode = 'g';
     String TX_string;
     char mode_char, chan_char, data_char; //for quad_char processing
-	SerialManager_UI* UI_element_ptr[SERIALMANAGERBASE_MAX_UI_ELEMENTS];
-	int next_UI_element_ind = 0;
-	const int max_UI_elements = SERIALMANAGERBASE_MAX_UI_ELEMENTS;
+	
+	std::vector<SerialManager_UI *> UI_element_ptr;
 };
 
 
