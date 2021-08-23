@@ -495,19 +495,19 @@ void AudioFilterbank_UI::printChanMsg(int direction) {  //direction +1 is up, -1
 	Serial.print("   ");
 	for (int i=0; i < min(n_crossover,n_charMap);i++) Serial.print(charMap[i]);	
 	if (direction >= 0) {
-		Serial.print(F(": Change crossover for channels (1-"));
+		Serial.print(F(": Change crossover frequency 1-"));
 		Serial.print(n_crossover);
-		Serial.println(") by " + String(freq_increment_fac,3) + "x");
+		Serial.println(" by " + String(freq_increment_fac,3) + "x");
 	} else {
-		Serial.print(F(": Change crossover for channels (1-"));
+		Serial.print(F(": Change crossover freqeuncy 1-"));
 		Serial.print(n_crossover);
-		Serial.println(") by " + String(1.0/freq_increment_fac,3) + "x");
+		Serial.println(" by " + String(1.0/freq_increment_fac,3) + "x");
 	}
 }
 
 
 void AudioFilterbank_UI::printHelp(void) {
-	Serial.println(F(" Filterbank: Prefix = ") + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	Serial.println(" " + name_for_UI + ": Prefix = " + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 	printChanMsg(1);  //upward changes
 	printChanMsg(-1); //downward changes
 }

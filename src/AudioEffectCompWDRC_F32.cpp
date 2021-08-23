@@ -169,7 +169,7 @@ void AudioEffectCompWDRC_F32::setParams(float attack_ms, float release_ms, float
 
 void AudioEffectCompWDRC_F32_UI::printHelp(void) {
 	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
-	Serial.println(F(" AudioEffectCompWDRC: Prefix = ") + prefix);
+	Serial.println(" " + name_for_UI + ": Prefix = " + prefix);
 	Serial.println(F("   a,A: Incr/decrease attack time (") + String(getAttack_msec(),0) + "msec)"); 
 	Serial.println(F("   r,R: Incr/decrease release time (") + String(getRelease_msec(),0) + "msec)");
 	Serial.println(F("   m,M: Incr/decrease scale factor (") + String(getMaxdB(),0) + "dBSPL at 0 dBFS)");
@@ -338,9 +338,7 @@ TR_Card* AudioEffectCompWDRC_F32_UI::addCard_limKnee( TR_Page *page_h) { return 
 
 	
 //This GUI page does ALL parameters
-TR_Page* AudioEffectCompWDRC_F32_UI::addPage_allParams(TympanRemoteFormatter *gui) {
-	if (gui == NULL) return NULL;
-	TR_Page *page_h = gui->addPage("WDRC Parameters");
+TR_Card* AudioEffectCompWDRC_F32_UI::addCards_allParams(TR_Page *page_h) {
 	if (page_h == NULL) return NULL;
 	
 	addCard_attack(  page_h);
@@ -351,7 +349,18 @@ TR_Page* AudioEffectCompWDRC_F32_UI::addPage_allParams(TympanRemoteFormatter *gu
 	addCard_linGain( page_h);
 	addCard_compKnee(page_h);
 	addCard_compRat( page_h);
-	addCard_limKnee( page_h);
+	TR_Card *card_h = addCard_limKnee( page_h);
+
+	return card_h;	
+}
+	
+TR_Page* AudioEffectCompWDRC_F32_UI::addPage_allParams(TympanRemoteFormatter *gui) {
+	if (gui == NULL) return NULL;
+	TR_Page *page_h = gui->addPage("WDRC Parameters");
+	if (page_h == NULL) return NULL;
+	
+	//add all the cards
+	addCards_allParams(page_h);
 
 	return page_h;	
 }

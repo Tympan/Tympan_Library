@@ -201,6 +201,8 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		TR_Card* addCard_attack_global(   TR_Page *page_h);
 		TR_Card* addCard_release_global(  TR_Page *page_h);
 		TR_Card* addCard_scaleFac_global( TR_Page *page_h);
+		
+		TR_Card* addCards_globals(TR_Page *page_h);
 	
 		TR_Page* addPage_attack(       TympanRemoteFormatter *gui);
 		TR_Page* addPage_release(      TympanRemoteFormatter *gui);
@@ -269,6 +271,7 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		void sendGlobals(void);
 		void sendLinearGain(int Ichan=-1); //empty (which means -1) sends all the values
 		
+		String name_for_UI = "WDRC Compressor Bank";  //used for printHelp()
 		
 	protected:
 		//void printChanMsg(int direction);   //used for building the help menu.  direction is +1 for raising and -1 for lowering

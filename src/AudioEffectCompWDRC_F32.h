@@ -211,6 +211,8 @@ class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, public Serial
 		TR_Card* addCard_compRat( TR_Page *page_h);
 		TR_Card* addCard_compKnee(TR_Page *page_h);
 		TR_Card* addCard_limKnee( TR_Page *page_h);
+		
+		TR_Card* addCards_allParams(TR_Page *page_h);
 
 		TR_Page* addPage_compParams(TympanRemoteFormatter *gui);
 		TR_Page* addPage_allParams(TympanRemoteFormatter *gui);
@@ -232,6 +234,8 @@ class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, public Serial
 		float cr_fac = 0.1;
 		float knee_fac = 2.0;
 		float gain_fac = 2.0;
+		
+		String name_for_UI = "AudioEffectCompWDRC";  //used for printHelp()
 	
 	protected:
 

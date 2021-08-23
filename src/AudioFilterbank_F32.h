@@ -198,6 +198,8 @@ class AudioFilterbank_UI : public SerialManager_UI {
 		void sendAllFreqs(void);
 		void sendOneFreq(int Ichan);
 		
+		String name_for_UI = "Filterbank";  //used for printHelp()
+				
 	protected:
 		AudioFilterbankBase_F32 *this_filterbank = NULL;
 		void printChanMsg(int direction);   //used for building the help menu.  direction is +1 for raising and -1 for lowering

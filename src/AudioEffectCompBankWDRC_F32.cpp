@@ -190,7 +190,7 @@ int AudioEffectCompBankWDRC_F32::set_n_chan(int val) {
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void AudioEffectCompBankWDRC_F32_UI::printHelp(void) {
-	Serial.println(F(" WDRC Compressor Bank: Prefix = ") + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	Serial.println(" " + name_for_UI + ": Prefix = " + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
 	Serial.println(F("   a/A: incr/decrease global attack time (") + String(state.getAttack_msec(),1) + " msec)");
 	Serial.println(F("   r/R: incr/decrease global release time (") + String(state.getRelease_msec(),0) + " msec)");
 	Serial.println(F("   m,M: Incr/decrease global scale factor (") + String(getMaxdB(),0) + " dBSPL at 0 dBFS)");
@@ -415,14 +415,22 @@ int AudioEffectCompBankWDRC_F32_UI::findChan(char c, int direction) {  //directi
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+TR_Card* AudioEffectCompBankWDRC_F32_UI::addCards_globals(TR_Page *page_h) { 
+	if (page_h == NULL) return NULL;
+
+	addCard_attack_global(page_h);
+	addCard_release_global(page_h);
+	TR_Card* card_h = addCard_scaleFac_global(page_h);
+	
+	return card_h;
+}
+
 TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_globals(TympanRemoteFormatter *gui) {
 	if (gui == NULL) return NULL;
 	TR_Page *page_h = gui->addPage(String("Compressor Bank, Global Parameters"));
 	if (page_h == NULL) return NULL;
 	
-	addCard_attack_global(page_h);
-	addCard_release_global(page_h);
-	addCard_scaleFac_global(page_h);
+	addCards_globals(page_h);
 
 	return page_h;
 }
