@@ -206,7 +206,7 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacterTriple(char mode_char, char
 
 	//we ignore the chan_char and only work with the data_char
 	bool return_val = true;  //assume that we will find this character
-	if (chan_char == get_prefix_globalGhar()) {   // get_prefix_globalGhar() is in SerialManager_UI.h
+	if (chan_char == get_prefix_globalChar()) {   // get_prefix_globalGhar() is in SerialManager_UI.h
 		return_val = processCharacter_global(data_char);
 	} else if (chan_char == persistCharTrigger) {
 		state_persistentMode = data_char; //assume the data char is the new persistent mode
