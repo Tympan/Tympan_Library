@@ -145,16 +145,15 @@ void setup() {
   //update the potentiometer settings
 	//if (USE_VOLUME_KNOB) servicePotentiometer(millis());  //see code later in this file
   
+  //enable the algorithms...but is this really needed?
+  multiBandWDRC[0].filterbank.enable(true);
+  multiBandWDRC[1].filterbank.enable(true);
+  multiBandWDRC[0].enable(true);
+  multiBandWDRC[1].enable(true);
+
   //End of setup
   Serial.println("Setup complete.");
   serialManager.printHelp();
-
-  myState.printCPUandMemory(millis(),0);
-
-  multiBandWDRC[0].filterbank.enable(true); //is this needed?
-  multiBandWDRC[1].filterbank.enable(true); //is this needed?
-  multiBandWDRC[0].enable(true);
-  multiBandWDRC[1].enable(true);
 
 } //end setup()
 
@@ -184,7 +183,6 @@ void loop() {
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
   
   //periodically print the CPU and Memory Usage
-  myState.printCPUandMemory(millis(),10); //print faster
   if (myState.flag_printCPUandMemory) myState.printCPUandMemory(millis(), 3000); //print every 3000msec  (method is built into TympanStateBase.h, which myState inherits from)
   if (myState.flag_printCPUandMemory) myState.printCPUtoGUI(millis(), 3000);     //send to App every 3000msec (method is built into TympanStateBase.h, which myState inherits from)
 

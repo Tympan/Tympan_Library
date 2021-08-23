@@ -27,8 +27,10 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   const int LEFT = StereoContainer_UI::LEFT, RIGHT = StereoContainer_UI::RIGHT; 
   int count=0;
 
+  // ///////////// Do some setup of the algorithm modules.  Maybe would be less confusing if I put them in ConfigureAlgorithms.h??
   //put items inot each side of the stereo container (for better handling the UI elements)
   stereoContainerWDRC.addPairMultiBandWDRC(&(multiBandWDRC[LEFT]),&(multiBandWDRC[RIGHT])); 
+
 
   //connect input...normally you'd connect to the algorithms, but we're going to enable some audio self-testing
   //so we're going to first connect to the audioTestGenerator.  To say it again, this routing through the 

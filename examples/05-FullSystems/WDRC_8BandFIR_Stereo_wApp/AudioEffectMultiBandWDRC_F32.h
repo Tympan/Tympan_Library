@@ -13,8 +13,13 @@
 
 class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialManager_UI {
   public:
-    AudioEffectMultiBandWDRC_F32_UI(void): AudioStream_F32(1,inputQueueArray), SerialManager_UI() { } 
-    AudioEffectMultiBandWDRC_F32_UI(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { }
+    AudioEffectMultiBandWDRC_F32_UI(void): AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); } 
+    AudioEffectMultiBandWDRC_F32_UI(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); }
+
+    // setup
+    virtual void setup(void) {
+      compBroadband.name_for_UI = "WDRC Broadband";
+    }
 
     // here are the mthods required (or encouraged) for AudioStream_F32 classes
     virtual void enable(bool _enable = true) { is_enabled = _enable; }
@@ -124,7 +129,7 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
     virtual void printHelp(void) {};
     //virtual bool processCharacter(char c); //not used here
     virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char) {return false; };
-    virtual void setFullGUIState(bool activeButtonsOnly = false) {}; 
+    //virtual void setFullGUIState(bool activeButtonsOnly = false); //if commented out, use the one in StereoContrainer_UI.h
 
 
     // here are the constituent classes
@@ -150,18 +155,75 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
   public:
     StereoContainerWDRC_UI(void) : StereoContainer_UI() {};
 
-    TR_Page* addPage_filterbank(TympanRemoteFormatter *gui) {};
-    TR_Page* addPage_compressorbank(TympanRemoteFormatter *gui) {};
-    TR_Page* addPage_broadbandcompressor(TympanRemoteFormatter *gui) {};
+    TR_Page* addPage_filterbank(TympanRemoteFormatter *gui);
+    TR_Page* addPage_compressorbank_globals(TympanRemoteFormatter *gui);
+    TR_Page* addPage_compressorbank_perBand(TympanRemoteFormatter *gui);
+    TR_Page* addPage_compressor_broadband(TympanRemoteFormatter *gui);
 
-    void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_F32_UI* left, AudioEffectMultiBandWDRC_F32_UI *right) {
-      add_item_pair(&(left->filterbank),    &(right->filterbank));
-      add_item_pair(&(left->compbank),      &(right->compbank));
-      add_item_pair(&(left->compBroadband), &(right->compBroadband));
+    void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_F32_UI* _left, AudioEffectMultiBandWDRC_F32_UI *_right) {
+      leftWDRC = _left;  rightWDRC = _right;
+      add_item_pair(&(leftWDRC->filterbank),    &(rightWDRC->filterbank));
+      add_item_pair(&(leftWDRC->compbank),      &(rightWDRC->compbank));
+      add_item_pair(&(leftWDRC->compBroadband), &(rightWDRC->compBroadband));
     }
 
   protected:
+    AudioEffectMultiBandWDRC_F32_UI  *leftWDRC=NULL, *rightWDRC=NULL;
   
 };
 
+TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) {
+  if (gui == NULL) return NULL;
+  TR_Page *page_h = gui->addPage("Filterbank");
+  if (page_h == NULL) return NULL;
+  
+  addCard_chooseChan(page_h); //see StereoContainer_UI.h
+  if (leftWDRC != NULL) {
+    (leftWDRC->filterbank).addCard_crossoverFreqs(page_h);
+  }
+
+  return page_h;
+}
+
+TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteFormatter *gui) {
+  if (gui == NULL) return NULL;
+  TR_Page *page_h = gui->addPage("Compressor Bank, Global Parameters");
+  if (page_h == NULL) return NULL;
+  
+  addCard_chooseChan(page_h); //see StereoContainer_UI.h
+  if (leftWDRC != NULL) {
+    (leftWDRC->compbank).addCard_attack_global(page_h);
+    (leftWDRC->compbank).addCard_release_global(page_h);
+    (leftWDRC->compbank).addCard_scaleFac_global(page_h);
+  }
+
+  return page_h;
+}
+
+TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteFormatter *gui) {
+  if (gui == NULL) return NULL;
+  TR_Page *page_h = gui->addPage("Compressor Bank");
+  if (page_h == NULL) return NULL;
+  
+  addCard_chooseChan(page_h); //see StereoContainer_UI.h
+  if (leftWDRC != NULL) {
+    (leftWDRC->compbank).addCard_chooseMode(page_h);
+    (leftWDRC->compbank).addCard_persist_perChan(page_h);
+  }
+
+  return page_h;
+}
+
+TR_Page* StereoContainerWDRC_UI::addPage_compressor_broadband(TympanRemoteFormatter *gui) {
+  if (gui == NULL) return NULL;
+  TR_Page *page_h = gui->addPage("Broadband Compressor");
+  if (page_h == NULL) return NULL;
+  
+  addCard_chooseChan(page_h); //see StereoContainer_UI.h
+  if (leftWDRC != NULL) {
+    (leftWDRC->compBroadband).addCards_allParams(page_h);
+  }
+
+  return page_h;
+}
 #endif

@@ -211,16 +211,11 @@ void SerialManager::createTympanRemoteLayout(void) {
       //Add a button group for SD recording...use a button set that is built into AudioSDWriter_F32_UI for you!
       card_h = audioSDWriter.addCard_sdRecord(page_h);
 
-  //add second page to GUI
-  page_h = multiBandWDRC[0].filterbank.addPage_default(&myGUI); //use its predefined page for controlling the digital earpieces
-
-  //add compressor bank pages to GUI
-  page_h = multiBandWDRC[0].compbank.addPage_globals(&myGUI);
-  page_h = multiBandWDRC[0].compbank.addPage_persist_perChan(&myGUI);
-
-  //add a page for the broadband compressor
-  page_h = multiBandWDRC[0].compBroadband.addPage_default(&myGUI);
-  page_h->setName("Broadband Compressor");  //I'm overwriting the default name so that we know that this is the right WDRC compressor
+  //add MultiBand WDRC pages
+  page_h = stereoContainerWDRC.addPage_filterbank(&myGUI);
+  page_h = stereoContainerWDRC.addPage_compressorbank_globals(&myGUI);
+  page_h = stereoContainerWDRC.addPage_compressorbank_perBand(&myGUI);
+  page_h = stereoContainerWDRC.addPage_compressor_broadband(&myGUI);
         
   //add some pre-defined pages to the GUI...these are pre-defined within the App itself
   myGUI.addPredefinedPage("serialMonitor");

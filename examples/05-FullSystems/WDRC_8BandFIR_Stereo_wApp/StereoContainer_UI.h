@@ -105,11 +105,13 @@ bool StereoContainer_UI::processCharacter(char c) {
   bool ret_val = true;
   switch (c) {
     case '0':  //zero
-      set_cur_channel(c);
+      Serial.println(F("StereoContainer_UI: changing to channel 0 (LEFT)..."));
+      set_cur_channel(0);
       setFullGUIState();
       break;
     case '1':  //one
-      set_cur_channel(c);
+      Serial.println(F("StereoContainer_UI: changing to channel 1 (RIGHT)..."));
+      set_cur_channel(1);
       setFullGUIState();
       break;
     default:
@@ -123,10 +125,10 @@ bool StereoContainer_UI::processCharacter(char c) {
 void StereoContainer_UI::setFullGUIState(bool activeButtonsOnly) {
   updateCard_chooseChan(activeButtonsOnly);
   
-  if (get_cur_channel() == RIGHT) {
-    for (int i=0; (unsigned int)i < items_R.size(); i++) items_R[i]->setFullGUIState();    
+  if (get_cur_channel() == LEFT) {
+    for (int i=0; (unsigned int)i < items_L.size(); i++) items_L[i]->setFullGUIState();    
   } else {
-    for (int i=0; (unsigned int)i < items_L.size(); i++) items_L[i]->setFullGUIState();
+    for (int i=0; (unsigned int)i < items_R.size(); i++) items_R[i]->setFullGUIState();
   }
 }
 
