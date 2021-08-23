@@ -23,7 +23,8 @@ class StereoContainer_UI : public SerialManager_UI {
 
     enum channel {LEFT=0, RIGHT=1};
 
-    void add_item_pair(SerialManager_UI *left_item, SerialManager_UI *right_item);
+
+     void add_item_pair(SerialManager_UI *left_item, SerialManager_UI *right_item);
 
     virtual int get_cur_channel(void) { return state.cur_channel; }
     virtual int set_cur_channel(int val) { val = max(LEFT,min(RIGHT, val)); return state.cur_channel = val; }
@@ -32,6 +33,9 @@ class StereoContainer_UI : public SerialManager_UI {
     std::vector<SerialManager_UI *> items_R;  //this really only needs to be [max_n_filters-1] in length, but we'll generally allocate [max_n_filters] just to avoid mistaken overruns
 
     StereoContainerState state;
+
+    // /////////////////////////////////////// Overload methods from SerialManager_UI
+    void setSerialManager(SerialManagerBase *_sm);
 
     // ///////////////////////////////////////  Required methods because of SerialManager_UI
     virtual void printHelp(void);
@@ -54,9 +58,31 @@ class StereoContainer_UI : public SerialManager_UI {
   
 };
 
+void StereoContainer_UI::setSerialManager(SerialManagerBase *_sm) {
+  //normally, "setSerialManager" is called automatically when an UI instance is added to the 
+  //SerialManager via SerialManagerBase::add_UI_element().  But, by using this container class,
+  //the components within the container are never handed to SerialManagerBase::add_UI_element().
+  //Therefore, we must do it ourselves here.
+  
+  for (int i=0; (unsigned int)i<items_L.size(); i++) {
+    items_L[i]->setSerialManager(_sm);  //from SerialManager_UI.
+    items_R[i]->setSerialManager(_sm);
+  }
+
+  SerialManager_UI::setSerialManager(_sm);
+}
+
 void StereoContainer_UI::add_item_pair(SerialManager_UI *left_item, SerialManager_UI *right_item) {
   items_L.push_back(left_item);
   items_R.push_back(right_item); 
+
+  //if items are added after the setSerialManager() has been called, we should add the link to
+  //serialManager now.
+  SerialManagerBase *_sm = getSerialManager();  //from SerialManager_UI.h
+  if (_sm != NULL) {
+    left_item->setSerialManager(_sm);
+    right_item->setSerialManager(_sm);
+  }
 }
 
 void StereoContainer_UI::printHelp(void) {
@@ -124,11 +150,16 @@ bool StereoContainer_UI::processCharacter(char c) {
 
 void StereoContainer_UI::setFullGUIState(bool activeButtonsOnly) {
   updateCard_chooseChan(activeButtonsOnly);
-  
   if (get_cur_channel() == LEFT) {
-    for (int i=0; (unsigned int)i < items_L.size(); i++) items_L[i]->setFullGUIState();    
+    for (int i=0; (unsigned int)i < items_L.size(); i++) {
+      Serial.println("StereoContainer_UI: setFullGUIState: updating Left item " + String(i));
+      items_L[i]->setFullGUIState();    
+    }
   } else {
-    for (int i=0; (unsigned int)i < items_R.size(); i++) items_R[i]->setFullGUIState();
+    for (int i=0; (unsigned int)i < items_R.size(); i++) {
+      Serial.println("StereoContainer_UI: setFullGUIState: updating Right item " + String(i));
+      items_R[i]->setFullGUIState();
+    }
   }
 }
 

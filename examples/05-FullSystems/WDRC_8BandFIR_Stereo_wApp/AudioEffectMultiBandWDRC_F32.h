@@ -161,10 +161,18 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
     TR_Page* addPage_compressor_broadband(TympanRemoteFormatter *gui);
 
     void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_F32_UI* _left, AudioEffectMultiBandWDRC_F32_UI *_right) {
+      //set the local pointers
       leftWDRC = _left;  rightWDRC = _right;
+      
+      //attach them to our lists
       add_item_pair(&(leftWDRC->filterbank),    &(rightWDRC->filterbank));
       add_item_pair(&(leftWDRC->compbank),      &(rightWDRC->compbank));
       add_item_pair(&(leftWDRC->compBroadband), &(rightWDRC->compBroadband));
+
+      //Set the ID_char used for GUI fieldnames so that the right's are the same as the left's.
+      //Only do this if we're only going to have one set of GUI elements to display both left
+      //and right.  This is my intention, so I'm going to go ahead and do it.
+      for (int i=0; (unsigned int)i<items_L.size(); i++) { items_R[i]->set_ID_char_fn(items_L[i]->get_ID_char_fn()); }
     }
 
   protected:
@@ -175,11 +183,13 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
 TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Filterbank");
+  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
   if (page_h == NULL) return NULL;
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
-  if (leftWDRC != NULL) {
+  if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
     (leftWDRC->filterbank).addCard_crossoverFreqs(page_h);
+    (rightWDRC->filterbank).addCard_crossoverFreqs(page_foo_h); //filterbank might track which GUI elements have been invoked.  This triggers that automatic behavior
   }
 
   return page_h;
@@ -188,13 +198,18 @@ TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) 
 TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Compressor Bank, Global Parameters");
+  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
   if (page_h == NULL) return NULL;
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
-  if (leftWDRC != NULL) {
+  if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
     (leftWDRC->compbank).addCard_attack_global(page_h);
     (leftWDRC->compbank).addCard_release_global(page_h);
     (leftWDRC->compbank).addCard_scaleFac_global(page_h);
+
+    (rightWDRC->compbank).addCard_attack_global(page_foo_h);   //compbank might track which GUI elements have been invoked.  This triggers that automatic behavior
+    (rightWDRC->compbank).addCard_release_global(page_foo_h);
+    (rightWDRC->compbank).addCard_scaleFac_global(page_foo_h);
   }
 
   return page_h;
@@ -203,12 +218,16 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteForm
 TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Compressor Bank");
+  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
   if (page_h == NULL) return NULL;
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
-  if (leftWDRC != NULL) {
+  if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
     (leftWDRC->compbank).addCard_chooseMode(page_h);
     (leftWDRC->compbank).addCard_persist_perChan(page_h);
+
+    (rightWDRC->compbank).addCard_chooseMode(page_foo_h);   //compbank might track which GUI elements have been invoked.  This triggers that automatic behavior
+    (rightWDRC->compbank).addCard_persist_perChan(page_foo_h);
   }
 
   return page_h;
@@ -217,11 +236,13 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteForm
 TR_Page* StereoContainerWDRC_UI::addPage_compressor_broadband(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Broadband Compressor");
+  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
   if (page_h == NULL) return NULL;
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
-  if (leftWDRC != NULL) {
+  if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
     (leftWDRC->compBroadband).addCards_allParams(page_h);
+    (rightWDRC->compBroadband).addCards_allParams(page_foo_h);  //compBroadband might track which GUI elements have been invoked.  This triggers that automatic behavior
   }
 
   return page_h;
