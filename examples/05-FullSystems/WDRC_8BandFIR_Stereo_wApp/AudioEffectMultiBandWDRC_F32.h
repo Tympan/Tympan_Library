@@ -8,8 +8,8 @@
 #include "AudioEffectCompBankWDRC_F32.h"
 #include "AudioEffectGain_F32.h"
 #include "AudioEffectCompWDRC_F32.h"
+#include "StereoContainer_UI.h"
 #include <arm_math.h> 
-//#include <vector>
 
 class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialManager_UI {
   public:
@@ -51,7 +51,7 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
 
       //get a temporary working block for audio
       audio_block_f32_t * block_tmp = AudioStream_F32::allocate_f32();
-      if (block_tmp != NULL) return ret_val;  //there was no memory available 
+      if (block_tmp == NULL) return ret_val;  //there was no memory available 
 
       //  /////////////////////////////////////////  loop over all the channels to do the per-band processing
       bool were_any_blocks_processed = false;
@@ -72,28 +72,25 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
               were_any_blocks_processed = true;  //if any one channel processes OK, this whole method will return OK
 
               //now we mix the processed signal with the other bands that have been processed
-              if (firstChannelProcessed) {                
+              if (firstChannelProcessed) {   
+                             
                 // First channel. Just copy it into the output
                 for (int i=0; i < block_in->length; i++) block_out->data[i] = block_tmp->data[i];
                 block_out->id = block_in->id;   block_out->length = block_in->length;
-
                 firstChannelProcessed=false; //next time, we can't use this branch of code and we'll use the branch below
-              
-              } else {                
-                // Later channels.  Sum with previous channels
-                arm_add_f32(block_out->data, block_tmp->data, block_out->data, block_out->length);               
-              
+                
+              } else {  
+                              
+                // Later channels.  Must sum this channel with the previous channels
+                arm_add_f32(block_out->data, block_tmp->data, block_out->data, block_out->length);  
+            
               }
             } else { // if(!any_error) for compbank
-              //Serial.print(F("AudioEffectMultiBandWDRC_F32_UI: update: error in compbank chan "));
-              //Serial.println(Ichan);
+              //Serial.println(F("AudioEffectMultiBandWDRC_F32_UI: update: error in compbank chan ") + String(Ichan));
             } 
-            
           } else { // if(!any_error) for filterbank
-            //Serial.print(F("AudioEffectMultiBandWDRC_F32_UI: update: error in filterbank chan  "));
-            //Serial.println(Ichan);
+            //Serial.println(F("AudioEffectMultiBandWDRC_F32_UI: update: error in filterbank chan  ") + String(Ichan));
           }
-          
         } else {  //if filter is enabled
           //Serial.print(F("AudioEffectMultiBandWDRC_F32_UI: update: filter is not enabled: Ichan = ")); Serial.println(Ichan);
         }
@@ -142,5 +139,29 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
   
 };
 
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Make a stereo container for the MultiBandWDRC to ease the App GUI
+//
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class StereoContainerWDRC_UI : public StereoContainer_UI {
+  public:
+    StereoContainerWDRC_UI(void) : StereoContainer_UI() {};
+
+    TR_Page* addPage_filterbank(TympanRemoteFormatter *gui) {};
+    TR_Page* addPage_compressorbank(TympanRemoteFormatter *gui) {};
+    TR_Page* addPage_broadbandcompressor(TympanRemoteFormatter *gui) {};
+
+    void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_F32_UI* left, AudioEffectMultiBandWDRC_F32_UI *right) {
+      add_item_pair(&(left->filterbank),    &(right->filterbank));
+      add_item_pair(&(left->compbank),      &(right->compbank));
+      add_item_pair(&(left->compBroadband), &(right->compBroadband));
+    }
+
+  protected:
+  
+};
 
 #endif

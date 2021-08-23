@@ -38,23 +38,26 @@
   MIT License.  use at your own risk.
 */
 
+
 // Include all the of the needed libraries
 #include <Tympan_Library.h>
 #include "AudioEffectMultiBandWDRC_F32.h"
-#include "StereoContainer_UI_F32.h"
 
 // Define the audio settings
 const float sample_rate_Hz = 24000.0f ; //24000 or 32000 or 44100 (or other frequencies in the table in AudioOutputI2S_F32
-const int audio_block_samples = 16;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
+const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
+
 
 // Define the number of channels! Make sure DSL_GHA_Preset0.h and DSL_GHA_Preset1.h have enough values
 // (it needs N_CHAN or more values) defined for each compressor parameter.  If not, it'll bomb at run time!
-const int N_CHAN = 8;    
+const int N_CHAN = 8;   
+
 
 // Create audio classes and make audio connections
 Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
 #include "AudioConnections.h"                      //let's put them in their own file for clarity
+
 
 // Create classes for controlling the system
 #include      "SerialManager.h"
@@ -146,8 +149,12 @@ void setup() {
   Serial.println("Setup complete.");
   serialManager.printHelp();
 
+  myState.printCPUandMemory(millis(),0);
+
   multiBandWDRC[0].filterbank.enable(true); //is this needed?
   multiBandWDRC[1].filterbank.enable(true); //is this needed?
+  multiBandWDRC[0].enable(true);
+  multiBandWDRC[1].enable(true);
 
 } //end setup()
 
@@ -177,6 +184,7 @@ void loop() {
   if (USE_VOLUME_KNOB) servicePotentiometer(millis());
   
   //periodically print the CPU and Memory Usage
+  myState.printCPUandMemory(millis(),10); //print faster
   if (myState.flag_printCPUandMemory) myState.printCPUandMemory(millis(), 3000); //print every 3000msec  (method is built into TympanStateBase.h, which myState inherits from)
   if (myState.flag_printCPUandMemory) myState.printCPUtoGUI(millis(), 3000);     //send to App every 3000msec (method is built into TympanStateBase.h, which myState inherits from)
 

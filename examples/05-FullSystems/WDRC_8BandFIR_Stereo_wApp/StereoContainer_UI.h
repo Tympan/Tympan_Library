@@ -1,6 +1,6 @@
 
-#ifndef _StereoContainer_UI_F32
-#define _StereoContainer_UI_F32
+#ifndef _StereoContainer_UI_h
+#define _StereoContainer_UI_h
 
 #include <Arduino.h>
 //#include <AudioStream_F32.h>
@@ -17,9 +17,9 @@ class StereoContainerState {
 
 };
 
-class StereoContainer_UI_F32 : public SerialManager_UI {
+class StereoContainer_UI : public SerialManager_UI {
   public:
-    StereoContainer_UI_F32(void) : SerialManager_UI() {};
+    StereoContainer_UI(void) : SerialManager_UI() {};
 
     enum channel {LEFT=0, RIGHT=1};
 
@@ -54,16 +54,16 @@ class StereoContainer_UI_F32 : public SerialManager_UI {
   
 };
 
-void StereoContainer_UI_F32::add_item_pair(SerialManager_UI *left_item, SerialManager_UI *right_item) {
+void StereoContainer_UI::add_item_pair(SerialManager_UI *left_item, SerialManager_UI *right_item) {
   items_L.push_back(left_item);
   items_R.push_back(right_item); 
 }
 
-void StereoContainer_UI_F32::printHelp(void) {
+void StereoContainer_UI::printHelp(void) {
   for (int i=0; (unsigned int)i < items_L.size(); i++) items_L[i]->printHelp();
 }
 
-bool StereoContainer_UI_F32::processCharacterTriple(char item_ID_char, char chan_char, char data_char) {
+bool StereoContainer_UI::processCharacterTriple(char item_ID_char, char chan_char, char data_char) {
 
   //check the item_ID_char to see what (if anything) it matches
   if (getIDchar() == item_ID_char) { //compare to this container's own ID character
@@ -79,7 +79,7 @@ bool StereoContainer_UI_F32::processCharacterTriple(char item_ID_char, char chan
   return false;
 }
 
-bool StereoContainer_UI_F32::processCharacterTriple_self(char item_ID_char, char chan_char, char data_char) {
+bool StereoContainer_UI::processCharacterTriple_self(char item_ID_char, char chan_char, char data_char) {
   //make sure that the given ID character matches
   if (item_ID_char != getIDchar()) return false;
 
@@ -89,7 +89,7 @@ bool StereoContainer_UI_F32::processCharacterTriple_self(char item_ID_char, char
   return processCharacter(data_char);
 }
 
-bool StereoContainer_UI_F32::processCharacterTriple_items(char item_ID_char, char chan_char, char data_char, int item_index) {
+bool StereoContainer_UI::processCharacterTriple_items(char item_ID_char, char chan_char, char data_char, int item_index) {
   if (get_cur_channel() == LEFT) {
       //the item_ID_char already is the left side
       return items_L[item_index]->processCharacterTriple(item_ID_char, chan_char, data_char);
@@ -101,7 +101,7 @@ bool StereoContainer_UI_F32::processCharacterTriple_items(char item_ID_char, cha
   return false;
 }
 
-bool StereoContainer_UI_F32::processCharacter(char c) {
+bool StereoContainer_UI::processCharacter(char c) {
   bool ret_val = true;
   switch (c) {
     case '0':  //zero
@@ -120,7 +120,7 @@ bool StereoContainer_UI_F32::processCharacter(char c) {
 }
     
 
-void StereoContainer_UI_F32::setFullGUIState(bool activeButtonsOnly) {
+void StereoContainer_UI::setFullGUIState(bool activeButtonsOnly) {
   updateCard_chooseChan(activeButtonsOnly);
   
   if (get_cur_channel() == RIGHT) {
@@ -130,7 +130,7 @@ void StereoContainer_UI_F32::setFullGUIState(bool activeButtonsOnly) {
   }
 }
 
-TR_Card* StereoContainer_UI_F32::addCard_chooseChan(TR_Page *page_h) {
+TR_Card* StereoContainer_UI::addCard_chooseChan(TR_Page *page_h) {
   if (page_h == NULL) return NULL;
   TR_Card *card_h = page_h->addCard("Choose Ear");
   if (card_h == NULL) return NULL;
@@ -145,7 +145,7 @@ TR_Card* StereoContainer_UI_F32::addCard_chooseChan(TR_Page *page_h) {
   return card_h; 
 }
 
-void StereoContainer_UI_F32::updateCard_chooseChan(bool activeButtonsOnly) {
+void StereoContainer_UI::updateCard_chooseChan(bool activeButtonsOnly) {
   String ID = String(ID_char);
   
   //loop over all buttons and send the "off" messages

@@ -11,7 +11,7 @@
 void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
      const int n_chan, const int n_filt_order, const AudioSettings_F32 &settings)
 {
-  for (int Ichan = StereoContainer_UI_F32::LEFT; Ichan <= StereoContainer_UI_F32::RIGHT; Ichan++) {
+  for (int Ichan = StereoContainer_UI::LEFT; Ichan <= StereoContainer_UI::RIGHT; Ichan++) {
     //set the per-channel filter coefficients (using our filterbank class)
     multiBandWDRC[Ichan].filterbank.designFilters(n_chan, n_filt_order, settings.sample_rate_Hz, settings.audio_block_samples, (float *)this_dsl.cross_freq);
 
@@ -43,12 +43,12 @@ void setupAudioProcessing(void) {
 
 float incrementChannelGain(int chan, float increment_dB) {
   if (chan < N_CHAN) {
-    for (int Ichan = StereoContainer_UI_F32::LEFT; Ichan <= StereoContainer_UI_F32::RIGHT; Ichan++) {
+    for (int Ichan = StereoContainer_UI::LEFT; Ichan <= StereoContainer_UI::RIGHT; Ichan++) {
       (multiBandWDRC[Ichan].compbank.compressors[chan]).incrementGain_dB(increment_dB);
     }
   }
   printGainSettings();  //in main sketch file
-  return multiBandWDRC[StereoContainer_UI_F32::LEFT].compbank.getLinearGain_dB(chan);
+  return multiBandWDRC[StereoContainer_UI::LEFT].compbank.getLinearGain_dB(chan);
 }
 
 
