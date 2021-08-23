@@ -306,8 +306,8 @@ TR_Card* AudioEffectCompWDRC_F32_UI::addCard_attackRelease(TR_Page *page_h) {
 	if (card_h == NULL) return NULL;
 
 	String prefix = getPrefix();   //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
-	String field_name1 = ID_char + String("att");
-	String field_name2 = ID_char + String("rel");
+	String field_name1 = ID_char_fn + String("att");
+	String field_name2 = ID_char_fn + String("rel");
 
 	card_h->addButton("Att", "",          "",          3);  //label, command, id, width
 	card_h->addButton("-",   prefix+"A",  "",          3);  //label, command, id, width

@@ -3,7 +3,7 @@
 #include "SerialManager_UI.h"
 #include "SerialManagerBase.h"
 
-char SerialManager_UI::next_ID_char = '0';  //start at zero and increment through the ASCII table
+char SerialManager_UI::next_ID_char = 'A';  //start at this value and then increment through the ASCII table
 char SerialManager_UI::quadchar_start_char = QUADCHAR_START_CHAR;
 
 
@@ -45,7 +45,8 @@ void SerialManager_UI::addButtons_presetUpDown(TR_Card *card_h, const String fie
 	if (card_h == NULL) return;
 
 	String prefix = getPrefix();    //3 character code.  getPrefix() is here in SerialManager_UI.h, unless it is over-ridden in the child class somewhere
-	String field_name1 = ID_char + field_name;  //prepend the field name with the unique ID_char to that it is only associated with a particular instance of the class
+	//String field_name1 = ID_char + field_name;  //prepend the field name with the unique ID_char to that it is only associated with a particular instance of the class
+	String field_name1 = ID_char_fn + field_name;  //prepend the field name with the unique ID_char to that it is only associated with a particular instance of the class
 
 	card_h->addButton("-",   prefix+down_cmd, "",          4); //label, command, id, width...this is the minus button
 	card_h->addButton("",    "",              field_name1, 4); //label, command, id, width...this text to display the value 
@@ -68,7 +69,8 @@ void SerialManager_UI::addButtons_presetUpDown_multiChan(TR_Card *card_h, const 
 	String prefix = getPrefix();   //3 character code.  getPrefix() is here in SerialManager_UI.h, unless it is over-ridden in the child class somewhere
 
 	for (int i=0; i<n_chan; i++) {
-		String fn_wChan = ID_char + field_name + String(i);     //channel number as a character (well, as a string)
+		//String fn_wChan = ID_char + field_name + String(i);     //channel number as a character (well, as a string)
+		String fn_wChan = ID_char_fn + field_name + String(i);     //channel number as a character (well, as a string)
 		String pre_wChan = String(prefix[0])+String(prefix[1])+String(i); //drop the 3rd character of the prefix and replace with chan number			
 		String cp1 = String(i+1); //for display to a human, who counts from 1 (not zero)
 		
@@ -84,10 +86,12 @@ void SerialManager_UI::addButtons_presetUpDown_multiChan(TR_Card *card_h, const 
 //the button that was named by the convention used by "addCardPreset_UpDown()" so it pairs nicely with
 //buttons created by that method.
 void SerialManager_UI::updateCardPreset_UpDown(const String field_name,const String new_text) {
-	String field_name1 = ID_char + field_name;  //prepend the unique ID_char so that the text goes to the correct button and not one similarly named
+	//String field_name1 = ID_char + field_name;  //prepend the unique ID_char so that the text goes to the correct button and not one similarly named
+	String field_name1 = ID_char_fn + field_name;  //prepend the unique ID_char so that the text goes to the correct button and not one similarly named
 	setButtonText(field_name1, new_text);
 } 
 void SerialManager_UI::updateCardPreset_UpDown(const String field_name,const String new_text, int Ichan) {
-	String field_name1 = ID_char + field_name + String(Ichan);  //prepend the unique ID_char so that the text goes to the correct button and not one similarly named
+	//String field_name1 = ID_char + field_name + String(Ichan);  //prepend the unique ID_char so that the text goes to the correct button and not one similarly named
+	String field_name1 = ID_char_fn + field_name + String(Ichan);  //prepend the unique ID_char so that the text goes to the correct button and not one similarly named
 	setButtonText(field_name1, new_text);
 } 

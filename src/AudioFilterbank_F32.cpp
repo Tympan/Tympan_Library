@@ -602,7 +602,8 @@ void AudioFilterbank_UI::sendAllFreqs(void) {
 void AudioFilterbank_UI::sendOneFreq(int Ichan) {  //Ichan counts from zero
 	if (Ichan < 0) return;
 	if (Ichan > (this_filterbank->state.get_n_filters()-1)) return;
-	setButtonText(freq_id_str + String(Ichan),String(this_filterbank->state.get_crossover_freq_Hz(Ichan),0));
+	String field_name1 = ID_char_fn + freq_id_str;
+	setButtonText(field_name1 + String(Ichan),String(this_filterbank->state.get_crossover_freq_Hz(Ichan),0));
 }
 
 void AudioFilterbank_UI::setFullGUIState(bool activeButtonsOnly) {
@@ -614,14 +615,16 @@ TR_Card* AudioFilterbank_UI::addCard_crossoverFreqs(TR_Page *page_h) {
 	TR_Card *card_h = page_h->addCard("Crossover Freqs (Hz)");
 	if (card_h == NULL) return NULL;
 	String prefix = String(quadchar_start_char)+String(ID_char)+String("x");
+	String field_name1 = ID_char_fn + freq_id_str;
 	int n_crossover = this_filterbank->get_n_filters()-1; //n_crossover is always n_filter - 1
+	
 	
 	for (int i=0; i < min(n_crossover,n_charMap); i++) {
 		//String label = String(i+1) + String("-") + String(i+2); //showing lower and upper channel ("1-2", "2-3", "3-4", etc)
-		String label = String(i+1); //showing just the lower channel ("1-2", "2-3", "3-4", etc)
+		String label = String(i+1); //showing just the lower channel ("1", "2", "3", etc)
 		card_h->addButton(label, "", 				    "",                    2);  //label, command, id, width
 		card_h->addButton("-",   prefix+charMapDown[i], "",                    3);  //label, command, id, width
-		card_h->addButton("",    "",                    freq_id_str+String(i), 4);  //label, command, id, width
+		card_h->addButton("",    "",                    field_name1+String(i), 4);  //label, command, id, width
 		card_h->addButton("+",   prefix+charMapUp[i],   "",                    3);  //label, command, id, width
 	}
 

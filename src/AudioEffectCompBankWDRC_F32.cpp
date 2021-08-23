@@ -437,15 +437,15 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_globals(TympanRemoteFormatter *
 
 TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_attack_global(  TR_Page *page_h) { 
 	flag_send_global_attack=true;
-	return addCardPreset_UpDown(page_h, "Attack Time (msec)",  "att",    'a'+capOffset, 'a');
+	return addCardPreset_UpDown(page_h, "Attack Time (msec)",  "att",    (char)((int)'a'+capOffset), 'a');
 };
 TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_release_global( TR_Page *page_h) { 
 	flag_send_global_release=true;
-	return addCardPreset_UpDown(page_h, "Release Time (msec)", "rel",    'r'+capOffset, 'r');
+	return addCardPreset_UpDown(page_h, "Release Time (msec)", "rel",    (char)((int)'r'+capOffset), 'r');
 };
 TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_scaleFac_global(TR_Page *page_h) { 
 	flag_send_global_scaleFac=true;
-	return addCardPreset_UpDown(page_h, "Scale (dBSPL at dBFS)","maxdB", 'm'+capOffset, 'm');
+	return addCardPreset_UpDown(page_h, "Scale (dBSPL at dBFS)","maxdB", (char)((int)'m'+capOffset), 'm');
 };
 
 TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_attack(TympanRemoteFormatter *gui) {
@@ -453,7 +453,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_attack(TympanRemoteFormatter *g
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Attack Time (msec)", "att", 'a'+capOffset, 'a', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Attack Time (msec)", "att", (char)((int)'a'+capOffset), 'a', get_n_chan());
 	flag_send_perBand_attack = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -463,7 +463,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_release(TympanRemoteFormatter *
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Release Time (msec)", "rel", 'r'+capOffset, 'r', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Release Time (msec)", "rel", (char)((int)'r'+capOffset), 'r', get_n_chan());
 	flag_send_perBand_release = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -473,7 +473,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_scaleFac(TympanRemoteFormatter 
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Scale (dBSPL at dBFS)", "maxdB", 'm'+capOffset, 'm', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Scale (dBSPL at dBFS)", "maxdB", (char)((int)'m'+capOffset), 'm', get_n_chan());
 	flag_send_perBand_scaleFac = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -483,7 +483,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_expCompRatio(TympanRemoteFormat
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Expansion CR (x:1)", "expCR", 'x'+capOffset, 'x', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Expansion CR (x:1)", "expCR", (char)((int)'x'+capOffset), 'x', get_n_chan());
 	flag_send_perBand_expCR = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -493,7 +493,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_expKnee(TympanRemoteFormatter *
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Expansion Knee (dB SPL)", "expKnee", 'z'+capOffset, 'z', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Expansion Knee (dB SPL)", "expKnee", (char)((int)'z'+capOffset), 'z', get_n_chan());
 	flag_send_perBand_expKnee = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -503,7 +503,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_linearGain(TympanRemoteFormatte
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Linear Gain (dB)", "linGain", 'g'+capOffset, 'g', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Linear Gain (dB)", "linGain", (char)((int)'g'+capOffset), 'g', get_n_chan());
 	flag_send_perBand_linGain = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -513,7 +513,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_compRatio(TympanRemoteFormatter
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Compression Ratio (x:1)", "compRat", 'c'+capOffset, 'c', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Compression Ratio (x:1)", "compRat", (char)((int)'c'+capOffset), 'c', get_n_chan());
 	flag_send_perBand_compRat = true;   //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -522,7 +522,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_compKnee(TympanRemoteFormatter 
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Comp. Knee (dB SPL)", "compKnee", 'k'+capOffset, 'k', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Comp. Knee (dB SPL)", "compKnee", (char)((int)'k'+capOffset), 'k', get_n_chan());
 	flag_send_perBand_compKnee = true;   //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -531,7 +531,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_limKnee(TympanRemoteFormatter *
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Limiter Knee (dB SPL)", "limKnee", 'l'+capOffset, 'l', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Limiter Knee (dB SPL)", "limKnee", (char)((int)'l'+capOffset), 'l', get_n_chan());
 	flag_send_perBand_limKnee = true;   //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -545,18 +545,18 @@ TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_chooseMode(TR_Page *page_h) {
 
 	String prefix = getPrefix();     //3 character code.  getPrefix() is here in SerialManager_UI.h, unless it is over-ridden in the child class somewhere
 	prefix[2] = persistCharTrigger;  //replace the "channel" with the persistent-mode-triggering character
-	String ID = String(ID_char);
+	String ID_fn = String(ID_char_fn);
 	
 	//card_h->addButton("Attack (msec)",           prefix+"a", ID+"m_att",   12); //label, command, id, width...this is the minus button
 	//card_h->addButton("Release (msec)",          prefix+"r", ID+"m_rel",   12); //label, command, id, width...this is the minus button
 	//card_h->addButton("Scale (dBSPL at dBFS)",   prefix+"m", ID+"m_maxdB", 12); //label, command, id, width...this is the minus button
 
-	card_h->addButton("Expansion Comp Ratio",  prefix+"x", ID+"m_expCR",   12); //label, command, id, width...this is the minus button
-	card_h->addButton("Expansion Kneepoint",   prefix+"z", ID+"m_expKnee", 12); //label, command, id, width...this is the minus button
-	card_h->addButton("Linear Gain",           prefix+"g", ID+"m_linGain", 12); //label, command, id, width...this is the minus button
-	card_h->addButton("Compression Ratio",     prefix+"c", ID+"m_compRat", 12); //label, command, id, width...this is the minus button
-	card_h->addButton("Compression Kneepoint", prefix+"k", ID+"m_compKnee",12); //label, command, id, width...this is the minus button
-	card_h->addButton("Limiter Kneepoint",     prefix+"l", ID+"m_limKnee", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Expansion Comp Ratio",  prefix+"x", ID_fn+"m_expCR",   12); //label, command, id, width...this is the minus button
+	card_h->addButton("Expansion Kneepoint",   prefix+"z", ID_fn+"m_expKnee", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Linear Gain",           prefix+"g", ID_fn+"m_linGain", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Compression Ratio",     prefix+"c", ID_fn+"m_compRat", 12); //label, command, id, width...this is the minus button
+	card_h->addButton("Compression Kneepoint", prefix+"k", ID_fn+"m_compKnee",12); //label, command, id, width...this is the minus button
+	card_h->addButton("Limiter Kneepoint",     prefix+"l", ID_fn+"m_limKnee", 12); //label, command, id, width...this is the minus button
 	
 	flag_send_persistent_chooseMode = true;
 	return card_h;
@@ -570,8 +570,8 @@ TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_persist_perChan(TR_Page *page_h
 	if (card_h == NULL) return NULL;
 	
 	//add a "button" to act as the title
-	String ID = String(ID_char);
-	card_h->addButton("", "", ID+"m_title", 12);  //label, command, id, width...this is the minus button
+	String ID_fn = String(ID_char_fn);
+	card_h->addButton("", "", ID_fn+"m_title", 12);  //label, command, id, width...this is the minus button
 	addButtons_presetUpDown_multiChan(card_h, "perChan", persistDown, persistUp, get_n_chan());
 
 	flag_send_persistent_multiChan = true;   //tells updateAll to send the values associated with these buttons
@@ -627,17 +627,17 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_scaleFac_global(void){ updateCar
 
 //make persistent mode versions
 void AudioEffectCompBankWDRC_F32_UI::updateCard_persistentChooseMode(bool activeButtonsOnly) {
-	String ID = String(ID_char);
+	String ID_fn = String(ID_char_fn);
 	if (!activeButtonsOnly) {
-		//setButtonState(ID+"m_att",false);
-		//setButtonState(ID+"m_rel",false);
-		//setButtonState(ID+"m_maxdB",false);
-		setButtonState(ID+"m_expCR",false);
-		setButtonState(ID+"m_expKnee",false);
-		setButtonState(ID+"m_linGain",false);
-		setButtonState(ID+"m_compRat",false);
-		setButtonState(ID+"m_compKnee",false);
-		setButtonState(ID+"m_limKnee",false);
+		//setButtonState(ID_fn+"m_att",false);
+		//setButtonState(ID_fn+"m_rel",false);
+		//setButtonState(ID_fn+"m_maxdB",false);
+		setButtonState(ID_fn+"m_expCR",false);
+		setButtonState(ID_fn+"m_expKnee",false);
+		setButtonState(ID_fn+"m_linGain",false);
+		setButtonState(ID_fn+"m_compRat",false);
+		setButtonState(ID_fn+"m_compKnee",false);
+		setButtonState(ID_fn+"m_limKnee",false);
 	}
 	bool send_val = true;
 	String str;
@@ -673,7 +673,7 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persistentChooseMode(bool active
 			send_val = false;
 			break;
 	}
-	if (send_val) setButtonState(ID+str,true);
+	if (send_val) setButtonState(ID_fn+str,true);
 }
 
 void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_title(void) {
@@ -711,7 +711,7 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_title(void) {
 			send_val = false;
 			break;
 	}
-	if (send_val) setButtonText(String(ID_char)+"m_title", title);
+	if (send_val) setButtonText(String(ID_char_fn)+"m_title", title);
 }
 
 void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {

@@ -13,9 +13,11 @@ class SerialManager_UI {
   public:
     SerialManager_UI(void) { 
       ID_char = next_ID_char++;
+	  ID_char_fn = ID_char;
     };
 	SerialManager_UI(SerialManagerBase  *_sm) {
 		ID_char = next_ID_char++;
+		ID_char_fn = ID_char;
 		setSerialManager(_sm);
 	}
 
@@ -32,6 +34,8 @@ class SerialManager_UI {
 	// predefined helper functions, which you can override
 	virtual char getIDchar() { return ID_char; }
 	virtual String getPrefix(void) { return String(quadchar_start_char) + String(ID_char) + prefix_globalChar; }  //your class can use any and every String-able character in place of "x"...so, you class can have *a lot* of commands
+	virtual char get_ID_char_fn(void) { return ID_char_fn; }
+	virtual char set_ID_char_fn(char c) { return ID_char_fn = c; }
 	
 	// here is a method to create the very-common card (button group) to create display a parameter value
 	// and to adjust its value with a plus and minus button.  Very common!
@@ -51,8 +55,8 @@ class SerialManager_UI {
 
 	
     //attach the SerialManager
-    void setSerialManager(SerialManagerBase *_sm);
-    SerialManagerBase *getSerialManager(void);
+    virtual void setSerialManager(SerialManagerBase *_sm);
+    virtual SerialManagerBase *getSerialManager(void);
 	
 	//useful value
 	const int capOffset = 65 - 97; //given lower case, add this value to get the upper case
@@ -62,15 +66,16 @@ class SerialManager_UI {
 	virtual char set_prefix_globalChar(char c) { prefix_globalChar = c;  return get_prefix_globalChar(); }
 
   protected:
-    char ID_char;                    //see SerialManager_UI.cpp for where it gets initializedd
-    static char quadchar_start_char; //see SerialManager_UI.cpp for where it gets initializedd
+    char ID_char;                    //initialized in constructor.  
+	char ID_char_fn;				 //initialized in constructor.  this normally the same as ID_char, but can be made different if you want to overwrite someone else's fieldnames in the GUI widgets
+    static char quadchar_start_char; //see SerialManager_UI.cpp for where it gets initialized
     SerialManagerBase *sm = NULL;
     virtual void setButtonState(String btnId, bool newState, bool sendNow = true);
     virtual void setButtonText(String btnId, String text);
     virtual void sendTxBuffer(void);
 	char prefix_globalChar = 'x';  //by default, this character is used as the "channel" character. For most of your Audio classes, this won't matter at all.
   private:
-    static char next_ID_char;
+    static char next_ID_char;      //see SerialManager_UI.cpp for where it gets initialized
 };
 
 #endif

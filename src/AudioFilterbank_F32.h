@@ -175,9 +175,7 @@ class AudioFilterbank_UI : public SerialManager_UI {
 	public:
 		//AudioFilterbank_UI(void) : SerialManager_UI() {};
 		AudioFilterbank_UI(AudioFilterbankBase_F32 *_this_filterbank) : 
-			SerialManager_UI(), this_filterbank(_this_filterbank) {
-				freq_id_str = String(getIDchar()) + freq_id_str; //prepend with a unique character to this instance
-			};
+			SerialManager_UI(), this_filterbank(_this_filterbank) {};
 		
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI
