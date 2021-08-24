@@ -24,13 +24,18 @@ BLE        ble(&Serial1);
 
 // USER PARAMETERS
 const int TARGET_BAUDRATE = 115200;    //try 115200 (fast!) or 9600 (factory original)
-const int FIRMWARE_VERSION = 7; // what Melody firmware we are dealing with
+const int FIRMWARE_VERSION = 7;        // what Melody firmware we are dealing with
+const bool USE_HARDWARE_RESET = true;  //try to use the BC127 GPIO Pins to force a factory reset
+
+const int pin_PIO0 = 5; //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
+const int pin_RST = 9;  //RevD = 34, RevE = 9   // Pin # for connection to BC127 RST pin
 
 
 // //////////////////////////////////////////// Helper functions
 
-const int baudrate1 = 9600;   //here is one possible starting baudrate for the BLE module
-const int baudrate2 = 115200; //here is the other possible starting baudrate for the BLE module
+const int baudrate_factory = 9600;       // here is the factory default
+const int baudrate1 = baudrate_factory;  //here is one possible starting baudrate for the BLE module
+const int baudrate2 = 115200;            //here is the other possible starting baudrate for the BLE module
 int cur_baudrate;  // this is the baudrate that we've set Serial1 to be
 void setSerial1BaudRate(int new_baud) {
   Serial1.flush();
@@ -39,6 +44,73 @@ void setSerial1BaudRate(int new_baud) {
   Serial1.begin(new_baud);
   delay(500);
   cur_baudrate = new_baud;
+}
+
+
+//This function attempts to hold PIO 0 high and then reseting via the reset pin.
+//See Melody Guide for v7 "Restoring the Default Configuration".
+void hardwareReset() {
+  //Set the reset pin.  "Normal" is high impedance with an external pull-up.  Let's
+  //set our default to high-impedance ("INPUT") with also an internal pullup, then
+  //transition to low-impedance (ie, "OUTPUT") set high
+  pinMode(pin_RST, INPUT);
+  digitalWrite(pin_RST, HIGH);
+  pinMode(pin_RST, OUTPUT);
+  digitalWrite(pin_RST, HIGH);
+  
+  //now set the PIO0 pin.  Normal is PIO0
+  pinMode(pin_PIO0,OUTPUT);
+  digitalWrite(pin_PIO0, LOW);
+
+  //stall for a tiny bit (for no good reason)
+  delay(50);
+
+  //Now we follow the instructions in the Melody User Guide
+  //
+  // The default configuration can be restored using either of the following equivalent 
+  // methods:
+  //   * Maintain PIO 0 high (press the VOL UP button on a BC127-DISKIT) while 
+  //     resetting the module
+  //   * Use RESTORE
+  digitalWrite(pin_PIO0,HIGH);
+  delay(5); //let it setting
+  
+  //And, from the Datasheet, reset if low for more than 5msec
+  digitalWrite(pin_RST,LOW);  //pull the pin low to start reset timer
+  delay(10);                  //resets if low for more than 5 msec
+  digitalWrite(pin_RST,LOW);  //return to normal
+
+  //did it reset?  It should report its ID info to the Serial
+
+  //return to normal
+  delay(10);
+  digitalWrite(pin_PIO0,LOW); //return to normal
+}
+
+int hardwareResetWithChecking(void) {
+  Serial.println("setup(): Attempting a hardware reset...");
+    
+  //if successfull, we'll end up in the factory baudrate.  So, let's switch
+  //so that we can get its boot-up message
+  setSerial1BaudRate(baudrate_factory);
+
+  //do the hardware reset
+  hardwareReset();
+
+  //check for the boot message
+  delay(500);
+  echoIncomingBTSerial();
+  Serial.println("Did you see the boot-up info from the BC127??");
+
+  //check BT status (another way to confirm that we have the right speed
+  ret_val = checkStatusBLE();
+  if (ret_val != BC127::SUCCESS) {
+    Serial.println("setup(): Hardware reset FAILED to restore factory baudrate.");
+    return -1; //fail
+  } else {
+    Serial.println("setup(): Hardware reset SUCCESSS in restoring factory baudrate.");
+  } 
+  return 0; //assume success 
 }
 
 //If the baudrate to the BLE modue matches that baudrate that the BLE module expects,
@@ -104,6 +176,10 @@ void setup() {
     }
   }
 
+  //try forcing a hardware reset
+  if (USE_HARDWARE_RESET) hardwareResetWithChecking();
+
+  //switch to desired baudrate
   if (cur_baudrate != TARGET_BAUDRATE) {
     //let's try commanding the BC127 to the new baud rate anyway
     Serial.println("Change baudrate on the BC127 to "  + String(TARGET_BAUDRATE) + "...");
