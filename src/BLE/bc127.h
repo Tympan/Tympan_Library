@@ -78,7 +78,7 @@ protected:
 	int BLE_id_num=-1; //can be 14, 24, 34? 
 	
 	//To do a hardware reset of the module, we need to know the pin numbers from the Tympan/Teensy that go to
-	//certain pins on the BC127.  You really should provide those pins through the setPins method.  But, to avoid
+	//certain pins on the BC127.  You really should provide those pins through the setPins() method.  But, to avoid
 	//catastrophe, I also do the hack below to try to use the correct values.  This is cheating.
 	#ifdef KINETISK //this is set by the Arduino IDE when you choose Teensy 3.6...ie Tympan RevD
 		int pin_PIO0 = 56;   //set to -1 to defeat unless set manually. //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
