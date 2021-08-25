@@ -60,14 +60,15 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 			//or leave it high...assuming high is normal
 		}
 	}
+	if (pins.BT_PIO0 != NOT_A_FEATURE) {
+		pinMode(pins.BT_PIO0,INPUT);  //high impedance.  If this switched to low impedance and is held high when the reset pin (below) is toggled, it forces a hardware reset on BC127.
+	}
 	if (pins.BT_nReset != NOT_A_FEATURE) {  //For RN51 and  BC127 modules.  (RevC, RevD, RevE)
 		pinMode(pins.BT_nReset,OUTPUT);
 		digitalWrite(pins.BT_nReset,LOW);delay(50); //reset the device  (RevC used only 10 here, not 50.  Is 50 OK for RevC?)
 		digitalWrite(pins.BT_nReset,HIGH);  //normal operation.
 	}
-	if (pins.BT_PIO0 != NOT_A_FEATURE) {
-		pinMode(pins.BT_PIO0,INPUT);
-	}
+
 
 	forceBTtoDataMode(true);
 };
