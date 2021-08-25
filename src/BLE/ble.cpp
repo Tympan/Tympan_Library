@@ -32,12 +32,48 @@ int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 	//enable BT_Classic connectable and discoverable, always
 	if (BC127_firmware_ver >= 7) {
 		ret_val = setConfig("BT_STATE_CONFIG", "1 1");
-		if (ret_val != BC127::SUCCESS) Serial.println(F("BLE: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
+		if (ret_val != BC127::SUCCESS) {
+			Serial.println(F("BLE: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
+			
+			//try a different baud rate
+			Serial.println("BLE: begin: switching baudrate to BT module to " + String(faster_baudrate));
+			setSerialBaudRate(faster_baudrate);
+			delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
+			
+			//try BT_Classic again
+			ret_val = setConfig("BT_STATE_CONFIG", "1 1");
+			if (ret_val != BC127::SUCCESS) {
+				Serial.println(F("BLE: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
+				
+				//switch back to the factory baud rate
+				Serial.println("BLE: begin: switching baudrate to BT module back to " + String(factory_baudrate));
+				setSerialBaudRate(factory_baudrate);
+				delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
+			}
+		}
 	}
 	
 	//write the new configuration so that it exists on startup (such as an unexpected restart of the module)
     ret_val = writeConfig();
-	if (ret_val != BC127::SUCCESS) Serial.println(F("BLE: begin: writeConfig() returned error ") + String(ret_val));
+	if (ret_val != BC127::SUCCESS) {
+		Serial.println(F("BLE: begin: writeConfig() returned error ") + String(ret_val));
+		
+		//try a different baud rate
+		Serial.println("BLE: begin: switching baudrate to BT module to " + String(faster_baudrate));
+		setSerialBaudRate(faster_baudrate);
+		delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
+		
+	    ret_val = writeConfig();
+		if (ret_val != BC127::SUCCESS) {
+			Serial.println(F("BLE: begin: writeConfig() returned error ") + String(ret_val));
+		
+			//switch back to the factory baud rate
+			Serial.println("BLE: begin: switching baudrate to BT module back to " + String(factory_baudrate));
+			setSerialBaudRate(factory_baudrate);
+			delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
+		}
+	}
+			
 	
 	//reset
     ret_val = reset();

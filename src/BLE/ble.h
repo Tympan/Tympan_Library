@@ -11,7 +11,7 @@ class BLE : public BC127
 {
 public:
 	BLE(HardwareSerial *sp) : BC127(sp) {}
-	BLE(TympanBase *tympan) : BC127(tympan->BT_Serial) { setPins(tympan->getPin_BT_PIO0(),tympan->getPin_BT_RST()) };
+	BLE(TympanBase *tympan) : BC127(tympan->BT_Serial) { setPins(tympan->getPin_BT_PIO0(),tympan->getPin_BT_RST()); };
     int begin(int doFactoryReset = 1); //0 = no reset, 1 = hardware reset, 2 = software reset
 	void setupBLE(int BT_firmware = 7, bool printDebug = true);            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
     void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
