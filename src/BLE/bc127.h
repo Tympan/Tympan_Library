@@ -60,11 +60,15 @@ public:
 	int set_BC127_firmware_ver(int val);             // user sets whether firmware is version 5, 6, or 7
 	int get_BC127_firmware_ver(void)    { return BC127_firmware_ver; }
 
+	void setPins(int pinPIO0, int pinRST) { pin_PIO0 = pinPIO0; pin_RST = pinRST; }
+
+	int factoryResetViaPins(void);
+
 protected:
     // end-of-line delimiter
-    const String EOC = String("\r");
+    const String EOC = String('\r');
     // end-of-command delimiter
-	String EOL = String("\r");  //this is changed by set_BC127_firmware_ver()
+	String EOL = String('\r');  //this is changed by set_BC127_firmware_ver()
 
     HardwareSerial *_serialPort;    // port to talk on
     String _cmdResponse;    // response from commands
@@ -72,7 +76,10 @@ protected:
 
 	int BC127_firmware_ver = 7;  //can be 5, 6, 7
 	int BLE_id_num=-1; //can be 14, 24, 34? 
-
+	
+	int pin_PIO0 = 5;   //set to -1 to defeat unless set manually. //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
+	int pin_RST = 9;    //set to -1 to defeat unless set manually. //RevD = 34, RevE = 9   // Pin # for connection to BC127 RST pin
+	
 private:
     opResult knownStart();                   // baseline starting function
     opResult waitResponse(int timeout = -1); // wait for a full response

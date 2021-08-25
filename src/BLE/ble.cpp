@@ -4,58 +4,29 @@ const int factory_baudrate = 9600;   //here is one possible starting baudrate fo
 const int faster_baudrate = 115200; //here is the other possible starting baudrate for the BLE module
 
 
-int BLE::begin(bool doFactoryReset)
+int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 {
 	bool switch_to_faster_baud_rate = true;
 	int ret_val = 0;
-
-	//shorten the timeout period...
-	//any failed trial will hit this a lot, so shorter is better
-	unsigned long orig_timeout = _timeout;
-	unsigned long new_timeout = 1000; //millis
-	setTimeout(new_timeout);
 	
 	//clear the incoming serial buffer
 	while (_serialPort->available()) _serialPort->read();  //clear the serial buffer associated with the BT unit
 	
-	//force into command mode (not needed if already in command mode...but historical Tympan units were preloaded to Data mode instead)
-	//myTympan.forceBTtoDataMode(false);
-	_serialPort->print("$");  delay(400);	_serialPort->print("$$$");
-	
-	//find the correct baud rate
-	findAndSwitchToBaudrate(true);
 
-	if (doFactoryReset) {
-		//restore to factory defaults
-		Serial.println("BLE: begin: issuing RESTORE....");
-		ret_val = restore();  //this will drop the baud rate down to the factory value (9600)
-		
-		//if (ret_val != BC127::SUCCESS) Serial.println(F("BLE: begin: restore() returned error ") + String(ret_val));
-		setSerialBaudRate(factory_baudrate);
+	//do a factory reset
+	if (doFactoryReset == 1) {
+		Serial.println("BLE: begin: doing factory reset via hardware pins.");
+		hardwareFactoryReset(); //this also automatically changes the serial baudrate of the Tympan itself
+
+	} else {
+		//force into command mode (not needed if already in command mode...but historical Tympan units were preloaded to Data mode instead)
+		_serialPort->print("$");  delay(400);	_serialPort->print("$$$");
 	}
-
+	
 	//switch BC127 to listen to the serial link from the Tympan to a faster baud rate
 	if (switch_to_faster_baud_rate) {
-		Serial.println("BLE: Begin: setting BC127 baudrate to " + String(faster_baudrate));
-		if (BC127_firmware_ver >= 7) {
-			ret_val = setConfig("UART_CONFIG",String(faster_baudrate) + " OFF 0");
-		} else {
-			ret_val = setConfig("BAUD",String(faster_baudrate));
-		}
-		//if (ret_val != BC127::SUCCESS) {
-		//	Serial.println(F("BLE: begin: setting baud rate returned error ") + String(ret_val));
-		//	switch_to_faster_baud_rate = false;
-		//}
-		
-		//writeConfig();
-		//restore();
-		//delay(1000);
-		
-		//Swtich the serial link to the BC127 to the faster baud rate
-		Serial.println("BLE: Begin: setting Serial link to BC127 to " + String(faster_baudrate));
-		if (switch_to_faster_baud_rate) setSerialBaudRate(faster_baudrate);
-		checkStatusBLE(true);
-	
+		Serial.println("BLE: begin: setting BC127 baudrate to " + String(faster_baudrate) + ".");
+		switchToFasterBaudRate(faster_baudrate);
 	}
 		
 	//enable BT_Classic connectable and discoverable, always
@@ -72,84 +43,100 @@ int BLE::begin(bool doFactoryReset)
     ret_val = reset();
 	if (ret_val != BC127::SUCCESS)	Serial.println(F("BLE: begin: reset() returned error ") + String(ret_val));
 
-	setTimeout(orig_timeout);
 	return ret_val;
 }
 
 void BLE::setSerialBaudRate(int new_baud) {
 	_serialPort->flush();
 	_serialPort->end();
-	delay(250);
 	_serialPort->begin(new_baud);
-	delay(250);
+	delay(100);
 }
 
-//If the baudrate to the BLE modue matches that baudrate that the BLE module expects,
-//we should be able to ask its status and get a valid reply.  So, we don't get a valid
-//reply, the baudrate of Serial1 probably does not match.
-int BLE::checkStatusBLE(bool printDebug) {
+int BLE::hardwareFactoryReset(bool printDebug) {
+	if (printDebug) Serial.println("BLE: hardwareFactoryReset: starting hardware-induced reset...");
 	
-  int ret_val = status(printDebug);
-	if  (printDebug) {
-		Serial.println("BLE: checkStatusBLE: reply code to status = " + String(ret_val));
-		if (ret_val != BC127::SUCCESS) {
-			Serial.println("BLE: checkStatusBLE: status() returned error: " + String(ret_val));
-		} else {
-			Serial.println("BLE: checkStatusBLE: status() returned OK! " + String(ret_val));
-		}
-	}
-	return ret_val;
-}
-
-int BLE::findAndSwitchToBaudrate(bool printDebug) {
-	
-	//shorten the timeout period...
-	//any failed trial will hit this a lot, so shorter is better
-	unsigned long orig_timeout = _timeout;
-	unsigned long new_timeout = 1000; //millis
-	setTimeout(new_timeout);
-	
-	
-	//try factory_baudrate
-	bool ret_val = -1;
-	if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: trying " + String(factory_baudrate));
+	//before the hardware reset, change the serial baudrate to the expected new value
 	setSerialBaudRate(factory_baudrate);
-	if (checkStatusBLE(true) == BC127::SUCCESS) {
-		if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Success! " + String(factory_baudrate));
-		ret_val = factory_baudrate;
-	} else {
-		//try baudrate2
-		if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Failed. Trying " + String(faster_baudrate));
-		setSerialBaudRate(faster_baudrate);
-		if (checkStatusBLE(true) == BC127::SUCCESS) {
-			if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Success! " + String(faster_baudrate));
-			ret_val = faster_baudrate;
-		} else {
-			if (printDebug) Serial.println("BLE: findAndSwitchToBaudrate: Failed. Returning  to " + String(factory_baudrate));
-			//switch back to factory baudrate
-			setSerialBaudRate(factory_baudrate);
-			ret_val = -1;
-		}
+	
+	//do the hardware reset
+	int ret_val = factoryResetViaPins();
+	if (ret_val < 0) { //factoryResetViaPins is in BC127
+		Serial.println("BLE: hardwareFactoryReset: *** ERROR ***: could not do factory reset.");
+		return -1;  //error!
 	}
 	
-	setTimeout(orig_timeout); //return to original value
-	return ret_val; //it should never get here
+	//wait for the reset info to be issued by the module over the serial link
+	delay(2000);
+	echoBTreply(printDebug);
+
+	//check communication ability
+	if (printDebug) {
+		Serial.println("BLE: hardwareFactoryReset: asking BC127 Status: ");
+		status(true); //print version info again.
+	}
+	
+	return 0;  //OK!
 }
 
+void BLE::echoBTreply(const bool printDebug) {
+	bool if_any_received = false;
+	while (_serialPort->available()) { 
+		if_any_received = true;
+		char c = _serialPort->read(); //clear the character out of the incoming buffer
+		//echo the character to the USB serial?
+		if (printDebug) Serial.print(c);
+	}
+	if (printDebug && if_any_received) { if (BC127_firmware_ver >= 7) Serial.println(); }
+}
+
+void BLE::switchToFasterBaudRate(int new_baudrate) {
+	const bool printDebug = false;
+
+	//Send the command to increase the baud rate.  Takes effect immediately
+	//Because it takes effect immediately, you can't use the setConfig() function due to setConfig()
+	//trying to listen or a reply.  While the BC127 will give a reply, its reply will be at the new
+	//baud rate, which will be the wrong baud rate for the Tympan until we swap the Tympan's baud rate
+	//to match.  So, we need to manually send the command, then swap the Tympan's baud rate, then listen
+	//new replies.
+	if (BC127_firmware_ver >= 7) {
+		if (printDebug) Serial.println("BLE: switchToFasterBaudRate: V7: changing BC127 to " + String(new_baudrate));
+		_serialPort->print("SET UART_CONFIG=" + String(new_baudrate) + " OFF 0" + EOC);
+	} else {
+		if (printDebug) Serial.println("BLE: switchToFasterBaudRate: V5: changing BC127 to " + String(new_baudrate));
+		_serialPort->print("SET BAUD=" + String(new_baudrate) + EOC); 
+	}
+	
+	//Switch the serial link to the BC127 to the faster baud rate
+	setSerialBaudRate(new_baudrate);
+	if (printDebug) Serial.println("BLE: switchToFasterBaudRate: setting Serial link to BC127 to " + String(new_baudrate));
+	
+	
+	//give time for any replies from the module
+	delay(500);   //500 seems to work on V5
+	if (printDebug) Serial.println("BLE: switchToFasterBaudRate: Reply from BC127 (if any)...");
+	echoBTreply(printDebug);
+	
+	//clear the serial link by sending a CR...will return an error
+	if (printDebug) Serial.println("BLE: switchToFasterBaudRate: Confirming asking status");	
+	_serialPort->print("STATUS" + EOC);  
+	delay(100);	
+	echoBTreply(printDebug); //should cause response of "ERROR"
+}
 
 void BLE::setupBLE(int BT_firmware, bool printDebug) 
 {  
-	bool doFactoryReset = true;
+	int doFactoryReset = 1;
 	setupBLE(BT_firmware, printDebug, doFactoryReset);
 }
 
 void BLE::setupBLE_noFactoryReset(int BT_firmware, bool printDebug)
 {
-	bool doFactoryReset = false;
+	int doFactoryReset = 0;
 	setupBLE(BT_firmware, printDebug, doFactoryReset);	
 }
 
-void BLE::setupBLE(int BT_firmware, bool printDebug, bool doFactoryReset)
+void BLE::setupBLE(int BT_firmware, bool printDebug, int doFactoryReset)
 {
     int ret_val;
     ret_val = set_BC127_firmware_ver(BT_firmware);
@@ -172,8 +159,6 @@ void BLE::setupBLE(int BT_firmware, bool printDebug, bool doFactoryReset)
 	if (printDebug) Serial.println("BLE: setupBLE: assuming BC127 firmware: " + String(BC127_firmware_ver) + ", Actual is:");
 	version(printDebug);
 }
-
-
 
 
 size_t BLE::sendByte(char c)
