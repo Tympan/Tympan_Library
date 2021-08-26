@@ -62,7 +62,7 @@ Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or Tymp
 // Create classes for controlling the system
 #include      "SerialManager.h"
 #include      "State.h"                            //must be after N_CHAN is defined
-BLE_UI        ble(&Serial1);                       //create bluetooth BLE
+BLE_UI        ble(&myTympan);                      //create bluetooth BLE
 SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
