@@ -240,6 +240,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 			setAudioSettings(_as);
 		}
 
+		int testTympanRev(TympanRev tympanRev);
 		void setupPins(const TympanPins &_pins);
 		void setAudioSettings(const AudioSettings_F32 &_aud_set) { audio_settings = _aud_set; }  //shallow copy
 		void forceBTtoDataMode(bool state);

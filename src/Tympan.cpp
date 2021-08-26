@@ -3,7 +3,34 @@
 
 const int TympanBase::BT_uint8_buff_len;
 
+int TympanBase::testTympanRev(TympanRev tympanRev) {
+	
+	#ifdef __IMXRT1062__  //check the processor flag given to the compiler (this is compiled for RevE)
+		if (static_cast<int>(tympanRev) < static_cast<int>(TympanRev::E)) {
+			Serial.println("TympanBase: testTympanRev: *** WARNING ***: Compiled for wrong Tympan Rev?");
+			Serial.println("   : This was compiled for Tympan Rev E");
+			Serial.println("   : yet your code said that it was for Tympan Rev C or D.");
+			Serial.println("   : This is unlikely to work.  In your code, change to 'TympanRev::E'.");
+			return -1;
+		}
+	#endif
+	#ifdef __MK66FX1M0__  //check the processor flag given to the compiler (this is compiled for RevA - RevD)
+		if (static_cast<int>(tympanRev) >= static_cast<int>(TympanRev::E)) {
+			Serial.println("TympanBase: testTympanRev: *** WARNING ***: Compiled for wrong Tympan Rev?");
+			Serial.println("   : This was compiled for Tympan Rev D (or C)");
+			Serial.println("   : yet your code said that it was for Tympan Rev E.");
+			Serial.println("   : This is unlikely to work.  In your code, change to 'TympanRev::D' (or C)");
+			return -1;
+		}
+	#endif
+	
+	return 0;  //OK!
+}
+
+
 void TympanBase::setupPins(const TympanPins &_pins) {
+	testTympanRev(_pins.tympanRev);
+	
 	AudioControlAIC3206::setResetPin(_pins.resetAIC);
 	pins = _pins; //shallow copy to local version
 	BT_mode = pins.default_BT_mode;
@@ -70,7 +97,7 @@ void TympanBase::setupPins(const TympanPins &_pins) {
 	}
 
 
-	forceBTtoDataMode(true);
+	forceBTtoDataMode(true); //I don't think that we want this anymore? (Chip, Aug 26, 2021)
 };
 
 
@@ -106,6 +133,7 @@ int TympanBase::toggleLEDs(const bool useAmber, const bool useRed) {
   }
   if (!useAmber) setAmberLED(false);
   if (!useRed) setRedLED(false);
+  return (int)LED;
 }
 
 
