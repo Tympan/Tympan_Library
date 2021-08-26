@@ -55,7 +55,7 @@ AudioConnection_F32       patchCord6(gain2, 0, i2s_out, 1);     //connect the Ri
 TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
 
 //Create BLE
-BLE ble = BLE(&Serial1);
+BLE ble(&myTympan);
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 10.0f;    //gain on the microphone

@@ -51,7 +51,7 @@ AudioConnection_F32           patchcord3(i2s_in, 0, audioSDWriter, 0);   //conne
 AudioConnection_F32           patchcord4(i2s_in, 1, audioSDWriter, 1);   //connect Raw audio to right channel of SD writer
 
 //Create BLE
-BLE ble = BLE(&Serial1);
+BLE ble(&myTympan);
 
 //control display and serial interaction
 bool enable_printCPUandMemory = false;

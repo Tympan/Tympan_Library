@@ -46,7 +46,7 @@ EarpieceShield              earpieceShield(TympanRev::E, AICShieldRev::A); //in 
 // Create classes for controlling the system
 #include      "SerialManager.h"
 #include      "State.h"                            
-BLE           ble(&Serial1);                       //create bluetooth BLE
+BLE           ble(&myTympan);                       //create bluetooth BLE
 SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
