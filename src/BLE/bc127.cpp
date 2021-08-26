@@ -172,7 +172,7 @@ BC127::opResult BC127::reset()
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
 BC127::opResult BC127::restore(bool printResponse)
 {
-    int ret_val = stdCmd("RESTORE");
+    BC127::opResult ret_val = stdCmd("RESTORE");
 	if (printResponse) {
 		Serial.print("BC127: restore response: ");
 		Serial.print(getCmdResponse());  //this should be CR terminated
@@ -379,23 +379,24 @@ int BC127::set_BC127_firmware_ver(int val) {
 	return BC127_firmware_ver;
 }
 
-int BC127::factoryResetViaPins(void) {
-	if ((pin_PIO0 < 0) || (pin_RST < 0)) return -1;  //FAIL!
+//make this a static method so that it can get called without instantiating a BC127 or BLE
+int BC127::factoryResetViaPins(int pinPIO0, int pinRST) {
+	if ((pinPIO0 < 0) || (pinRST < 0)) return -1;  //FAIL!
 	
 	//This was all worked by by WEA Aug 25, 2021
 	
-	pinMode(pin_PIO0,OUTPUT);    //prepare the PIO0 pin
-	digitalWrite(pin_PIO0,HIGH); //normally low.  Swtich high
+	pinMode(pinPIO0,OUTPUT);    //prepare the PIO0 pin
+	digitalWrite(pinPIO0,HIGH); //normally low.  Swtich high
 
-	pinMode(pin_RST,OUTPUT);    //prepare the reset pin
-	digitalWrite(pin_RST,LOW);  //pull low to reset
+	pinMode(pinRST,OUTPUT);    //prepare the reset pin
+	digitalWrite(pinRST,LOW);  //pull low to reset
 	delay(20);                  //hold low for at least 5 msec
-	digitalWrite(pin_RST,HIGH); //pull high to start the boot
+	digitalWrite(pinRST,HIGH); //pull high to start the boot
 
 	//wait for boot to proceed far enough before changing anything
 	delay(400);                 //V7: works with 200 but not 175.  V5: works with 350 but not 300
-	digitalWrite(pin_PIO0,LOW); //pull PIO0 back down low
-	pinMode(pin_PIO0,INPUT);    //go high-impedance to make irrelevant
+	digitalWrite(pinPIO0,LOW); //pull PIO0 back down low
+	pinMode(pinPIO0,INPUT);    //go high-impedance to make irrelevant
 	
 	return 0;
 }

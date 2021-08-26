@@ -62,7 +62,8 @@ public:
 
 	void setPins(int pinPIO0, int pinRST) { pin_PIO0 = pinPIO0; pin_RST = pinRST; }
 
-	int factoryResetViaPins(void);
+	int factoryResetViaPins(void) { return factoryResetViaPins(pin_PIO0, pin_RST) ; }
+	static int factoryResetViaPins(int pinPIO0, int pinRST);
 
 protected:
     // end-of-line delimiter

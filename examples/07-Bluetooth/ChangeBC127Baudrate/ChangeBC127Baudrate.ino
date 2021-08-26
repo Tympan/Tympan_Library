@@ -38,7 +38,7 @@ const int TARGET_BAUDRATE = 115200;    //try 115200 (fast!) or 9600 (factory ori
 //define the pins that are used for the hardware reset
 const int pin_PIO0 = myTympan.getTympanPins().BT_PIO0;   //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
 const int pin_RST = myTympan.getTympanPins().BT_nReset;  //RevD = 34, RevE = 9   // Pin # for connection to BC127 RST pin
-const int pin_VREGEN = myTympan.getTympanPins().BT_REGEN; 
+//const int pin_VREGEN = myTympan.getTympanPins().BT_REGEN; 
 
 const int baudrate_factory = 9600;       // here is the factory default
 
