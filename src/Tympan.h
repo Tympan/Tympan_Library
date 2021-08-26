@@ -274,6 +274,9 @@ class TympanBase : public AudioControlAIC3206, public Print
 				return digitalRead(pins.BT_PIO0); 
 			} 
 		}
+		int getPin_BT_PIO0(void) { return pins.BT_PIO0; }
+		int getPin_BT_RST(void)  { return pins.BT_nReset; }
+		
 		//#if defined(SEREMU_INTERFACE)
 		//	usb_seremu_class *getUSBSerial(void) { return USB_Serial; }
 		//#else

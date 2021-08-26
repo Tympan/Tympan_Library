@@ -41,7 +41,7 @@ AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Righ
 TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
 
 //Create BLE
-BLE ble = BLE(&Serial1);
+BLE ble(&myTympan);
 bool flag_autoAdvertise = true;
 
 // define the setup() function, the function that is called once when the device is booting

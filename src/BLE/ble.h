@@ -10,10 +10,13 @@
 class BLE : public BC127
 {
 public:
-    BLE(Stream *sp) : BC127(sp) {}
-	int begin(void);
-	void setupBLE(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Includes error reporting to Serial
-    size_t sendByte(char c);
+	BLE(HardwareSerial *sp) : BC127(sp) {}
+	BLE(TympanBase *tympan) : BC127(tympan->BT_Serial) { setPins(tympan->getPin_BT_PIO0(),tympan->getPin_BT_RST()); };
+    int begin(int doFactoryReset = 1); //0 = no reset, 1 = hardware reset, 2 = software reset
+	void setupBLE(int BT_firmware = 7, bool printDebug = true);            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+    void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
+	void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset);  //to be called from the Arduino sketch's setup() routine.  Must define all params
+	size_t sendByte(char c);
     size_t sendString(const String &s);
     size_t sendMessage(const String &s);
 	//size_t sendMessage(const char* c_str, const int len); //use this if you need to send super long strings (more than 1797 characters)
@@ -24,12 +27,19 @@ public:
     bool isConnected(bool printResponse = false);
     bool waitConnect(int time = -1);
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000, bool printDebugMsgs=false);
+	
+	void echoBTreply(bool printDebug = false);
+protected:
+	void setSerialBaudRate(int new_baud);
+	int hardwareFactoryReset(bool printDebug = false);
+	void switchToFasterBaudRate(int new_baudrate);
 
 };
 
 class BLE_UI : public BLE, public SerialManager_UI
 {
 	public:
+		BLE_UI(TympanBase *tympan) : BLE(tympan), SerialManager_UI() {}
 		BLE_UI(HardwareSerial *sp) : BLE(sp), SerialManager_UI() {}
 
 		// ///////// here are the methods that you must implement from SerialManager_UI

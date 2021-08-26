@@ -44,7 +44,7 @@ AudioConnection_F32       patchCord12(gain_L, 0, i2s_out, 1);         //connect 
 //Create BLE
 #define USE_BLE (false)
 const bool use_ble = USE_BLE;
-BLE ble = BLE(&Serial1);
+BLE ble(&myTympan);
 
 //control display and serial interaction
 SerialManager serialManager(&ble);

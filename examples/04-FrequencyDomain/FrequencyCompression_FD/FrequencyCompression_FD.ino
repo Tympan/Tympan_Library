@@ -87,7 +87,7 @@ AudioConnection_F32       patchCord30(gain_L, 0, i2s_out, 0);      //connect to 
 AudioConnection_F32       patchCord41(gain_R, 0, i2s_out, 1);      //connect to the right output
 
 //Create BLE
-BLE ble = BLE(&Serial1);
+BLE ble(&myTympan);
 
 //control display and serial interaction
 SerialManager serialManager(&ble);

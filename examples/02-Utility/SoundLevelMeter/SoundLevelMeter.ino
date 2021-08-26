@@ -34,7 +34,7 @@ AudioConnection_F32       patchCord3(i2s_in, 0, i2s_out, 0);      //echo the ori
 AudioConnection_F32       patchCord4(calcLevel1, 0, i2s_out, 1);     //connect level to the right output
 
 //Create BLE and serialManager
-BLE ble = BLE(&Serial1); //&Serial1 is the serial connected to the Bluetooth module
+BLE ble(&myTympan); //&Serial1 is the serial connected to the Bluetooth module
 SerialManager serialManager(&ble);
 State myState(&audio_settings, &myTympan);
 
