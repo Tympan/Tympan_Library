@@ -890,7 +890,7 @@ void SerialManager::interpretStreamGHA(int idx) {
 }
 
 void SerialManager::interpretStreamDSL(int idx) {
-  const int maxChan = DSL_MXCH; //"DSL_MXCH" is in BTNRH_WDRC_Types.h via AudioEffectCompWDRC_F32.h
+  const int maxChan = DSL_MXCH_TYMPAN; //"DSL_MXCH_TYMPAN" is in BTNRH_WDRC_Types.h via AudioEffectCompWDRC_F32.h
  
   BTNRH_WDRC::CHA_DSL this_dsl = myState.wdrc_perBand; //default to what we already have?
 
@@ -982,7 +982,7 @@ void SerialManager::sendStreamDSL(const BTNRH_WDRC::CHA_DSL &this_dsl) {
   int num_digits = 4; // How many spots past the decimal point are sent.  Only used for floats
 
   myTympan.print("PRESC=DSL:");
-  myTympan.print(DSL_MXCH);
+  myTympan.print(DSL_MXCH_TYMPAN);
   myTympan.print(":");
 
   myTympan.print(this_dsl.attack,num_digits); myTympan.print(",");
@@ -998,7 +998,7 @@ void SerialManager::sendStreamDSL(const BTNRH_WDRC::CHA_DSL &this_dsl) {
   for (i=0; i<this_dsl.nchannel; i++) { myTympan.print(this_dsl.cr[i], num_digits); myTympan.print(","); }
   for (i=0; i<this_dsl.nchannel; i++) { myTympan.print(this_dsl.bolt[i], num_digits); myTympan.print(","); }
 
-  myTympan.println(DSL_MXCH); // We can double-check this on the other end to confirm we got the right thing
+  myTympan.println(DSL_MXCH_TYMPAN); // We can double-check this on the other end to confirm we got the right thing
 }
 
 void SerialManager::sendStreamGHA(const BTNRH_WDRC::CHA_WDRC &this_gha) {

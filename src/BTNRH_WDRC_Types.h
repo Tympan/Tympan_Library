@@ -12,7 +12,7 @@
 	#include "SDWriter.h"  //to get macro definition of SD_CONFIG
 #endif
 
-#define DSL_MXCH 16  
+#define DSL_MXCH_TYMPAN 16  
 	
 namespace BTNRH_WDRC {
 
@@ -166,19 +166,19 @@ namespace BTNRH_WDRC {
 	
 		public:
 			//CHA_DSL(void) {};  //no constructor means that I can use brace initialization
-			static const int DSL_MAX_CHAN = DSL_MXCH;    // maximum number of channels
+			static const int DSL_MAX_CHAN = DSL_MXCH_TYMPAN;    // maximum number of channels
 			float attack;               // attack time (ms)
 			float release;              // release time (ms)
 			float maxdB;                // maximum signal (dB SPL)
 			int ear;                    // 0=left, 1=right
 			int nchannel;               // number of channels
-			float cross_freq[DSL_MXCH]; // cross frequencies (Hz)
-			float exp_cr[DSL_MXCH];		// compression ratio for low-SPL region (ie, the expander)
-			float exp_end_knee[DSL_MXCH];	// expansion-end kneepoint
-			float tkgain[DSL_MXCH];     // compression-start gain
-			float cr[DSL_MXCH];         // compression ratio
-			float tk[DSL_MXCH];         // compression-start kneepoint
-			float bolt[DSL_MXCH];       // broadband output limiting threshold
+			float cross_freq[DSL_MXCH_TYMPAN]; // cross frequencies (Hz)
+			float exp_cr[DSL_MXCH_TYMPAN];		// compression ratio for low-SPL region (ie, the expander)
+			float exp_end_knee[DSL_MXCH_TYMPAN];	// expansion-end kneepoint
+			float tkgain[DSL_MXCH_TYMPAN];     // compression-start gain
+			float cr[DSL_MXCH_TYMPAN];         // compression ratio
+			float tk[DSL_MXCH_TYMPAN];         // compression-start kneepoint
+			float bolt[DSL_MXCH_TYMPAN];       // broadband output limiting threshold
 			
 			#if USE_SD
 			AccessConfigDataOnSD r;	
@@ -271,13 +271,13 @@ namespace BTNRH_WDRC {
 				r.writeValuesOnLine(file, &maxdB,       1, true, "max dB", 1);
 				r.writeValuesOnLine(file, &ear,         1, true, "ear (0=left, 1=right)", 1);
 				r.writeValuesOnLine(file, &nchannel,    1, true, "number of channels", 1);
-				r.writeValuesOnLine(file, cross_freq,   nchannel, true, "Crossover Freq (Hz)", DSL_MXCH);
-				r.writeValuesOnLine(file, exp_cr,       nchannel, true, "Expansion: Compression Ratio", DSL_MXCH);
-				r.writeValuesOnLine(file, exp_end_knee, nchannel, true, "Expansion: Knee (dB SPL)", DSL_MXCH);
-				r.writeValuesOnLine(file, tkgain,       nchannel, true, "Linear: Gain (dB)", DSL_MXCH);
-				r.writeValuesOnLine(file, cr,           nchannel, true, "Compression: Compression Ratio", DSL_MXCH);
-				r.writeValuesOnLine(file, tk,           nchannel, true,"Compression: Knee (dB SPL)", DSL_MXCH);
-				r.writeValuesOnLine(file, bolt,         nchannel, false, "Limiter: Knee (dB SPL)", DSL_MXCH); //no trailing comma on the last one	
+				r.writeValuesOnLine(file, cross_freq,   nchannel, true, "Crossover Freq (Hz)", DSL_MXCH_TYMPAN);
+				r.writeValuesOnLine(file, exp_cr,       nchannel, true, "Expansion: Compression Ratio", DSL_MXCH_TYMPAN);
+				r.writeValuesOnLine(file, exp_end_knee, nchannel, true, "Expansion: Knee (dB SPL)", DSL_MXCH_TYMPAN);
+				r.writeValuesOnLine(file, tkgain,       nchannel, true, "Linear: Gain (dB)", DSL_MXCH_TYMPAN);
+				r.writeValuesOnLine(file, cr,           nchannel, true, "Compression: Compression Ratio", DSL_MXCH_TYMPAN);
+				r.writeValuesOnLine(file, tk,           nchannel, true,"Compression: Knee (dB SPL)", DSL_MXCH_TYMPAN);
+				r.writeValuesOnLine(file, bolt,         nchannel, false, "Limiter: Knee (dB SPL)", DSL_MXCH_TYMPAN); //no trailing comma on the last one	
 				
 				r.writeFooter(file); 
 			}
@@ -332,7 +332,7 @@ namespace BTNRH_WDRC {
 			void printAllValues(void) { printAllValues(&Serial); }
 			void printAllValues(Stream *s) {
 				int last_chan = nchannel;
-				//last_chan = DSL_MXCH;
+				//last_chan = DSL_MXCH_TYMPAN;
 				
 				s->println("CHA_DSL:");
 				s->print("    : attack (ms) = "); s->println(attack);
