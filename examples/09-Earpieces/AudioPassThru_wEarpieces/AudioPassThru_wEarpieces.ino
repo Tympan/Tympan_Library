@@ -89,44 +89,21 @@ void setup(void)
   myTympan.enable(); 
   earpieceShield.enable();
 
-  //Choose the desired input for Tympan main board
-  switch (1) {
-    case 1:
-      Serial.println("Main Board Using PCB Mics");
-      myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones (only on main board, not on AIC shield)
-      myTympan.setInputGain_dB(15.0); // set input volume, 0-47.5dB in 0.5dB setps
-      break;
-    case 2:
-      Serial.println("Main Board Using Input Jack for Mics");
-      myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);     // use the on board microphones (only on main board, not on AIC shield)
-      myTympan.setInputGain_dB(15.0); // set input volume, 0-47.5dB in 0.5dB setps
-      break;
-    case 3:
-      Serial.println("Main Board Using Input Jack for Line-In");
-      myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
-      myTympan.setInputGain_dB(0.0); // set input volume, 0-47.5dB in 0.5dB setps
-      break;
-  }
-
-  //Choose the desired input for AIC Shield
-  switch (3) {
-    //case 1:
-    //  //AIC_Shield does NOT have PCB mics
-    case 2:
-      Serial.println("AIC Shield Using Input Jack for Mics");
-      earpieceShield.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);     // use the on board microphones (only on main board, not on AIC shield)
-      earpieceShield.setInputGain_dB(15.0); // set input volume, 0-47.5dB in 0.5dB setps
-      break;
-    case 3:
-      Serial.println("AIC Shield Using Input Jack for Line-In");
-      earpieceShield.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
-      earpieceShield.setInputGain_dB(0.0); // set input volume, 0-47.5dB in 0.5dB setps
-      break;
+  if (true) {
+    //Use the Tympan Earpieces
+    Serial.println("setup(): Using Tympan Earpieces as Inputs");
+    myTympan.enableDigitalMicInputs(true);
+    earpieceShield.enableDigitalMicInputs(true);
+  } else {
+    //Use the PCB mics on the main Tympan board (for debugging only)
+    Serial.println("setup(): Using Tympan Built-In PCB Mics as Inputs");
+    myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones (only on main board, not on AIC shield)
+    myTympan.setInputGain_dB(15.0); 
   }
   
   //Set the desired volume levels
-  myTympan.volume_dB(0);      // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
-  earpieceShield.volume_dB(0);     // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  myTympan.volume_dB(0.0);      // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  earpieceShield.volume_dB(0.0);     // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   
   Serial.println("Setup complete.");
   myTympan.setAmberLED(true);  //light up the LED just to show that setup is complete
