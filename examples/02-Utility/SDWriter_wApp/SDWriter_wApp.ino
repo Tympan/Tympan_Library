@@ -41,7 +41,7 @@ AudioConnection_F32           patchcord4(i2s_in, 1, audioSDWriter, 1);   //conne
 // /////////// Create classes for controlling the system, espcially via USB Serial and via the App
 #include      "SerialManager.h"
 #include      "State.h"                
-BLE_UI        ble(&Serial1);           //create bluetooth BLE class
+BLE_UI        ble(&myTympan);           //create bluetooth BLE class
 SerialManager serialManager(&ble);     //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
