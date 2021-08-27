@@ -8,7 +8,6 @@
 //classes from the main sketch that might be used here
 extern Tympan myTympan;                  //created in the main *.ino file
 extern State myState;                    //created in the main *.ino file
-extern AudioSettings_F32 audio_settings; //created in the main *.ino file  
 
 //functions in the main sketch that I want to call from here
 extern void incrementHighpassFilters(float);
