@@ -1,5 +1,5 @@
 /*
-   SDWriting_01_StereoAudio
+   SDWriting
 
    Digitizes two channels and records to SD card.
 
@@ -25,36 +25,38 @@ const float sample_rate_Hz = 44117.0f ; //24000 or 44117 (or other frequencies i
 const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
+
+// /////////// Define audio objects...they are configured later
+
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E);        //TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::E,audio_settings);  //TympanRev::D or TympanRev::E
 AudioInputI2S_F32         i2s_in(audio_settings);        //Digital audio input from the ADC
 AudioSDWriter_F32         audioSDWriter(audio_settings); //this is stereo by default but can do 4 channels
 AudioOutputI2S_F32        i2s_out(audio_settings);       //Digital audio output to the DAC.  Should always be last.
 
-//Make all of the audio connections
-AudioConnection_F32       patchcord1(i2s_in, 0, audioSDWriter, 0); //connect Raw audio to left channel of SD writer
-AudioConnection_F32       patchcord2(i2s_in, 1, audioSDWriter, 1); //connect Raw audio to right channel of SD writer
-AudioConnection_F32       patchcord3(i2s_in, 0, i2s_out, 0);    //echo audio to output
-AudioConnection_F32       patchcord4(i2s_in, 1, i2s_out, 1);    //echo audio to output
+//Connect to outputs
+AudioConnection_F32       patchcord1(i2s_in, 0, i2s_out, 0);    //echo audio to output
+AudioConnection_F32       patchcord2(i2s_in, 1, i2s_out, 1);    //echo audio to output
+
+//Connect to SD logging
+AudioConnection_F32       patchcord3(i2s_in, 0, audioSDWriter, 0); //connect Raw audio to left channel of SD writer
+AudioConnection_F32       patchcord4(i2s_in, 1, audioSDWriter, 1); //connect Raw audio to right channel of SD writer
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 15.0f; //gain on the microphones
 
 void setup() {
-  //begin the serial comms (for debugging)
   myTympan.beginBothSerial(); delay(1000);
-  myTympan.println("SDWriting_01_StereoAudio: Starting setup()...");
-  myTympan.print("Sample Rate (Hz): "); myTympan.println(audio_settings.sample_rate_Hz);
-  myTympan.print("Audio Block Size (samples): "); myTympan.println(audio_settings.audio_block_samples);
+  Serial.println("Tympan: SDWriting: setup():...");
+  Serial.println("Sample Rate (Hz): " + String(audio_settings.sample_rate_Hz));
+  Serial.println("Audio Block Size (samples): " + String(audio_settings.audio_block_samples));
 
-  //allocate the audio memory
-  AudioMemory_F32(60, audio_settings); //I can only seem to allocate 400 blocks
-  myTympan.println("StereoAudioToSD: memory allocated.");
+  //allocate the dynamically re-allocatable audio memory
+  AudioMemory_F32(100, audio_settings); 
 
-  //Enable the Tympan to start the audio flowing!
-  myTympan.enable(); // activate AIC
-  myTympan.print("StereoAudioToSD: runnng at a sample rate of (Hz): ");
-  myTympan.println(sample_rate_Hz);
+  //activate the Tympan audio hardware
+  myTympan.enable();        // activate the flow of audio
+  myTympan.volume_dB(0.0);  // headphone amplifier
 
   //enable the Tympman to detect whether something was plugged into the pink mic jack
   myTympan.enableMicDetect(true);
@@ -69,10 +71,12 @@ void setup() {
 
   //prepare the SD writer for the format that we want and any error statements
   audioSDWriter.setSerial(&myTympan);         //the library will print any error info to this serial stream (note that myTympan is also a serial stream)
-  audioSDWriter.setWriteDataType(AudioSDWriter::WriteDataType::INT16);  //this is the built-in default, but here you could change it to FLOAT32
   audioSDWriter.setNumWriteChannels(2);       //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
 
-  myTympan.println("Setup complete.");
+  Serial.println("Setup complete.");
+  Serial.println();
+  Serial.println("To Start Recording: Turn the volume pot all the way up.");
+  Serial.println("To Stop Recording: Turn the volume pot all the way down.");
 } //end setup()
 
 
@@ -113,9 +117,9 @@ void serviceMicDetect(unsigned long curTime_millis, unsigned long updatePeriod_m
     cur_val = myTympan.updateInputBasedOnMicDetect(); //if mic is plugged in, defaults to TYMPAN_INPUT_JACK_AS_MIC
     if (cur_val != prev_val) {
       if (cur_val) {
-        myTympan.println("serviceMicDetect: detected plug-in microphone!  External mic now active.");
+        Serial.println("serviceMicDetect: detected plug-in microphone!  External mic now active.");
       } else {
-        myTympan.println("serviceMicDetect: detected removal of plug-in microphone. On-board PCB mics now active.");
+        Serial.println("serviceMicDetect: detected removal of plug-in microphone. On-board PCB mics now active.");
       }
     }
     prev_val = cur_val;
@@ -153,4 +157,3 @@ void startOrStopSDRecording(float potentiometer_value) {
     
   }
 }
-
