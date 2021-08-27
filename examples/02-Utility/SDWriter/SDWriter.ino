@@ -1,5 +1,5 @@
 /*
-   SDWriting
+   SDWriter
 
    Digitizes two channels and records to SD card.
 
@@ -47,7 +47,7 @@ const float input_gain_dB = 15.0f; //gain on the microphones
 
 void setup() {
   myTympan.beginBothSerial(); delay(1000);
-  Serial.println("Tympan: SDWriting: setup():...");
+  Serial.println("Tympan: SDWriter: setup():...");
   Serial.println("Sample Rate (Hz): " + String(audio_settings.sample_rate_Hz));
   Serial.println("Audio Block Size (samples): " + String(audio_settings.audio_block_samples));
 

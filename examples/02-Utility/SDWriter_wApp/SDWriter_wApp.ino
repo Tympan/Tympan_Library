@@ -1,5 +1,5 @@
 /*
-   SDWriting_wApp
+   SDWriter_wApp
    
    Created: Chip Audette, OpenAudio, May 2019 (Updated Aug 2021)
    Purpose: Write audio to SD based on serial commands
@@ -95,7 +95,7 @@ void setConfiguration(int config) {
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
   myTympan.beginBothSerial(); delay(1000);
-  Serial.println("Tympan: SDWriting_wApp: setup():...");
+  Serial.println("Tympan: SDWriter_wApp: setup():...");
   Serial.println("Sample Rate (Hz): " + String(audio_settings.sample_rate_Hz));
   Serial.println("Audio Block Size (samples): " + String(audio_settings.audio_block_samples));
 
