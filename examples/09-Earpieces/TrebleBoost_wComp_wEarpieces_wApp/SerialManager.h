@@ -6,8 +6,10 @@
 #include "State.h"
 
 //classes from the main sketch that might be used here
-extern Tympan myTympan;                  //created in the main *.ino file
-extern State myState;                    //created in the main *.ino file
+extern Tympan myTympan;                    //created in the main *.ino file
+extern State myState;                      //created in the main *.ino file
+extern EarpieceMixer_F32_UI earpieceMixer; //created in the main *.ino file
+extern AudioSDWriter_F32_UI audioSDWriter;
 
 //functions in the main sketch that I want to call from here
 extern void incrementHighpassFilters(float);
@@ -123,16 +125,17 @@ void SerialManager::createTympanRemoteLayout(void) {
 
   //Add first page to GUI  (the indentation doesn't matter; it is only to help us see it better)
   page_h = myGUI.addPage("TrebleBoost wComp");
+      //select inputs
+      card_h = earpieceMixer.addCard_audioSource(page_h); //use its predefined group of buttons for input audio source
       
-      //Add a card (button group) under the first page
-      card_h = page_h->addCard("Digital Gain (dB)");
-          card_h->addButton("Swipe for Comp Settings","","",12);  //This just displays a message.  No functionality.  Full Width.
-
       //Add card to this page for Highpass cutoff
       card_h = page_h->addCard("Highpass Cutoff (Hz)");
           card_h->addButton("-","T","",        4);  //displayed string, command, button ID, button width (out of 12)
           card_h->addButton("", "", "cutoffHz",4);  //displayed string (blank for now), command (blank), button ID, button width (out of 12)
           card_h->addButton("+","t","",        4);  //displayed string, command, button ID, button width (out of 12)
+
+  //add second page for more control of earpieces
+  page_h = earpieceMixer.addPage_digitalEarpieces(&myGUI); //use its predefined page for controlling the digital earpieces
 
   //Add a page for the left compressor's built-in GUI
   page_h = comp1.addPage_default(&myGUI);
@@ -146,11 +149,14 @@ void SerialManager::createTympanRemoteLayout(void) {
   page_h = myGUI.addPage("Globals");
 
     //Add an example card that just displays a value...no interactive elements
-    card_h = page_h->addCard(String("Analog Input Gain (dB)"));
-      card_h->addButton("", "", "inpGain", 12); //label, command, id, width (out of 12)...THIS IS FULL WIDTH!
+    //card_h = page_h->addCard(String("Analog Input Gain (dB)"));
+    //  card_h->addButton("", "", "inpGain", 12); //label, command, id, width (out of 12)...THIS IS FULL WIDTH!
 
     //Add a button group ("card") for the CPU reporting...use a button group that is built into myState for you!
     card_h = myState.addCard_cpuReporting(page_h);
+
+    //Add a button group for SD recording...use a button set that is built into AudioSDWriter_F32_UI for you!
+    card_h = audioSDWriter.addCard_sdRecord(page_h);
         
   //add some pre-defined pages to the GUI (pages that are built-into the App)
   myGUI.addPredefinedPage("serialPlotter");  //if we send data in the right format, the App will plot the signal levels in real-time!
@@ -174,7 +180,7 @@ void SerialManager::setFullGUIState(bool activeButtonsOnly) {  //the "activeButt
   //First, let's update the portion of the GUI that we are explicitly defining and controlling ourselves
   //here in the serial manager.
   updateFilterDisplay();
-  setButtonText("inpGain",String(myState.input_gain_dB,1));
+  //setButtonText("inpGain",String(myState.input_gain_dB,1));
 
   //Then, let's have the system automatically update all of the individual UI elements that we attached
   //to the serialManager via the setupSerialManager() function used back in the main *.ino file.

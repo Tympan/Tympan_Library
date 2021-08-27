@@ -40,6 +40,7 @@ public:
     opResult advertise(bool mode = true);            // starts | stops BLE advertising
     opResult close(int linkid = -1);                 // closes Bluetooth connection
     opResult discoverable(bool mode = true);         // puts device in discoverable mode
+	opResult discoverableConnectableV7(bool mode = true);  //sets BT Classic discoverable and connectable...V7 firmware
     opResult enterDataMode();                        // enters Data mode, does not work in BLE
     opResult exitDataMode(int guardDelay);           // exits Data mode
     opResult getConfig(String config = "");          // returns all or specific config options
@@ -51,7 +52,7 @@ public:
     opResult reset();                                // resets the device
     opResult restore();                              // restores the device to factory defaults
     opResult send(String str);                       // sends a string over the connection profile
-    opResult status();                               // returns the connections status
+    opResult status(bool printResopnse = false);     // returns the connections status
     opResult stdCmd(String cmd);                     // executes a standard command option
     opResult setConfig(String config, String param); // sets a configuration register
     opResult version(bool printResponse = false);    // returns the version info in _cmdResponse
@@ -70,6 +71,7 @@ protected:
     unsigned long _timeout; // timeout for command wait
 
 	int BC127_firmware_ver = 7;  //can be 5, 6, 7
+	int BLE_id_num=-1; //can be 14, 24, 34? 
 
 private:
     opResult knownStart();                   // baseline starting function

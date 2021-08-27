@@ -62,8 +62,8 @@
 #include "State.h"
 
 //set the sample rate and block size
-//const float sample_rate_Hz = 24000.f; ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
-const float sample_rate_Hz = 44100.f; ;   //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
+//const float sample_rate_Hz = 24000.f; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
+const float sample_rate_Hz = 44100.f;   //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
 const int audio_block_samples = 64;       //for freq domain processing choose a power of 2 (16, 32, 64, 128) but no higher than 128
 const int FFT_overlap_factor = 4;         //2 is 50% overlap, 4 is 75% overlap
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
