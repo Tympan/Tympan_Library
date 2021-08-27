@@ -15,7 +15,7 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //set the sample rate and block size
-const float sample_rate_Hz = 44117.0f ;  //24000 to 44117 to 96000 (or other frequencies in the table in AudioOutputI2S_F32)
+const float sample_rate_Hz = 44100.0f ;  //24000 to 44117 to 96000 (or other frequencies in the table in AudioOutputI2S_F32)
 const int audio_block_samples = 128;     //do not make bigger than audio_block_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
