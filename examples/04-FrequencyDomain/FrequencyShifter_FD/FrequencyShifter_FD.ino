@@ -35,7 +35,7 @@
 #include "SerialManager.h"
 
 //set the sample rate and block size
-const float sample_rate_Hz = 44117.f; ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
+const float sample_rate_Hz = 44100.f; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
 const int audio_block_samples = 64;     //for freq domain processing choose a power of 2 (16, 32, 64, 128) but no higher than 128
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
