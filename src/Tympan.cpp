@@ -105,6 +105,8 @@ int TympanBase::toggleLEDs(const bool useAmber, const bool useRed) {
   }
   if (!useAmber) setAmberLED(false);
   if (!useRed) setRedLED(false);
+  
+  return LED;
 }
 
 
