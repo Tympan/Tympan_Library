@@ -4,7 +4,6 @@
   Chip Audette, OpenAudio 2018.  Updated Sept 2021 for earpieces
 
   Plays a single tone followed by silence.  Repeats the tone+silence at increasing amplitude.
-  The last tone should definitely distort.  The 2nd-to-last tone should be on the edge of distorting.
 
   The tones are sent out through both the earpiece shield and through the Tympan's headphone jack.
   Because the tones are going to the earpieces, the tones are also heard through the earpiece shield's
