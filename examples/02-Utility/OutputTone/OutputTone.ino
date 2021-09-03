@@ -4,8 +4,6 @@
   Chip Audette, OpenAudio 2018
 
   Plays a single tone followed by silence.  Repeats the tone+silence at increasing amplitude.
-  The last tone should definitely distort.  The 2nd-to-last tone should be on the edge of distorting.
-  WARNING: DO NOT LISTEN TO THIS WITH HEADPHONES ON
 
   MIT License, Use at your own risk.
 */
@@ -30,8 +28,8 @@ AudioConnection_F32 patchCord11(sineWave, 0, audioOutput, 1);  //connect to righ
 
 // Define the parameters of the tone
 float tone_freq_Hz = 1000.0;   //frequency of the tone
-#define N_AMP (8)              //How many different amplitudes to test
-float tone_amp[N_AMP] = {0.1, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2};     //here are the amplitudes (1.0 is digital full scale) to test
+#define N_AMP (5)              //How many different amplitudes to test
+float tone_amp[N_AMP] = {0.001, 0.003, 0.01, 0.03, 0.1};     //here are the amplitudes (1.0 is the loudest before distorting...aka "full scale")
 float tone_dur_msec = 1000.0;  // Length of time for the tone, milliseconds
 int amp_index = N_AMP-1;       //a counter to use when stepping through the given amplitudes
 

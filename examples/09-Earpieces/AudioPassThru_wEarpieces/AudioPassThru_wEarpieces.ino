@@ -19,6 +19,21 @@
  * example, we strongly recommend that you use the EarpieceMixer.  For an example, of the 
  * EarpieceMixer class, see "TrebleBoost_wComp_wEarpieces_wApp"
  *
+ * BE AWARE: Since this example has no amplification, it sounds very quiet if you listen through
+ * the earpieces.  Very quiet.  If you cannot hear audio through your earpieces, please consider:
+ *
+ *    * Plug headphones into the headphone jack of your Tympan or of your Earpiece shield.  Rub
+ *      the earpiece mics with your finger.  Do you hear it through the headphones?
+ *
+ *    * Listening through the earpiece again, rub the earpiece mics with your finger.  Do you
+ *      hear it through the earpiece?  Try unplugging the earpiece from the Tympan to really
+ *      hear what it sounds like unampflied.  Then, plug the earpiece in and listen again?
+ *
+ *    * Try turning up the output loudness on the Tympan (ie, add some gain!).  Find the line
+ *      "earpieceShield.volume_dB(0.0);"  Change the 0.0 to 10.0 or even to 20.0.  That'll add
+ *      a lot of gain.  Because you've added gain, it's no longer "AudioPassThru", but you
+ *      should more easily hear the output.
+ *
  * License: MIT License, Use At Your Own Risk
  *
  */
