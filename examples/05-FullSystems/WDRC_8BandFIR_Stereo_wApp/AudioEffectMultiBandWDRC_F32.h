@@ -2,13 +2,39 @@
 #ifndef _AudioEffectMultiBandWDRC_F32_h
 #define _AudioEffectMultiBandWDRC_F32_h
 
+/* 
+ *  AudioEffectMultiBandWDRC_F32_UI
+ *  
+ *  Created: Chip Audette, OpenAudio, July-Sept 2021
+ *  
+ *  Background: It is common for one to want to create a multband WDRC compressor.  Normally, the Tympan
+ *  examples assemble such an algorithm from its parts: (1) a filter bank, (2) a bank of compressors, 
+ *  (3) an mixer to rejoint the channels, and (4) a final broadband compressor to use as a limiter.
+ *  It is good to assemble your own multiband WDRC compressor, if you care what kind of filters you
+ *  use (FIR vs IIR) or if you care to insert more processing or debugging information in between
+ *  the baseline components.  BUT, if you just want a standard multi-band compressor, why go through all
+ *  that work?
+ *  
+ *  Purpose: This class assembles a full multiband WDRC compression system that you can instantiate
+ *  with a single call.  It also provides a GUI for the TympanRemote App to let you control the 
+ *  full system.
+ *  
+ *  Stereo extension: You may also wish to run in stereo. To run in stereo, you would create two
+ *  instances of this class.  But, if you want to control the two instances from the TympanRemote App,
+ *  do you need to have twice as many pages (one set of pages for the left and another set of pages
+ *  for the right)???  NO!  While you still do create two instances of the audio processing class, you
+ *  can use the class StereoContainerWDRC_UI to setup the App GUI with left/right buttons to toggle
+ *  one set of algorithm controls to swap between the left and right sides.
+ *  
+ *  License: MIT License.  Use at your own risk.  Have fun!
+*/
+
 #include <Arduino.h>
-#include "AudioStream_F32.h"
-#include "AudioFilterbank_F32.h"
-#include "AudioEffectCompBankWDRC_F32.h"
-#include "AudioEffectGain_F32.h"
-#include "AudioEffectCompWDRC_F32.h"
-#include "StereoContainer_UI.h"
+#include <AudioStream_F32.h>          //from Tympan Library
+#include <AudioFilterbank_F32.h>      //from Tympan Library
+#include <AudioEffectCompBankWDRC_F32.h>  //from Tympan Library
+#include <AudioEffectGain_F32.h>     //from Tympan Library
+#include <AudioEffectCompWDRC_F32.h> //from Tympan Library
 #include <arm_math.h> 
 
 class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialManager_UI {
@@ -151,6 +177,8 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
 //
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <StereoContainer_UI.h>      //from Tympan Library
+
 class StereoContainerWDRC_UI : public StereoContainer_UI {
   public:
     StereoContainerWDRC_UI(void) : StereoContainer_UI() {};
@@ -164,14 +192,18 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
       //set the local pointers
       leftWDRC = _left;  rightWDRC = _right;
       
-      //attach them to our lists
+      //attach its components to our lists of left-right algorithm elements to be controlled via GUI
       add_item_pair(&(leftWDRC->filterbank),    &(rightWDRC->filterbank));
       add_item_pair(&(leftWDRC->compbank),      &(rightWDRC->compbank));
       add_item_pair(&(leftWDRC->compBroadband), &(rightWDRC->compBroadband));
 
       //Set the ID_char used for GUI fieldnames so that the right's are the same as the left's.
       //Only do this if we're only going to have one set of GUI elements to display both left
-      //and right.  This is my intention, so I'm going to go ahead and do it.
+      //and right.  This is my intention, so I'm going to go ahead and do it.  
+      //
+      //Discussion: We probably want to always do this for stereo pairs of algorithm blocks?  Why else
+      //would we be using the stereo container?  If so, this changing of the ID_char should probably
+      //be moved into StereoContainer_UI?  I'm thinking "yes", but I need to live with this a bit more
       for (int i=0; (unsigned int)i<items_L.size(); i++) { items_R[i]->set_ID_char_fn(items_L[i]->get_ID_char_fn()); }
     }
 
