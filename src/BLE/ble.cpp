@@ -6,7 +6,6 @@ const int faster_baudrate = 115200; //here is the other possible starting baudra
 
 int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 {
-	bool switch_to_faster_baud_rate = true;
 	int ret_val = 0;
 	
 	//clear the incoming serial buffer
@@ -24,9 +23,11 @@ int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 	}
 	
 	//switch BC127 to listen to the serial link from the Tympan to a faster baud rate
-	if (switch_to_faster_baud_rate) {
+	if (useFasterBaudRateUponBegin) {
 		Serial.println("BLE: begin: setting BC127 baudrate to " + String(faster_baudrate) + ".");
-		switchToFasterBaudRate(faster_baudrate);
+		switchToNewBaudRate(faster_baudrate);
+	} else {
+		Serial.println("BLE: begin: keeping baudrate at default.");
 	}
 		
 	//enable BT_Classic connectable and discoverable, always
@@ -126,7 +127,7 @@ void BLE::echoBTreply(const bool printDebug) {
 	if (printDebug && if_any_received) { if (BC127_firmware_ver >= 7) Serial.println(); }
 }
 
-void BLE::switchToFasterBaudRate(int new_baudrate) {
+void BLE::switchToNewBaudRate(int new_baudrate) {
 	const bool printDebug = false;
 
 	//Send the command to increase the baud rate.  Takes effect immediately
@@ -136,25 +137,25 @@ void BLE::switchToFasterBaudRate(int new_baudrate) {
 	//to match.  So, we need to manually send the command, then swap the Tympan's baud rate, then listen
 	//new replies.
 	if (BC127_firmware_ver >= 7) {
-		if (printDebug) Serial.println("BLE: switchToFasterBaudRate: V7: changing BC127 to " + String(new_baudrate));
+		if (printDebug) Serial.println("BLE: switchToNewBaudRate: V7: changing BC127 to " + String(new_baudrate));
 		_serialPort->print("SET UART_CONFIG=" + String(new_baudrate) + " OFF 0" + EOC);
 	} else {
-		if (printDebug) Serial.println("BLE: switchToFasterBaudRate: V5: changing BC127 to " + String(new_baudrate));
+		if (printDebug) Serial.println("BLE: switchToNewBaudRate: V5: changing BC127 to " + String(new_baudrate));
 		_serialPort->print("SET BAUD=" + String(new_baudrate) + EOC); 
 	}
 	
 	//Switch the serial link to the BC127 to the faster baud rate
 	setSerialBaudRate(new_baudrate);
-	if (printDebug) Serial.println("BLE: switchToFasterBaudRate: setting Serial link to BC127 to " + String(new_baudrate));
+	if (printDebug) Serial.println("BLE: switchToNewBaudRate: setting Serial link to BC127 to " + String(new_baudrate));
 	
 	
 	//give time for any replies from the module
 	delay(500);   //500 seems to work on V5
-	if (printDebug) Serial.println("BLE: switchToFasterBaudRate: Reply from BC127 (if any)...");
+	if (printDebug) Serial.println("BLE: switchToNewBaudRate: Reply from BC127 (if any)...");
 	echoBTreply(printDebug);
 	
 	//clear the serial link by sending a CR...will return an error
-	if (printDebug) Serial.println("BLE: switchToFasterBaudRate: Confirming asking status");	
+	if (printDebug) Serial.println("BLE: switchToNewBaudRate: Confirming asking status");	
 	_serialPort->print("STATUS" + EOC);  
 	delay(100);	
 	echoBTreply(printDebug); //should cause response of "ERROR"

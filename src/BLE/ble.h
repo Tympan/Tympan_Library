@@ -12,7 +12,7 @@ class BLE : public BC127
 public:
 	BLE(HardwareSerial *sp) : BC127(sp) {}
 	BLE(TympanBase *tympan) : BC127(tympan->BT_Serial) { setPins(tympan->getPin_BT_PIO0(),tympan->getPin_BT_RST()); };
-    int begin(int doFactoryReset = 1); //0 = no reset, 1 = hardware reset, 2 = software reset
+    int begin(int doFactoryReset = 1); 
 	void setupBLE(int BT_firmware = 7, bool printDebug = true);            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
     void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
 	void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset);  //to be called from the Arduino sketch's setup() routine.  Must define all params
@@ -29,10 +29,12 @@ public:
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000, bool printDebugMsgs=false);
 	
 	void echoBTreply(bool printDebug = false);
+	bool setUseFasterBaudRateUponBegin(bool enable = true) { return useFasterBaudRateUponBegin = enable; }
 protected:
+	bool useFasterBaudRateUponBegin = true;
 	void setSerialBaudRate(int new_baud);
 	int hardwareFactoryReset(bool printDebug = false);
-	void switchToFasterBaudRate(int new_baudrate);
+	void switchToNewBaudRate(int new_baudrate);
 
 };
 
