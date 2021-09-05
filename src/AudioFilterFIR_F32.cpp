@@ -72,7 +72,7 @@ void AudioFilterFIR_F32::update(void)
 }
 
 int AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
-	if ((is_enabled == NULL) || (block==NULL) || (block_new==NULL)) return -1;
+	if ((is_enabled == false) || (block==NULL) || (block_new==NULL)) return -1;
 	
 	//check to make sure our FIR instance has the right size
 	if (block->length != configured_block_size) {
