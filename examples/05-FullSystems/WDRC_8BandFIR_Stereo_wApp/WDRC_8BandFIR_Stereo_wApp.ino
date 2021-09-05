@@ -41,7 +41,7 @@
 
 // Include all the of the needed libraries
 #include <Tympan_Library.h>
-#include "AudioEffectMultiBandWDRC_F32.h"
+#include "AudioEffectMultiBandWDRC_F32_local.h"
 
 // Define the audio settings
 const float sample_rate_Hz = 24000.0f ; //24000 or 32000 or 44100 (or other frequencies in the table in AudioOutputI2S_F32

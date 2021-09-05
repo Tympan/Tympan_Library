@@ -1,16 +1,15 @@
 
 #include "State.h"
-//#include "AudioEffectMultiBand_F32.h"
 extern State myState;
 
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
 //create audio objects for the algorithm
-AudioEffectMultiBandWDRC_F32_UI multiBandWDRC[2];  //how do we set the block size and sample rate? Is it done during filter design?
-StereoContainerWDRC_UI          stereoContainerWDRC;
-AudioOutputI2S_F32              i2s_out(audio_settings);      //Digital audio output to the DAC.  Should be last.
-AudioSDWriter_F32_UI            audioSDWriter(audio_settings);//this is stereo by default
+AudioEffectMultiBandWDRC_F32_UI_local multiBandWDRC[2];           //how do we set the block size and sample rate? Is it done during filter design?
+StereoContainerWDRC_UI_local        stereoContainerWDRC;          //helps with managing the phone App's GUI for left+right
+AudioOutputI2S_F32                  i2s_out(audio_settings);      //Digital audio output to the DAC.  Should be last.
+AudioSDWriter_F32_UI                audioSDWriter(audio_settings);//this is stereo by default
 
 //complete the creation of the tester objects
 AudioTestSignalMeasurement_F32      audioTestMeasurement(audio_settings);

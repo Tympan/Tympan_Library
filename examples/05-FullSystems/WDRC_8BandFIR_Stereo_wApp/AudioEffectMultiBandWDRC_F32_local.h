@@ -1,9 +1,12 @@
 
-#ifndef _AudioEffectMultiBandWDRC_F32_h
-#define _AudioEffectMultiBandWDRC_F32_h
+#ifndef _AudioEffectMultiBandWDRC_F32_local_h
+#define _AudioEffectMultiBandWDRC_F32_local_h
 
 /* 
- *  AudioEffectMultiBandWDRC_F32_UI
+ *  AudioEffectMultiBandWDRC_F32_UI_local
+ *
+ *  THIS IS A LOCAL COPY OF "AudioEffectMultiBandWDRC_F32_UI" THAT IS IN THE TympanLibrary.
+ *  THIS LOCAL COPY EXISTS JUST TO MAKE IT EASIER FOR YOU TO FIND IT, SEE IT, AND LEARN FROM IT.
  *  
  *  Created: Chip Audette, OpenAudio, July-Sept 2021
  *  
@@ -37,10 +40,10 @@
 #include <AudioEffectCompWDRC_F32.h> //from Tympan Library
 #include <arm_math.h> 
 
-class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialManager_UI {
+class AudioEffectMultiBandWDRC_F32_UI_local : public AudioStream_F32, public SerialManager_UI {
   public:
-    AudioEffectMultiBandWDRC_F32_UI(void): AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); } 
-    AudioEffectMultiBandWDRC_F32_UI(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); }
+    AudioEffectMultiBandWDRC_F32_UI_local(void): AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); } 
+    AudioEffectMultiBandWDRC_F32_UI_local(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); }
 
     // setup
     virtual void setup(void) {
@@ -179,16 +182,16 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
 
 #include <StereoContainer_UI.h>      //from Tympan Library
 
-class StereoContainerWDRC_UI : public StereoContainer_UI {
+class StereoContainerWDRC_UI_local : public StereoContainer_UI {
   public:
-    StereoContainerWDRC_UI(void) : StereoContainer_UI() {};
+    StereoContainerWDRC_UI_local(void) : StereoContainer_UI() {};
 
     TR_Page* addPage_filterbank(TympanRemoteFormatter *gui);
     TR_Page* addPage_compressorbank_globals(TympanRemoteFormatter *gui);
     TR_Page* addPage_compressorbank_perBand(TympanRemoteFormatter *gui);
     TR_Page* addPage_compressor_broadband(TympanRemoteFormatter *gui);
 
-    void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_F32_UI* _left, AudioEffectMultiBandWDRC_F32_UI *_right) {
+    void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_F32_UI_local* _left, AudioEffectMultiBandWDRC_F32_UI_local *_right) {
       //set the local pointers
       leftWDRC = _left;  rightWDRC = _right;
       
@@ -208,11 +211,11 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
     }
 
   protected:
-    AudioEffectMultiBandWDRC_F32_UI  *leftWDRC=NULL, *rightWDRC=NULL;
+    AudioEffectMultiBandWDRC_F32_UI_local  *leftWDRC=NULL, *rightWDRC=NULL;
   
 };
 
-TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) {
+TR_Page* StereoContainerWDRC_UI_local::addPage_filterbank(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Filterbank");
   TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
@@ -227,7 +230,7 @@ TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) 
   return page_h;
 }
 
-TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteFormatter *gui) {
+TR_Page* StereoContainerWDRC_UI_local::addPage_compressorbank_globals(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Compressor Bank, Global Parameters");
   TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
@@ -247,7 +250,7 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteForm
   return page_h;
 }
 
-TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteFormatter *gui) {
+TR_Page* StereoContainerWDRC_UI_local::addPage_compressorbank_perBand(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Compressor Bank");
   TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
@@ -265,7 +268,7 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteForm
   return page_h;
 }
 
-TR_Page* StereoContainerWDRC_UI::addPage_compressor_broadband(TympanRemoteFormatter *gui) {
+TR_Page* StereoContainerWDRC_UI_local::addPage_compressor_broadband(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Broadband Compressor");
   TR_Page page_foo; TR_Page *page_foo_h = &page_foo;

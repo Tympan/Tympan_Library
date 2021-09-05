@@ -78,6 +78,9 @@ setShift_bins			KEYWORD2
 getShift_bins			KEYWORD2
 getShift_Hz			KEYWORD2
 
+AudioEffectMultiBandWDRC_F32_UI	KEYWORD1
+StereoContainerWDRC_UI		KEYWORD1
+
 AudioFilterbankFIR_F32		KEYWORD1
 AudioFilterbankFIR_F32_UI	KEYWORD1
 AudioFilterbankBiquad_F32	KEYWORD1

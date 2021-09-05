@@ -8,10 +8,7 @@
 //classes from the main sketch that might be used here
 extern Tympan myTympan;               //defined in main *.ino file
 extern State myState;
-extern AudioEffectMultiBandWDRC_F32_UI multiBandWDRC[2];
-//extern AudioFilterbankFIR_F32_UI filterbank;
-//extern AudioEffectCompBankWDRC_F32_UI compbank;
-//extern AudioEffectCompWDRC_F32_UI compBroadband;
+extern AudioEffectMultiBandWDRC_F32_UI_local multiBandWDRC[2];
 extern AudioSDWriter_F32_UI audioSDWriter;
 
 extern const int N_CHAN;
