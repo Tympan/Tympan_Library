@@ -6,8 +6,8 @@
 #include "DSL_GHA_Preset1.h"  //this sets alternative dsl and gha, which can be switched in via commands
 
 //define the filterbank size
-#define N_FILT_ORDER 6
-
+#define N_FILT_ORDER 96  //96 for FIR filters, 6 for IIR filters
+ 
 void setupFromDSLandGHA(const int Ichan, const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
      const int n_chan, const int n_filt_order, const AudioSettings_F32 &settings)
 {
