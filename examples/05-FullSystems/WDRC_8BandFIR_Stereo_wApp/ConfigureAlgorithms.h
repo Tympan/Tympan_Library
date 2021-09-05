@@ -8,10 +8,10 @@
 //define the filterbank size
 #define N_FILT_ORDER 6
 
-void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
+void setupFromDSLandGHA(const int Ichan, const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha,
      const int n_chan, const int n_filt_order, const AudioSettings_F32 &settings)
 {
-  for (int Ichan = StereoContainer_UI::LEFT; Ichan <= StereoContainer_UI::RIGHT; Ichan++) {
+  //for (int Ichan = StereoContainer_UI::LEFT; Ichan <= StereoContainer_UI::RIGHT; Ichan++) {
     //set the per-channel filter coefficients (using our filterbank class)
     multiBandWDRC[Ichan].filterbank.designFilters(n_chan, n_filt_order, settings.sample_rate_Hz, settings.audio_block_samples, (float *)this_dsl.cross_freq);
 
@@ -21,24 +21,22 @@ void setupFromDSLandGHA(const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::C
     //setup the broad band compressor (typically used as a limiter)
     //configureBroadbandWDRCs(settings.sample_rate_Hz, this_gha, compBroadband);
     multiBandWDRC[Ichan].compBroadband.configureFromGHA(settings.sample_rate_Hz, this_gha);
-
-  }
+    
+  //}
   
   //overwrite the one-point SPL calibration based on the value in the DSL data structure
+  // THIS NEEDS TO BE RECONSIDERED NOW THAT WE'RE STEREO!!!
   myState.overall_cal_dBSPL_at0dBFS = this_dsl.maxdB;
      
 }
 
 void setupAudioProcessing(void) {
+   
   //make all of the audio connections
   makeAudioConnections();  //see AudioConnections.h
 
-  //setup processing based on the DSL and GHA prescriptions
-  if (myState.current_dsl_config == State::DSL_NORMAL) {
-    setupFromDSLandGHA(dsl, gha, N_CHAN, N_FILT_ORDER, audio_settings);
-  } else if (myState.current_dsl_config == State::DSL_FULLON) {
-    setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FILT_ORDER, audio_settings);
-  }
+  //setup processing based on the DSL and GHA prescriptions for the default prescription choice
+  setDSLConfiguration(myState.current_dsl_config);
 }
 
 float incrementChannelGain(int chan, float increment_dB) {
@@ -58,10 +56,12 @@ int setDSLConfiguration(int config) {
   switch (myState.current_dsl_config) {
     case (State::DSL_NORMAL):
       Serial.println("setDSLConfiguration: changing to NORMAL dsl configuration");
-      setupFromDSLandGHA(dsl, gha, N_CHAN, N_FILT_ORDER, audio_settings);  break;
+      setupFromDSLandGHA(StereoContainer_UI::LEFT,  dsl_left,         gha_left,         N_CHAN, N_FILT_ORDER, audio_settings);
+      setupFromDSLandGHA(StereoContainer_UI::RIGHT, dsl_right,        gha_right,        N_CHAN, N_FILT_ORDER, audio_settings);
     case (State::DSL_FULLON):
       Serial.println("setDSLConfiguration: changing to FULL-ON dsl configuration");
-      setupFromDSLandGHA(dsl_fullon, gha_fullon, N_CHAN, N_FILT_ORDER, audio_settings); break;
+      setupFromDSLandGHA(StereoContainer_UI::LEFT,  dsl_fullon_left,  gha_fullon_left,  N_CHAN, N_FILT_ORDER, audio_settings);
+      setupFromDSLandGHA(StereoContainer_UI::RIGHT, dsl_fullon_right, gha_fullon_right, N_CHAN, N_FILT_ORDER, audio_settings);
   } 
   return  myState.current_dsl_config;
 }
