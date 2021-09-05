@@ -53,6 +53,7 @@
 #include "SDWriter.h"
 #include "SerialManagerBase.h"
 #include "SerialManager_UI.h"
+#include "StereoContainer_UI.h"
 
 #include "synth_pinknoise_f32.h"
 #include "synth_waveform_F32.h"

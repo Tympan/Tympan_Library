@@ -217,6 +217,12 @@ processCharacter	KEYWORD2
 processCharacterTriple	KEYWORD2
 setFullGUIState		KEYWORD2
 
+StereoContainer_UI	KEYWORD1
+add_item_pair		KEYWORD2
+set_cur_channel		KEYWORD2
+get_cur_channel		KEYWORD2
+
+
 TympanRev		KEYWORD1
 TympanPins		KEYWORD1
 Tympan			KEYWORD1
