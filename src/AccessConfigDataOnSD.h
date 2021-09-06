@@ -127,6 +127,30 @@ class AccessConfigDataOnSD {
 			}
 			return 0;
 		}
+		
+		int readRowsUntilBothTargStrs(SdFile *file, char *line, int buff_len, const char *targ_str, const char *targ_str2) {
+			//bool found_start = false;
+			int n;
+
+			
+			//Serial.println("BTNRH_WDRC: CHA_DSL: findStartOfDSL: reading file...");
+			int line_count = 0;
+			while ((n = file->fgets(line, buff_len)) > 0) {
+				line_count++;
+				
+				//Serial.print(n);Serial.print(": ");
+				n=trimComments(line,n);  //stop the line wherever a commen starts
+				//Serial.print(n);Serial.print(": ");
+				n=trimLeadingWhitespace(line,n);  //stop the line wherever a commen starts
+				//Serial.print(n);Serial.print(": ");
+				
+				bool is_match = (isInString(line, n, targ_str) && isInString(line, n, targ_str2));					
+				if (is_match) return line_count;  //find if in string
+		
+			}
+			//Serial.println(F("\nDone"));
+			return -1;
+		}
 
 		int readRowsUntilTargStr(SdFile *file, char *line, int buff_len, const char *targ_str) {
 			//bool found_start = false;
