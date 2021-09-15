@@ -1,5 +1,5 @@
 /*
-  ChangeBC127Baudrate
+  ChangeBaudrate
 
   Created: Ira Ray Jenkins, Creare, August 2021 
            Extended by Chip Audette, August 2021
@@ -21,8 +21,13 @@
 #include <Arduino.h>
 #include <Tympan_Library.h>
 
-// USER PARAMETERS
-const int TARGET_BAUDRATE = 115200;    //try 115200 (fast!) or 9600 (factory original)
+// Let the USER define some parameters
+//const int TARGET_BAUDRATE = 115200;   //change baudrate to be the fastest speed that we've tested
+//const int TARGET_BAUDRATE = 115200/2; //change baudrate to be fast but not the fastest
+const int TARGET_BAUDRATE = 9600;       //change baudrate back to the factory speed
+
+
+// //////////////////////////////////////////// Automatically define other setup parameters
 
 // Automatically choose which Tympan and which firmware (you can override!)
 #ifdef KINETISK  //this is set by the Arduino IDE when you choose Teensy 3.6
