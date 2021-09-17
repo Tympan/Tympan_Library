@@ -349,8 +349,8 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			if (readAndParseLine(file, line, buff_len, tk, nchannel) < 0) return -1;
 			if (readAndParseLine(file, line, buff_len, bolt, nchannel) < 0) return -1;
 
-			Serial.println("CHA_DSL: readFromSDFile: success!");
 			//write to serial for debugging
+			//Serial.println("CHA_DSL: readFromSDFile: success!");
 			//printAllValues();
 		
 			return 0;

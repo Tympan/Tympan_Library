@@ -136,6 +136,15 @@ void AudioEffectCompWDRC_F32::setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC
 	//configure the compressor
 	calcGain.setParams_from_CHA_WDRC(gha);
 }
+void AudioEffectCompWDRC_F32::getParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {  //assumes that the sample rate has already been set!!!
+	//configure the envelope calculator...assumes that the sample rate has already been set!
+	gha->attack = calcEnvelope.getAttack_msec();
+	gha->release = calcEnvelope.getRelease_msec();
+
+	//configure the compressor
+	calcGain.getParams_from_CHA_WDRC(gha);
+}
+
 
 //set all of the user parameters for the compressor...assuming no expansion regime
 //assumes that the sample rate has already been set!!!

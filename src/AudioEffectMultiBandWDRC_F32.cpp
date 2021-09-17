@@ -102,6 +102,13 @@ int AudioEffectMultiBandWDRC_F32_UI::processAudioBlock(audio_block_f32_t *block_
 
 } // close processAudioBlock()	
 
+void AudioEffectMultiBandWDRC_F32_UI::getDSL(BTNRH_WDRC::CHA_DSL *new_dsl) {
+	Serial.println("AudioEffectMultiBandWDRC_F32_UI::getDSL: **** ERROR **** NEED TO WRITE THIS CODE");
+}
+
+void AudioEffectMultiBandWDRC_F32_UI::getWDRC(BTNRH_WDRC::CHA_WDRC *new_bb) {
+	compBroadband.getParams_from_CHA_WDRC(new_bb);
+}
 
 
 

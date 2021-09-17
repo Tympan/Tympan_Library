@@ -116,6 +116,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	void configureFromGHA(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &gha) { setSampleRate_Hz(fs_Hz);  setParams_from_CHA_WDRC(&gha); }
 	void configureFromGHA(const BTNRH_WDRC::CHA_WDRC &gha) { setParams_from_CHA_WDRC(&gha); }  //assumes that the sample rate has already been set!!!
     void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha);
+	void getParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha);
 	
     //set all of the user parameters for the compressor...assuming no expansion regime
     //assumes that the sample rate has already been set!!!

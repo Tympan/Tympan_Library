@@ -44,7 +44,7 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
 
     // setup
     virtual void setup(void) {
-      compBroadband.name_for_UI = "WDRC Broadband";
+      compBroadband.name_for_UI = "WDRC Broadband";  //overwrite the default name for the compressor being used as the broadband compressor
     }
 
     // here are the mthods required (or encouraged) for AudioStream_F32 classes
@@ -60,6 +60,10 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
     virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char) {return false; };
     //virtual void setFullGUIState(bool activeButtonsOnly = false); //if commented out, use the one in StereoContrainer_UI.h
 
+
+	//methods to get the BTNRH form of the settings
+	virtual void getDSL(BTNRH_WDRC::CHA_DSL *new_dsl);
+	virtual void getWDRC(BTNRH_WDRC::CHA_WDRC *new_bb);
 
     // here are the constituent classes that make up the multiband compressor
     AudioFilterbankFIR_F32_UI      filterbank;
