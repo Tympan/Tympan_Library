@@ -44,8 +44,18 @@ void setupAudioProcessing(void) {
   //make all of the audio connections
   makeAudioConnections();  //see AudioConnections.h
 
+  //try to load the prescription from the SD card
+  for (int i=0; i<presetManager.n_presets; i++) {
+    if (presetManager.loadPresetFromSD(i) != 0) {
+      //it didn't initialize from the SD card.  So, overwrite what's on the SD card
+      presetManager.initPresetToDefault(i); //restore to default from Preset_00.h or Preset_01.h
+      Serial.println("setupAudioProcessing: writing initialized preset to SD for preset " + String(i));
+      presetManager.savePresetToSD(i);      //save to SD card
+    }
+  }
+    
   //setup processing based on the DSL and GHA prescriptions for the default prescription choice
-  setDSLConfiguration(myState.current_dsl_config);
+  setPrescription(myState.current_prescription_ind);
 }
 
 float incrementChannelGain(int chan, float increment_dB) {
@@ -59,15 +69,15 @@ float incrementChannelGain(int chan, float increment_dB) {
 }
 
 
-int setDSLConfiguration(int config) {
-  if ((config < 0) || (config >= presetManager.n_presets)) return  myState.current_dsl_config;  //do nothing
+int setPrescription(int config) {
+  if ((config < 0) || (config >= presetManager.n_presets)) return  myState.current_prescription_ind;  //do nothing
 
   BTNRH_Preset preset = presetManager.presets[config];
-  myState.current_dsl_config = config;
+  myState.current_prescription_ind = config;
 
   //loop over left and right and provide the settings
   for (int Ichan = StereoContainer_UI::LEFT; Ichan <= StereoContainer_UI::RIGHT; Ichan++) {
     setupFromDSLandGHA(Ichan, preset.wdrc_perBand[Ichan], preset.wdrc_broadband[Ichan], N_CHAN, N_FILT_ORDER, audio_settings);
   }
-  return  myState.current_dsl_config;
+  return  myState.current_prescription_ind;
 }

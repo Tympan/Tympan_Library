@@ -18,13 +18,12 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     float output_gain_dB = 0.0;  //gain of the hardware headphone amplifier in the AIC
 
     //Put different algorithm prescriptions here
-    enum {DSL_NORMAL=0, DSL_FULLON=1};
-    int MAX_DSL_SETTING = DSL_FULLON;
-    int current_dsl_config = DSL_NORMAL;
+    int n_prescriptions = 2;
+    int current_prescription_ind = 0;
 
     //Other classes holding states
-    AudioFilterbankState *filterbank[2];
-    AudioEffectCompBankWDRCState *compbank[2];
+    AudioFilterbankState *filterbank[2]; //left and right
+    AudioEffectCompBankWDRCState *compbank[2]; //left and right
 
     //keep track of the signal levels in teh different bands
     float overall_cal_dBSPL_at0dBFS = 115.0f; //dB SPL at full scale (0dB FS).  This will be set by the DSL_GHA_Preset0.h or DSL_GHA_Preset1.h

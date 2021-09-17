@@ -20,7 +20,7 @@ extern AudioControlTestFreqSweep_F32 freqSweepTester;
 extern float incrementDigitalGain(float);
 extern void printGainSettings(void);
 extern void togglePrintAveSignalLevels(bool);
-extern int setDSLConfiguration(int);
+extern int setPrescription(int);
 extern float incrementChannelGain(int, float);
 
 
@@ -97,13 +97,13 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'd':
       Serial.println("Command Received: changing to 1st DSL configuration...you will lose any custom gain values...");
       //incrementDSLConfiguration();
-      setDSLConfiguration(1-1);
+      setPrescription(1-1);
       setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
       break;
     case 'D':
       Serial.println("Command Received: changing 2st DSL configuration...you will lose any custom gain values...");
       //incrementDSLConfiguration();
-      setDSLConfiguration(2-1);
+      setPrescription(2-1);
       setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
       break;
     case 'F':
@@ -224,10 +224,10 @@ void SerialManager::updateGainDisplay(void) {
 }
 
 void SerialManager::updatePresetDisplay(void) {
-  for (int i=0; i<= myState.MAX_DSL_SETTING; i++) {
+  for (int i=0; i< myState.n_prescriptions; i++) {
     String id = String("preset") + String(i);
     bool state = false;
-    if (i==myState.current_dsl_config) state=true;
+    if (i==myState.current_prescription_ind) state=true;
     setButtonState(id,state);
   }
 }

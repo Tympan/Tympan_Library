@@ -68,7 +68,7 @@ State         myState(&audio_settings, &myTympan, &serialManager); //keeping one
 
 //configure the parameters of the audio-processing classes (must be after myState is created)
 #include "PresetManager_UI.h"
-BTNRH_PresetManager_UI presetManager;
+BTNRH_PresetManager_UI presetManager;  //initializes all presets to the built-in defaults...which are defined by Preset_00.h and Preset_01.h
 #include "ConfigureAlgorithms.h" //let's put all of these functions in their own file for clarity
 
 

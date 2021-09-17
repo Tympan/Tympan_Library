@@ -61,7 +61,7 @@ class BTNRH_PresetManager_UI : public PresetManager_UI {
     const String preset_fnames[N_PRESETS] = {String("Preset_00.txt"), String("Preset_01.txt")};  //filenames for reading off SD
     const int n_presets = N_PRESETS;
 
-    void initAllPresetsToDefault(void ){ for (int i=0; i<N_PRESETS;i++) initPresetToDefault(i); }
+    void initAllPresetsToDefault(void) { for (int i=0; i<N_PRESETS;i++) initPresetToDefault(i); }
     void initPresetToDefault(int Ipreset) { //sets both left and right
       if ((Ipreset < 0) || (Ipreset >= N_PRESETS)) return;  //out of bounds!
       
@@ -82,85 +82,92 @@ class BTNRH_PresetManager_UI : public PresetManager_UI {
       }
     }
 
+    void rebuildPresetFromSources(int Ipreset, AudioEffectMultiBandWDRC_F32_UI *leftWDRC, AudioEffectMultiBandWDRC_F32_UI *rightWDRC) {
+      int i = Ipreset;
+      if ( (i<0) || (i>=n_presets) ) return; //out of bounds!
+
+      //reconstruct all components of the preset
+      leftWDRC->getDSL(   &(presets[i].wdrc_perBand[0]   ));
+      leftWDRC->getWDRC(  &(presets[i].wdrc_broadband[0] ));
+      //leftWDRC->getAFC( &(presets[i].afc[0]            ));
+      rightWDRC->getDSL(  &(presets[i].wdrc_perBand[1]   ));
+      rightWDRC->getWDRC( &(presets[i].wdrc_broadband[1] ));
+      //rightWDRC->getAFC(&(presets[i].afc[0]            ));     
+    }
+
     void loadAllPresetsFromSD(void) { for (int i=0; i<N_PRESETS;i++) loadPresetFromSD(i); }
-    void loadPresetFromSD(int Ipreset) {
+    int loadPresetFromSD(int Ipreset) { //returns 0 if good, returns -1 if fail
       //first, initialize to the hardwired default values
       int i = Ipreset;
       initPresetToDefault(i);
+
+      bool printDebug = false;
       
       // Try to read from the SD card
       bool any_fail = false;
       String fname = preset_fnames[i];
-      for (int Ichan=0; Ichan < N_CHAN; Ichan++) {  //loop over left and right
+      for (int Ichan=0; Ichan < presets[i].n_chan; Ichan++) {  //loop over left and right
+        
+        if (printDebug) Serial.println("PresetManager: loadPresetFromSD: reading perBand for preset " + String(i) + " for left(0)/right(1) = " + String(Ichan));
         if ( ((presets[i].wdrc_perBand[Ichan]).readFromSD(fname, presets[i].chan_names[Ichan])) == 0 ) { //zero is success
+          if (printDebug) presets[i].wdrc_perBand[Ichan].printAllValues();
+        
+          if (printDebug) Serial.println("PresetManager: loadPresetFromSD: reading broadband for preset " + String(i) + " for left(0)/right(1) = " + String(Ichan));
           if ( ((presets[i].wdrc_broadband[Ichan]).readFromSD(fname, presets[i].chan_names[Ichan])) == 0 ) { //zero is success
+            if (printDebug) presets[i].wdrc_broadband[Ichan].printAllValues();
+            
             //if ((presets[i].afc.readFromSD(fname, presets[i].chan_names[i])) == 0) { //zero is success
               //anything more to do?  any more algorithm settings to load?
             //} else {
             // any_fail = true;
             //}
+          
           } else {
+            Serial.println("PresetManager: loadPresetFromSD: *** WARNING *** could not read all preset elements from " + String(fname));
+            Serial.println("    : Failed reading wdrc_perBand for left(0)/right(1):" + String(Ichan) + " using left/right name: " + String(presets[i].chan_names[Ichan]));
             any_fail = true;
           }
+          
         } else {
+          Serial.println("PresetManager: loadPresetFromSD: *** WARNING *** could not read all preset elements from " + String(fname));
+          Serial.println("    : Failed reading wdrc_broadband for left(0)/right(1):" + String(Ichan) + " using left/right name: " + String(presets[i].chan_names[Ichan]));
           any_fail = true;
         }
+        
       } //end loop over left and right
 
         
       if (any_fail) {
         //print error messages
-        Serial.print("PresetManager: specifyPresetAsDefault: *** WARNING *** could not read all preset elements from "); Serial.print(fname);
+        Serial.println("PresetManager: loadPresetFromSD: *** WARNING *** could not read all preset elements from " + String(fname));
         Serial.println("    : Using built-in algorithm preset values instead.");
 
         //reset to the hardwired default
         initPresetToDefault(i);
+        return -1;
       }
+      return 0;  //0 is OK
     }    
 
-    // Save the current preset to the presets[] array and (maybe) writes to SD
-    //void saveCurrentAlgPresetToSD(bool writeToSD = false) { //saves the current preset to the presets[] array and (maybe) writes to SD
-    void savePresetToSD(int ind_preset, BTNRH_WDRC::CHA_DSL dsl_L, BTNRH_WDRC::CHA_DSL dsl_R, BTNRH_WDRC::CHA_WDRC bb_L, BTNRH_WDRC::CHA_WDRC bb_R, bool writeToSD = false) { 
-      BTNRH_Preset foo_preset(dsl_L, dsl_R, bb_L, bb_R);
-      savePresetToSD(ind_preset,foo_preset,writeToSD);
-    }
-    void savePresetToSD(int ind_preset, const BTNRH_Preset &foo_preset, bool writeToSD = false) {
+    // Save the current preset to the presets[] array and (maybe) writes to SD    
+    void savePresetToSD(int ind_preset) {
      int i = ind_preset;
      if ( (i<0) || (i>=n_presets) ) return; //out of bounds!
          
       //save current settings to the preset that's in RAM (not yet on the SD)
-      presets[i].specifyPreset(foo_preset);
+      //presets[i].specifyPreset(foo_preset);
 
       //now write preset to the SD card, if requested
-      if (writeToSD) {
-        String fname = preset_fnames[i];
-        for (int Ichan=0; Ichan < N_CHAN; Ichan++) {
-          presets[i].wdrc_perBand[Ichan].printToSD(fname,presets[i].var_names[0]+presets[i].chan_names[Ichan], true);  //the "true" says to start from a fresh file
-          presets[i].wdrc_broadband[Ichan].printToSD(fname,presets[i].var_names[1]+presets[i].chan_names[Ichan]);  //append to the file
-          //presets[i].afc.printToSD(fname,presets[i].var_names[2]+presets[i].chan_names[Ichan]);  //append to the file
-        }
+      String fname = preset_fnames[i];
+      bool start_new_file = true;
+      for (int Ichan=0; Ichan < n_presets; Ichan++) {
+        presets[i].wdrc_perBand[Ichan].printToSD(fname,presets[i].var_names[0]+presets[i].chan_names[Ichan], start_new_file);  //the "true" says to start from a fresh file
+        start_new_file= false; //don't start a new file for future channels...everything else will be appended
+        presets[i].wdrc_broadband[Ichan].printToSD(fname,presets[i].var_names[1]+presets[i].chan_names[Ichan]);  //append to the file
+        //presets[i].afc.printToSD(fname,presets[i].var_names[2]+presets[i].chan_names[Ichan]);  //append to the file
       }
     }
     
-//    void revertPresetToDefault(int ind_preset, bool writeToSD = false) { //saves the current preset to the presets[] array and (maybe) writes to SD
-//      int i = ind_preset;
-//      if ( (i<0) || (i>=n_presets) ) return; //out of bounds!
-//
-//      //load the factor defaults into the preset
-//      specifyPreset(i, false);  //false => do NOT read from SD card.  Use the built-in settings.
-// 
-//
-//      //save to SD card
-//      if (writeToSD) {
-//        Serial.println("State: revertCurrentAlgPresetToDefault: writing to SD.");
-//        String fname = preset_fnames[i];
-//        for (int Ichan=0; Ichan < N_CHAN; Ichan++) {
-//          presets[i].wdrc_perBand[Ichan].printToSD(fname,presets[i].var_names[0]+presets[i].chan_names[Ichan], true);  //the "true" says to start from a fresh file
-//          presets[i].wdrc_broadband[Ichan].printToSD(fname,presets[i].var_names[1]+presets[i].chan_names[Ichan]);  //append to the file
-//          //presets[i].afc.printToSD(fname,var_names[2]+chan_names[Ichan]);  //append to the file
-//        }
-//      }
-//    } 
 };
 
 #endif
