@@ -26,6 +26,8 @@ class AudioEffectGain_F32 : public AudioStream_F32
     //here's the method that does all the work
     virtual void update(void) {
 		//Serial.println("AudioEffectGain_F32: updating.");  //for debugging.
+		
+		//get input block
 		audio_block_f32_t *block;
 		block = AudioStream_F32::receiveReadOnly_f32();
 		if (block == NULL) return;
@@ -38,7 +40,8 @@ class AudioEffectGain_F32 : public AudioStream_F32
 		processAudioBlock(block, out_block);
 
 		//transmit the block and be done
-		AudioStream_F32::transmit(block);
+		AudioStream_F32::transmit(out_block);
+		AudioStream_F32::release(out_block);
 		AudioStream_F32::release(block);
     }
 	
