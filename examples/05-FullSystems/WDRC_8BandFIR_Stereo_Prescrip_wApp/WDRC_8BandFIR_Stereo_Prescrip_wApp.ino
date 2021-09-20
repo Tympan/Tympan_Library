@@ -52,24 +52,20 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 // (it needs N_CHAN or more values) defined for each compressor parameter.  If not, it'll bomb at run time!
 const int N_CHAN = 8;   
 
+//More includes
+#include      "BTNRH_PresetManager_UI.h"  //must be after N_CHAN is defined
+#include      "SerialManager.h"     //must be after BTNRH_PresetManager_UI is defined
+#include      "State.h"             //must be after N_CHAN is defined
+#include      "AudioConnections.h"  //let's put them in their own file for clarity
 
 // Create audio classes and make audio connections
 Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
-#include "AudioConnections.h"                      //let's put them in their own file for clarity
-
 
 // Create classes for controlling the system
-#include      "SerialManager.h"
-#include      "State.h"                            //must be after N_CHAN is defined
 BLE_UI        ble(&myTympan);                      //create bluetooth BLE
 SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
-
-
-//configure the parameters of the audio-processing classes (must be after myState is created)
-#include "PresetManager_UI.h"
-BTNRH_PresetManager_UI presetManager;  //initializes all presets to the built-in defaults...which are defined by Preset_00.h and Preset_01.h
-#include "ConfigureAlgorithms.h" //let's put all of these functions in their own file for clarity
+BTNRH_StereoPresetManager_UI presetManager;  //initializes all presets to the built-in defaults...which are defined by Preset_00.h and Preset_01.h
 
 
 //function to setup the hardware
@@ -109,6 +105,7 @@ void setupSerialManager(void) {
   serialManager.add_UI_element(&myState);
   serialManager.add_UI_element(&ble); 
   serialManager.add_UI_element(&stereoContainerWDRC);
+  serialManager.add_UI_element(&presetManager);
   serialManager.add_UI_element(&audioSDWriter);
 }
 
@@ -216,7 +213,7 @@ void servicePotentiometer(unsigned long curTime_millis) {
     //float scaled_val = val / 3.0; scaled_val = scaled_val * scaled_val;
     if (abs(val - prev_val) > 0.05) { //is it different than befor?
       prev_val = val;  //save the value for comparison for the next time around
-      setDigitalGain_dB(val*45.0f - 25.0f,false);
+      setDigitalGain_dB(val*45.0f - 25.0f,false); //the "false" is to suppress printing the current gain settings to the USB Serial
       Serial.print("servicePotentiometer: digital gain (dB) = ");Serial.println(myState.digital_gain_dB);
     }
     lastUpdate_millis = curTime_millis;

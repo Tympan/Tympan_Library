@@ -18,8 +18,8 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     float output_gain_dB = 0.0;  //gain of the hardware headphone amplifier in the AIC
 
     //Put different algorithm prescriptions here
-    int n_prescriptions = 2;
-    int current_prescription_ind = 0;
+    //int n_prescriptions = 2;
+    //int current_prescription_ind = 0;
 
     //Other classes holding states
     AudioFilterbankState *filterbank[2]; //left and right

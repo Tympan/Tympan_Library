@@ -9,6 +9,8 @@
 extern Tympan myTympan;               //defined in main *.ino file
 extern State myState;
 extern AudioEffectMultiBandWDRC_F32_UI multiBandWDRC[2];
+extern StereoContainerWDRC_UI stereoContainerWDRC; 
+extern BTNRH_StereoPresetManager_UI presetManager;
 extern AudioSDWriter_F32_UI audioSDWriter;
 
 extern const int N_CHAN;
@@ -20,7 +22,6 @@ extern AudioControlTestFreqSweep_F32 freqSweepTester;
 extern float incrementDigitalGain(float);
 extern void printGainSettings(void);
 extern void togglePrintAveSignalLevels(bool);
-extern int setPrescription(int);
 extern float incrementChannelGain(int, float);
 
 
@@ -35,8 +36,6 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library SerialM
     void setFullGUIState(bool activeButtonsOnly = false);
     bool processCharacter(char c);  //this is called by SerialManagerBase.respondToByte(char c)
     void updateGainDisplay(void);
-    void updatePresetDisplay(void);
-    //void setSDRecordingButtons(void);
 
     float channelGainIncrement_dB = 2.5f;  
   private:
@@ -58,7 +57,7 @@ void SerialManager::printHelp(void) {
   Serial.println(F("   F: Self-Generated Test: Frequency sweep.  End-to-End Measurement."));
   //Serial.println(F("   f: Self-Generated Test: Frequency sweep.  Measure filterbank."));
   Serial.print(F(  "   k/K: Incr/Decrease overall gain by ")); Serial.print(channelGainIncrement_dB); Serial.println(" dB");
-  Serial.println(F("   d/D: Switch between presets: NORMAL vs FULL-ON"));
+  //Serial.println(F("   d/D: Switch between presets: NORMAL vs FULL-ON"));
   //Serial.println(F(" r/s: Begin/stop SD audio recording"));
   SerialManagerBase::printHelp();  ////in here, it automatically loops over the different UI elements issuing printHelp()
   Serial.println();
@@ -94,18 +93,16 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       while (!ampSweepTester.available()) {delay(100);};
       Serial.println("Press 'h' for help...");
       break;     
-    case 'd':
-      Serial.println("Command Received: changing to 1st DSL configuration...you will lose any custom gain values...");
-      //incrementDSLConfiguration();
-      setPrescription(1-1);
-      setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
-      break;
-    case 'D':
-      Serial.println("Command Received: changing 2st DSL configuration...you will lose any custom gain values...");
-      //incrementDSLConfiguration();
-      setPrescription(2-1);
-      setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
-      break;
+//    case 'd':
+//      Serial.println("Command Received: changing to 1st prescription...");
+//      switchPrescription(1-1);
+//      setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
+//      break;
+//    case 'D':
+//      Serial.println("Command Received: changing to 2nd prescription...");
+//      switchPrescription(2-1);
+//      setFullGUIState(); //resend all the algorithm parameter values to the App's GUI
+//      break;
     case 'F':
       //frequency sweep test...end-to-end
       { //limit the scope of any variables that I create here
@@ -196,11 +193,11 @@ void SerialManager::createTympanRemoteLayout(void) {
           //Add a "+" digital gain button with the Label("+"); Command("K"); Internal ID (none needed); and width (4)
           card_h->addButton("+", "k", "",   4);  //displayed string, command, button ID, button width (out of 12)
 
-      //Add a button group ("card") for Presets
-      card_h = page_h->addCard("Parameter Presets");
-          //Add two buttons for the two presets
-          card_h->addButton("Normal",      "d", "preset0", 6);  //displayed string, command, button ID, button width (out of 12)
-          card_h->addButton("Full-On Gain","D", "preset1", 6);  //displayed string, command, button ID, button width (out of 12)
+//      //Add a button group ("card") for Presets
+//      card_h = page_h->addCard("Parameter Presets");
+//          //Add two buttons for the two presets
+//          card_h->addButton("Normal",      "d", "preset0", 6);  //displayed string, command, button ID, button width (out of 12)
+//          card_h->addButton("Full-On Gain","D", "preset1", 6);  //displayed string, command, button ID, button width (out of 12)
       
       //Add a button group ("card") for the CPU reporting...use a button set that is built into myState for you!
       card_h = myState.addCard_cpuReporting(page_h);
@@ -213,6 +210,9 @@ void SerialManager::createTympanRemoteLayout(void) {
   page_h = stereoContainerWDRC.addPage_compressorbank_globals(&myGUI);
   page_h = stereoContainerWDRC.addPage_compressorbank_perBand(&myGUI);
   page_h = stereoContainerWDRC.addPage_compressor_broadband(&myGUI);
+
+  //add page for saving and recalling presets
+  page_h = presetManager.addPage_default(&myGUI);
         
   //add some pre-defined pages to the GUI...these are pre-defined within the App itself
   myGUI.addPredefinedPage("serialMonitor");
@@ -223,17 +223,17 @@ void SerialManager::updateGainDisplay(void) {
   setButtonText("gain",String(myState.digital_gain_dB,1)); //send a new string to the button with id "gain"
 }
 
-void SerialManager::updatePresetDisplay(void) {
-  for (int i=0; i< myState.n_prescriptions; i++) {
-    String id = String("preset") + String(i);
-    bool state = false;
-    if (i==myState.current_prescription_ind) state=true;
-    setButtonState(id,state);
-  }
-}
+//void SerialManager::updatePresetDisplay(void) {
+//  for (int i=0; i< myState.n_prescriptions; i++) {
+//    String id = String("preset") + String(i);
+//    bool state = false;
+//    if (i==myState.current_prescription_ind) state=true;
+//    setButtonState(id,state);
+//  }
+//}
 
 void SerialManager::setFullGUIState(bool activeButtonsOnly) {
-  updatePresetDisplay();
+  //updatePresetDisplay();
   updateGainDisplay();
 
   //update all of the individual UI elements

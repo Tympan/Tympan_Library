@@ -7,7 +7,7 @@ AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to
 
 //create audio objects for the algorithm
 AudioEffectMultiBandWDRC_F32_UI     multiBandWDRC[2];           //how do we set the block size and sample rate? Is it done during filter design?
-StereoContainerWDRC_UI              stereoContainerWDRC;          //helps with managing the phone App's GUI for left+right
+StereoContainerWDRC_UI              stereoContainerWDRC;          //helps with managing the phone App's GUI for left+right.  In AudioEffectMultiBandWDRC_F32.h
 AudioOutputI2S_F32                  i2s_out(audio_settings);      //Digital audio output to the DAC.  Should be last.
 AudioSDWriter_F32_UI                audioSDWriter(audio_settings);//this is stereo by default
 
@@ -30,7 +30,6 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   //put items inot each side of the stereo container (for better handling the UI elements)
   stereoContainerWDRC.addPairMultiBandWDRC(&(multiBandWDRC[LEFT]),&(multiBandWDRC[RIGHT])); 
 
-
   //connect input...normally you'd connect to the algorithms, but we're going to enable some audio self-testing
   //so we're going to first connect to the audioTestGenerator.  To say it again, this routing through the 
   //audioTestGenerator is only being done to allow self testing.  If you don't want to do this, you would route
@@ -48,6 +47,10 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
 
   for (int Ichan = LEFT; Ichan <= RIGHT; Ichan++) {
 
+    //Set the algorithms sample rate and block size to align with the global values
+    multiBandWDRC[Ichan].setSampleRate_Hz(audio_settings.sample_rate_Hz);
+    multiBandWDRC[Ichan].setAudioBlockSize(audio_settings.audio_block_samples);
+    
     //make filterbank and compressorbank big enough...I'm not sure if this is actually needed
     multiBandWDRC[Ichan].filterbank.set_max_n_filters(N_CHAN);  //is this needed?
     multiBandWDRC[Ichan].compbank.set_max_n_chan(N_CHAN);       //is this needed?
@@ -64,4 +67,39 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   patchCord[count++] = new AudioConnection_F32(multiBandWDRC[LEFT], 0, audioTestMeasurement, 1);
     
   return count;
+}
+
+void setupAudioProcessing(void) {
+   
+  //make all of the audio connections
+  makeAudioConnections();  //see AudioConnections.h
+
+  //setup the preset manager
+  presetManager.attachAlgorithms(&multiBandWDRC[0],&multiBandWDRC[1]);
+
+  //try to load the prescription from the SD card
+  for (int i=0; i<presetManager.n_presets; i++) {
+    if (presetManager.readPresetFromSD(i) != 0) {
+      //it didn't initialize from the SD card.  So, overwrite what's on the SD card
+      presetManager.resetPresetToFactory(i); //restore to default from Preset_00.h or Preset_01.h
+      Serial.println("setupAudioProcessing: writing initialized preset to SD for preset " + String(i));
+      presetManager.savePresetToSD(i);      //save to SD card
+    }
+  }
+
+  //configure the algorithms for the starting preset
+  int starting_preset = 0;  //zero is the first
+  presetManager.setToPreset(starting_preset);
+  
+}
+
+
+float incrementChannelGain(int chan, float increment_dB) {
+  if (chan < N_CHAN) {
+    for (int Ichan = StereoContainer_UI::LEFT; Ichan <= StereoContainer_UI::RIGHT; Ichan++) {
+      (multiBandWDRC[Ichan].compbank.compressors[chan]).incrementGain_dB(increment_dB);
+    }
+  }
+  printGainSettings();  //in main sketch file
+  return multiBandWDRC[StereoContainer_UI::LEFT].compbank.getLinearGain_dB(chan);
 }
