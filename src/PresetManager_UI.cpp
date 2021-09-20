@@ -5,6 +5,7 @@
 void PresetManager_UI::printHelp(void) {
   Serial.println(" " + name_for_UI + ": Prefix = " + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
   Serial.println("   : 1-" + String(n_presets) + ": Switch to Preset 1-" + String(n_presets));
+  Serial.println("   : s/r/f: save to SD, reload from SD, reset-to-factory current preset");
 }
 
 bool PresetManager_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
