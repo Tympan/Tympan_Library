@@ -135,11 +135,11 @@ void AudioEffectCompBankWDRC_F32::collectParams_into_CHA_DSL(BTNRH_WDRC::CHA_DSL
 	
 	//get the number of channels
 	int n_chan = get_n_chan();
-	if (n_chan > this_dsl->DSL_MAX_CHAN) {
+	if (n_chan > this_dsl->get_DSL_MAX_CHAN()) {
 		Serial.println("AudioEffectCompBankWDRC_F32: collectParams_into_CHA_DSL: *** ERROR ***");
-		Serial.println("    : number of comp channels (" + String(n_chan) + ") is too big for CHA_DSL (" + String(this_dsl->DSL_MAX_CHAN) + ")");
+		Serial.println("    : number of comp channels (" + String(n_chan) + ") is too big for CHA_DSL (" + String(this_dsl->get_DSL_MAX_CHAN()) + ")");
 		Serial.println("    : limiting to number allowed by CHA_DSL.");
-		n_chan = this_dsl->DSL_MAX_CHAN;
+		n_chan = this_dsl->get_DSL_MAX_CHAN();
 	}
 	this_dsl->nchannel = n_chan;
 

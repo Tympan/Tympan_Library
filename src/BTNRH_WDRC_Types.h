@@ -45,7 +45,7 @@ class CHA_AFC {
 class CHA_DSL {
 	public:
 		//CHA_DSL() : BTNRH_Base() {};  //no constructor means that I can use brace initialization
-		static const int DSL_MAX_CHAN = DSL_MXCH_TYMPAN;    // maximum number of channels
+		//static const int DSL_MAX_CHAN = DSL_MXCH_TYMPAN;    // maximum number of channels
 		float attack;               // attack time (ms)
 		float release;              // release time (ms)
 		float maxdB;                // maximum signal (dB SPL)
@@ -58,7 +58,8 @@ class CHA_DSL {
 		float cr[DSL_MXCH_TYMPAN];         // compression ratio
 		float tk[DSL_MXCH_TYMPAN];         // compression-start kneepoint
 		float bolt[DSL_MXCH_TYMPAN];       // broadband output limiting threshold
-		
+
+		int get_DSL_MAX_CHAN(void) { return DSL_MXCH_TYMPAN; }
 		void printAllValues(void) { printAllValues(&Serial); }
 		void printAllValues(Stream *s) {
 			int last_chan = nchannel;
@@ -313,6 +314,7 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 		using Preset_SD_Base::readFromSDFile; //I don't really understand why these are necessary
 		using Preset_SD_Base::readFromSD;
 		using Preset_SD_Base::printToSD;
+			
 		int readFromSDFile(SdFile *file, const String &var_name) { //returns zero if successful
 			//Serial.println("CHA_DSL: readFromSDFile: starting...");
 			const int buff_len = 400;
@@ -334,9 +336,9 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			if (readAndParseLine(file, line, buff_len, &maxdB, 1) < 0) return -1;
 			if (readAndParseLine(file, line, buff_len, &ear, 1) < 0) return -1;
 			if (readAndParseLine(file, line, buff_len, &nchannel, 1) < 0) return -1;
-			if (nchannel > DSL_MAX_CHAN) {
+			if (nchannel > get_DSL_MAX_CHAN()) {
 				Serial.print("BTNRH_WDRC: CHA_DSL: readFromSDFile: *** ERROR*** nchannel read as ");Serial.print(nchannel);
-				nchannel = DSL_MAX_CHAN;
+				nchannel = get_DSL_MAX_CHAN();
 				Serial.print("    : Limiting to "); Serial.println(nchannel);
 			}
 			
@@ -413,9 +415,9 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			int ret_val = sd.begin(SD_CONFIG)
+			int ret_val = sd.begin(SD_CONFIG);
 			if (!ret_val) {
-				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: *** ERROR ***: cannot open SD. sd.begin(SD_CONFIG = " + String(ret_val));
+				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: *** ERROR ***: cannot open SD. sd.begin(SD_CONFIG) = " + String(ret_val));
 				//Serial.print("    : printToSD: SD = ");  Serial.println(sd);
 				//Serial.print("    : printToSD: sd.exists(filename) = ");  Serial.println(sd);
 				return -1;
@@ -539,8 +541,9 @@ class CHA_WDRC_SD : public BTNRH_WDRC::CHA_WDRC, public Preset_SD_Base {   //loo
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			if (!(sd.begin(SD_CONFIG))) {
-				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD.");
+			int ret_val = sd.begin(SD_CONFIG);
+			if (!(ret_val)) {
+				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD. sd.begin(SD_CONFIG) = " + String(ret_val));
 				return -1;
 			}
 			
