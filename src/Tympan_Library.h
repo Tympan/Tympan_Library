@@ -46,6 +46,7 @@
 #include "FFT_F32.h"
 #include "FFT_Overlapped_F32.h"
 #include "play_queue_f32.h"
+#include "PresetManager_UI.h"
 #include "record_queue_f32.h"
 #include "input_i2s_f32.h"
 #include "input_i2s_quad_f32.h"

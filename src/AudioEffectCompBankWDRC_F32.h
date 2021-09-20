@@ -93,6 +93,7 @@ class AudioEffectCompBankWDRC_F32 : public AudioStream_F32 {
 		
 		//configure from BTNRH DSL and GHA...returns number of channels loaded from the DSL
 		int configureFromDSLandGHA(float fs_Hz, const BTNRH_WDRC::CHA_DSL &this_dsl, const BTNRH_WDRC::CHA_WDRC &this_gha);
+		void collectParams_into_CHA_DSL(BTNRH_WDRC::CHA_DSL *this_dsl);
 	
 		//track states
 		AudioEffectCompBankWDRCState state;

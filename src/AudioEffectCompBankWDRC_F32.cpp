@@ -127,6 +127,35 @@ int AudioEffectCompBankWDRC_F32::configureFromDSLandGHA(float fs_Hz, const BTNRH
 	
 }
 
+void AudioEffectCompBankWDRC_F32::collectParams_into_CHA_DSL(BTNRH_WDRC::CHA_DSL *this_dsl) {
+	//get some global compressor parameters
+	this_dsl->attack = getAttack_msec();   // could be different for each compressor, but DSL assumes they're the same, so just grab whatever the compressor bank is set to return
+	this_dsl->release = getRelease_msec(); // could be different for each compressor, but DSL assumes they're the same, so just grab whatever the compressor bank is set to return
+	this_dsl->maxdB = getMaxdB();          // could be different for each compressor, but DSL assumes they're the same, so just grab whatever the compressor bank is set to return
+	
+	//get the number of channels
+	int n_chan = get_n_chan();
+	if (n_chan > this_dsl->DSL_MAX_CHAN) {
+		Serial.println("AudioEffectCompBankWDRC_F32: collectParams_into_CHA_DSL: *** ERROR ***");
+		Serial.println("    : number of comp channels (" + String(n_chan) + ") is too big for CHA_DSL (" + String(this_dsl->DSL_MAX_CHAN) + ")");
+		Serial.println("    : limiting to number allowed by CHA_DSL.");
+		n_chan = this_dsl->DSL_MAX_CHAN;
+	}
+	this_dsl->nchannel = n_chan;
+
+	//get the per-band compressor settings
+	for (int i=0; i< n_chan; i++) {
+		this_dsl->exp_cr[i] = getExpansionCompRatio(i);         // compression ratio for low-SPL region (ie, the expander)
+		this_dsl->exp_end_knee[i] = getKneeExpansion_dBSPL(i);	// expansion-end kneepoint
+		this_dsl->tkgain[i] = getGain_dB(i);              // compression-start gain
+		this_dsl->cr[i] = getCompRatio(i);                // compression ratio
+		this_dsl->tk[i] = getKneeCompressor_dBSPL(i);     // compression-start kneepoint
+		this_dsl->bolt[i] = getKneeLimiter_dBSPL(i);      // output limiting threshold
+	}
+	
+	//note: this does not set this_dsl->ear because this compressor bank doesn't know if it's for the left or right.
+}
+
 void AudioEffectCompBankWDRC_F32::update(void) {
 	//return if not enabled
 	if (!is_enabled) return;

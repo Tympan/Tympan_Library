@@ -40,7 +40,11 @@
 class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialManager_UI {
   public:
     AudioEffectMultiBandWDRC_F32_UI(void): AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); } 
-    AudioEffectMultiBandWDRC_F32_UI(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); }
+    AudioEffectMultiBandWDRC_F32_UI(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { 
+		setup(); 
+		setSampleRate_Hz(settings.sample_rate_Hz);
+		setAudioBlockSize(settings.audio_block_samples);
+	}
 
     // setup
     virtual void setup(void) {
@@ -61,9 +65,13 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
     //virtual void setFullGUIState(bool activeButtonsOnly = false); //if commented out, use the one in StereoContrainer_UI.h
 
 
-	//methods to get the BTNRH form of the settings
+	//methods to set and get the settings via BTNRH data structures
+	virtual void setupFromBTNRH(BTNRH_WDRC::CHA_DSL &new_dsl, BTNRH_WDRC::CHA_WDRC &new_bb, const int n_chan, const int n_filt_order);
 	virtual void getDSL(BTNRH_WDRC::CHA_DSL *new_dsl);
 	virtual void getWDRC(BTNRH_WDRC::CHA_WDRC *new_bb);
+
+	virtual float setSampleRate_Hz(float rate_Hz);
+	virtual int setAudioBlockSize(int samps) { return audio_block_samples = samps; } //only the filterbank cares and we'll set it when we redesign the filters
 
     // here are the constituent classes that make up the multiband compressor
     AudioFilterbankFIR_F32_UI      filterbank;
@@ -74,6 +82,8 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
   protected:
     audio_block_f32_t *inputQueueArray[1];  //required as part of AudioStream_F32.  One input.
     bool is_enabled = false;
+	float sample_rate_Hz = AUDIO_SAMPLE_RATE;
+	int audio_block_samples = AUDIO_BLOCK_SAMPLES;
   
 };
 

@@ -69,7 +69,7 @@ class StereoContainer_UI : public SerialManager_UI {
     StereoContainerState state;
 
     // /////////////////////////////////////// Overload methods from SerialManager_UI
-    void setSerialManager(SerialManagerBase *_sm);
+    void setSerialManager(SerialManagerBase *_sm); //yes, we need to overload this
 
     // ///////////////////////////////////////  Required methods because of SerialManager_UI
     virtual void printHelp(void);

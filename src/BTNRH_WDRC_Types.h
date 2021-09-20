@@ -413,8 +413,9 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			if (!(sd.begin(SD_CONFIG))) {
-				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD.");
+			int ret_val = sd.begin(SD_CONFIG)
+			if (!ret_val) {
+				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: *** ERROR ***: cannot open SD. sd.begin(SD_CONFIG = " + String(ret_val));
 				//Serial.print("    : printToSD: SD = ");  Serial.println(sd);
 				//Serial.print("    : printToSD: sd.exists(filename) = ");  Serial.println(sd);
 				return -1;

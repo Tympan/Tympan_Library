@@ -1,6 +1,24 @@
 
 #include "AudioEffectMultiBandWDRC_F32.h"
 
+float AudioEffectMultiBandWDRC_F32_UI::setSampleRate_Hz(float rate_Hz) {
+	sample_rate_Hz = rate_Hz;
+
+	//set the sample rate and block size for the individual classes held by this class
+	
+	// WARNING!  This does not change the sample rate of already-created filters.  
+	// You'll have to call the filter redesign method yourself
+	//
+	//filterbank:  //uses samplerate and blocksize when designing filters, so we'll use these values at that time
+	
+	//set the other classes
+	compbank.setSampleRate_Hz(sample_rate_Hz);
+	broadbandGain.setSampleRate_Hz(sample_rate_Hz); //this algorithm doesn't care, but it does have this method, so we'll call it just in case
+	compBroadband.setSampleRate_Hz(sample_rate_Hz);
+	
+	return sample_rate_Hz;
+}
+
 void AudioEffectMultiBandWDRC_F32_UI::update(void) {
      
   //get the input audio
@@ -102,12 +120,31 @@ int AudioEffectMultiBandWDRC_F32_UI::processAudioBlock(audio_block_f32_t *block_
 
 } // close processAudioBlock()	
 
+
+void AudioEffectMultiBandWDRC_F32_UI::setupFromBTNRH(BTNRH_WDRC::CHA_DSL &this_dsl,BTNRH_WDRC::CHA_WDRC &this_bb, int n_chan, int n_filt_order) {
+  //set the per-channel filter coefficients (using our filterbank class)
+  filterbank.designFilters(n_chan, n_filt_order, sample_rate_Hz, audio_block_samples, (float *)this_dsl.cross_freq);
+
+  //setup all of the per-channel compressors (using our compressor bank class)
+  compbank.configureFromDSLandGHA(sample_rate_Hz, this_dsl, this_bb);
+
+  //setup the broad band compressor (typically used as a limiter)
+  //configureBroadbandWDRCs(settings.sample_rate_Hz, this_bb, compBroadband);
+  compBroadband.configureFromGHA(sample_rate_Hz, this_bb);
+}
+
 void AudioEffectMultiBandWDRC_F32_UI::getDSL(BTNRH_WDRC::CHA_DSL *new_dsl) {
-	Serial.println("AudioEffectMultiBandWDRC_F32_UI::getDSL: **** ERROR **** NEED TO WRITE THIS CODE");
+	//get settings from the filterbank
+	int n_filters = filterbank.state.get_n_filters();
+	int n_cross_freq = n_filters-1;  //there is always one fewer crossover frequency than there are filters (because it's the crossover *between* filters)
+	filterbank.state.get_crossover_freq_Hz(new_dsl->cross_freq,n_cross_freq); //copy into new_dsl
+	
+	//get the settings from the compressor bank
+	compbank.collectParams_into_CHA_DSL(new_dsl);
 }
 
 void AudioEffectMultiBandWDRC_F32_UI::getWDRC(BTNRH_WDRC::CHA_WDRC *new_bb) {
-	compBroadband.getParams_from_CHA_WDRC(new_bb);
+	compBroadband.collectParams_into_CHA_WDRC(new_bb);
 }
 
 

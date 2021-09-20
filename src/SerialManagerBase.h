@@ -132,7 +132,7 @@ class SerialManagerBase {
     int stream_length;
     int stream_chars_received;
     BLE *ble;
-    char GUI_persistent_mode = 'g';
+    char GUI_persistent_mode = 'g';  //is this used?  I don't think so.
     String TX_string;
     char mode_char, chan_char, data_char; //for quad_char processing
 	
