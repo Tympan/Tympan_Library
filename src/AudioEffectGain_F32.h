@@ -37,8 +37,8 @@ class AudioEffectGain_F32 : public AudioStream_F32
 		arm_scale_f32(block->data, gain, block->data, block->length); //use ARM DSP for speed!
 
 		//transmit the block and be done
-		AudioStream_F32::transmit(out_block);
-		AudioStream_F32::release(out_block);
+		AudioStream_F32::transmit(block);
+		AudioStream_F32::release(block);
 		AudioStream_F32::release(block);
     }
 
