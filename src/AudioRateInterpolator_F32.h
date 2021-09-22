@@ -51,7 +51,7 @@ class AudioRateInterpolator_F32 : public AudioStream_F32 {
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
 		
-		float set_startSampleRate_Hz(float fs_Hz) { start_sample_rate_Hz = fs_Hz;  end_sample_rate_Hz = start_sample_rate_Hz * interp_fac; return start_sample_rate_Hz; }
+		float set_startSampleRate_Hz(float fs_Hz) { start_sample_rate_Hz = fs_Hz;  end_sample_rate_Hz = start_sample_rate_Hz * upsamp_fac; return start_sample_rate_Hz; }
 		float get_startSampleRate_Hz(void) { return start_sample_rate_Hz; }
 		float get_endSampleRate_Hz(void) { return end_sample_rate_Hz; }
 		
@@ -71,7 +71,7 @@ class AudioRateInterpolator_F32 : public AudioStream_F32 {
 		const float32_t *coeff_p;
 		int n_coeffs = 1;
 		int upsamp_fac = 1;
-		int configured_block_size;
+		int configured_block_size = 0;
 
 		// ARM DSP Math library filter instance
 		arm_fir_interpolate_instance_f32 interp_inst;
