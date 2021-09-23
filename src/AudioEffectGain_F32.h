@@ -25,8 +25,7 @@ class AudioEffectGain_F32 : public AudioStream_F32
 
     //here's the method that does all the work
     virtual void update(void) {
-		//Serial.println("AudioEffectGain_F32: updating.");  //for debugging.
-		
+
 		//get input block
 		audio_block_f32_t *block;
 		block = AudioStream_F32::receiveWritable_f32();
@@ -39,7 +38,6 @@ class AudioEffectGain_F32 : public AudioStream_F32
 		//transmit the block and be done
 		AudioStream_F32::transmit(block);
 		AudioStream_F32::release(block);
-		AudioStream_F32::release(block);
     }
 
     //methods to set parameters of this module
@@ -47,7 +45,7 @@ class AudioEffectGain_F32 : public AudioStream_F32
     virtual float setGain_dB(float gain_dB) {
       float gain = pow(10.0, gain_dB / 20.0);
       setGain(gain);
-	  return getGain_dB();
+      return getGain_dB();
     }
 
 	//increment the linear gain
