@@ -495,6 +495,7 @@ void AudioInputI2S_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, in
 
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_f32->id = update_counter;
+	out_f32->length = audio_block_samples;
 		
 	//transmit the f32 data!
 	AudioStream_F32::transmit(out_f32,chan);

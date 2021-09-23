@@ -228,6 +228,7 @@ void AudioInputI2SQuad_F32::update_1chan(int chan, unsigned long counter, audio_
 	
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_block->id = counter;
+	out_block->length = audio_block_samples;
 
 	// then transmit and release the DMA's former blocks
 	AudioStream_F32::transmit(out_block, chan);
