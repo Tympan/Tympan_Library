@@ -117,7 +117,7 @@ void setup() {
   Serial.println("TrebleBoost_wComp_wEarpieces_wApp: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
-  AudioMemory_F32(20,audio_settings); 
+  AudioMemory_F32(30,audio_settings); 
 
   //Enable the Tympan to start the audio flowing!
   myTympan.enable();       // activate the AIC on the main Tympan board
