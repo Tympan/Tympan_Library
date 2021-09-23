@@ -31,7 +31,7 @@ public:
 	void echoBTreply(bool printDebug = false);
 	bool setUseFasterBaudRateUponBegin(bool enable = true) { return useFasterBaudRateUponBegin = enable; }
 protected:
-	bool useFasterBaudRateUponBegin = true;
+	bool useFasterBaudRateUponBegin = false; //default as to whether to use faster baud rate or not
 	void setSerialBaudRate(int new_baud);
 	int hardwareFactoryReset(bool printDebug = false);
 	void switchToNewBaudRate(int new_baudrate);
