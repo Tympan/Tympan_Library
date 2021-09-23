@@ -86,31 +86,54 @@
 //
 //Finally, here is my own Matlab code for computing the mult and div values...(again, just for Teensy 3.x??)
 /*
+
 	%choose the sample rates that you are hoping to hit
 	targ_fs_Hz =  [2000, 8000, 11025, 16000, 22050, 24000, 32000, 44100, floor(44117.64706) , ...
-		48000, 88200, floor(44117.64706 * 2), (37000/256*662), 96000, 176400, floor(44117.64706 * 4), 192000];
-	F_PLL = 180e6;  %choose the clock rate used for this calculation
+		48000, 2*41000, 88200, floor(44117.64706 * 2), (37000/256*662), 96000, 176400, floor(44117.64706 * 4), 192000];
+
+	%choose the PLL (ie, clock speed) values
+	F_PLL_all = [16e6 7236 96e6 120e6 144e6 180e6 192e6 216e6 240e6];  %choose the clock rate used for this calculation
 	PLL_div = 256;
-	all_n=[];all_d=[];
-	for Itarg=1:length(targ_fs_Hz)
-		if (0)
-			[best_d,best_n]=rat((F_PLL/PLL_div)/targ_fs_Hz(Itarg));
-		else
-			best_n = 1; best_d = 1; best_err = 1e10;
-			for n=1:255
-				d = [1:4095];
-				act_fs_Hz = F_PLL / PLL_div * n ./ d;
-				[err,I] = min(abs(act_fs_Hz - targ_fs_Hz(Itarg)));
-				if err < best_err
-					best_n = n; best_d = d(I);
-					best_err = err;
+	all_out_str = {};
+	for I_PLL=1:length(F_PLL_all)
+		F_PLL=F_PLL_all(I_PLL);
+		all_n=[];all_d=[];
+		
+		out_str = ['#if (F_PLL==' num2str(F_PLL) ')'];
+		all_out_str{end+1}=out_str;
+		
+		out_str='  const tmclk clkArr[numfreqs]={';
+		for Itarg=1:length(targ_fs_Hz)
+			out_str(end+1)='{';
+			if (0)
+				[best_d,best_n]=rat((F_PLL/PLL_div)/targ_fs_Hz(Itarg));
+			else
+				best_n = 1; best_d = 1; best_err = 1e10;
+				for n=1:255
+					d = [1:4095];
+					act_fs_Hz = F_PLL / PLL_div * n ./ d;
+					[err,I] = min(abs(act_fs_Hz - targ_fs_Hz(Itarg)));
+					if err < best_err
+						best_n = n; best_d = d(I);
+						best_err = err;
+					end
 				end
 			end
+			all_n(Itarg) = best_n;
+			all_d(Itarg) = best_d;
+			disp(['fs = ' num2str(targ_fs_Hz(Itarg)) ', n = ' num2str(best_n) ', d = ' num2str(best_d) ', true = ' num2str(F_PLL/PLL_div * best_n / best_d)])
+			out_str=[out_str num2str(best_n) ', ' num2str(best_d) '}'];
+			if Itarg < length(targ_fs_Hz)
+				out_str=[out_str ', '];
+			end
 		end
-		all_n(Itarg) = best_n;
-		all_d(Itarg) = best_d;
-		disp(['fs = ' num2str(targ_fs_Hz(Itarg)) ', n = ' num2str(best_n) ', d = ' num2str(best_d) ', true = ' num2str(F_PLL/PLL_div * best_n / best_d)])
+		all_out_str{end+1}=out_str;
 	end
+	all_out_str{end+1} = '#endif';
+
+	%print out the full code to past into output_i2s
+	strvcat(all_out_str)
+
 */
 
 
