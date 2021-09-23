@@ -76,7 +76,7 @@ class EarpieceMixerBase_F32  : public AudioStream_F32 {
 
     //primary processing methods
     virtual void update(void);
-    virtual void processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[6], audio_block_f32_t *audio_out[2]);
+    virtual void processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[8], audio_block_f32_t *audio_out[2]);
     
     //Audio classes used here
     AudioEffectDelay_F32          frontMicDelay[2];         //delays front microphone (left and right)
@@ -98,7 +98,7 @@ class EarpieceMixerBase_F32  : public AudioStream_F32 {
     audio_block_f32_t *inputQueueArray_f32[4]; //memory pointer for the input to this module
 
     //supporting methods
-    bool allocateAndGetAudioBlocks(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[6], audio_block_f32_t *audio_out[2]);
+    bool allocateAndGetAudioBlocks(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[8], audio_block_f32_t *audio_out[2]);
  
 };
 
