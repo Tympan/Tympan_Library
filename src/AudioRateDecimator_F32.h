@@ -153,7 +153,7 @@ int AudioRateDecimator_F32::processAudioBlock(audio_block_f32_t *block, audio_bl
 	if (block->length != configured_block_size) {
 		//doesn't match.  re-initialize
 		Serial.println("AudioRateDecimator_F32: block size doesn't match.  Re-initializing Decimator.");
-		begin(coeff_p, n_coeffs, block->length);  //initialize with same coefficients, just a new block length
+		begin(coeff_p, n_coeffs, dec_fac, block->length);  //initialize with same coefficients, just a new block length
 	}
 	
 	//apply the decimator
@@ -162,6 +162,7 @@ int AudioRateDecimator_F32::processAudioBlock(audio_block_f32_t *block, audio_bl
 	//copy info about the block
 	block_new->length = block->length / dec_fac;
 	block_new->id = block->id;	
+	block_new->fs_Hz = block->fs_Hz / dec_fac;
 	
 	return 0;
 }

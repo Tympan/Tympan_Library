@@ -152,7 +152,7 @@ int AudioRateInterpolator_F32::processAudioBlock(audio_block_f32_t *block, audio
 	if (block->length != configured_block_size) {
 		//doesn't match.  re-initialize
 		Serial.println("AudioRateInterpolator_F32: block size doesn't match.  Re-initializing Interpolator.");
-		begin(coeff_p, n_coeffs, block->length);  //initialize with same coefficients, just a new block length
+		begin(coeff_p, n_coeffs, upsamp_fac, block->length);  //initialize with same coefficients, just a new block length
 	}
 	
 	//apply the Interpolator
@@ -161,6 +161,7 @@ int AudioRateInterpolator_F32::processAudioBlock(audio_block_f32_t *block, audio
 	//copy info about the block
 	block_new->length = block->length * upsamp_fac;
 	block_new->id = block->id;	
+	block_new->fs_Hz = block->fs_Hz * upsamp_fac;
 	
 	return 0;
 }
