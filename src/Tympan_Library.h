@@ -11,7 +11,7 @@
 #include "AudioCalcGainDecWDRC_F32.h"
 #include "AudioCalcLeq_F32.h"
 #include "AudioCalcLevel_F32.h"
-#include "AudioConfigFIRFilter.h"
+#include "AudioConfigFIRFilter_F32.h"
 #include "AudioConfigFIRFilterBank_F32.h"
 #include "AudioConfigIIRFilterBank_F32.h"
 #include "AudioControlTester.h"
