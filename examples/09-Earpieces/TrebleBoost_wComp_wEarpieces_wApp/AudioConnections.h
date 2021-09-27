@@ -1,12 +1,12 @@
 
 // Instantiate the audio classess
-AudioInputI2S_F32           i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
+AudioInputI2SQuad_F32       i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 EarpieceMixer_F32_UI        earpieceMixer(audio_settings);  //mixes earpiece mics, allows switching to analog inputs, mixes left+right, etc
 AudioFilterBiquad_F32       hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
 AudioFilterBiquad_F32       hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
 AudioEffectCompWDRC_F32_UI  comp1(audio_settings);      //Compresses the dynamic range of the audio.  Left.  UI enabled!!!
 AudioEffectCompWDRC_F32_UI  comp2(audio_settings);      //Compresses the dynamic range of the audio.  Right. UI enabled!!!
-AudioOutputI2S_F32          i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
+AudioOutputI2SQuad_F32      i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
 AudioSDWriter_F32_UI        audioSDWriter(audio_settings);//this is stereo by default
 
 

@@ -5,8 +5,11 @@
 void EarpieceMixerBase_F32::update(void) {
 
 	//allocate the input and output audio memory...if successfull, we must remember to release all of these audio blocks
-	audio_block_f32_t *audio_in[4], *tmp[6], *audio_out[2];	
-	if (allocateAndGetAudioBlocks(audio_in, tmp, audio_out) == false) return;  //If it fails, we stop and return.  If success, we continue.
+	audio_block_f32_t *audio_in[4], *tmp[8], *audio_out[2];	
+	if (allocateAndGetAudioBlocks(audio_in, tmp, audio_out) == false) {
+		//Serial.println("EarpieceMixerBase_F32: update: failed to allocated audio blocks!");
+		return;  //If it fails, we stop and return.  If success, we continue.
+	}
 	
 	//do the work
 	processData(audio_in, tmp, audio_out);
@@ -14,8 +17,8 @@ void EarpieceMixerBase_F32::update(void) {
 	//transmit the output
 	AudioStream_F32::transmit(audio_out[0], 0); AudioStream_F32::transmit(audio_out[1], 1);
 
-	//release all the memory
-	for (int i = 0; i < 6; i++) AudioStream_F32::release(tmp[i]);
+	//release all the memory that was allocated in allocateAndGetAudioBlocks()
+	for (int i = 0; i < 8; i++) AudioStream_F32::release(tmp[i]);
 	for (int i = 0; i < 2; i++) AudioStream_F32::release(audio_out[i]);
 	for (int i = 0; i < 4; i++) AudioStream_F32::release(audio_in[i]);
 
@@ -23,9 +26,12 @@ void EarpieceMixerBase_F32::update(void) {
 }
 
 //the audio_in must be writable and the audio-out must also be writable
-void EarpieceMixerBase_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[6], audio_block_f32_t *audio_out[2]) {
-	audio_block_f32_t *tmp_out_left = tmp[4];
-	audio_block_f32_t *tmp_out_right = tmp[5];
+void EarpieceMixerBase_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[8], audio_block_f32_t *audio_out[2]) {
+	//tmp[0]-tmp[3] are used to temporarily hold the delayed versions of the four mic signals
+	audio_block_f32_t *pdm_mix_left = tmp[4];
+	audio_block_f32_t *pdm_mix_right = tmp[5];
+	audio_block_f32_t *tmp_out_left = tmp[6];
+	audio_block_f32_t *tmp_out_right = tmp[7];
 	audio_block_f32_t *tmp_input[4]; //each mixer assumes that it's getting a 4-element array of audio pointers
 	
 	//apply delay to each mic channel
@@ -45,9 +51,9 @@ void EarpieceMixerBase_F32::processData(audio_block_f32_t *audio_in[4], audio_bl
 	//AudioConnection_F32           patchcord9(rearMicDelayR, 0, frontRearMixer[RIGHT], REAR);
 	for (int i=0; i<4; i++) tmp_input[i]=NULL; //clear the temporary inputs
 	tmp_input[FRONT] = tmp[PDM_LEFT_FRONT]; tmp_input[REAR] = tmp[PDM_LEFT_REAR]; //put the left-earpiece audio into the temp array
-	frontRearMixer[LEFT].processData(tmp_input, tmp_out_left); //process to make a mix from the left earpiece
+	frontRearMixer[LEFT].processData(tmp_input, pdm_mix_left); //process to make a mix from the left earpiece
 	tmp_input[FRONT] = tmp[PDM_RIGHT_FRONT]; tmp_input[REAR] = tmp[PDM_RIGHT_REAR]; //put the right-earpiece audio into the temp array 
-	frontRearMixer[RIGHT].processData(tmp_input, tmp_out_right); //process to make a mix from the right earpiece
+	frontRearMixer[RIGHT].processData(tmp_input, pdm_mix_right); //process to make a mix from the right earpiece
 	 
 	//switch between digital inputs or analog inputs
 	//AudioConnection_F32           patchcord11(i2s_in, LEFT, analogVsDigitalSwitch[LEFT], ANALOG_IN);
@@ -55,9 +61,9 @@ void EarpieceMixerBase_F32::processData(audio_block_f32_t *audio_in[4], audio_bl
 	//AudioConnection_F32           patchcord13(i2s_in, RIGHT, analogVsDigitalSwitch[RIGHT], ANALOG_IN);
 	//AudioConnection_F32           patchcord14(frontRearMixer[RIGHT], 0, analogVsDigitalSwitch[RIGHT], PDM_IN);
 	for (int i=0; i<4; i++) tmp_input[i]=NULL; //clear the temporary inputs
-	tmp_input[INPUT_ANALOG] = audio_in[LEFT]; tmp_input[INPUT_PDM] = tmp_out_left;
+	tmp_input[INPUT_ANALOG] = audio_in[LEFT]; tmp_input[INPUT_PDM] = pdm_mix_left;
 	analogVsDigitalSwitch[LEFT].processData(tmp_input, tmp_out_left); //will overrite the tmp_out_left (which is also part of the tmp_input array)
-	tmp_input[INPUT_ANALOG] = audio_in[RIGHT]; tmp_input[INPUT_PDM] = tmp_out_right;
+	tmp_input[INPUT_ANALOG] = audio_in[RIGHT]; tmp_input[INPUT_PDM] = pdm_mix_right;
 	analogVsDigitalSwitch[RIGHT].processData(tmp_input, tmp_out_right); //will overrite the tmp_out_right (which is also part of the tmp_input array)
 
 	//do the left-right mixing
@@ -71,7 +77,7 @@ void EarpieceMixerBase_F32::processData(audio_block_f32_t *audio_in[4], audio_bl
 	leftRightMixer[RIGHT].processData(tmp_input, audio_out[RIGHT]); //process to make a mix for the left output
 };
 
-bool EarpieceMixerBase_F32::allocateAndGetAudioBlocks(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[6], audio_block_f32_t *audio_out[2]) {
+bool EarpieceMixerBase_F32::allocateAndGetAudioBlocks(audio_block_f32_t *audio_in[4], audio_block_f32_t *tmp[8], audio_block_f32_t *audio_out[2]) {
 
 	bool any_data_present = false;
 	if ((audio_out[0] = allocate_f32()) == NULL) return false;
@@ -108,13 +114,13 @@ bool EarpieceMixerBase_F32::allocateAndGetAudioBlocks(audio_block_f32_t *audio_i
 
 	//allocate a bunch of working memory
 	bool any_allocate_fail = false;
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 8; i++) {
 		tmp[i] = allocate_f32(); 
 		if (tmp[i] == NULL) any_allocate_fail = true;
 	}
 	if (any_allocate_fail) {
 		//we must be out of audio memory...so release any buffers that were allocated and then return
-		for (int i = 0; i < 6; i++) { if (tmp[i]) AudioStream_F32::release(tmp[i]); }
+		for (int i = 0; i < 8; i++) { if (tmp[i]) AudioStream_F32::release(tmp[i]); }
 		for (int Ichan = 0; Ichan < 4; Ichan++) {if (audio_in[Ichan]) AudioStream_F32::release(audio_in[Ichan]);}
 		for (int Ichan = 0; Ichan < 2; Ichan++) {if (audio_out[Ichan]) AudioStream_F32::release(audio_out[Ichan]);}
 		return false;
@@ -161,7 +167,7 @@ int EarpieceMixer_F32::setInputAnalogVsPDM(int input) {
 
   switch (input) {
     case EarpieceMixerState::INPUT_PDM:
-      myTympan->enableDigitalMicInputs(true);  //two of the earpiece digital mics are routed here
+	  myTympan->enableDigitalMicInputs(true);  //two of the earpiece digital mics are routed here
       earpieceShield->enableDigitalMicInputs(true);  //the other two of the earpiece digital mics are routed here
       analogVsDigitalSwitch[LEFT].switchChannel(input);
       analogVsDigitalSwitch[RIGHT].switchChannel(input);

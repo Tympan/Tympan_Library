@@ -57,7 +57,7 @@ void loop()
 
 void BLETest()
 {
-    BLE ble = BLE(&Serial1);
+    BLE ble(&myTympan);
 
     if (ble.isConnected())
     {

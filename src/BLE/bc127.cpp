@@ -136,7 +136,7 @@ BC127::opResult BC127::send(String str)
 		if (BLE_id_num >= 14) {
 			return stdCmd("SEND " + String(BLE_id_num) + " " + str); 
 		} else {
-			Serial.println("BC127: send: *** ERROR*** no BLE connection ID.  Not sending.");
+			//Serial.println("BC127: send: *** WARNING *** no BLE connection ID.  Not sending.");
 		}
 		return MODULE_ERROR; //not really a module error, but we should return an error
 	} else {
@@ -170,9 +170,15 @@ BC127::opResult BC127::reset()
 
 // Restores a device to factory settings
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
-BC127::opResult BC127::restore()
+BC127::opResult BC127::restore(bool printResponse)
 {
-    return stdCmd("RESTORE");
+    BC127::opResult ret_val = stdCmd("RESTORE");
+	if (printResponse) {
+		Serial.print("BC127: restore response: ");
+		Serial.print(getCmdResponse());  //this should be CR terminated
+		if (BC127_firmware_ver > 6) Serial.println();
+	}
+	return ret_val;
 }
 
 // Writes the current configuration registers to non-volatile memory
@@ -306,7 +312,7 @@ BC127::opResult BC127::recv(String *msg)
 
 // Convenience method to handle the raw internal stream
 // Returns: _serialPort
-Stream *BC127::getSerial()
+HardwareSerial *BC127::getSerial()
 {
     return _serialPort;
 }
@@ -371,4 +377,26 @@ int BC127::set_BC127_firmware_ver(int val) {
 		EOL = String("\r");
 	}
 	return BC127_firmware_ver;
+}
+
+//make this a static method so that it can get called without instantiating a BC127 or BLE
+int BC127::factoryResetViaPins(int pinPIO0, int pinRST) {
+	if ((pinPIO0 < 0) || (pinRST < 0)) return -1;  //FAIL!
+	
+	//This was all worked by by WEA Aug 25, 2021
+	
+	pinMode(pinPIO0,OUTPUT);    //prepare the PIO0 pin
+	digitalWrite(pinPIO0,HIGH); //normally low.  Swtich high
+
+	pinMode(pinRST,OUTPUT);    //prepare the reset pin
+	digitalWrite(pinRST,LOW);  //pull low to reset
+	delay(20);                  //hold low for at least 5 msec
+	digitalWrite(pinRST,HIGH); //pull high to start the boot
+
+	//wait for boot to proceed far enough before changing anything
+	delay(400);                 //V7: works with 200 but not 175.  V5: works with 350 but not 300
+	digitalWrite(pinPIO0,LOW); //pull PIO0 back down low
+	pinMode(pinPIO0,INPUT);    //go high-impedance to make irrelevant
+	
+	return 0;
 }
