@@ -73,14 +73,14 @@ public:
 	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
 	static float setI2SFreq_T3(const float);
 
-
-
-protected:
-	AudioOutputI2S_F32(int dummy): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	static void config_i2s(void);
 	static void config_i2s(bool);
 	static void config_i2s(float);
 	static void config_i2s(bool, float);
+	static void set_sampleClock(float32_t fs_Hz); 
+
+protected:
+	AudioOutputI2S_F32(int dummy): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	//static void config_i2s_i16(void,float);
 	//static void config_i2s_i32(void,float);
 	static audio_block_f32_t *block_left_1st;

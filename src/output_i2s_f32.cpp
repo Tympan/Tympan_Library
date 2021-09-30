@@ -804,6 +804,38 @@ void AudioOutputI2S_F32::update(void)
 #endif
 #endif
 
+void AudioOutputI2S_F32::set_sampleClock(float fs_Hz) {
+	//sample_rate_Hz = fs_Hz;
+	
+	#if defined(KINETISK) || defined(KINETISL)	
+		setI2SFreq_T3(fs_Hz);  //for T3.x only!
+
+	#elif defined(__IMXRT1062__)
+		int fs = fs_Hz;
+		// PLL between 27*24 = 648MHz und 54*24=1296MHz
+		int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
+		int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
+
+		double C = ((double)fs * 256 * n1 * n2) / 24000000;
+		int c0 = C;
+		int c2 = 10000;
+		int c1 = C * c2 - (c0 * c2);
+		set_audioClock(c0, c1, c2);
+		
+		// clear SAI1_CLK register locations
+		CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
+		   | CCM_CSCMR1_SAI1_CLK_SEL(2); // &0x03 // (0,1,2): PLL3PFD0, PLL5, PLL4
+		CCM_CS1CDR = (CCM_CS1CDR & ~(CCM_CS1CDR_SAI1_CLK_PRED_MASK | CCM_CS1CDR_SAI1_CLK_PODF_MASK))
+		   | CCM_CS1CDR_SAI1_CLK_PRED(n1-1) // &0x07
+		   | CCM_CS1CDR_SAI1_CLK_PODF(n2-1); // &0x3f
+
+		// Select MCLK
+		IOMUXC_GPR_GPR1 = (IOMUXC_GPR_GPR1
+			& ~(IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL_MASK))
+			| (IOMUXC_GPR_GPR1_SAI1_MCLK_DIR | IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL(0));
+		
+	#endif
+}
 
 void AudioOutputI2S_F32::config_i2s(void) {	config_i2s(false, AudioOutputI2S_F32::sample_rate_Hz); }
 void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit) {	config_i2s(transferUsing32bit, AudioOutputI2S_F32::sample_rate_Hz); }
@@ -850,7 +882,8 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 	CORE_PIN11_CONFIG = PORT_PCR_MUX(6); // pin 11, PTC6, I2S0_MCLK
 
 	// change the I2S frequencies to make the requested sample rate
-	setI2SFreq_T3(fs_Hz);  //for T3.x only!
+	//setI2SFreq_T3(fs_Hz);  //for T3.x only!
+	set_sampleClock(fs_Hz);
 
 
 #elif defined(__IMXRT1062__)
@@ -862,29 +895,8 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 	if (I2S1_RCSR & I2S_RCSR_RE) return;
 //PLL:
 	//int fs = AUDIO_SAMPLE_RATE_EXACT; //original from Teensy Audio Library
-	int fs = fs_Hz;
-	
-	// PLL between 27*24 = 648MHz und 54*24=1296MHz
-	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
-	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
+	set_sampleClock(fs_Hz);
 
-	double C = ((double)fs * 256 * n1 * n2) / 24000000;
-	int c0 = C;
-	int c2 = 10000;
-	int c1 = C * c2 - (c0 * c2);
-	set_audioClock(c0, c1, c2);
-
-	// clear SAI1_CLK register locations
-	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
-		   | CCM_CSCMR1_SAI1_CLK_SEL(2); // &0x03 // (0,1,2): PLL3PFD0, PLL5, PLL4
-	CCM_CS1CDR = (CCM_CS1CDR & ~(CCM_CS1CDR_SAI1_CLK_PRED_MASK | CCM_CS1CDR_SAI1_CLK_PODF_MASK))
-		   | CCM_CS1CDR_SAI1_CLK_PRED(n1-1) // &0x07
-		   | CCM_CS1CDR_SAI1_CLK_PODF(n2-1); // &0x3f
-
-	// Select MCLK
-	IOMUXC_GPR_GPR1 = (IOMUXC_GPR_GPR1
-		& ~(IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL_MASK))
-		| (IOMUXC_GPR_GPR1_SAI1_MCLK_DIR | IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL(0));
 
 	CORE_PIN23_CONFIG = 3;  //1:MCLK
 	CORE_PIN21_CONFIG = 3;  //1:RX_BCLK
