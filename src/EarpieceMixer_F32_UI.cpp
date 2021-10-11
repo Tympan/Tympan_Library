@@ -24,51 +24,51 @@ bool EarpieceMixer_F32_UI::processCharacterTriple(char mode_char, char chan_char
   return_val = true;
   switch (c) {    
     case 'w':
-      Serial.println("Received: Listen to PCB mics");
+      Serial.println("EarpieceMixer_F32_UI: Received: Listen to PCB mics");
       setInputAnalogVsPDM(EarpieceMixerState::INPUT_ANALOG);
       setAnalogInputSource(EarpieceMixerState::INPUT_PCBMICS);
       setInputConfigButtons();
       setButtonState_frontRearMixer();
       break;
     case 'W':
-      Serial.println("Received: Mic jack as mic");
+      Serial.println("EarpieceMixer_F32_UI: Received: Mic jack as mic");
       setInputAnalogVsPDM(EarpieceMixerState::INPUT_ANALOG);
       setAnalogInputSource(EarpieceMixerState::INPUT_MICJACK_MIC);
       setInputConfigButtons();
       setButtonState_frontRearMixer();
       break;
     case 'e':
-      Serial.println("Received: Mic jack as line-in");
+      Serial.println("EarpieceMixer_F32_UI: Received: Mic jack as line-in");
       setInputAnalogVsPDM(EarpieceMixerState::INPUT_ANALOG);
       setAnalogInputSource(EarpieceMixerState::INPUT_MICJACK_LINEIN);
       setInputConfigButtons();
       setButtonState_frontRearMixer();
       break;     
     case 'E':
-      Serial.println("Received: Switch to BT Audio");
+      Serial.println("EarpieceMixer_F32_UI: Received: Switch to BT Audio");
       setInputAnalogVsPDM(EarpieceMixerState::INPUT_ANALOG);
       setAnalogInputSource(EarpieceMixerState::INPUT_LINEIN_SE);
       setInputConfigButtons();
       setButtonState_frontRearMixer();
       break;   
     case 'd':
-      Serial.println("Received: Listen to PDM mics"); //digital mics
+      Serial.println("EarpieceMixer_F32_UI: Received: Listen to PDM mics"); //digital mics
       setInputAnalogVsPDM(EarpieceMixerState::INPUT_PDM);
       setInputConfigButtons();
       setButtonState_frontRearMixer();
       break;  
     case 't':
-      Serial.println("Received: Front Mics (if using earpieces)"); 
+      Serial.println("EarpieceMixer_F32_UI: Received: Front Mics (if using earpieces)"); 
       configureFrontRearMixer(EarpieceMixerState::MIC_FRONT);
       setButtonState_frontRearMixer();
       break;
     case 'T':
-      Serial.println("Received: Mix of Front Mics + Inverted Rear Mics"); 
+      Serial.println("EarpieceMixer_F32_UI: Received: Mix of Front Mics + Inverted Rear Mics"); 
       configureFrontRearMixer(EarpieceMixerState::MIC_BOTH_INVERTED);
       setButtonState_frontRearMixer();
       break;
      case 'H':
-      Serial.println("Received: Rear Mics (if using earpieces)"); 
+      Serial.println("EarpieceMixer_F32_UI: Received: Rear Mics (if using earpieces)"); 
       configureFrontRearMixer(EarpieceMixerState::MIC_REAR);
       setButtonState_frontRearMixer();
       break;
@@ -112,7 +112,7 @@ bool EarpieceMixer_F32_UI::processCharacterTriple(char mode_char, char chan_char
       break;
     case 'q':
       configureLeftRightMixer(EarpieceMixerState::INPUTMIX_MUTE);
-      Serial.println("Received: Muting audio.");
+      Serial.println("EarpieceMixer_F32_UI: Received: Muting audio.");
       setButtonState_inputMixer();
       break;
     case 'Q':
@@ -120,18 +120,18 @@ bool EarpieceMixer_F32_UI::processCharacterTriple(char mode_char, char chan_char
       setButtonState_inputMixer();
       break;  
     case 'B':
-      Serial.println("Received: Input: Mix L+R.");
+      Serial.println("EarpieceMixer_F32_UI: Received: Input: Mix L+R.");
       configureLeftRightMixer(EarpieceMixerState::INPUTMIX_MONO);
       setButtonState_inputMixer();
       break;  
     case 's':
       configureLeftRightMixer(EarpieceMixerState::INPUTMIX_BOTHLEFT);
-      Serial.println("Received: Input: Both Left.");
+      Serial.println("EarpieceMixer_F32_UI: Received: Input: Both Left.");
       setButtonState_inputMixer();
       break;
     case 'S':
       configureLeftRightMixer(EarpieceMixerState::INPUTMIX_BOTHRIGHT);
-      Serial.println("Received: Input: Both Right.");
+      Serial.println("EarpieceMixer_F32_UI: Received: Input: Both Right.");
       setButtonState_inputMixer();
       break;   
     default:

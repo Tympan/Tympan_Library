@@ -356,10 +356,10 @@ bool AudioControlAIC3206::enableDigitalMicInputs(bool desired_state) {
 
 		return true;
 	} else {
-		//change the AIC's pin "MFP4" to clock input for digital microphone
+		//change the AIC's pin "MFP4" 
 		aic_writePage(0,55,0b00000010);  //page 0, register 55, set to "disabled" ???  is this the default state?
 
-		//change the IAC's pin "MFP3" to Digital Microphone input
+		//change the AIC's pin "MFP3"
 		aic_writePage(0,56,0b00000010);  //page 0, register 56, set to "disabled" ???  is this the default state?
 
 		//change the ADC to NOT use the digital mic
