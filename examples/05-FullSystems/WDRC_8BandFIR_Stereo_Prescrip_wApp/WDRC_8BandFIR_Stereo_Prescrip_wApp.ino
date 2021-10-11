@@ -130,6 +130,7 @@ void setup() {
   setupAudioProcessing(); //see function in ConfigureAlgorithms.h
 
   //setup BLE
+  ble.setUseFasterBaudRateUponBegin(true); //speeds up baudrate to 115200.  ONLY WORKS FOR ANDROID.  If iOS, you must set to false.
   delay(500); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(500); //Assumes the default Bluetooth firmware. You can override!
   
   //setup the serial manager
