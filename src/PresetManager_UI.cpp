@@ -23,24 +23,33 @@ bool PresetManager_UI::processCharacterTriple(char mode_char, char chan_char, ch
   if ((preset_num >= 0) && (preset_num < n_presets)) {
     //switch to the requested preset
     Serial.println("PresetManager_UI: processCharacterTriple: switching to preset " + String(preset_num));
+	setSwitchStatusMessage("Switching...");
     switchToPreset(preset_num, true); //update the gui
+	setSwitchStatusMessage("Complete");
 
  
   } else {
     
     //try interpretting the character directly
+	int ret_val;
     switch (data_char) {
       case 's':
         Serial.println("PresetManager_UI: saving preset to SD...");
-        savePresetToSD(getPresetInd());
+		setSaveStatusMessage("Saving...");
+        ret_val = savePresetToSD(getPresetInd());
+		delay(10); if (ret_val) { setSaveStatusMessage("Failed"); } else { setSaveStatusMessage("Success");}
         break;
       case 'r':
         Serial.println("PresetManager_UI: reload preset from SD...");
-        readPresetFromSD(getPresetInd(), true, true); //update the algorithms with the new settings and update the full GUI
+		setSaveStatusMessage("Reading...");
+        ret_val = readPresetFromSD(getPresetInd(), true, true); //update the algorithms with the new settings and update the full GUI
+		delay(10); if (ret_val) { setSaveStatusMessage("Failed"); } else { setSaveStatusMessage("Success");}
         break;
       case 'f':
+	  setSaveStatusMessage("Resetting...");
         Serial.println("PresetManager_UI: reset preset to factory...");
-        resetPresetToFactory(getPresetInd(), true, true); //update the algorithms with the new settings and update the full GUI
+        ret_val = resetPresetToFactory(getPresetInd(), true, true); //update the algorithms with the new settings and update the full GUI
+		delay(10); if (ret_val) { setSaveStatusMessage("Failed"); } else { setSaveStatusMessage("Success");}
         break;
       default:
         return_val = false;
@@ -67,6 +76,7 @@ TR_Card* PresetManager_UI::addCard_presetSelect(TR_Page *page_h) {
     String but_id = ID_fn+"pre"+String(i+1);
     card_h->addButton(getPresetName(i), but_cmd, but_id, 12);  //label, command, id, width...this is the minus button  
   }
+  card_h->addButton("", "", ID_fn+"SwStat",12);
 
   flag_send_presetSelect = true;  //flag that says to send this info when updating the GUI
   return card_h;
@@ -88,6 +98,7 @@ TR_Card* PresetManager_UI::addCard_presetSaving(TR_Page *page_h) {
   card_h->addButton("Save to SD Card",     prefix+'s', "", 12);  //label, command, id, width...this is the minus button  
   card_h->addButton("Reload from SD Card", prefix+'r', "", 12);  //label, command, id, width...this is the minus button  
   card_h->addButton("Reset to Factory",    prefix+'f', "", 12);  //label, command, id, width...this is the minus button  
+  card_h->addButton("",                    ""        ,ID_fn+"SavStat", 12);   //label, command, id, width...this is the minus button  
 
   flag_send_presetSaving = true;  //flag that says to send this info when updating the GUI
   return card_h; 
@@ -105,6 +116,7 @@ void PresetManager_UI::updateCard_presetSelect(bool activeButtonsOnly) {
       if (activeButtonsOnly == false) setButtonState(but_id,false);
     }  
   } // end loop over presets  
+  setSwitchStatusMessage(String(""));
 }
 
 void PresetManager_UI::updateCard_presetSaving(bool activeButtonsOnly) {
@@ -112,4 +124,15 @@ void PresetManager_UI::updateCard_presetSaving(bool activeButtonsOnly) {
   String ID_fn = String(ID_char_fn); //for use with button names
   String but_id = ID_fn+"name";
   setButtonText(but_id,getCurrentPresetName());
+  setSaveStatusMessage(String(""));
+}
+void PresetManager_UI::setSwitchStatusMessage(String s) {
+	String ID_fn = String(ID_char_fn); //for use with button names
+	String but_id = ID_fn+"SwStat";
+	setButtonText(but_id,s);
+}
+void PresetManager_UI::setSaveStatusMessage(String s) {
+	String ID_fn = String(ID_char_fn); //for use with button names
+	String but_id = ID_fn+"SavStat";
+	setButtonText(but_id,s);
 }

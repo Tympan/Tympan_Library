@@ -76,6 +76,8 @@ class PresetManager_UI : public PresetManagerBase, public SerialManager_UI {
     bool flag_send_presetSaving = false;
     void updateCard_presetSelect(bool activeButtonsOnly = false);
     void updateCard_presetSaving(bool activeButtonsOnly = false);
+	void setSwitchStatusMessage(String);
+	void setSaveStatusMessage(String);
     
 };
 
