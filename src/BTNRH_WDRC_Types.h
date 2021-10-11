@@ -175,6 +175,28 @@ typedef struct {
 class Preset_SD_Base : public AccessConfigDataOnSD {	
 	public:
 		Preset_SD_Base() : AccessConfigDataOnSD() {};
+
+		virtual int beginSD_wRetry(SdFat *sd, int n_retries) {
+			int count = 0; bool done = 0;
+			while ((!done) && (count < n_retries)) {
+				int ret_val = sd->begin(SD_CONFIG); count++;
+				if (!ret_val) {
+					Serial.println("BTNRH_WDRC: Preset_SD_Base: beginSD_wRetry: *** WARNING ***: cannot open SD. sd.begin(SD_CONFIG) = " + String(ret_val));
+					if (count < n_retries) { 
+						delay(10); 
+						Serial.println("    : Trying again..."); 
+					} else {
+						Serial.println("    : FAILED all attempts.  Returning with error."); 
+						return -1;
+					}
+				} else {
+					if (count > 1) { Serial.println("    : Success!"); }
+					done = true; //success!
+				}
+			}
+			return 0;
+		}
+
 		virtual int readFromSDFile(SdFile *file) { return readFromSDFile(file, String("")); }
 		virtual int readFromSDFile(SdFile *file, const String &var_name) = 0; //this needs to be implemented
 
@@ -210,7 +232,7 @@ class CHA_AFC_SD : public BTNRH_WDRC::CHA_AFC, public Preset_SD_Base {  //look i
 			//int lines_read = readRowsUntilTargStr(file,line,buff_len,targ_str); //file is incremented so that the next line should be the first part of the DSL data
 			int lines_read = readRowsUntilBothTargStrs(file,line,buff_len,targ_str,var_name.c_str()); //file is incremented so that the next line should be the first part of the DSL data
 			if (lines_read <= 0) {
-				Serial.println("BTNRH_WDRC: CHA_AFC: readFromSDFile: *** could not find start of AFC data in file.");
+				Serial.println("BTNRH_WDRC: CHA_AFC_SD: readFromSDFile: *** could not find start of AFC data in file.");
 				return -1;
 			}
 
@@ -234,14 +256,12 @@ class CHA_AFC_SD : public BTNRH_WDRC::CHA_AFC, public Preset_SD_Base {  //look i
 			SdFile file;
 			
 			//open SD
-			if (!(sd.begin(SD_CONFIG))) {
-				Serial.println("BTNRH_WDRC: CHA_AFC: readFromSD: cannot open SD.");
-				return -1;
-			}
+			ret_val = beginSD_wRetry(&sd,5); //number of retries
+			if (ret_val != 0) { Serial.println("BTNRH_WDRC: CHA_AFC_SD: readFromSD: *** ERROR ***: could not sd.begin()."); return -1; }
 			
 			//open file
 			if (!(file.open(filename,O_READ))) {   //open for reading
-				Serial.print("BTNRH_WDRC: CHA_AFC: readFromSD: cannot open file ");
+				Serial.print("BTNRH_WDRC: CHA_AFC_SD: readFromSD: cannot open file ");
 				Serial.println(filename);
 				return -1;
 			}
@@ -277,10 +297,8 @@ class CHA_AFC_SD : public BTNRH_WDRC::CHA_AFC, public Preset_SD_Base {  //look i
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			if (!(sd.begin(SD_CONFIG))) {
-				Serial.println("BTNRH_WDRC: CHA_AFC: printToSD: cannot open SD.");
-				return -1;
-			}
+			int ret_val = beginSD_wRetry(&sd,5); //number of retries
+			if (ret_val != 0) { Serial.println("BTNRH_WDRC: CHA_AFC_SD: printToSD: *** ERROR ***: could not sd.begin()."); return -1; }
 			
 			//delete existing file
 			if (deleteExisting) {
@@ -290,7 +308,7 @@ class CHA_AFC_SD : public BTNRH_WDRC::CHA_AFC, public Preset_SD_Base {  //look i
 			//open file
 			file.open(filename,O_RDWR  | O_CREAT | O_APPEND); //open for writing
 			if (!file.isOpen()) {  
-				Serial.print("BTNRH_WDRC: CHA_AFC: printToSD: cannot open file ");
+				Serial.print("BTNRH_WDRC: CHA_AFC_SD: printToSD: cannot open file ");
 				Serial.println(filename);
 				return -1;
 			}
@@ -325,7 +343,7 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			//int lines_read = readRowsUntilTargStr(file,line,buff_len,targ_str); //file is incremented so that the next line should be the first part of the DSL data
 			int lines_read = readRowsUntilBothTargStrs(file,line,buff_len,targ_str,var_name.c_str());//file is incremented so that the next line should be the first part of the DSL data
 			if (lines_read <= 0) {
-				Serial.println("BTNRH_WDRC: CHA_DSL: readFromSDFile: *** could not find start of DSL data in file.");
+				Serial.println("BTNRH_WDRC: CHA_DSL_SD: readFromSDFile: *** could not find start of DSL data in file.");
 				return -1;
 			}
 			//Serial.print("BTNRH_WDRC: CHA_DSL: readFromSDFile: DSL Structure Starts at line "); Serial.println(lines_read);
@@ -337,7 +355,7 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			if (readAndParseLine(file, line, buff_len, &ear, 1) < 0) return -1;
 			if (readAndParseLine(file, line, buff_len, &nchannel, 1) < 0) return -1;
 			if (nchannel > get_DSL_MAX_CHAN()) {
-				Serial.print("BTNRH_WDRC: CHA_DSL: readFromSDFile: *** ERROR*** nchannel read as ");Serial.print(nchannel);
+				Serial.print("BTNRH_WDRC: CHA_DSL_SD: readFromSDFile: *** ERROR*** nchannel read as ");Serial.print(nchannel);
 				nchannel = get_DSL_MAX_CHAN();
 				Serial.print("    : Limiting to "); Serial.println(nchannel);
 			}
@@ -352,7 +370,7 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			if (readAndParseLine(file, line, buff_len, bolt, nchannel) < 0) return -1;
 
 			//write to serial for debugging
-			//Serial.println("CHA_DSL: readFromSDFile: success!");
+			//Serial.println("CHA_DSL_SD: readFromSDFile: success!");
 			//printAllValues();
 		
 			return 0;
@@ -363,23 +381,22 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 		//}
 		int readFromSD(SdFat &sd, String &filename_str, const String &var_name) {
 			SdFile file;
+			int ret_val=0;
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			if (!(sd.begin(SD_CONFIG))) {
-				Serial.println("BTNRH_WDRC: CHA_DSL: readFromSD: cannot open SD.");
-				return -1;
-			}
+			ret_val = beginSD_wRetry(&sd,5); //number of retries
+			if (ret_val != 0) { Serial.println("BTNRH_WDRC: CHA_DSL_SD: readFromSD: *** ERROR ***: could not sd.begin()."); return -1; }
 			
 			//open file
 			if (!(file.open(filename,O_READ))) {   //open for reading
-				Serial.print("BTNRH_WDRC: CHA_DSL: readFromSD: cannot open file ");
+				Serial.print("BTNRH_WDRC: CHA_DSL_SD: readFromSD: cannot open file ");
 				Serial.println(filename);
 				return -1;
 			}
 			
 			//read data
-			int ret_val = readFromSDFile(&file,var_name);
+			ret_val = readFromSDFile(&file,var_name);
 			
 			//close file
 			file.close();
@@ -415,13 +432,8 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			int ret_val = sd.begin(SD_CONFIG);
-			if (!ret_val) {
-				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: *** ERROR ***: cannot open SD. sd.begin(SD_CONFIG) = " + String(ret_val));
-				//Serial.print("    : printToSD: SD = ");  Serial.println(sd);
-				//Serial.print("    : printToSD: sd.exists(filename) = ");  Serial.println(sd);
-				return -1;
-			}
+			int ret_val = beginSD_wRetry(&sd,5); //number of retries
+			if (ret_val != 0) { Serial.println("BTNRH_WDRC: CHA_DSL_SD: printToSD: *** ERROR ***: could not sd.begin()."); return -1; }
 			
 			//delete existing file
 			if (deleteExisting) {
@@ -432,7 +444,7 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			//open file
 			file.open(filename,O_RDWR  | O_CREAT | O_APPEND); //open for writing
 			if (!file.isOpen()) {  
-				Serial.print("BTNRH_WDRC: CHA_DSL: printToSD: cannot open file ");
+				Serial.print("BTNRH_WDRC: CHA_DSL_SD: printToSD: cannot open file ");
 				Serial.println(filename);
 				return -1;
 			}
@@ -442,7 +454,7 @@ class CHA_DSL_SD : public BTNRH_WDRC::CHA_DSL, public Preset_SD_Base {  //look i
 			
 			//close file
 			file.close();
-			
+
 			//return
 			return 0;
 		}
@@ -492,23 +504,22 @@ class CHA_WDRC_SD : public BTNRH_WDRC::CHA_WDRC, public Preset_SD_Base {   //loo
 		
 		int readFromSD(SdFat &sd, String &filename_str, const String &var_name) {
 			SdFile file;
+			int ret_val=0;
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			if (!(sd.begin(SD_CONFIG))) {
-				Serial.println("BTNRH_WDRC: CHA_WDRC: readFromSD: cannot open SD.");
-				return -1;
-			}
+			ret_val = beginSD_wRetry(&sd,5); //number of retries
+			if (ret_val != 0) { Serial.println("BTNRH_WDRC: CHA_WDRC_SD: readFromSD: *** ERROR ***: could not sd.begin()."); return -1; }
 			
 			//open file
 			if (!(file.open(filename,O_READ))) {   //open for reading
-				Serial.print("BTNRH_WDRC: CHA_WDRC: readFromSD: cannot open file ");
+				Serial.print("BTNRH_WDRC: CHA_WDRC_SD: readFromSD: cannot open file ");
 				Serial.println(filename);
 				return -1;
 			}
 			
 			//read data
-			int ret_val = readFromSDFile(&file, var_name);
+			ret_val = readFromSDFile(&file, var_name);
 			
 			//close file
 			file.close();
@@ -541,11 +552,8 @@ class CHA_WDRC_SD : public BTNRH_WDRC::CHA_WDRC, public Preset_SD_Base {   //loo
 			char filename[100]; filename_str.toCharArray(filename,99);
 			
 			//open SD
-			int ret_val = sd.begin(SD_CONFIG);
-			if (!(ret_val)) {
-				Serial.println("BTNRH_WDRC: CHA_WDRC: printToSD: cannot open SD. sd.begin(SD_CONFIG) = " + String(ret_val));
-				return -1;
-			}
+			int ret_val = beginSD_wRetry(&sd,5); //number of retries
+			if (ret_val != 0) { Serial.println("BTNRH_WDRC: CHA_WDRC_SD: printToSD: *** ERROR ***: could not sd.begin()."); return -1; }
 			
 			//delete existing file
 			if (deleteExisting) {
