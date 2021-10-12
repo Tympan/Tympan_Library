@@ -39,7 +39,8 @@ class AudioEffectGain_F32 : public AudioStream_F32
 		processAudioBlock(block, out_block);
 
 		//transmit the block and be done
-		AudioStream_F32::transmit(block);
+		AudioStream_F32::transmit(out_block);
+		AudioStream_F32::release(out_block);
 		AudioStream_F32::release(block);
     }
 	
