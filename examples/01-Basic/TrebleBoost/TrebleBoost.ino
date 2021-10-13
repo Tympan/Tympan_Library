@@ -79,6 +79,9 @@ void loop() {
   //periodically print the CPU and Memory Usage
   myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
+  //Blink the LEDs!
+  myTympan.serviceLEDs(millis());   //defaults to a slow toggle (see Tympan.h and Tympan.cpp)
+
 } //end loop();
 
 
