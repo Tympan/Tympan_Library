@@ -83,7 +83,7 @@ void setupAudioProcessing(void) {
       //it didn't initialize from the SD card.  So, overwrite what's on the SD card
       presetManager.resetPresetToFactory(i); //restore to default from Preset_00.h or Preset_01.h
       Serial.println("setupAudioProcessing: writing initialized preset to SD for preset " + String(i));
-      presetManager.savePresetToSD(i);      //save to SD card
+      presetManager.savePresetToSD(i,false);      //save to SD card...false tells it to not rebuild the preset from the underlying algs but simply to save the recently-loaded factory setting
     }
   }
 
