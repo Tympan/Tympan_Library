@@ -49,7 +49,11 @@ void setup(void)
 
 void loop(void)
 {
-  // Nothing to do - just looping input to output
-  delay(2000);
   Serial.println("Running...");
+  
+  // Let's blink the LED!
+  myTympan.setRedLED(true);   // turn on the Tympan's red LED
+  delay(1000);                // wait for a second
+  myTympan.setRedLED(false);  // turn off the Tympan's red LED
+  delay(1000);                // wait for a second 
 }

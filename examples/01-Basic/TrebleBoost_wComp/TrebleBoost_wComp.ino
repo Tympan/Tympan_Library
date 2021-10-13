@@ -116,6 +116,9 @@ void loop() {
   //periodically print the gain status
   printGainStatus(millis(),2000); //update every 4000 msec
 
+  //Blink the LEDs!
+  myTympan.serviceLEDs(millis());   //defaults to a slow toggle (see Tympan.h and Tympan.cpp)
+
 } //end loop();
 
 
