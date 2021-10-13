@@ -37,10 +37,11 @@
 #include <AudioEffectCompWDRC_F32.h> //from Tympan Library
 #include <arm_math.h> 
 
-class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialManager_UI {
+
+class AudioEffectMultiBandWDRC_Base_F32_UI : public AudioStream_F32, public SerialManager_UI {
   public:
-    AudioEffectMultiBandWDRC_F32_UI(void): AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); } 
-    AudioEffectMultiBandWDRC_F32_UI(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { 
+    AudioEffectMultiBandWDRC_Base_F32_UI(void): AudioStream_F32(1,inputQueueArray), SerialManager_UI() { setup(); } 
+    AudioEffectMultiBandWDRC_Base_F32_UI(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray), SerialManager_UI() { 
 		setup(); 
 		setSampleRate_Hz(settings.sample_rate_Hz);
 		setAudioBlockSize(settings.audio_block_samples);
@@ -57,7 +58,6 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
 
     virtual int processAudioBlock(audio_block_f32_t *block_in, audio_block_f32_t *block_out);
 
-
     // here are the methods required (or encouraged) for SerialManager_UI classes
     virtual void printHelp(void) {};
     //virtual bool processCharacter(char c); //not used here
@@ -66,15 +66,20 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
 
 
 	//methods to set and get the settings via BTNRH data structures
-	virtual void setupFromBTNRH(BTNRH_WDRC::CHA_DSL &new_dsl, BTNRH_WDRC::CHA_WDRC &new_bb, const int n_chan, const int n_filt_order);
+	virtual void setupFromBTNRH(BTNRH_WDRC::CHA_DSL &new_dsl, BTNRH_WDRC::CHA_WDRC &new_bb, const int n_filt_order)=0;
 	virtual void getDSL(BTNRH_WDRC::CHA_DSL *new_dsl);
 	virtual void getWDRC(BTNRH_WDRC::CHA_WDRC *new_bb);
 
 	virtual float setSampleRate_Hz(float rate_Hz);
 	virtual int setAudioBlockSize(int samps) { return audio_block_samples = samps; } //only the filterbank cares and we'll set it when we redesign the filters
 
-    // here are the constituent classes that make up the multiband compressor
-    AudioFilterbankFIR_F32_UI      filterbank;
+
+	virtual AudioFilterbankBase_F32* getFilterbank(void) = 0;
+	virtual AudioFilterbank_UI* getFilterbankUI(void) = 0;
+	
+	
+    // here are the constituent classes that make up the multiband compressor	
+    //AudioFilterbankFIR_F32_UI      filterbank;
     AudioEffectCompBankWDRC_F32_UI compbank;
     AudioEffectGain_F32            broadbandGain;//broad band gain (could be part of compressor below)
     AudioEffectCompWDRC_F32_UI     compBroadband;//broadband compressor    
@@ -87,6 +92,30 @@ class AudioEffectMultiBandWDRC_F32_UI : public AudioStream_F32, public SerialMan
   
 };
 
+class AudioEffectMultiBandWDRC_F32_UI : public AudioEffectMultiBandWDRC_Base_F32_UI {
+  public:
+    AudioEffectMultiBandWDRC_F32_UI(void): AudioEffectMultiBandWDRC_Base_F32_UI() {};
+    AudioEffectMultiBandWDRC_F32_UI(const AudioSettings_F32 &settings) : AudioEffectMultiBandWDRC_Base_F32_UI(settings) {};
+	
+	virtual void setupFromBTNRH(BTNRH_WDRC::CHA_DSL &new_dsl, BTNRH_WDRC::CHA_WDRC &new_bb,const int n_filt_order);
+		
+	AudioFilterbankFIR_F32_UI      filterbank;
+	AudioFilterbankBase_F32* getFilterbank(void) { return &filterbank; }
+	AudioFilterbank_UI* getFilterbankUI(void) { return &filterbank; }
+};
+
+class AudioEffectMultiBandWDRC_IIR_F32_UI : public AudioEffectMultiBandWDRC_Base_F32_UI {
+  public:
+    AudioEffectMultiBandWDRC_IIR_F32_UI(void): AudioEffectMultiBandWDRC_Base_F32_UI() {};
+    AudioEffectMultiBandWDRC_IIR_F32_UI(const AudioSettings_F32 &settings) : AudioEffectMultiBandWDRC_Base_F32_UI(settings) {};
+	
+	virtual void setupFromBTNRH(BTNRH_WDRC::CHA_DSL &new_dsl, BTNRH_WDRC::CHA_WDRC &new_bb, const int n_filt_order);
+	
+	AudioFilterbankBiquad_F32_UI      filterbank;
+	AudioFilterbankBase_F32* getFilterbank(void) { return &filterbank; }
+	AudioFilterbank_UI* getFilterbankUI(void) { return &filterbank; }
+	
+};
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -105,14 +134,14 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
     virtual TR_Page* addPage_compressorbank_perBand(TympanRemoteFormatter *gui);
     virtual TR_Page* addPage_compressor_broadband(TympanRemoteFormatter *gui);
 
-    virtual void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_F32_UI* _left, AudioEffectMultiBandWDRC_F32_UI *_right) {
+    virtual void addPairMultiBandWDRC(AudioEffectMultiBandWDRC_Base_F32_UI* _left, AudioEffectMultiBandWDRC_Base_F32_UI *_right) {
       //set the local pointers
       leftWDRC = _left;  rightWDRC = _right;
       
       //attach its components to our lists of left-right algorithm elements to be controlled via GUI
-      add_item_pair(&(leftWDRC->filterbank),    &(rightWDRC->filterbank));
-      add_item_pair(&(leftWDRC->compbank),      &(rightWDRC->compbank));
-      add_item_pair(&(leftWDRC->compBroadband), &(rightWDRC->compBroadband));
+      add_item_pair(leftWDRC->getFilterbankUI(),  rightWDRC->getFilterbankUI());
+      add_item_pair(&(leftWDRC->compbank),        &(rightWDRC->compbank));
+      add_item_pair(&(leftWDRC->compBroadband),   &(rightWDRC->compBroadband));
 
       //Set the ID_char used for GUI fieldnames so that the right's are the same as the left's.
       //Only do this if we're only going to have one set of GUI elements to display both left
@@ -125,7 +154,7 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
     }
 
   protected:
-    AudioEffectMultiBandWDRC_F32_UI  *leftWDRC=NULL, *rightWDRC=NULL;
+    AudioEffectMultiBandWDRC_Base_F32_UI  *leftWDRC=NULL, *rightWDRC=NULL;
   
 };
 

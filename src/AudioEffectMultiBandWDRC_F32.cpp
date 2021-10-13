@@ -1,7 +1,7 @@
 
 #include "AudioEffectMultiBandWDRC_F32.h"
 
-float AudioEffectMultiBandWDRC_F32_UI::setSampleRate_Hz(float rate_Hz) {
+float AudioEffectMultiBandWDRC_Base_F32_UI::setSampleRate_Hz(float rate_Hz) {
 	sample_rate_Hz = rate_Hz;
 
 	//set the sample rate and block size for the individual classes held by this class
@@ -19,7 +19,7 @@ float AudioEffectMultiBandWDRC_F32_UI::setSampleRate_Hz(float rate_Hz) {
 	return sample_rate_Hz;
 }
 
-void AudioEffectMultiBandWDRC_F32_UI::update(void) {
+void AudioEffectMultiBandWDRC_Base_F32_UI::update(void) {
      
   //get the input audio
   audio_block_f32_t *block_in = AudioStream_F32::receiveReadOnly_f32();
@@ -42,7 +42,7 @@ void AudioEffectMultiBandWDRC_F32_UI::update(void) {
 } // close update()
 
 
-int AudioEffectMultiBandWDRC_F32_UI::processAudioBlock(audio_block_f32_t *block_in, audio_block_f32_t *block_out) {
+int AudioEffectMultiBandWDRC_Base_F32_UI::processAudioBlock(audio_block_f32_t *block_in, audio_block_f32_t *block_out) {
   //check validity of inputs
   int ret_val = -1;
   if ((block_in == NULL) || (block_out == NULL)) return ret_val;  //-1 is error
@@ -56,13 +56,15 @@ int AudioEffectMultiBandWDRC_F32_UI::processAudioBlock(audio_block_f32_t *block_
 
   //  /////////////////////////////////////////  loop over all the channels to do the per-band processing
   bool were_any_blocks_processed = false;
-  int n_filters = filterbank.get_n_filters();
+  AudioFilterbankBase_F32 *fb = getFilterbank();
+  int n_filters = fb->get_n_filters();
   bool firstChannelProcessed = true;
   for (int Ichan = 0; Ichan < n_filters; Ichan++) {
-
-	if (filterbank.filters[Ichan].get_is_enabled()) {
+	AudioFilterBase_F32 *filter = fb->getFilter(Ichan);
+	
+	if (filter->get_is_enabled()) {
 	  //apply the filter
-	  int any_error = filterbank.filters[Ichan].processAudioBlock(block_in,block_tmp);
+	  int any_error = filter->processAudioBlock(block_in,block_tmp);
 	  
 	  if (!any_error) {
 		//apply the compressor
@@ -121,9 +123,31 @@ int AudioEffectMultiBandWDRC_F32_UI::processAudioBlock(audio_block_f32_t *block_
 } // close processAudioBlock()	
 
 
-void AudioEffectMultiBandWDRC_F32_UI::setupFromBTNRH(BTNRH_WDRC::CHA_DSL &this_dsl,BTNRH_WDRC::CHA_WDRC &this_bb, int n_chan, int n_filt_order) {
+
+void AudioEffectMultiBandWDRC_Base_F32_UI::getDSL(BTNRH_WDRC::CHA_DSL *new_dsl) {
+	//get settings from the filterbank
+	int n_filters = getFilterbank()->get_n_filters();
+	int n_cross_freq = n_filters-1;  //there is always one fewer crossover frequency than there are filters (because it's the crossover *between* filters)
+	getFilterbank()->state.get_crossover_freq_Hz(new_dsl->cross_freq,n_cross_freq); //copy into new_dsl
+	
+	//get the settings from the compressor bank
+	compbank.collectParams_into_CHA_DSL(new_dsl);
+}
+
+void AudioEffectMultiBandWDRC_Base_F32_UI::getWDRC(BTNRH_WDRC::CHA_WDRC *new_bb) {
+	compBroadband.collectParams_into_CHA_WDRC(new_bb);
+}
+
+// ///////////////////////////////////////////////////////////////////////////////////
+//
+// Here are the methods specific to FIR or Biquad filterbanks
+//
+// ////////////////////////////////////////////////////////////////////////////////////
+
+void AudioEffectMultiBandWDRC_F32_UI::setupFromBTNRH(BTNRH_WDRC::CHA_DSL &this_dsl,BTNRH_WDRC::CHA_WDRC &this_bb, int n_filt_order) {
   //set the per-channel filter coefficients (using our filterbank class)
-  filterbank.designFilters(n_chan, n_filt_order, sample_rate_Hz, audio_block_samples, (float *)this_dsl.cross_freq);
+  Serial.println("AudioEffectMultiBandWDRC_F32_UI: setupFromBTNRH: channels = " + String(this_dsl.nchannel) + ", filt order = " + String(n_filt_order));
+  filterbank.designFilters(this_dsl.nchannel, n_filt_order, sample_rate_Hz, audio_block_samples, (float *)this_dsl.cross_freq);
 
   //setup all of the per-channel compressors (using our compressor bank class)
   compbank.configureFromDSLandGHA(sample_rate_Hz, this_dsl, this_bb);
@@ -133,21 +157,17 @@ void AudioEffectMultiBandWDRC_F32_UI::setupFromBTNRH(BTNRH_WDRC::CHA_DSL &this_d
   compBroadband.configureFromGHA(sample_rate_Hz, this_bb);
 }
 
-void AudioEffectMultiBandWDRC_F32_UI::getDSL(BTNRH_WDRC::CHA_DSL *new_dsl) {
-	//get settings from the filterbank
-	int n_filters = filterbank.state.get_n_filters();
-	int n_cross_freq = n_filters-1;  //there is always one fewer crossover frequency than there are filters (because it's the crossover *between* filters)
-	filterbank.state.get_crossover_freq_Hz(new_dsl->cross_freq,n_cross_freq); //copy into new_dsl
-	
-	//get the settings from the compressor bank
-	compbank.collectParams_into_CHA_DSL(new_dsl);
+void AudioEffectMultiBandWDRC_IIR_F32_UI::setupFromBTNRH(BTNRH_WDRC::CHA_DSL &this_dsl,BTNRH_WDRC::CHA_WDRC &this_bb, int n_filt_order) {
+  //set the per-channel filter coefficients (using our filterbank class)
+  filterbank.designFilters(this_dsl.nchannel, n_filt_order, sample_rate_Hz, audio_block_samples, (float *)this_dsl.cross_freq);
+
+  //setup all of the per-channel compressors (using our compressor bank class)
+  compbank.configureFromDSLandGHA(sample_rate_Hz, this_dsl, this_bb);
+
+  //setup the broad band compressor (typically used as a limiter)
+  //configureBroadbandWDRCs(settings.sample_rate_Hz, this_bb, compBroadband);
+  compBroadband.configureFromGHA(sample_rate_Hz, this_bb);
 }
-
-void AudioEffectMultiBandWDRC_F32_UI::getWDRC(BTNRH_WDRC::CHA_WDRC *new_bb) {
-	compBroadband.collectParams_into_CHA_WDRC(new_bb);
-}
-
-
 
 // //////////////////////////////////////////////////////////////////////////////////////
 //
@@ -164,8 +184,8 @@ TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) 
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
   if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
-    (leftWDRC->filterbank).addCard_crossoverFreqs(page_h);
-    (rightWDRC->filterbank).addCard_crossoverFreqs(page_foo_h); //filterbank might track which GUI elements have been invoked.  This triggers that automatic behavior
+    (leftWDRC->getFilterbankUI())->addCard_crossoverFreqs(page_h);
+    (rightWDRC->getFilterbankUI())->addCard_crossoverFreqs(page_foo_h); //filterbank might track which GUI elements have been invoked.  This triggers that automatic behavior
   }
 
   return page_h;
