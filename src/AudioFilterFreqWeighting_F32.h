@@ -16,9 +16,10 @@ class AudioFilterFreqWeighting_F32: public AudioFilterBiquad_F32 {
 			selectFilterCoeff(); 
 		}
 
-		virtual void setSampleRate_Hz(float _fs_Hz) { 
+		virtual float setSampleRate_Hz(float _fs_Hz) { 
 			AudioFilterBiquad_F32::setSampleRate_Hz(_fs_Hz); 
 			selectFilterCoeff();
+			return getSampleRate_Hz();
 		}
 		virtual void setWeightingType(int type) {
 			weightingType = type;
