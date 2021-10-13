@@ -21,17 +21,41 @@
 
 #define IIR_MAX_STAGES 4  //meaningless right now
 
-class AudioFilterBiquad_F32 : public AudioStream_F32
+
+class AudioFilterBase_F32 : public AudioStream_F32 {
+	public:
+		AudioFilterBase_F32(void) : AudioStream_F32(1,inputQueueArray) {};
+		AudioFilterBase_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1,inputQueueArray) {};
+
+		virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) = 0;
+		
+		virtual bool enable(bool enable = true) { 
+			if (enable == true) {
+				//if (is_armed) {  //don't allow it to enable if it can't actually run the filters
+					is_enabled = enable;
+					return get_is_enabled();
+				//}
+			}
+			is_enabled = false;
+			return get_is_enabled();
+		}	
+		virtual bool get_is_enabled(void) { return is_enabled; }
+	protected:
+	    audio_block_f32_t *inputQueueArray[1];
+		bool is_enabled = false;
+
+};
+
+class AudioFilterBiquad_F32 : public AudioFilterBase_F32
 {
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
   //GUI: shortName:IIR
   public:
-    AudioFilterBiquad_F32(void): AudioStream_F32(1,inputQueueArray), coeff_p(IIR_F32_PASSTHRU) { 
+    AudioFilterBiquad_F32(void): AudioFilterBase_F32(), coeff_p(IIR_F32_PASSTHRU) { 
 		setSampleRate_Hz(AUDIO_SAMPLE_RATE_EXACT);
 		clearCoeffArray();		
 	}
-	AudioFilterBiquad_F32(const AudioSettings_F32 &settings): 
-		AudioStream_F32(1,inputQueueArray), coeff_p(IIR_F32_PASSTHRU) {
+	AudioFilterBiquad_F32(const AudioSettings_F32 &settings): AudioFilterBase_F32(settings), coeff_p(IIR_F32_PASSTHRU) {
 			setSampleRate_Hz(settings.sample_rate_Hz); 
 	}
 
@@ -54,8 +78,8 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 		coeff[0]=1.0f;  //makes this be a simple pass-thru
 	}
 	
-	virtual float32_t getSampleRate_Hz(void) { return sampleRate_Hz; }
-	virtual void setSampleRate_Hz(float32_t _fs_Hz) { sampleRate_Hz = _fs_Hz; }
+	virtual float getSampleRate_Hz(void) { return sampleRate_Hz; }
+	virtual float setSampleRate_Hz(float32_t _fs_Hz) { return sampleRate_Hz = _fs_Hz; }
     
     virtual void setBlockDC(void) {
       //https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html#ga8e73b69a788e681a61bccc8959d823c5
@@ -163,15 +187,13 @@ class AudioFilterBiquad_F32 : public AudioStream_F32
 				return get_is_enabled();
 			}
 		}
-		is_enabled = false;
+		is_enabled = false;  //see parent class
 		return get_is_enabled();
 	}
-	bool get_is_enabled(void) { return is_enabled; }
+	//bool get_is_enabled(void) { return is_enabled; }
    
   protected:
-    audio_block_f32_t *inputQueueArray[1];
 	bool is_armed = false;   //has the ARM_MATH filter class been initialized ever?
-	bool is_enabled = false; //do you want this filter to execute?
     float32_t coeff[5 * IIR_MAX_STAGES]; //no filtering. actual filter coeff set later
 	float32_t sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT; //default.  from AudioStream.h??
 	float32_t cutoff_Hz = -999;

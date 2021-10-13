@@ -11,6 +11,7 @@
 
 #include <Arduino.h>
 #include "AudioStream_F32.h"
+#include "AudioFilterBiquad_F32.h" //for AudioFilterBase_F32
 #include "arm_math.h"
 
 // Indicates that the code should just pass through the audio
@@ -18,14 +19,14 @@
 #define FIR_F32_PASSTHRU ((const float32_t *) 1)   //if you sete coeff_p to this, update() will simply 
 #define FIR_MAX_COEFFS 200
 
-class AudioFilterFIR_F32 : public AudioStream_F32
+class AudioFilterFIR_F32 : public AudioFilterBase_F32
 {
 //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node  
 //GUI: shortName:filter_FIR
 	public:
-		AudioFilterFIR_F32(void): AudioStream_F32(1,inputQueueArray), 
+		AudioFilterFIR_F32(void): AudioFilterBase_F32(), 
 			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) {	}
-		AudioFilterFIR_F32(const AudioSettings_F32 &settings): AudioStream_F32(1,inputQueueArray), 
+		AudioFilterFIR_F32(const AudioSettings_F32 &settings): AudioFilterBase_F32(settings),
 			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) {	}
 			
 		//initialize the FIR filter by giving it the filter coefficients
@@ -36,7 +37,7 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 		void update(void);
 		int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update(); returns zero if OK
 
-		bool enable(bool enable = true) { 
+ 		bool enable(bool enable = true) { 
 			if (enable == true) {
 				if ((coeff_p != FIR_F32_PASSTHRU) && (is_armed)) {  //don't allow it to enable if it can't actually run the filters
 					is_enabled = enable;
@@ -46,7 +47,7 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 			is_enabled = false;
 			return get_is_enabled();
 		}
-		bool get_is_enabled(void) { return is_enabled; }
+		//bool get_is_enabled(void) { return is_enabled; }
 
 		//void setBlockDC(void) {}	//helper function that sets this up for a first-order HP filter at 20Hz
 		
@@ -55,7 +56,7 @@ class AudioFilterFIR_F32 : public AudioStream_F32
 	protected:
 		audio_block_f32_t *inputQueueArray[1];
 		bool is_armed = false;   //has the ARM_MATH filter class been initialized ever?
-		bool is_enabled = false; //do you want this filter to execute?
+		//bool is_enabled = false; //do you want this filter to execute?
 
 		// pointer to current coefficients or NULL or FIR_PASSTHRU
 		const float32_t coeff_passthru[1] = {1.0f}; //if you do begin() with this, the FIR filter will actually execute and update() will transmit the same values that you put in
