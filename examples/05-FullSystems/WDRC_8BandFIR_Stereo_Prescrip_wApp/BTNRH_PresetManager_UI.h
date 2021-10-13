@@ -62,7 +62,7 @@ class BTNRH_StereoPresetManager_UI : public PresetManager_UI {   //most of the A
     virtual int switchToPreset(int i, bool update_gui = false);
     virtual String getPresetName(int i) { if ((i<0) || (i >=n_presets)) { return String("Preset"); } else { return presets[i].name; } };
  
-    virtual int savePresetToSD(int i);       //required to be defined by PresetManager_UI.h (because it was a pure virtual function)
+    virtual int savePresetToSD(int i, bool rebuild_from_alg);       //required to be defined by PresetManager_UI.h (because it was a pure virtual function)
     virtual int readPresetFromSD(int i, bool update_algs=false, bool update_gui = false);     //required by PresetManager_UI.h
     virtual int resetPresetToFactory(int i, bool update_algs=false, bool update_gui = false); //required by PresetManager_UI.h
      
@@ -109,12 +109,14 @@ int BTNRH_StereoPresetManager_UI::switchToPreset(int Ipreset, bool update_gui) {
 
 
 // Save the current preset to the presets[] array and (maybe) writes to SD  
-int BTNRH_StereoPresetManager_UI::savePresetToSD(int ind_preset) {
+int BTNRH_StereoPresetManager_UI::savePresetToSD(int ind_preset, bool rebuild_from_alg) {
   int i = ind_preset;
   if ( (i<0) || (i>=n_presets) ) return -1; //out of bounds!
      
-  //rebuild the preset based on what the algorithms are acutally holding for parameter values
-  rebuildPresetFromSources(i);  //pulls the values into leftWDRC and rightWDRC and stores in the current preset
+  if (rebuild_from_alg) {
+    //rebuild the preset based on what the algorithms are acutally holding for parameter values
+    rebuildPresetFromSources(i);  //pulls the values into leftWDRC and rightWDRC and stores in the current preset
+  }
   
   //now write preset to the SD card, if requested
   String fname = preset_fnames[i];
@@ -226,6 +228,8 @@ void BTNRH_StereoPresetManager_UI::rebuildPresetFromSources(int Ipreset) {
   int i = Ipreset;
   if ( (i<0) || (i>=n_presets) ) return; //out of bounds!
   const int left_ind = 0, right_ind = 1;
+  
+  Serial.println("BTNRH_StereoPresetManager_UI: rebuildPresetFromSources: rebuilding preset " + String(Ipreset));
 
   //reconstruct all components of the preset
   if (leftWDRC != NULL) {
