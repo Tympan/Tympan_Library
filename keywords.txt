@@ -223,8 +223,9 @@ Tympan			KEYWORD1
 TympanBase		KEYWORD1
 beginBothSerial		KEYWORD2
 setAmberLED		KEYWORD2
-setRedLED		KEYWORD2
-readPotentiometer	KEYWORD2
+setRedLED			KEYWORD2
+setGreenLED		KEYWORD2
+readPotentiometer		KEYWORD2
 getTympanRev		KEYWORD2
 TympanStateBase		KEYWORD1
 

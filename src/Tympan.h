@@ -247,6 +247,7 @@ class TympanBase : public AudioControlAIC3206, public Print
 
 		//TympanPins getTympanPins(void) { return &pins; }
 		int setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); return _value; }
+		int setGreenLED(int _value) { digitalWrite(pins.amberLED,_value); return _value; }	//Tympan RevE2 (ASA build) has a green LED instead of an amber one
 		int setRedLED(int _value) { digitalWrite(pins.redLED,_value); return _value; }
 		//int setCCPBigLED(int _value) { if (pins.CCP_bigLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_bigLED,_value); return _value; } return NOT_A_FEATURE;}
 		//int setCCPLittleLED(int _value) { if (pins.CCP_littleLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_littleLED,_value); return _value; } return NOT_A_FEATURE;}
