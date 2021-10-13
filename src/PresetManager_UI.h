@@ -45,7 +45,7 @@ class PresetManager_UI : public PresetManagerBase, public SerialManager_UI {
     // here are other methods that we need
     virtual String getPresetName(int Ipreset) { return String("Preset"); }; //you should overwrite this in your child class!!
     virtual String getCurrentPresetName(void) { return getPresetName(getPresetInd()); };
-    virtual int savePresetToSD(int i) = 0;       //you need to write one of these
+    virtual int savePresetToSD(int i, bool rebuild_from_algs) = 0;       //you need to write one of these
     virtual int readPresetFromSD(int i, bool update_algs, bool update_gui) = 0;     //you need to write one of these
     virtual int resetPresetToFactory(int i, bool update_algs, bool update_gui) = 0; //you need to write one of these
 	//virtual int savePresetToSD(void) { return savePresetToSD(getPresetInd()); }

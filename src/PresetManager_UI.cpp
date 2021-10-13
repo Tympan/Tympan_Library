@@ -36,7 +36,7 @@ bool PresetManager_UI::processCharacterTriple(char mode_char, char chan_char, ch
       case 's':
         Serial.println("PresetManager_UI: saving preset to SD...");
 		setSaveStatusMessage("Saving...");
-        ret_val = savePresetToSD(getPresetInd());
+        ret_val = savePresetToSD(getPresetInd(),true); //true says to rebuild the preset from the underlying algorithms
 		delay(10); if (ret_val) { setSaveStatusMessage("Failed"); } else { setSaveStatusMessage("Success");}
         break;
       case 'r':
