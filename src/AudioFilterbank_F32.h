@@ -47,7 +47,7 @@ class AudioFilterbankState {
 
 		int set_n_filters(int n);
 		int get_n_filters(void) { return n_filters; }
-		
+				
 				
 		/// These functions are only for internal work by this class; these functions do not hold any 
 		/// state or configuration information about the AudioFilterbank class.
@@ -82,9 +82,10 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		virtual int set_max_n_filters(int n_chan) = 0; //must implement this in a child class
 		virtual int designFilters(int n_chan, int n_order, float sample_rate_Hz, int block_len, float *crossover_freq) = 0;  //must implement this in a child class
 		
-		int increment_crossover_freq(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close...and update the filter design
+		virtual int increment_crossover_freq(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close...and update the filter design
 		virtual int get_n_filters(void) { return state.get_n_filters(); }
 		virtual AudioFilterBase_F32 *getFilter(int Ichan) = 0;
+		virtual int get_filter_order(void) { return state.filter_order; }
 		
 		AudioFilterbankState state;
 		String filter_type_str = String("no type");

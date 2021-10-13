@@ -508,7 +508,9 @@ void AudioFilterbank_UI::printChanMsg(int direction) {  //direction +1 is up, -1
 
 void AudioFilterbank_UI::printHelp(void) {
 	Serial.println(" " + name_for_UI + ": Prefix = " + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
-	Serial.println("   : Info: " + String(this_filterbank->get_n_filters()) + " of type " + this_filterbank->filter_type_str);
+	Serial.println("   : Info: " + String(this_filterbank->get_n_filters()) 
+	          + " filters of type " + this_filterbank->filter_type_str 
+			  + " of order " + String(this_filterbank->state.filter_order));
 	printChanMsg(1);  //upward changes
 	printChanMsg(-1); //downward changes
 }
