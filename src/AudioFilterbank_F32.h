@@ -49,7 +49,6 @@ class AudioFilterbankState {
 		int get_n_filters(void) { return n_filters; }
 		
 				
-		
 		/// These functions are only for internal work by this class; these functions do not hold any 
 		/// state or configuration information about the AudioFilterbank class.
 		
@@ -85,8 +84,10 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		
 		int increment_crossover_freq(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close...and update the filter design
 		virtual int get_n_filters(void) { return state.get_n_filters(); }
+		virtual AudioFilterBase_F32 *getFilter(int Ichan) = 0;
 		
 		AudioFilterbankState state;
+		String filter_type_str = String("no type");
 		
 	protected: 
 		audio_block_f32_t *inputQueueArray[1];  //required as part of AudioStream_F32.  One input.
@@ -109,17 +110,26 @@ class AudioFilterbankFIR_F32 : public AudioFilterbankBase_F32 {
 //GUI: inputs:1, outputs:8  //this line used for automatic generation of GUI node  
 //GUI: shortName:filterbank_FIR
 	public:
-		AudioFilterbankFIR_F32(void) : AudioFilterbankBase_F32() { }
-		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { }
+		AudioFilterbankFIR_F32(void) : AudioFilterbankBase_F32() { init(); }
+		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { init(); }
 		AudioFilterbankFIR_F32(const AudioSettings_F32 &settings, int n_chan) : AudioFilterbankBase_F32(settings) {
+			init();
 			set_max_n_filters(n_chan);
 		}
 
+		virtual void init(void) { filter_type_str = String("FIR"); }
 
 		virtual void update(void);
 		virtual int set_n_filters(int val);
-		int set_max_n_filters(int val);
+		virtual int set_max_n_filters(int val);
 		virtual int designFilters(int n_chan, int n_fir, float sample_rate_Hz, int block_len, float *crossover_freq);
+		virtual AudioFilterBase_F32 *getFilter(int Ichan) { 
+			if ((Ichan < 0) || (Ichan >= get_n_filters())) { 
+				return NULL; 
+			} else { 
+				return &(filters.at(Ichan));
+			}
+		}
 
 		//core classes for designing and implementing the filters
 		AudioConfigFIRFilterBank_F32 filterbankDesigner;
@@ -136,16 +146,26 @@ class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 //GUI: inputs:1, outputs:8  //this line used for automatic generation of GUI node  
 //GUI: shortName:filterbank_Biquad
 	public:
-		AudioFilterbankBiquad_F32(void) : AudioFilterbankBase_F32() { }
-		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { }
-		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings, int n_chan) : AudioFilterbankBase_F32(settings) { 
+		AudioFilterbankBiquad_F32(void) : AudioFilterbankBase_F32() { init(); }
+		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings) : AudioFilterbankBase_F32(settings) { init(); }
+		AudioFilterbankBiquad_F32(const AudioSettings_F32 &settings, int n_chan) : AudioFilterbankBase_F32(settings) {
+			init();
 			set_max_n_filters(n_chan);
 		}
+		
+		virtual void init(void) { filter_type_str = String("Biquad"); }
 
 		virtual void update(void);
 		virtual int set_n_filters(int val);
-		int set_max_n_filters(int val);
+		virtual int set_max_n_filters(int val);
 		virtual int designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq);
+		virtual AudioFilterBase_F32 *getFilter(int Ichan) { 
+			if ((Ichan < 0) || (Ichan >= get_n_filters())) { 
+				return NULL; 
+			} else { 
+				return &(filters.at(Ichan));
+			}
+		}
 
 		//core classes for designing and implementing the filters
 		AudioConfigIIRFilterBank_F32 filterbankDesigner;
@@ -213,6 +233,7 @@ class AudioFilterbank_UI : public SerialManager_UI {
 		String freq_id_str = String("cfreq");
 
 };
+
 
 //FIR filterbank with built-in UI support
 class AudioFilterbankFIR_F32_UI : public AudioFilterbankFIR_F32, public AudioFilterbank_UI {
