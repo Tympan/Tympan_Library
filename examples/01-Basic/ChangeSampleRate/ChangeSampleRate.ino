@@ -66,11 +66,8 @@ void loop() {
   //check the potentiometer
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
-  // Let's blink the LED!
-  myTympan.setRedLED(true);   // turn on the Tympan's red LED
-  delay(1000);                // wait for a second
-  myTympan.setRedLED(false);  // turn off the Tympan's red LED
-  delay(1000);                // wait for a second 
+  // let's blink the LEDs!
+  myTympan.serviceLEDs(millis());   //defaults to a slow toggle (see Tympan.h and Tympan.cpp)
 
 } //end loop();
 
