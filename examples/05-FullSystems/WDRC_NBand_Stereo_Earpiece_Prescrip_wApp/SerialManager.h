@@ -8,6 +8,9 @@
 //classes from the main sketch that might be used here
 extern Tympan myTympan;               //defined in main *.ino file
 extern State myState;
+extern EarpieceMixer_F32_UI earpieceMixer; //created in the main *.ino file
+extern AudioSDWriter_F32_UI audioSDWriter;
+
 #if USE_FIR_FILTERBANK
 extern AudioEffectMultiBandWDRC_F32_UI multiBandWDRC[2];
 #else
@@ -15,7 +18,6 @@ extern AudioEffectMultiBandWDRC_IIR_F32_UI multiBandWDRC[2];
 #endif
 extern StereoContainerWDRC_UI stereoContainerWDRC; 
 extern BTNRH_StereoPresetManager_UI presetManager;
-extern AudioSDWriter_F32_UI audioSDWriter;
 
 extern const int N_CHAN;
 extern AudioControlTestAmpSweep_F32 ampSweepTester;
@@ -208,6 +210,14 @@ void SerialManager::createTympanRemoteLayout(void) {
       
       //Add a button group for SD recording...use a button set that is built into AudioSDWriter_F32_UI for you!
       card_h = audioSDWriter.addCard_sdRecord(page_h);
+
+  // add page for earpiece mixing
+  page_h = myGUI.addPage("Earpiece Mixer");
+      //select inputs
+      card_h = earpieceMixer.addCard_audioSource(page_h); //use its predefined group of buttons for input audio source
+      
+  //Add second page for more control of earpieces
+  page_h = earpieceMixer.addPage_digitalEarpieces(&myGUI); //use its predefined page for controlling the digital earpieces
 
   //add MultiBand WDRC pages
   page_h = stereoContainerWDRC.addPage_filterbank(&myGUI);

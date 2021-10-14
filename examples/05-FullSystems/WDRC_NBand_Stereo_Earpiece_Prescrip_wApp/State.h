@@ -13,7 +13,7 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     //look in TympanStateBase for more state variables!  (like, bool flag_printCPUandMemory)
     
     //Put different gain settings here to ease the updating of the GUI
-    float input_gain_dB = 0.0;   //gain of the hardware PGA in the AIC
+    //float input_gain_dB = 0.0;   //gain of the hardware PGA in the AIC...now set by earpiece mixer
     float digital_gain_dB = -25.0; //overall digital gain to apply to the signal
     float output_gain_dB = 0.0;  //gain of the hardware headphone amplifier in the AIC
 
@@ -21,9 +21,10 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     //int n_prescriptions = 2;
     //int current_prescription_ind = 0;
 
-    //Other classes holding states
+    //Other classes holding states.  (How important is this, really? Is it needed?)
     AudioFilterbankState *filterbank[2]; //left and right
     AudioEffectCompBankWDRCState *compbank[2]; //left and right
+    EarpieceMixerState *earpieceMixer;    
 
     //keep track of the signal levels in teh different bands
     float overall_cal_dBSPL_at0dBFS = 115.0f; //dB SPL at full scale (0dB FS).  This will be set by the DSL_GHA_Preset0.h or DSL_GHA_Preset1.h

@@ -1,5 +1,5 @@
 /*
-  WDRC_12BandIIR_Stereo_Prescrip_wApp
+  WDRC_12BandIIR_Stereo_Earpieces_Prescrip_wApp
 
   Created: Chip Audette (OpenAudio), Oct 2021
     Primarly built upon CHAPRO "Generic Hearing Aid" from
@@ -15,13 +15,13 @@
         * Broadband gain element
         * Broadband WDRC compressor (used as a limiter)
     * Stereo (each ear is indepenedent)
+    * Uses Tympan digital earpieces (or any of the other built-in audio sorces))
     * Can control via TympanRemote App or via USB Serial
     * Can write raw and processed audio to SD card
     * Includes prescription saving
     * It can switch between two presets, both of which you can change
         * a NORMAL preset ("Preset_16_00.h")
         * a FULL-ON GAIN preset ("Preset_16_01.h")
-    * Does not use Tympan digital earpieces
     * Does not include feedback cancellation
 
   Hardware Controls:
@@ -59,6 +59,7 @@ const int N_CHAN = MAX_N_CHAN;     //no need to change this
 
 // Create audio classes and make audio connections
 Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
+EarpieceShield              earpieceShield(TympanRev::E, AICShieldRev::A); //in the Tympan_Library, EarpieceShield is defined in AICShield.h
 
 // Create classes for controlling the system
 BLE_UI        ble(&myTympan);                      //create bluetooth BLE
@@ -72,21 +73,38 @@ void setupTympanHardware(void) {
 
   //activate the Tympan's audio interface
   myTympan.enable();
-  connectClassesToOverallState();
+  earpieceShield.enable();                                      // activate the AIC on the earpiece shield
 
+  //do some software setup that I'd prefer to do in AudioConnections.h but I can't due to scope limitations.  So, I guess here is good enough
+  earpieceMixer.setTympanAndShield(&myTympan, &earpieceShield); //the earpiece mixer must interact with the hardware, so point it to the hardware
+  connectClassesToOverallState();
+  
   //setup DC-blocking highpass filter running in the ADC hardware itself
   float cutoff_Hz = 40.0;  //set the default cutoff frequency for the highpass filter
   myTympan.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
+  earpieceShield.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
+    
 
-  //Choose the desired audio input on the Typman
-  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the on-board micropphones
-  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias 2.5V
-  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
-
+  //Choose the default input
+  if (1) {
+    //default to the digital PDM mics within the Tympan earpieces
+    earpieceMixer.setAnalogInputSource(EarpieceMixerState::INPUT_PCBMICS);  //Choose the desired audio analog input on the Typman...this will be overridden by the serviceMicDetect() in loop(), if micDetect is enabled
+    earpieceMixer.setInputAnalogVsPDM(EarpieceMixerState::INPUT_PDM);       // ****but*** then activate the PDM mics
+    Serial.println("setup: PDM Earpiece is the active input.");
+  } else {
+    //default to an analog input
+    earpieceMixer.setAnalogInputSource(EarpieceMixerState::INPUT_PCBMICS);  //Choose the desired audio analog input on the Typman
+    //earpieceMixer.setAnalogInputSource(EarpieceMixerState::INPUT_MICJACK_MIC);  //Choose the desired audio analog input on the Typman
+    earpieceMixer.setInputAnalogVsPDM(EarpieceMixerState::INPUT_ANALOG);       // ****but*** then activate the PDM mics
+    Serial.println("setup: analog input is the active input.");
+  }
+  
+  //Set the Bluetooth audio to go straight to the headphone amp, not through the Tympan software
+  //myTympan.mixBTAudioWithOutput(true);
+  
   //set volumes
-  setOutputGain_dB(0.f);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
-  float default_mic_input_gain_dB = 15.0f; //gain on the microphone
-  setInputGain_dB(default_mic_input_gain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
+  setOutputGain_dB(myState.output_gain_dB);  // -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
+  myTympan.setInputGain_dB(myState.earpieceMixer->inputGain_dB); // set MICPGA volume, 0-47.5dB in 0.5dB setps
   setDigitalGain_dB(myState.digital_gain_dB); // set gain low
 }
 
@@ -96,13 +114,15 @@ void connectClassesToOverallState(void) {
     myState.filterbank[i] = &multiBandWDRC[i].filterbank.state;
     myState.compbank[i]   = &multiBandWDRC[i].compbank.state;
   }
+  myState.earpieceMixer = &earpieceMixer.state;
 }
 
 //set up the serial manager
 void setupSerialManager(void) {
-  //register all the UI elements here
+  //register all the UI elements here  
   serialManager.add_UI_element(&myState);
-  serialManager.add_UI_element(&ble); 
+  serialManager.add_UI_element(&ble);
+  serialManager.add_UI_element(&earpieceMixer); 
   serialManager.add_UI_element(&stereoContainerWDRC);
   serialManager.add_UI_element(&presetManager);
   serialManager.add_UI_element(&audioSDWriter);
@@ -115,7 +135,7 @@ int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default 
 void setup() {
   myTympan.beginBothSerial();
   if (Serial) Serial.print(CrashReport);
-  Serial.println("WDRC_XBand_Stereo_Prescrip_wApp: setup():...");
+  Serial.println("WDRC_XBand_Stereo_Earpiece_Prescrip_wApp: setup():...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
 
@@ -240,7 +260,6 @@ void updateAveSignalLevels(unsigned long curTime_millis) {
 // ////////////////////////////// Functions to set the parameters and maintain the state
 
 // Control the System Gains
-float setInputGain_dB(float gain_dB) { return myState.input_gain_dB = myTympan.setInputGain_dB(gain_dB); }
 float setOutputGain_dB(float gain_dB) {  return myState.output_gain_dB = myTympan.volume_dB(gain_dB); }
 float setDigitalGain_dB(float gain_dB) { return setDigitalGain_dB(gain_dB, true); }
 float setDigitalGain_dB(float gain_dB, bool printToUSBSerial) {  
@@ -257,8 +276,8 @@ void printGainSettings(void) {
   for (int Ichan=0; Ichan <=1; Ichan++) {
    Serial.print("Chan " + String(Ichan));
     Serial.print(", Gain (dB): ");
-    Serial.print("Input PGA = "); Serial.print(myState.input_gain_dB,1);
-    Serial.print(", Per-Channel = ");
+    //Serial.print("Input PGA = "); Serial.print(myState.input_gain_dB,1);
+    Serial.print(" Per-Channel = ");
     for (int i=0; i<N_CHAN; i++) {
       Serial.print(multiBandWDRC[Ichan].compbank.getLinearGain_dB(i),1); //gets the linear gain setting
       Serial.print(", ");
