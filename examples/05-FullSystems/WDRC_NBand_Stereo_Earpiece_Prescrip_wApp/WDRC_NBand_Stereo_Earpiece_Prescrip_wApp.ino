@@ -31,7 +31,19 @@
     As written, you can use 16 channels or fewer.  Simply change MAX_N_CHAN.
     If you want more than 16 channels, that'll take a bit more effort. Ask the
     question in the Tympan forum!
-
+    
+  TYMPAN REV E ONLY!  Please be aware that this example defaults to 16 channels per ear.
+  As a result, this requires the processing power of the Tympan RevE.  If you want to 
+  run this example on a Tympan RevD, you will have to reduce the number of channels
+  (maybe down to 6-8 channels per ear?).
+  
+  DEFAULT IS ANDROID ONLY!  Please be aware that, because there are so many
+  parameter values being excanged with the mobile App, we have switched to a
+  higher speed communication mode.  This only seems to work with Anrdoid and
+  seems to fail with iOS (Apple).  If you want to run with an iOS device, you
+  simply need to comment out one line of code here in this file.  Comment out: 
+  ble.setUseFasterBaudRateUponBegin(true); 
+  
   MIT License.  use at your own risk.
 */
 
@@ -159,9 +171,6 @@ void setup() {
   audioSDWriter.setSerial(&myTympan);
   audioSDWriter.setNumWriteChannels(4);     //can record 2 or 4 channels
   Serial.println("Setup: SD configured for writing " + String(audioSDWriter.getNumWriteChannels()) + " audio channels.");
-
-  //update the potentiometer settings
-	//if (USE_VOLUME_KNOB) servicePotentiometer(millis());  //see code later in this file
   
   //enable the algorithms...but is this really needed?
   multiBandWDRC[0].filterbank.enable(true);
