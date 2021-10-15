@@ -2,7 +2,7 @@
 #include "State.h"
 extern State myState;
 
-AudioInputI2S_F32             i2s_in(audio_settings);          //Digital audio input from the ADC over the i2s bus
+AudioInputI2SQuad_F32         i2s_in(audio_settings);          //Digital audio input from the ADC over the i2s bus
 EarpieceMixer_F32_UI          earpieceMixer(audio_settings);   //mixes earpiece mics, allows switching to analog inputs, mixes left+right, etc
 AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to be *after* the creation of the i2s_in object
 
@@ -15,7 +15,7 @@ AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to
   #define FILTER_ORDER 6                                      //usually is 6.  never tried anything else (like 8)
 #endif
 StereoContainerWDRC_UI              stereoContainerWDRC;           //helps with managing the phone App's GUI for left+right.  In AudioEffectMultiBandWDRC_F32.h
-AudioOutputI2S_F32                  i2s_out(audio_settings);       //Digital audio output to the DAC via the i2s bus.  Should be last, except for SD writing
+AudioOutputI2SQuad_F32              i2s_out(audio_settings);       //Digital audio output to the DAC via the i2s bus.  Should be last, except for SD writing
 AudioSDWriter_F32_UI                audioSDWriter(audio_settings); //this is 2-channels of audio by default, but can be changed to 4 in setup()
 
 //complete the creation of the tester objects
