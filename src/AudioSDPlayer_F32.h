@@ -30,8 +30,8 @@
  *  The F32 conversion is under the MIT License.  Use at your own risk.
 */
 
-#ifndef audioSDPlayer_F32_h_
-#define audioSDPlayer_F32_h_
+#ifndef AudioSDPlayer_F32_h_
+#define AudioSDPlayer_F32_h_
 
 #include "Arduino.h"
 #include "AudioSettings_F32.h"
@@ -43,17 +43,17 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes  
   public:
-    AudioSDPlayer_F32(void) : AudioStream_F32(0, NULL), block_left_f32(NULL), block_right_f32(NULL) { 
+    AudioSDPlayer_F32(void) : AudioStream_F32(0, NULL), sd_ptr(NULL)
+	{ 
       init();
     }
-    AudioSDPlayer_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), block_left_f32(NULL), block_right_f32(NULL)
+    AudioSDPlayer_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(NULL)
       { 
         init();
         setSampleRate_Hz(settings.sample_rate_Hz);
         setBlockSize(settings.audio_block_samples);
       }
-    AudioSDPlayer_F32(SdFs * _sd,const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), block_left_f32(NULL), block_right_f32(NULL),
-      sd_ptr(_sd)
+    AudioSDPlayer_F32(SdFs * _sd,const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(_sd)
     { 	 
         init();
         setSampleRate_Hz(settings.sample_rate_Hz);
@@ -87,7 +87,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
   
   private:
     //SdFs sd;
-	SdFs *sd_ptr = NULL;
+	SdFs *sd_ptr;
 	SdFile file;
     bool consume(uint32_t size);
     bool parse_format(void);
@@ -97,8 +97,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
     uint16_t channels = 1; //number of audio channels
     uint16_t bits = 16;  // number of bits per sample
     uint32_t bytes2millis;
-    audio_block_f32_t *block_left_f32;
-    audio_block_f32_t *block_right_f32;
+    audio_block_f32_t *block_left_f32 = NULL;
+    audio_block_f32_t *block_right_f32 = NULL;
     uint16_t block_offset;    // how much data is in block_left & block_right
     uint8_t buffer[512];    // buffer one block of data
     uint16_t buffer_offset;   // where we're at consuming "buffer"
