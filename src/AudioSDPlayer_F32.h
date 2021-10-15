@@ -52,9 +52,18 @@ class AudioSDPlayer_F32 : public AudioStream_F32
         setSampleRate_Hz(settings.sample_rate_Hz);
         setBlockSize(settings.audio_block_samples);
       }
-	~AudioSDPlayer_F32(void) {
-		delete sd_ptr;
+    AudioSDPlayer_F32(SdFs * _sd,const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), block_left_f32(NULL), block_right_f32(NULL),
+      sd_ptr(_sd)
+    { 	 
+        init();
+        setSampleRate_Hz(settings.sample_rate_Hz);
+        setBlockSize(settings.audio_block_samples);
 	}
+	
+	//~AudioSDPlayer_F32(void) {
+	//	delete sd_ptr;
+	//}
+	
     void init(void);
     void begin(void);  //begins SD card
     bool play(const String &filename) { return play(filename.c_str()); }
