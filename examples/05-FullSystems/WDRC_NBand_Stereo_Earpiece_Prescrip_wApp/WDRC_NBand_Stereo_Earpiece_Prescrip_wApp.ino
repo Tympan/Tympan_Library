@@ -1,5 +1,5 @@
 /*
-  WDRC_12BandIIR_Stereo_Earpieces_Prescrip_wApp
+  WDRC_NBand_Stereo_Earpieces_Prescrip_wApp
 
   Created: Chip Audette (OpenAudio), Oct 2021
     Primarly built upon CHAPRO "Generic Hearing Aid" from
@@ -147,7 +147,7 @@ int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default 
 void setup() {
   myTympan.beginBothSerial();
   if (Serial) Serial.print(CrashReport);
-  Serial.println("WDRC_XBand_Stereo_Earpiece_Prescrip_wApp: setup():...");
+  Serial.println("WDRC_NBand_Stereo_Earpiece_Prescrip_wApp: setup():...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
 
