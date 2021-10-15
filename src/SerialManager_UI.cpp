@@ -68,10 +68,13 @@ void SerialManager_UI::addButtons_presetUpDown_multiChan(TR_Card *card_h, const 
 
 	String prefix = getPrefix();   //3 character code.  getPrefix() is here in SerialManager_UI.h, unless it is over-ridden in the child class somewhere
 
+	if ((n_chan < 1) || (n_chan > n_charMap)) return;
+
 	for (int i=0; i<n_chan; i++) {
 		//String fn_wChan = ID_char + field_name + String(i);     //channel number as a character (well, as a string)
 		String fn_wChan = ID_char_fn + field_name + String(i);     //channel number as a character (well, as a string)
-		String pre_wChan = String(prefix[0])+String(prefix[1])+String(i); //drop the 3rd character of the prefix and replace with chan number			
+		//String pre_wChan = String(prefix[0])+String(prefix[1])+String(i);  //drop the 3rd character of the prefix and replace with chan number			
+		String pre_wChan = String(prefix[0])+String(prefix[1])+charMapUp[i]; //drop the 3rd character of the prefix and replace with chan number			
 		String cp1 = String(i+1); //for display to a human, who counts from 1 (not zero)
 		
 		card_h->addButton(cp1,   "",                 "",       2);  //label, command, id, width...this is the minus button

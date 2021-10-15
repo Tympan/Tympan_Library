@@ -245,7 +245,7 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		bool flag_send_perBand_compKnee = false;		
 		bool flag_send_perBand_limKnee = false;		
 		
-		// //////////////////////// Persistent mode
+		// //////////////////////// Persistent mode...more compact display where the user chooses which parameters to edit on that page
 		TR_Card* addCard_chooseMode(     TR_Page *page_h);
 		TR_Card* addCard_persist_perChan(TR_Page *page_h);
 		TR_Page* addPage_persist_perChan(TympanRemoteFormatter *gui);
@@ -278,11 +278,11 @@ class AudioEffectCompBankWDRC_F32_UI : public AudioEffectCompBankWDRC_F32, publi
 		//void printChanMsg(int direction);   //used for building the help menu.  direction is +1 for raising and -1 for lowering
 		int findChan(char c, int direction=1); //used for interpreting in-coming commands
 
-		//characters that map to channel number
-		#define COMPBANK_N_CHARMAP (10+26+1)
-		const int n_charMap = COMPBANK_N_CHARMAP;
-		char charMapUp[COMPBANK_N_CHARMAP]   = "0123456789abcdefghijklmnopqrstuvwxyz"; //characters for raising
-		char charMapDown[COMPBANK_N_CHARMAP] = ")!@#$%^&*(ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //characters for lowering
+		//characters that map to channel number...these now live in SerialManager_UI.h
+		//#define COMPBANK_N_CHARMAP (10+26+1)
+		//const int n_charMap = COMPBANK_N_CHARMAP;
+		//char charMapUp[COMPBANK_N_CHARMAP]   = "0123456789abcdefghijklmnopqrstuvwxyz"; //characters for raising
+		//char charMapDown[COMPBANK_N_CHARMAP] = ")!@#$%^&*(ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //characters for lowering
 		
 		char persistCharTrigger = '-'; //used a channel number to command a change in the persistent mode state
 		char persistDown = '<';

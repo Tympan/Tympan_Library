@@ -233,7 +233,7 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacterTriple(char mode_char, char
 
 	//Serial.println("AudioEffectCompBankWDRC_F32_UI: processCharacterTriple: " + String(mode_char) + String(chan_char) + String(data_char));
 
-	//we ignore the chan_char and only work with the data_char
+	//we start by ignoring the chan_char and only work with the data_char
 	bool return_val = true;  //assume that we will find this character
 	if (chan_char == get_prefix_globalChar()) {   // get_prefix_globalGhar() is in SerialManager_UI.h
 		return_val = processCharacter_global(data_char);
@@ -466,6 +466,8 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_globals(TympanRemoteFormatter *
 
 TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_attack_global(  TR_Page *page_h) { 
 	flag_send_global_attack=true;
+
+	//this method is in the parent class: SerialManager_UI.cpp
 	return addCardPreset_UpDown(page_h, "Attack Time (msec)",  "att",    (char)((int)'a'+capOffset), 'a');
 };
 TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_release_global( TR_Page *page_h) { 
@@ -482,6 +484,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_attack(TympanRemoteFormatter *g
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
+	//this method is in the parent class: SerialManager_UI.cpp
 	addCardPreset_UpDown_multiChan(page_h, "Attack Time (msec)", "att", (char)((int)'a'+capOffset), 'a', get_n_chan());
 	flag_send_perBand_attack = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
@@ -601,8 +604,11 @@ TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_persist_perChan(TR_Page *page_h
 	//add a "button" to act as the title
 	String ID_fn = String(ID_char_fn);
 	card_h->addButton("", "", ID_fn+"m_title", 12);  //label, command, id, width...this is the minus button
+	
+	//add all the for-real buttons to increase and decrease the value...this method is in SerialManager_UI.h
 	addButtons_presetUpDown_multiChan(card_h, "perChan", persistDown, persistUp, get_n_chan());
 
+	//when updating the full GUI, this flag tells the class that we're using this persistent_multiChan display
 	flag_send_persistent_multiChan = true;   //tells updateAll to send the values associated with these buttons
 	return card_h;
 }

@@ -65,6 +65,7 @@ class SerialManager_UI {
 	virtual char get_prefix_globalChar(void) { return prefix_globalChar; };
 	virtual char set_prefix_globalChar(char c) { prefix_globalChar = c;  return get_prefix_globalChar(); }
 
+
   protected:
     char ID_char;                    //initialized in constructor.  
 	char ID_char_fn;				 //initialized in constructor.  this normally the same as ID_char, but can be made different if you want to overwrite someone else's fieldnames in the GUI widgets
@@ -74,6 +75,13 @@ class SerialManager_UI {
     virtual void setButtonText(String btnId, String text);
     virtual void sendTxBuffer(void);
 	char prefix_globalChar = 'x';  //by default, this character is used as the "channel" character. For most of your Audio classes, this won't matter at all.
+
+	#define SERIALUI_N_CHARMAP (10+26+1)
+	const int n_charMap = SERIALUI_N_CHARMAP;
+	char charMapUp[SERIALUI_N_CHARMAP]   = "0123456789abcdefghijklmnopqrstuvwxyz"; //characters for raising
+	char charMapDown[SERIALUI_N_CHARMAP] = ")!@#$%^&*(ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //characters for lowering
+
+	
   private:
     static char next_ID_char;      //see SerialManager_UI.cpp for where it gets initialized
 };
