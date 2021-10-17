@@ -32,17 +32,18 @@ class BTNRH_Stereo_Preset {
     }
 
     //data members for the algorithms that this preset works for
-    const int n_chan = 2; //will be set to 2...for left and right
+    #define PRESET_N_LR 2
+    const int n_LR = PRESET_N_LR; //will be set to 2...for left and right
     int n_filter_order = DEFAULT_FILTER_ORDER; //assumed same for left and right, default (96 = FIR, 6 = IIR)...can be changed simply by changing n_filter_order in your code
-    CHA_DSL_SD wdrc_perBand[2];    //left and right
-    CHA_WDRC_SD wdrc_broadband[2]; //left and right
-    //CHA_AFC_SD afc[2]; //left and right
+    CHA_DSL_SD wdrc_perBand[PRESET_N_LR];    //left and right
+    CHA_WDRC_SD wdrc_broadband[PRESET_N_LR]; //left and right
+    //CHA_AFC_SD afc[PRESET_N_LR]; //left and right
     
     //used for saving and retrieving these presets from the SD card
     String name = "Preset";
     const int n_datatypes = 2; //there is dsl and bb (eventually there will be afc)
     const String var_names[2] = {String("dsl"), String("bb")}; //use for reading/writing to SD
-    const String chan_names[2] = {String("_left"), String("_right")};
+    const String LR_names[2] = {String("_left"), String("_right")};
 };
 
 
@@ -84,10 +85,12 @@ class BTNRH_StereoPresetManager_UI : public PresetManager_UI {   //most of the A
 
 int BTNRH_StereoPresetManager_UI::setToPreset(int Ipreset, bool update_gui) {
   if ((Ipreset < 0) || (Ipreset >= n_presets)) return Ipreset;  //out of bounds!
-
+  
   //push the left and right presets to the left and right algorithms
   int i_left=0, i_right = 1; 
+  Serial.println("BTNRH_PresetManager: setToPreset: setting to preset " + String(Ipreset) + ", left channel...");
   leftWDRC->setupFromBTNRH(  presets[Ipreset].wdrc_perBand[i_left],  presets[Ipreset].wdrc_broadband[i_left],  presets[Ipreset].n_filter_order); 
+  Serial.println("BTNRH_PresetManager: setToPreset: setting to preset " + String(Ipreset) + ", right channel...");
   rightWDRC->setupFromBTNRH( presets[Ipreset].wdrc_perBand[i_right], presets[Ipreset].wdrc_broadband[i_right], presets[Ipreset].n_filter_order); 
 
   //set state
@@ -126,14 +129,14 @@ int BTNRH_StereoPresetManager_UI::savePresetToSD(int ind_preset, bool rebuild_pr
   //now write preset to the SD card, if requested
   String fname = preset_fnames[i];
   bool start_new_file = true;
-  for (int Ichan=0; Ichan < n_presets; Ichan++) {
-    Serial.println("BTNRH_StereoPresetManager_UI::savePresetToSD: writing preset " + String(i) + ", " + presets[i].var_names[0] + presets[i].chan_names[Ichan]);
-    presets[i].wdrc_perBand[Ichan].printToSD(fname,presets[i].var_names[0]+presets[i].chan_names[Ichan], start_new_file);  //the "true" says to start from a fresh file
+  for (int I_LR=0; I_LR < 2; I_LR++) {
+    Serial.println("BTNRH_StereoPresetManager_UI::savePresetToSD: writing preset " + String(i) + ", " + presets[i].var_names[0] + presets[i].LR_names[I_LR]);
+    presets[i].wdrc_perBand[I_LR].printToSD(fname,presets[i].var_names[0]+presets[i].LR_names[I_LR], start_new_file);  //the "true" says to start from a fresh file
     start_new_file= false; //don't start a new file for future channels...everything else will be appended
 
-    Serial.println("BTNRH_StereoPresetManager_UI::savePresetToSD: writing preset " + String(i) + ", " + presets[i].var_names[1] + presets[i].chan_names[Ichan]);
-    presets[i].wdrc_broadband[Ichan].printToSD(fname,presets[i].var_names[1]+presets[i].chan_names[Ichan]);  //append to the file
-    //presets[i].afc.printToSD(fname,presets[i].var_names[2]+presets[i].chan_names[Ichan]);  //append to the file
+    Serial.println("BTNRH_StereoPresetManager_UI::savePresetToSD: writing preset " + String(i) + ", " + presets[i].var_names[1] + presets[i].LR_names[I_LR]);
+    presets[i].wdrc_broadband[I_LR].printToSD(fname,presets[i].var_names[1]+presets[i].LR_names[I_LR]);  //append to the file
+    //presets[i].afc.printToSD(fname,presets[i].var_names[2]+presets[i].LR_names[I_LR]);  //append to the file
   }
 
   return 0; //0 is OK
@@ -150,17 +153,17 @@ int BTNRH_StereoPresetManager_UI::readPresetFromSD(int Ipreset, bool update_algs
   // Try to read from the SD card
   bool any_fail = false;
   String fname = preset_fnames[i];
-  for (int Ichan=0; Ichan < presets[i].n_chan; Ichan++) {  //loop over left and right
+  for (int I_LR=0; I_LR < presets[i].n_LR; I_LR++) {  //loop over left and right
     
-    if (printDebug) Serial.println(F("BTNRH_StereoPresetManager_UI: readPresetFromSD: reading preset, per-band, ") + String(i) + ", " +  presets[i].chan_names[Ichan]);
-    if ( ((presets[i].wdrc_perBand[Ichan]).readFromSD(fname, presets[i].chan_names[Ichan])) == 0 ) { //zero is success
-      if (printDebug) presets[i].wdrc_perBand[Ichan].printAllValues();
+    if (printDebug) Serial.println(F("BTNRH_StereoPresetManager_UI: readPresetFromSD: reading preset, per-band, ") + String(i) + ", " +  presets[i].LR_names[I_LR]);
+    if ( ((presets[i].wdrc_perBand[I_LR]).readFromSD(fname, presets[i].LR_names[I_LR])) == 0 ) { //zero is success
+      if (printDebug) presets[i].wdrc_perBand[I_LR].printAllValues();
     
-      if (printDebug) Serial.println(F("BTNRH_StereoPresetManager_UI: readPresetFromSD: reading preset, broadband, ") + String(i) + ", " +  presets[i].chan_names[Ichan]);
-      if ( ((presets[i].wdrc_broadband[Ichan]).readFromSD(fname, presets[i].chan_names[Ichan])) == 0 ) { //zero is success
-        if (printDebug) presets[i].wdrc_broadband[Ichan].printAllValues();
+      if (printDebug) Serial.println(F("BTNRH_StereoPresetManager_UI: readPresetFromSD: reading preset, broadband, ") + String(i) + ", " +  presets[i].LR_names[I_LR]);
+      if ( ((presets[i].wdrc_broadband[I_LR]).readFromSD(fname, presets[i].LR_names[I_LR])) == 0 ) { //zero is success
+        if (printDebug) presets[i].wdrc_broadband[I_LR].printAllValues();
         
-        //if ((presets[i].afc.readFromSD(fname, presets[i].chan_names[i])) == 0) { //zero is success
+        //if ((presets[i].afc.readFromSD(fname, presets[i].LR_names[i])) == 0) { //zero is success
           //anything more to do?  any more algorithm settings to load?
         //} else {
         // any_fail = true;
@@ -168,13 +171,13 @@ int BTNRH_StereoPresetManager_UI::readPresetFromSD(int Ipreset, bool update_algs
       
       } else {
         Serial.println(F("PresetManager: readPresetFromSD: *** WARNING *** could not read all preset elements from ") + String(fname));
-        Serial.println(F("    : Failed reading wdrc_perBand for left(0)/right(1):") + String(Ichan) + " using left/right name: " + String(presets[i].chan_names[Ichan]));
+        Serial.println(F("    : Failed reading wdrc_perBand for left(0)/right(1):") + String(I_LR) + " using left/right name: " + String(presets[i].LR_names[I_LR]));
         any_fail = true;
       }
       
     } else {
       Serial.println(F("PresetManager: readPresetFromSD: *** WARNING *** could not read all preset elements from ") + String(fname));
-      Serial.println(F("    : Failed reading wdrc_broadband for left(0)/right(1):") + String(Ichan) + " using left/right name: " + String(presets[i].chan_names[Ichan]));
+      Serial.println(F("    : Failed reading wdrc_broadband for left(0)/right(1):") + String(I_LR) + " using left/right name: " + String(presets[i].LR_names[I_LR]));
       any_fail = true;
     }
     

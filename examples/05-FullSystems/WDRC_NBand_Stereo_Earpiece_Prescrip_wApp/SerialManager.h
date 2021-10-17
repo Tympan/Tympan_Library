@@ -19,7 +19,7 @@ extern AudioEffectMultiBandWDRC_IIR_F32_UI multiBandWDRC[2];
 extern StereoContainerWDRC_UI stereoContainerWDRC; 
 extern BTNRH_StereoPresetManager_UI presetManager;
 
-extern const int N_CHAN;
+//extern const int N_CHAN;
 extern AudioControlTestAmpSweep_F32 ampSweepTester;
 extern AudioControlTestFreqSweep_F32 freqSweepTester;
 //extern AudioControlTestFreqSweep_F32 freqSweepTester_filterbank;
@@ -186,7 +186,7 @@ void SerialManager::createTympanRemoteLayout(void) {
   TR_Card *card_h;  //dummy handle for a card
 
   //Add first page to GUI
-  page_h = myGUI.addPage("WDRC " + String(N_CHAN) + "-Band System");
+  page_h = myGUI.addPage("WDRC " + String(MAX_N_CHAN) + "-Band System");
 
       //Add a button group ("card") for Volume
       card_h = page_h->addCard("Volume Knob (dB)");

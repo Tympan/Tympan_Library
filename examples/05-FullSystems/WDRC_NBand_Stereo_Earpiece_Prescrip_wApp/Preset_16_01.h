@@ -11,7 +11,7 @@ BTNRH_WDRC::CHA_DSL dsl_left = {5,  // attack (ms)
   50,      // release (ms)
   115,     // maxdB.  calibration.  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   0,       // 0=left, 1=right...ignored
-  16,  // num channels
+  8,  // num channels
   {375., 750., 1125., 1500., 1875., 2250., 2625., 3000., 3375., 3750., 4125., 4500., 4875., 5250., 5625.},   // cross frequencies (Hz)
   {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},                  // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
   {30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},  // expansion-end kneepoint.  not relevant when there is no compression
@@ -42,7 +42,7 @@ BTNRH_WDRC::CHA_DSL dsl_right = {5,  // attack (ms)
   50,      // release (ms)
   115,     // maxdB.  calibration.  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   1,       // 0=left, 1=right...ignored
-  16,  // num channels
+  8,  // num channels
   {375., 750., 1125., 1500., 1875., 2250., 2625., 3000., 3375., 3750., 4125., 4500., 4875., 5250., 5625.},   // cross frequencies (Hz)
   {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},                  // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
   {30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},  // expansion-end kneepoint.  not relevant when there is no compression

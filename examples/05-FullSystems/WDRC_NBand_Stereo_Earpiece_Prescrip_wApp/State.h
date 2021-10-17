@@ -3,7 +3,7 @@
 #ifndef State_h
 #define State_h
 
-extern const int N_CHAN;
+//extern const int N_CHAN;
 
 // define structure for tracking state of system (for GUI)
 class State : public TympanStateBase_UI { // look in TympanStateBase or TympanStateBase_UI for more state variables and helpful methods!!
@@ -30,7 +30,7 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     float overall_cal_dBSPL_at0dBFS = 115.0f; //dB SPL at full scale (0dB FS).  This will be set by the DSL_GHA_Preset0.h or DSL_GHA_Preset1.h
     bool enable_printAveSignalLevels = false;
     bool printAveSignalLevels_as_dBSPL = false;
-    float aveSignalLevels_dBFS[N_CHAN];
+    float aveSignalLevels_dBFS[MAX_N_CHAN];
     void printAveSignalLevels(unsigned long curTime_millis, unsigned long updatePeriod_millis = 3000) {
       static unsigned long lastUpdate_millis = 0;
       if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
@@ -44,7 +44,7 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
       String units_txt = String("dBFS");
       if (as_dBSPL) { offset_dB = overall_cal_dBSPL_at0dBFS;  units_txt = String("dBSPL, approx"); }
       Serial.println("Ave Input Level (" + units_txt + "), Per-Band = ");
-      for (int i=0; i<N_CHAN; i++) Serial.print(String(aveSignalLevels_dBFS[i]+offset_dB,1) + ", "); 
+      for (int i=0; i<MAX_N_CHAN; i++) Serial.print(String(aveSignalLevels_dBFS[i]+offset_dB,1) + ", "); 
       Serial.println();
     }
 

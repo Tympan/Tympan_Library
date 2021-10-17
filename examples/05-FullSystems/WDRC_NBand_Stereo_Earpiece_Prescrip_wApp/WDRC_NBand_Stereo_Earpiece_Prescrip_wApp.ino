@@ -59,9 +59,8 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Define the number of channels! Make sure Preset_16_0.h and Preset_16_01.h have enough values
 // It needs MAX_N_CHAN or more values.  If not, it'll not work well (or at all) at runtime.
-#define MAX_N_CHAN 16  //should function if you choose any number 2-16...though if less than 16, you'll want to adjust the presets for better sound
-#define USE_FIR_FILTERBANK false   //set to true for FIR and false for IIR (Cascaded Biquad)
-const int N_CHAN = MAX_N_CHAN;     //no need to change this
+#define MAX_N_CHAN 16             //should function if you choose any number 2-16...though if less than 16, you'll want to adjust the presets for better sound
+#define USE_FIR_FILTERBANK false  //set to true for FIR and false for IIR (Cascaded Biquad)
 
 //More includes
 #include      "BTNRH_PresetManager_UI.h"  //must be after N_CHAN is defined
@@ -259,7 +258,7 @@ void updateAveSignalLevels(unsigned long curTime_millis) {
   //is it time to update the calculations
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    for (int i=0; i<N_CHAN; i++) { //loop over each band
+    for (int i=0; i<MAX_N_CHAN; i++) { //loop over each band
       myState.aveSignalLevels_dBFS[i] = (1.0f-update_coeff)*myState.aveSignalLevels_dBFS[i] + update_coeff*multiBandWDRC[0].compbank.compressors[i].getCurrentLevel_dB(); //running average
     }
     lastUpdate_millis = curTime_millis; //we will use this value the next time around.
@@ -282,13 +281,14 @@ float setDigitalGain_dB(float gain_dB, bool printToUSBSerial) {
 float incrementDigitalGain(float increment_dB) { return setDigitalGain_dB(myState.digital_gain_dB + increment_dB); }
 
 void printGainSettings(void) {
-  for (int Ichan=0; Ichan <=1; Ichan++) {
-   Serial.print("Chan " + String(Ichan));
+  for (int I_LR=0; I_LR <=1; I_LR++) {
+   Serial.print("Chan " + String(I_LR));
     Serial.print(", Gain (dB): ");
     //Serial.print("Input PGA = "); Serial.print(myState.input_gain_dB,1);
     Serial.print(" Per-Channel = ");
-    for (int i=0; i<N_CHAN; i++) {
-      Serial.print(multiBandWDRC[Ichan].compbank.getLinearGain_dB(i),1); //gets the linear gain setting
+    int n_chan = multiBandWDRC[I_LR].get_n_chan();
+    for (int i=0; i<n_chan; i++) {
+      Serial.print(multiBandWDRC[I_LR].compbank.getLinearGain_dB(i),1); //gets the linear gain setting
       Serial.print(", ");
     }
     Serial.print("Knob = "); Serial.print(myState.digital_gain_dB,1);

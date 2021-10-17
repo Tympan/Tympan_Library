@@ -58,15 +58,15 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0,                   multiBandWDRC[LEFT],  0); //connect to input of multiBandWDRC used for the left
   patchCord[count++] = new AudioConnection_F32(earpieceMixer,      earpieceMixer.RIGHT, multiBandWDRC[RIGHT], 0); //connect to the input of multiBandWDRC used for the right
 
-  for (int Ichan = LEFT; Ichan <= RIGHT; Ichan++) {
+  for (int I_LR = LEFT; I_LR <= RIGHT; I_LR++) {
 
     //Set the algorithms sample rate and block size to align with the global values
-    multiBandWDRC[Ichan].setSampleRate_Hz(audio_settings.sample_rate_Hz);
-    multiBandWDRC[Ichan].setAudioBlockSize(audio_settings.audio_block_samples);
+    multiBandWDRC[I_LR].setSampleRate_Hz(audio_settings.sample_rate_Hz);
+    multiBandWDRC[I_LR].setAudioBlockSize(audio_settings.audio_block_samples);
     
     //make filterbank and compressorbank big enough...I'm not sure if this is actually needed
-    multiBandWDRC[Ichan].filterbank.set_max_n_filters(N_CHAN);  //is this needed?
-    multiBandWDRC[Ichan].compbank.set_max_n_chan(N_CHAN);       //is this needed?
+    multiBandWDRC[I_LR].filterbank.set_max_n_filters(MAX_N_CHAN);  //is this needed?
+    multiBandWDRC[I_LR].compbank.set_max_n_chan(MAX_N_CHAN);       //is this needed?
 
   }
 
@@ -94,7 +94,7 @@ void setupAudioProcessing(void) {
   makeAudioConnections();  //see AudioConnections.h
 
   //make some software connections to allow different parts of the code to talk with each other
-  presetManager.attachAlgorithms(&multiBandWDRC[0],&multiBandWDRC[1]);
+  presetManager.attachAlgorithms(&multiBandWDRC[0],&multiBandWDRC[1]);  // the Left and Right WDRC chain
 
   
   //try to load the prescription from the SD card
@@ -122,9 +122,10 @@ void setupAudioProcessing(void) {
 
 
 float incrementChannelGain(int chan, float increment_dB) {
-  if (chan < N_CHAN) {
-    for (int Ichan = StereoContainer_UI::LEFT; Ichan <= StereoContainer_UI::RIGHT; Ichan++) {
-      (multiBandWDRC[Ichan].compbank.compressors[chan]).incrementGain_dB(increment_dB);
+  for (int I_LR = StereoContainer_UI::LEFT; I_LR <= StereoContainer_UI::RIGHT; I_LR++) {
+    int n_chan = multiBandWDRC[I_LR].get_n_chan();
+    if (chan < n_chan) {
+      (multiBandWDRC[I_LR].compbank.compressors[chan]).incrementGain_dB(increment_dB);
     }
   }
   printGainSettings();  //in main sketch file
