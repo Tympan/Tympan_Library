@@ -597,16 +597,28 @@ void AudioFilterbank_UI::printCrossoverFreqs(void) {
 }
 
 void AudioFilterbank_UI::sendAllFreqs(void) {
-	int n_crossover = this_filterbank->state.get_n_filters() - 1;
-	if (n_crossover <= 0) return;
-	for (int i=0; i < n_crossover; i++) sendOneFreq(i);
+	int n_all_crossover = this_filterbank->state.get_max_n_filters() - 1;
+	if (n_all_crossover <= 0) return;
+	//int n_crossover = this_filterbank->state.get_n_filters() - 1;
+	for (int i=0; i < n_all_crossover; i++) sendOneFreq(i);
 }
 
 void AudioFilterbank_UI::sendOneFreq(int Ichan) {  //Ichan counts from zero
 	if (Ichan < 0) return;
-	if (Ichan > (this_filterbank->state.get_n_filters()-1)) return;
-	String field_name1 = ID_char_fn + freq_id_str;
-	setButtonText(field_name1 + String(Ichan),String(this_filterbank->state.get_crossover_freq_Hz(Ichan),0));
+	int n_all_crossover = this_filterbank->state.get_max_n_filters() - 1;
+	if (Ichan >= n_all_crossover) return;
+	int n_crossover = this_filterbank->state.get_n_filters()-1;
+
+	//decide what text to send
+	String value_str="(Off)"; //placeholder
+	if (Ichan < n_crossover) {
+		//send the value
+		value_str = String(this_filterbank->state.get_crossover_freq_Hz(Ichan),0); //the zero is to round to the nearest whole number
+	}
+
+	//send the updated text
+	String button_name = ID_char_fn + freq_id_str + String(Ichan);
+	setButtonText(button_name,value_str); //
 }
 
 void AudioFilterbank_UI::setFullGUIState(bool activeButtonsOnly) {
@@ -619,7 +631,7 @@ TR_Card* AudioFilterbank_UI::addCard_crossoverFreqs(TR_Page *page_h) {
 	if (card_h == NULL) return NULL;
 	String prefix = String(quadchar_start_char)+String(ID_char)+String("x");
 	String field_name1 = ID_char_fn + freq_id_str;
-	int n_crossover = this_filterbank->get_n_filters()-1; //n_crossover is always n_filter - 1
+	int n_crossover = this_filterbank->get_max_n_filters()-1; //n_crossover is always n_filter - 1
 	
 	
 	for (int i=0; i < min(n_crossover,n_charMap); i++) {

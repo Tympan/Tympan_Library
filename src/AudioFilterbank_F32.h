@@ -84,6 +84,7 @@ class AudioFilterbankBase_F32 : public AudioStream_F32 {
 		
 		virtual int increment_crossover_freq(int Ichan, float freq_increment_fac); //nudge of the frequencies, which might nudge others if they're too close...and update the filter design
 		virtual int get_n_filters(void) { return state.get_n_filters(); }
+		virtual int get_max_n_filters(void) { return state.get_max_n_filters(); }
 		virtual AudioFilterBase_F32 *getFilter(int Ichan) = 0;
 		virtual int get_filter_order(void) { return state.filter_order; }
 		
@@ -125,7 +126,7 @@ class AudioFilterbankFIR_F32 : public AudioFilterbankBase_F32 {
 		virtual int set_max_n_filters(int val);
 		virtual int designFilters(int n_chan, int n_fir, float sample_rate_Hz, int block_len, float *crossover_freq);
 		virtual AudioFilterBase_F32 *getFilter(int Ichan) { 
-			if ((Ichan < 0) || (Ichan >= get_n_filters())) { 
+			if ((Ichan < 0) || (Ichan >= get_max_n_filters())) { 
 				return NULL; 
 			} else { 
 				return &(filters.at(Ichan));
@@ -161,7 +162,7 @@ class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 		virtual int set_max_n_filters(int val);
 		virtual int designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq);
 		virtual AudioFilterBase_F32 *getFilter(int Ichan) { 
-			if ((Ichan < 0) || (Ichan >= get_n_filters())) { 
+			if ((Ichan < 0) || (Ichan >= get_max_n_filters())) { 
 				return NULL; 
 			} else { 
 				return &(filters.at(Ichan));

@@ -73,6 +73,7 @@ class AudioEffectMultiBandWDRC_Base_F32_UI : public AudioStream_F32, public Seri
 	virtual float setSampleRate_Hz(float rate_Hz);
 	virtual int setAudioBlockSize(int samps) { return audio_block_samples = samps; } //only the filterbank cares and we'll set it when we redesign the filters
 
+	virtual int get_n_chan(void) { return compbank.get_n_chan(); }
 
 	virtual AudioFilterbankBase_F32* getFilterbank(void) = 0;
 	virtual AudioFilterbank_UI* getFilterbankUI(void) = 0;
