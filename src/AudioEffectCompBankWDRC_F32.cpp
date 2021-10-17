@@ -220,6 +220,7 @@ int AudioEffectCompBankWDRC_F32::set_n_chan(int val) {
 
 void AudioEffectCompBankWDRC_F32_UI::printHelp(void) {
 	Serial.println(" " + name_for_UI + ": Prefix = " + getPrefix()); //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	Serial.println(  "   : Info: " + String(get_n_chan()) + " Channels of Compression");
 	Serial.println(F("   a/A: incr/decrease global attack time (") + String(state.getAttack_msec(),1) + " msec)");
 	Serial.println(F("   r/R: incr/decrease global release time (") + String(state.getRelease_msec(),0) + " msec)");
 	Serial.println(F("   m,M: Incr/decrease global scale factor (") + String(getMaxdB(),0) + " dBSPL at 0 dBFS)");
@@ -293,6 +294,8 @@ bool AudioEffectCompBankWDRC_F32_UI::processCharacter_global(char data_char) {
 }
 
 bool AudioEffectCompBankWDRC_F32_UI::processCharacter_perChannel(char data_char, int chan) {
+	if ((chan < 0) || (chan >= get_n_chan())) return false; //do nothing if channel number is out of bounds
+	
 	bool return_val = true;
 	String self_id = "AudioEffectCompBankWDRC_F32"; //used when printing messages to Serial Monitor
 	
@@ -485,7 +488,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_attack(TympanRemoteFormatter *g
 	if (page_h == NULL) return NULL;
 	
 	//this method is in the parent class: SerialManager_UI.cpp
-	addCardPreset_UpDown_multiChan(page_h, "Attack Time (msec)", "att", (char)((int)'a'+capOffset), 'a', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Attack Time (msec)", "att", (char)((int)'a'+capOffset), 'a', get_max_n_chan());
 	flag_send_perBand_attack = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -495,7 +498,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_release(TympanRemoteFormatter *
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Release Time (msec)", "rel", (char)((int)'r'+capOffset), 'r', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Release Time (msec)", "rel", (char)((int)'r'+capOffset), 'r', get_max_n_chan());
 	flag_send_perBand_release = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -505,7 +508,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_scaleFac(TympanRemoteFormatter 
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Scale (dBSPL at dBFS)", "maxdB", (char)((int)'m'+capOffset), 'm', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Scale (dBSPL at dBFS)", "maxdB", (char)((int)'m'+capOffset), 'm', get_max_n_chan());
 	flag_send_perBand_scaleFac = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -515,7 +518,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_expCompRatio(TympanRemoteFormat
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Expansion CR (x:1)", "expCR", (char)((int)'x'+capOffset), 'x', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Expansion CR (x:1)", "expCR", (char)((int)'x'+capOffset), 'x', get_max_n_chan());
 	flag_send_perBand_expCR = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -525,7 +528,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_expKnee(TympanRemoteFormatter *
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Expansion Knee (dB SPL)", "expKnee", (char)((int)'z'+capOffset), 'z', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Expansion Knee (dB SPL)", "expKnee", (char)((int)'z'+capOffset), 'z', get_max_n_chan());
 	flag_send_perBand_expKnee = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -535,7 +538,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_linearGain(TympanRemoteFormatte
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Linear Gain (dB)", "linGain", (char)((int)'g'+capOffset), 'g', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Linear Gain (dB)", "linGain", (char)((int)'g'+capOffset), 'g', get_max_n_chan());
 	flag_send_perBand_linGain = true;    //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -545,7 +548,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_compRatio(TympanRemoteFormatter
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Compression Ratio (x:1)", "compRat", (char)((int)'c'+capOffset), 'c', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Compression Ratio (x:1)", "compRat", (char)((int)'c'+capOffset), 'c', get_max_n_chan());
 	flag_send_perBand_compRat = true;   //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -554,7 +557,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_compKnee(TympanRemoteFormatter 
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Comp. Knee (dB SPL)", "compKnee", (char)((int)'k'+capOffset), 'k', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Comp. Knee (dB SPL)", "compKnee", (char)((int)'k'+capOffset), 'k', get_max_n_chan());
 	flag_send_perBand_compKnee = true;   //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -563,7 +566,7 @@ TR_Page* AudioEffectCompBankWDRC_F32_UI::addPage_limKnee(TympanRemoteFormatter *
 	TR_Page *page_h = gui->addPage("Compressor Bank");
 	if (page_h == NULL) return NULL;
 	
-	addCardPreset_UpDown_multiChan(page_h, "Limiter Knee (dB SPL)", "limKnee", (char)((int)'l'+capOffset), 'l', get_n_chan());
+	addCardPreset_UpDown_multiChan(page_h, "Limiter Knee (dB SPL)", "limKnee", (char)((int)'l'+capOffset), 'l', get_max_n_chan());
 	flag_send_perBand_limKnee = true;   //tells updateAll to send the values associated with these buttons
 	return page_h;
 }
@@ -606,7 +609,7 @@ TR_Card* AudioEffectCompBankWDRC_F32_UI::addCard_persist_perChan(TR_Page *page_h
 	card_h->addButton("", "", ID_fn+"m_title", 12);  //label, command, id, width...this is the minus button
 	
 	//add all the for-real buttons to increase and decrease the value...this method is in SerialManager_UI.h
-	addButtons_presetUpDown_multiChan(card_h, "perChan", persistDown, persistUp, get_n_chan());
+	addButtons_presetUpDown_multiChan(card_h, "perChan", persistDown, persistUp, get_max_n_chan());
 
 	//when updating the full GUI, this flag tells the class that we're using this persistent_multiChan display
 	flag_send_persistent_multiChan = true;   //tells updateAll to send the values associated with these buttons
@@ -751,6 +754,10 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_title(void) {
 
 void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {
 	bool send_val = true;
+	int n_all_channels = get_max_n_chan();
+	if ((i < 0) || (i >= n_all_channels)) return;
+	
+	//decide what value to send
 	String str;
 	switch (state_persistentMode) {
 		case 'a':
@@ -784,14 +791,18 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan(int i) {
 			send_val = false;
 			break;
 	}
-	if (send_val) updateCardPreset_UpDown("perChan", str, i);	
+
+	if (send_val) {
+		if (i >= get_n_chan()) str = String("(Off)");
+		updateCardPreset_UpDown("perChan", str, i);	
+	}
 }
 
 void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_all(bool activeButtonsOnly) {
 	updateCard_persist_perChan_title();
 	
 	//update the parameters that are assumed to be per-band
-	for (int i=0; i< get_n_chan(); i++) {
+	for (int i=0; i< get_max_n_chan(); i++) {
 		if (flag_send_persistent_multiChan) updateCard_persist_perChan(i);	 
 	}	
 }
@@ -804,7 +815,7 @@ void AudioEffectCompBankWDRC_F32_UI::updateCard_persist_perChan_all(bool activeB
 	if (flag_send_global_scaleFac) updateCard_scaleFac_global();
 	
 	//update the parameters that are assumed to be per-band
-	for (int i=0; i< get_n_chan(); i++) {
+	for (int i=0; i< get_max_n_chan(); i++) {
 		if (flag_send_perBand_attack) updateCard_attack(i);
 		if (flag_send_perBand_release) updateCard_release(i); 
 		if (flag_send_perBand_scaleFac) updateCard_scaleFac(i); 
