@@ -34,19 +34,19 @@ bool PresetManager_UI::processCharacterTriple(char mode_char, char chan_char, ch
 	int ret_val;
     switch (data_char) {
       case 's':
-        Serial.println("PresetManager_UI: saving preset to SD...");
+		Serial.println("PresetManager_UI: saving preset to SD...");
 		setSaveStatusMessage("Saving...");
-        ret_val = savePresetToSD(getPresetInd(),true); //true says to rebuild the preset from the underlying algorithms
+		ret_val = savePresetToSD(getPresetInd(),true); //true says to rebuild the preset from the underlying algorithms
 		delay(10); if (ret_val) { setSaveStatusMessage("Failed"); } else { setSaveStatusMessage("Success");}
-        break;
+		break;
       case 'r':
-        Serial.println("PresetManager_UI: reload preset from SD...");
+		Serial.println("PresetManager_UI: reload preset from SD...");
 		setSaveStatusMessage("Reading...");
-        ret_val = readPresetFromSD(getPresetInd(), true, true); //update the algorithms with the new settings and update the full GUI
+		ret_val = readPresetFromSD(getPresetInd(), true, true); //update the algorithms with the new settings and update the full GUI
 		delay(10); if (ret_val) { setSaveStatusMessage("Failed"); } else { setSaveStatusMessage("Success");}
-        break;
+		break;
       case 'f':
-	  setSaveStatusMessage("Resetting...");
+		setSaveStatusMessage("Resetting...");
         Serial.println("PresetManager_UI: reset preset to factory...");
         ret_val = resetPresetToFactory(getPresetInd(), true, true); //update the algorithms with the new settings and update the full GUI
 		delay(10); if (ret_val) { setSaveStatusMessage("Failed"); } else { setSaveStatusMessage("Success");}
