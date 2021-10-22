@@ -220,8 +220,11 @@ void SerialManager::createTympanRemoteLayout(void) {
   page_h = earpieceMixer.addPage_digitalEarpieces(&myGUI); //use its predefined page for controlling the digital earpieces
 
   //add MultiBand WDRC pages
+  page_h = myGUI.addPage("WDRC Globals");
+    presetManager.addCard_incrementWDRCChannels(page_h);   //allow changing of the number of WDRC bands
+    stereoContainerWDRC.addMultiCards_compressorbank_globals(page_h); //allow changing of the global attack, release, and maxdB
+    
   page_h = stereoContainerWDRC.addPage_filterbank(&myGUI);
-  page_h = stereoContainerWDRC.addPage_compressorbank_globals(&myGUI);
   page_h = stereoContainerWDRC.addPage_compressorbank_perBand(&myGUI);
   page_h = stereoContainerWDRC.addPage_compressor_broadband(&myGUI);
 

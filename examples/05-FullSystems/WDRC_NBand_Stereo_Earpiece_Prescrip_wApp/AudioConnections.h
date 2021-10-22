@@ -109,7 +109,7 @@ void setupAudioProcessing(void) {
       //it didn't read the preset correctly from the SD card.  So, overwrite what's on the SD card with the factory preset
       Serial.println("AudioConnections: setupAudioProcessing: failed to read preset " + String(i) + " from SD.  Using factory preset and saving to SD...");
       presetManager.resetPresetToFactory(i); //restore to default from Preset_00.h or Preset_01.h
-      presetManager.presets[i].wdrc_perBand[0].printAllValues();
+      presetManager.presets[i].preset_LR[0].wdrc_perBand.printAllValues();
       presetManager.savePresetToSD(i,false);      //save to SD card.  false says to NOT rebuild from the source algorithms...just save the factory reset preset
     }
   }
