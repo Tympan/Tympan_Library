@@ -132,6 +132,7 @@ class StereoContainerWDRC_UI : public StereoContainer_UI {
 
     virtual TR_Page* addPage_filterbank(TympanRemoteFormatter *gui);
     virtual TR_Page* addPage_compressorbank_globals(TympanRemoteFormatter *gui);
+	virtual TR_Card* addMultiCards_compressorbank_globals(TR_Page *page_h);
     virtual TR_Page* addPage_compressorbank_perBand(TympanRemoteFormatter *gui);
     virtual TR_Page* addPage_compressor_broadband(TympanRemoteFormatter *gui);
 

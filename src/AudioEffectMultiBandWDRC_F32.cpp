@@ -194,10 +194,10 @@ TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) 
 TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Compressor Bank, Global Parameters");
-  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
   if (page_h == NULL) return NULL;
+  //TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
   
-  addCard_chooseChan(page_h); //see StereoContainer_UI.h
+/*   addCard_chooseChan(page_h); //see StereoContainer_UI.h
   if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
     (leftWDRC->compbank).addCard_attack_global(page_h);
     (leftWDRC->compbank).addCard_release_global(page_h);
@@ -206,9 +206,30 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteForm
     (rightWDRC->compbank).addCard_attack_global(page_foo_h);   //compbank might track which GUI elements have been invoked.  This triggers that automatic behavior
     (rightWDRC->compbank).addCard_release_global(page_foo_h);
     (rightWDRC->compbank).addCard_scaleFac_global(page_foo_h);
-  }
+  } */
+
+	addMultiCards_compressorbank_globals(page_h);
 
   return page_h;
+}
+
+TR_Card* StereoContainerWDRC_UI::addMultiCards_compressorbank_globals(TR_Page *page_h) {
+	if (page_h == NULL) return NULL;
+	TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
+
+	TR_Card* ret_val;
+
+	addCard_chooseChan(page_h); //see StereoContainer_UI.h
+	if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
+		(leftWDRC->compbank).addCard_attack_global(page_h);
+		(leftWDRC->compbank).addCard_release_global(page_h);
+		ret_val = (leftWDRC->compbank).addCard_scaleFac_global(page_h);
+
+		(rightWDRC->compbank).addCard_attack_global(page_foo_h);   //compbank might track which GUI elements have been invoked.  This triggers that automatic behavior
+		(rightWDRC->compbank).addCard_release_global(page_foo_h);
+		(rightWDRC->compbank).addCard_scaleFac_global(page_foo_h);
+	}
+	return ret_val;
 }
 
 TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteFormatter *gui) {
