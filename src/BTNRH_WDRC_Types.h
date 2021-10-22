@@ -72,19 +72,19 @@ class CHA_DSL {
 			s->print("    : ear (0 = left, 1 = right) "); s->println(ear);
 			s->print("    : nchannel = "); s->println(nchannel);
 			s->print("    : cross_freq (Hz) = ");
-			for (int i=0; i< last_chan;i++) { s->print(cross_freq[i]); s->print(", ");}; s->println();
+			for (int i=0; i<last_chan-1;i++) { s->print(cross_freq[i]); s->print(", ");}; s->println();delay(3); //one fewer crossover frequency than channels
 			s->print("    : exp_cr = ");
-			for (int i=0; i<last_chan;i++) { s->print(exp_cr[i]); s->print(", ");}; s->println();
+			for (int i=0; i<last_chan;i++) { s->print(exp_cr[i]); s->print(", ");}; s->println();delay(3);
 			s->print("    : exp_end_knee (dB SPL) = ");
-			for (int i=0; i<last_chan;i++) { s->print(exp_end_knee[i]); s->print(", ");}; s->println();
+			for (int i=0; i<last_chan;i++) { s->print(exp_end_knee[i]); s->print(", ");}; s->println();delay(3);
 			s->print("    : tkgain (dB) = ");
-			for (int i=0; i<last_chan;i++) { s->print(tkgain[i]); s->print(", ");}; s->println();
+			for (int i=0; i<last_chan;i++) { s->print(tkgain[i]); s->print(", ");}; s->println();delay(3);
 			s->print("    : cr = ");
-			for (int i=0; i<last_chan;i++) { s->print(cr[i]); s->print(", ");}; s->println();
+			for (int i=0; i<last_chan;i++) { s->print(cr[i]); s->print(", ");}; s->println();delay(3);
 			s->print("    : tk (dB SPL) = ");
-			for (int i=0; i<last_chan;i++) { s->print(tk[i]); s->print(", ");}; s->println();
+			for (int i=0; i<last_chan;i++) { s->print(tk[i]); s->print(", ");}; s->println();delay(3);
 			s->print("    : bolt (dB SPL) = ");
-			for (int i=0; i<last_chan;i++) { s->print(bolt[i]); s->print(", ");}; s->println();
+			for (int i=0; i<last_chan;i++) { s->print(bolt[i]); s->print(", ");}; s->println();delay(3);
 		};
 };
 
