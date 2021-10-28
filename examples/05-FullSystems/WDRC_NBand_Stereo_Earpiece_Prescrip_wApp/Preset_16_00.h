@@ -11,14 +11,14 @@ BTNRH_WDRC::CHA_DSL dsl_left = {5,  // attack (ms)
   50,      // release (ms)
   115,     // maxdB.  calibration.  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   0,       // 0=left, 1=right...ignored
-  16,      // num channels
-  {375., 750., 1125., 1500., 1875., 2250., 2625., 3000., 3375., 3750., 4125., 4500., 4875., 5250., 5625.},   // cross frequencies (Hz)
-  {0.7,     0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7},  // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
-  {30.0,   30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},  // expansion-end kneepoint
-  {-13.0, -16.0, -4.0,  7.0, 11.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 26.0, 26.0, 26.0, 26.0, 26.0},  // compression-start gain
-  {0.7,     0.9,  1.0,  1.1,  1.2,  1.3,  1.4,  1.4,  1.4,  1.5,  1.5,  1.5,  1.5,  1.5,  1.5,  1.5},  // compression ratio
-  {32.0,   27.0, 27.0, 27.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},  // compression-start kneepoint (input dB SPL)
-  {79.0,   88.0, 91.0, 93.0, 98.0, 99.0, 100., 101., 103., 102., 102., 102., 102., 102., 102., 102.}   // output limiting threshold (comp ratio 10)
+  16,  // num channels
+  {250.,  315.,  400., 500., 630., 800., 1000., 1250., 1600., 2000., 2500., 3150., 4000., 5000., 6300.},         // cross frequencies (Hz)
+  {0.7,    0.7,   0.7,  0.7,  0.7,  0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7},  // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
+  {30.0,  30.0,  30.0, 30.0, 30.0, 30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0},  // expansion-end kneepoint
+  {20.0,  20.0,  20.0, 20.0, 20.0, 20.0,  20.0,  22.0,  24.0,  26.0,  28.0,  30.0,  32.0,  34.0,  36.0,  40.0},  // compression-start gain
+  {0.7,    0.9,   1.0,  1.1,  1.2,  1.3,   1.4,   1.4,   1.4,   1.5,   1.5,   1.5,   1.5,   1.5,   1.5,   1.5},  // compression ratio
+  {32.0,   27.0, 27.0, 27.0, 30.0, 30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0},  // compression-start kneepoint (input dB SPL)
+  {79.0,   88.0, 91.0, 93.0, 98.0, 99.0,  100.,  101.,  103.,  102.,  102.,  102.,  102.,  102.,  102.,  102.}   // output limiting threshold (comp ratio 10)
 };
 
 // Here are the settings for the broadband limiter at the end.
@@ -42,14 +42,14 @@ BTNRH_WDRC::CHA_DSL dsl_right = {5,  // attack (ms)
   50,      // release (ms)
   115,     // maxdB.  calibration.  dB SPL for input signal at 0 dBFS.  Needs to be tailored to mic, spkrs, and mic gain.
   1,       // 0=left, 1=right...ignored
-  16,      // num channels
-  {375., 750., 1125., 1500., 1875., 2250., 2625., 3000., 3375., 3750., 4125., 4500., 4875., 5250., 5625.},   // cross frequencies (Hz)
-  {0.7,     0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7},  // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
-  {30.0,   30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},  // expansion-end kneepoint
-  {-13.0, -16.0, -4.0,  7.0, 11.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 26.0, 26.0, 26.0, 26.0, 26.0},  // compression-start gain
-  {0.7,     0.9,  1.0,  1.1,  1.2,  1.3,  1.4,  1.4,  1.4,  1.5,  1.5,  1.5,  1.5,  1.5,  1.5,  1.5},  // compression ratio
-  {32.0,   27.0, 27.0, 27.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},  // compression-start kneepoint (input dB SPL)
-  {79.0,   88.0, 91.0, 93.0, 98.0, 99.0, 100., 101., 103., 102., 102., 102., 102., 102., 102., 102.}   // output limiting threshold (comp ratio 10)
+  16,  // num channels
+  {250.,  315.,  400., 500., 630., 800., 1000., 1250., 1600., 2000., 2500., 3150., 4000., 5000., 6300.},         // cross frequencies (Hz)
+  {0.7,    0.7,   0.7,  0.7,  0.7,  0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7,   0.7},  // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
+  {30.0,  30.0,  30.0, 30.0, 30.0, 30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0},  // expansion-end kneepoint
+  {20.0,  20.0,  20.0, 20.0, 20.0, 20.0,  20.0,  22.0,  24.0,  26.0,  28.0,  30.0,  32.0,  34.0,  36.0,  40.0},  // compression-start gain
+  {0.7,    0.9,   1.0,  1.1,  1.2,  1.3,   1.4,   1.4,   1.4,   1.5,   1.5,   1.5,   1.5,   1.5,   1.5,   1.5},  // compression ratio
+  {32.0,   27.0, 27.0, 27.0, 30.0, 30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0,  30.0},  // compression-start kneepoint (input dB SPL)
+  {79.0,   88.0, 91.0, 93.0, 98.0, 99.0,  100.,  101.,  103.,  102.,  102.,  102.,  102.,  102.,  102.,  102.}   // output limiting threshold (comp ratio 10)
 };
 
 // Here are the settings for the broadband limiter at the end.

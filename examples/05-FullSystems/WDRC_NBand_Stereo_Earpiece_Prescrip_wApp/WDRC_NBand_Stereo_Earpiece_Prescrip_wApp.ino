@@ -142,7 +142,7 @@ void setupSerialManager(void) {
 // ///////////////// Main setup() and loop() as required for all Arduino programs
 
 // define the setup() function, the function that is called once when the device is booting
-int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default vol_knob_gain_dB set a few lines below
+int USE_VOLUME_KNOB = 0;  //set to 1 to use volume knob to override the default vol_knob_gain_dB set a few lines below
 void setup() {
   myTympan.beginBothSerial();
   if (Serial) Serial.print(CrashReport);
