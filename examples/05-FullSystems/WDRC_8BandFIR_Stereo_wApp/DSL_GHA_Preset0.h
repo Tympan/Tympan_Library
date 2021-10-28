@@ -15,7 +15,7 @@ BTNRH_WDRC::CHA_DSL dsl_left = {5,  // attack (ms)
   {317.1666, 502.9734, 797.6319, 1264.9, 2005.9, 3181.1, 5044.7},   // cross frequencies (Hz)
   {0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7},           // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
   {30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},   // expansion-end kneepoint
-  {-13.0, -16.0, -4.0, 7.0, 11.0, 24.0, 36.0, 37.0},  // compression-start gain
+  {-13.0, -16.0, -4.0, 7.0, 11.0, 20.0, 26.0, 27.0},  // compression-start gain
   {0.7f, 0.9f, 1.0f, 1.1f, 1.2f, 1.4f, 1.5f, 1.5f},   // compression ratio
   {32.0, 27.0, 27.0, 27.0, 30.0, 30.0, 30.0, 30.0},   // compression-start kneepoint (input dB SPL)
   {79.f, 88.f, 91.f, 93.f, 98.f, 103.f, 102.f, 100.f} // output limiting threshold (comp ratio 10)
@@ -46,7 +46,7 @@ BTNRH_WDRC::CHA_DSL dsl_right = {5,  // attack (ms)
   {317.1666, 502.9734, 797.6319, 1264.9, 2005.9, 3181.1, 5044.7},   // cross frequencies (Hz)
   {0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7},           // compression ratio for low-SPL region (ie, the expander..values should be < 1.0)
   {30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0},   // expansion-end kneepoint
-  {-13.0, -16.0, -4.0, 7.0, 11.0, 24.0, 36.0, 37.0},  // compression-start gain
+  {-13.0, -16.0, -4.0, 7.0, 11.0, 20.0, 26.0, 27.0},  // compression-start gain
   {0.7f, 0.9f, 1.0f, 1.1f, 1.2f, 1.4f, 1.5f, 1.5f},   // compression ratio
   {32.0, 27.0, 27.0, 27.0, 30.0, 30.0, 30.0, 30.0},   // compression-start kneepoint (input dB SPL)
   {79.f, 88.f, 91.f, 93.f, 98.f, 103.f, 102.f, 100.f} // output limiting threshold (comp ratio 10)
