@@ -14,7 +14,7 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     
     //Put different gain settings here to ease the updating of the GUI
     //float input_gain_dB = 0.0;   //gain of the hardware PGA in the AIC...now set by earpiece mixer
-    float digital_gain_dB = -25.0; //overall digital gain to apply to the signal
+    float digital_gain_dB = 0.0; //overall digital gain to apply to the signal
     float output_gain_dB = 0.0;  //gain of the hardware headphone amplifier in the AIC
 
     //Put different algorithm prescriptions here
