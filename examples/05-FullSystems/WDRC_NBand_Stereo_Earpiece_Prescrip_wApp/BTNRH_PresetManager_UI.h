@@ -62,9 +62,9 @@ class BTNRH_Preset {
           Serial.println("BTNRH_Preset: interpolateSettings: *** ERROR ***: old and new first freqs should be the same:");
           Serial.println("    : " + String(old_center_Hz[0]) + ", " + String(new_center_Hz[0]));
         }
-        if (fabs(new_center_Hz[new_n_crossover-1]-old_center_Hz[old_n_crossover-1]) > 1.0) {
+        if (fabs(new_center_Hz[new_n_chan-1]-old_center_Hz[old_n_chan-1]) > 1.0) {
           Serial.println("BTNRH_Preset: interpolateSettings: *** ERROR ***: old and new last freqs should be the same:");
-          Serial.println("    : " + String(old_center_Hz[old_n_crossover-1]) + ", " + String(new_center_Hz[new_n_crossover-1]));
+          Serial.println("    : " + String(old_center_Hz[old_n_chan-1]) + ", " + String(new_center_Hz[new_n_chan-1]));
         }
       #endif
 
@@ -73,7 +73,7 @@ class BTNRH_Preset {
         //find index where the source frequency is above the current target frequency
         float targ_freq_Hz = new_center_Hz[i];
         int source_ind = 1; //start at the second (ie, ind = 1) so that we can always look back one step
-        while ((targ_freq_Hz > old_center_Hz[source_ind]) && (source_ind < (new_n_chan-1))) source_ind++;
+        while ((targ_freq_Hz > old_center_Hz[source_ind]) && (source_ind < (old_n_chan-1))) source_ind++;
         float scale_fac = (logf(targ_freq_Hz)-logf(old_center_Hz[source_ind-1]))/(logf(old_center_Hz[source_ind])-logf(old_center_Hz[source_ind-1]));
 
         //apply interpolation to every data member of CHA_DSL that is frequency dependent (make sure you get them all!!)
@@ -84,6 +84,10 @@ class BTNRH_Preset {
         prev_vals = prev_wdrc->cr;           new_wdrc->cr[i]           = calcInterpValue(scale_fac,prev_vals[source_ind-1],prev_vals[source_ind]);
         prev_vals = prev_wdrc->tk;           new_wdrc->tk[i]           = calcInterpValue(scale_fac,prev_vals[source_ind-1],prev_vals[source_ind]);
         prev_vals = prev_wdrc->bolt;         new_wdrc->bolt[i]         = calcInterpValue(scale_fac,prev_vals[source_ind-1],prev_vals[source_ind]);         
+
+        //debugging
+ //       Serial.println("BTNRH_PresetManager_UI: i = " + String(i) + ", targ_freq_Hz = " + String(targ_freq_Hz) + ", source_ind = " + String(source_ind) +
+ //         ", scale_fac = " + String(scale_fac) + ", tkgain = " + String(new_wdrc->tkgain[i]));
       }
 
       return 0;  //normal finish, no error
@@ -126,20 +130,23 @@ class BTNRH_Preset {
   protected:
     virtual void calcCenterFromCrossover(const int n_center, const float *cross_Hz, float *center_Hz) {
       int n_crossover = n_center -1;
-      float scale_fac = expf(logf(cross_Hz[n_crossover-1]/cross_Hz[0]) / ((float)(n_crossover-1)));
       for (int i=0; i<n_center; i++) {
         if (i==0) {
           //center_Hz[i] = cross_Hz[i]*1.0/sqrtf(scale_fac);
           center_Hz[i] = cross_Hz[i];
+          
         } else if (i == (n_center-1)) {
-          center_Hz[i] = cross_Hz[n_crossover-1]*sqrtf(scale_fac);
+          //center_Hz[i] = cross_Hz[n_crossover-1]*sqrtf(scale_fac);
+          center_Hz[i] = cross_Hz[n_crossover-1];
+          
         } else {
-          //center_Hz[i] = cross_Hz[i-1]*expf(0.5*logf(cross_Hz[i]/cross_Hz[i-1]));
-          center_Hz[i] = cross_Hz[i];
+          center_Hz[i] = cross_Hz[i-1]*expf(0.5*logf(cross_Hz[i]/cross_Hz[i-1]));
+          //center_Hz[i] = cross_Hz[i];
+          
         }        
       }
     }
-    virtual float calcInterpValue(float scale_fac, float old_val_high, float old_val_low) {
+    virtual float calcInterpValue(float scale_fac, float old_val_low, float old_val_high) {
       return scale_fac*(old_val_high-old_val_low)+old_val_low;
     }
 
