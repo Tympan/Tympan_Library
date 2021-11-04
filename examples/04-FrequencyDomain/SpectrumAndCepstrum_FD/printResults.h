@@ -9,23 +9,44 @@
 //
 
 
+// First, we have some helper functions
+
+//find maximum value(s).  Max values must be seperated by at least 1 bin
+void findPeaks(float *values_mag2, int start_ind, int end_ind, float *peaks_mag2, int *peaks_ind, int N_PEAKS) {
+  for (int Ipeak = 0; Ipeak < N_PEAKS; Ipeak++) {
+
+    //search for the max value (other than those already found
+    float cur_max = 0.0f;
+    int cur_ind = -1;
+    for (int i=start_ind; i<end_ind; i++) {
+      float val = values_mag2[i];
+      if (val > cur_max) {
+        
+        //check to ensure that we haven't already gotten this one
+        int candidate_ind = i;
+        bool is_ok = true;
+        if (Ipeak > 0) {
+          for (int Iprev=0; Iprev<Ipeak; Iprev++) {
+            if ( abs(candidate_ind-peaks_ind[Iprev]) <= 1 ) //reject previous peaks and the neighboring bin on either side!
+            is_ok = false;
+          }
+        }
+        if (is_ok) {
+          cur_max = val;
+          cur_ind = i;
+        }
+      }
+    }
+
+    //save the values to the output
+    peaks_mag2[Ipeak] = cur_max;
+    peaks_ind[Ipeak] = cur_ind; 
+  }
+}
+
 // Here is Method 1, the function that periodically prints the top 3 peaks in the spectrum 
 // and the top 3 peaks in the cepstrum.  Sing or whistle and look at the values.  You'd look
 // at the values via via the Arduino SerialMonitor.
-void printSpectralAndCepstralPeaks(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  static unsigned long lastUpdate_millis = 0;
-  static float prev_val = 0;
-
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-
-    printSpectralAndCepstralPeaks();  //thisi is the function that actually prints the spectral/cepstral stuff
-    
-    lastUpdate_millis = curTime_millis;
-  } // end if
-}
-
 void printSpectralAndCepstralPeaks(void) {
   int NFFT = audioAnalysisCepstrum.getNFFT();
 
@@ -36,7 +57,8 @@ void printSpectralAndCepstralPeaks(void) {
 
   //how many peaks to find?  and in what freuqency range?
   int N_PEAKS = 3;
-  float allowed_min_freq_Hz = 50.0f, allowed_max_freq_Hz = 2000.0f;  
+  float allowed_min_freq_Hz = 50.0f;
+  float allowed_max_freq_Hz = 2000.0f;  
   int start_freq_ind = (int)(allowed_min_freq_Hz/sample_rate_Hz * (float)NFFT + 0.5);
   int end_freq_ind = (int)(allowed_max_freq_Hz/sample_rate_Hz * (float)NFFT + 0.5);
   int start_ceps_ind = (int)(sample_rate_Hz / (float)allowed_max_freq_Hz + 0.5);
@@ -74,42 +96,23 @@ void printSpectralAndCepstralPeaks(void) {
  
 }
 
-//find maximum value(s).  Max values must be seperated by at least 1 bin
-void findPeaks(float *values_mag2, int start_ind, int end_ind, float *peaks_mag2, int *peaks_ind, int N_PEAKS) {
-  for (int Ipeak = 0; Ipeak < N_PEAKS; Ipeak++) {
+// Here is what is actually called from loop().  This function handles the once-per-second (or whatever)
+// periodicity of the printing
+void printSpectralAndCepstralPeaks(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
+  static unsigned long lastUpdate_millis = 0;
 
-    //search for the max value (other than those already found
-    float cur_max = 0.0f;
-    int cur_ind = -1;
-    for (int i=start_ind; i<end_ind; i++) {
-      float val = values_mag2[i];
-      if (val > cur_max) {
-        
-        //check to ensure that we haven't already gotten this one
-        int candidate_ind = i;
-        bool is_ok = true;
-        if (Ipeak > 0) {
-          for (int Iprev=0; Iprev<Ipeak; Iprev++) {
-            if ( abs(candidate_ind-peaks_ind[Iprev]) <= 1 ) //reject previous peaks and the neighboring bin on either side!
-            is_ok = false;
-          }
-        }
-        if (is_ok) {
-          cur_max = val;
-          cur_ind = i;
-        }
-      }
-    }
+  //has enough time passed to update everything?
+  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
+  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
-    //save the values to the output
-    peaks_mag2[Ipeak] = cur_max;
-    peaks_ind[Ipeak] = cur_ind; 
-  }
+    printSpectralAndCepstralPeaks();  //this is the function that actually prints the spectral/cepstral stuff
+    
+    lastUpdate_millis = curTime_millis;
+  } // end if
 }
 
 
-
-// Here is Method 1, which prints all the spectrum and cepstrum values within
+// Here is Method 2, which prints all the spectrum and cepstrum values within
 // a desired frequency range.   Sing or whistle and look at the values.  You'd look
 // at the values via via the Arduino SerialPlotter.
 //
@@ -118,53 +121,69 @@ void findPeaks(float *values_mag2, int start_ind, int end_ind, float *peaks_mag2
 // frequency of the voice, there are many more cepstral bins than spectral bins, so
 // I search over the range of cepstral bins that fit within the spectral bin and then 
 // I print out the maximum cepstral value in that range.
+void printFullSpectrumAndCepstrum(void) {
+  static bool firstTime = true;
+  
+  if (firstTime) {
+    Serial.println("BinFreq_kHz, Spectrum_dB, Cepstrum_dB");
+    firstTime=false;
+  }
+
+  //print values to indicate start of a new frame
+  Serial.println("-20.0, -20.0, -20.0");
+  Serial.println(" 80.0, 80.0, 80.0");
+  Serial.println("-20.0, -20.0, -20.0");
+  
+  
+  //define the frequencies of interest
+  float min_print_Hz = 20.0;
+  float max_print_Hz = 4000.0;
+
+  //loop over the frequencies of interest
+  int NFFT = audioAnalysisCepstrum.getNFFT();
+  int min_ind = (int)(min_print_Hz / sample_rate_Hz * NFFT + 0.5); min_ind = max(1, min_ind);
+  int max_ind = (int)(max_print_Hz / sample_rate_Hz * NFFT + 0.5); max_ind = min(max_ind, NFFT/2);
+  for (int i=min_ind; i<max_ind;i++) { //do only up to nyquist
+    float freq_Hz = audioAnalysisCepstrum.getSpectrumFreq_Hz(i);
+    float spec_dB = 10.0*log10f(audioAnalysisCepstrum.getSpectrumValue_mag2(i));
+
+    //we now need to find the range of cepstral bins that correspond to this
+    //single spectral bin.
+    float prev_Hz = audioAnalysisCepstrum.getSpectrumFreq_Hz(i-1);
+    float next_Hz = audioAnalysisCepstrum.getSpectrumFreq_Hz(i+1);
+    float ceps_low_Hz = 0.5*(prev_Hz+freq_Hz); //half way between FFT bins
+    float ceps_high_Hz = 0.5*(freq_Hz+next_Hz);//half way between FFT bins
+    int ceps_ind_low = (int)(sample_rate_Hz / ceps_high_Hz + 0.5);
+    int ceps_ind_high = (int)(sample_rate_Hz / ceps_low_Hz + 0.5);
+
+    //now we decide what cepstral value to report for this range of cepstral bins
+    float ceps_mag2=0.0f;
+    if (0) {
+      //sum (or average) across all cepstral bins that are within the spectral bin
+      for (int Iceps = ceps_ind_low; Iceps <= ceps_ind_high; Iceps++) ceps_mag2 += audioAnalysisCepstrum.getCepstrumValue_mag2(Iceps);
+      //ceps_mag2 = ceps_mag2 / (ceps_ind_high-ceps_ind_low+1); //compute the average, rather than just the sum
+    } else {
+      //get the max across all the cepstral bins that are within the spectral bin 
+      for (int Iceps = ceps_ind_low; Iceps <= ceps_ind_high; Iceps++) ceps_mag2 = max(ceps_mag2, audioAnalysisCepstrum.getCepstrumValue_mag2(Iceps));
+    }
+    float ceps_dB = 10.0*log10f(ceps_mag2);
+
+    //print the values!
+    Serial.println(String(freq_Hz/1000,1) + ", " + String(spec_dB+70,1) + ", " + String(ceps_dB,1));
+  }
+}
+
+
+// Here is what is actually called from loop().  This function handles the once-per-second (or whatever)
+// periodicity of the printing
 void printFullSpectrumAndCepstrum(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
   static unsigned long lastUpdate_millis = 0;
-  static float prev_val = 0;
-  static bool firstTime = true;
 
   //has enough time passed to update everything?
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
-    if (firstTime) {
-      Serial.println("BinFreq_kHz, Spectrum_dB, Cepstrum_dB");
-      firstTime=false;
-    }
-
-    int NFFT = audioAnalysisCepstrum.getNFFT();
-
-    //int max_ind = NNFT/2;  //plot to Nyquist
-    int min_ind = (int)(10.0 / sample_rate_Hz * NFFT + 0.5); min_ind = max(1, min_ind);
-    int max_ind = (int)(4000.0 / sample_rate_Hz * NFFT + 0.5); max_ind = min(max_ind, NFFT/2);
-    for (int i=min_ind; i<max_ind;i++) { //do only up to nyquist
-      float freq_Hz = audioAnalysisCepstrum.getSpectrumFreq_Hz(i);
-      float spec_dB = 10.0*log10f(audioAnalysisCepstrum.getSpectrumValue_mag2(i));
-
-      //we now need to find the range of cepstral bins that correspond to this
-      //single spectral bin.
-      float prev_Hz = audioAnalysisCepstrum.getSpectrumFreq_Hz(i-1);
-      float next_Hz = audioAnalysisCepstrum.getSpectrumFreq_Hz(i+1);
-      float ceps_low_Hz = 0.5*(prev_Hz+freq_Hz); //half way between FFT bins
-      float ceps_high_Hz = 0.5*(freq_Hz+next_Hz);//half way between FFT bins
-      int ceps_ind_low = (int)(sample_rate_Hz / ceps_high_Hz + 0.5);
-      int ceps_ind_high = (int)(sample_rate_Hz / ceps_low_Hz + 0.5);
-
-      //now we decide what cepstral value to report for this range of cepstral bins
-      float ceps_mag2=0.0f;
-      if (0) {
-        //sum (or average) across all cepstral bins that are within the spectral bin
-        for (int Iceps = ceps_ind_low; Iceps <= ceps_ind_high; Iceps++) ceps_mag2 += audioAnalysisCepstrum.getCepstrumValue_mag2(Iceps);
-        //ceps_mag2 = ceps_mag2 / (ceps_ind_high-ceps_ind_low+1); //compute the average, rather than just the sum
-      } else {
-        //get the max across all the cepstral bins that are within the spectral bin 
-        for (int Iceps = ceps_ind_low; Iceps <= ceps_ind_high; Iceps++) ceps_mag2 = max(ceps_mag2, audioAnalysisCepstrum.getCepstrumValue_mag2(Iceps));
-      }
-      float ceps_dB = 10.0*log10f(ceps_mag2);
- 
-      //print the values!
-      Serial.println(String(freq_Hz/1000) + ", " + String(spec_dB+70) + ", " + String(ceps_dB));
-    }
+    printFullSpectrumAndCepstrum();
     
     lastUpdate_millis = curTime_millis;
   } // end if

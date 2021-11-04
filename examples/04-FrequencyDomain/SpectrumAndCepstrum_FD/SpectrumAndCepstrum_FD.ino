@@ -19,7 +19,6 @@
 
 #include <Tympan_Library.h>
 #include "AudioAnalysisCepstrum_FD_F32.h"  //the local file holding your custom function
-#include "printResults.h"  //here is a local file holding the spectral/cepstral printing functions
 
 //set the sample rate and block size
 const float sample_rate_Hz = 24000.f; //try diff values, like 24000 or 32000 or 44100 or 48000 or 96000
@@ -36,6 +35,10 @@ AudioOutputI2S_F32           i2s_out(audio_settings);               //Digital au
 AudioConnection_F32       patchCord1(i2s_in, 0, audioAnalysisCepstrum, 0);   //connect the Left input to our algorithm
 AudioConnection_F32       patchCord2(i2s_in, 0, i2s_out, 0);  //connect the algorithm to the left output
 AudioConnection_F32       patchCord3(i2s_in, 0, i2s_out, 1);  //connect the algorithm to the right output
+
+//add our printing functions
+#include "printResults.h"  //here is a local file holding the spectral/cepstral printing functions
+
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 15.0f; //gain on the microphone
