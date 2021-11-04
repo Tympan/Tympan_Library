@@ -15,7 +15,7 @@
 //
 // This example code is in the public domain (MIT License)
 
-#define OUTPUT_FOR_SERIAL_PLOTTER false    //set to true and then open the Arduino SerialPlotter rather than the Serial Monitor
+#define OUTPUT_FOR_SERIAL_PLOTTER true    //set to true and then open the Arduino SerialPlotter rather than the Serial Monitor
 
 #include <Tympan_Library.h>
 #include "AudioAnalysisCepstrum_FD_F32.h"  //the local file holding your custom function
