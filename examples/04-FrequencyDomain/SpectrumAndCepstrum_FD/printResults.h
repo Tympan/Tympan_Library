@@ -121,28 +121,31 @@ void printSpectralAndCepstralPeaks(unsigned long curTime_millis, unsigned long u
 // frequency of the voice, there are many more cepstral bins than spectral bins, so
 // I search over the range of cepstral bins that fit within the spectral bin and then 
 // I print out the maximum cepstral value in that range.
+//
+// The Arduino Serial plotter plots 500 points (I think), so let's have this routine
+// print however many values it is to plot and then fill out the rest of the 500 with\
+// zeros so that it looks nice on the Arduino serial plotter
 void printFullSpectrumAndCepstrum(void) {
   static bool firstTime = true;
   
   if (firstTime) {
-    Serial.println("BinFreq_kHz, Spectrum_dB, Cepstrum_dB");
+    //https://diyrobocars.com/2020/05/04/arduino-serial-plotter-the-missing-manual/
+    Serial.println("BinFreq_kHz:,Spectrum_dB_scaled:,Cepstrum_dB_scaled:"); //send labels for legend
+    //Serial.println("Min:-10,Max:90"); //send labels for legend
     firstTime=false;
   }
-
-  //print values to indicate start of a new frame
-  Serial.println("-20.0, -20.0, -20.0");
-  Serial.println(" 80.0, 80.0, 80.0");
-  Serial.println("-20.0, -20.0, -20.0");
-  
   
   //define the frequencies of interest
-  float min_print_Hz = 20.0;
-  float max_print_Hz = 4000.0;
+  float min_print_Hz = 0.0;
+  float max_print_Hz = 3750.0;
+  int N_ARDUINO_SERIAL_PLOTTER = 500; //I think that the serial plotter shows the most recent 500 points
+    
 
   //loop over the frequencies of interest
   int NFFT = audioAnalysisCepstrum.getNFFT();
   int min_ind = (int)(min_print_Hz / sample_rate_Hz * NFFT + 0.5); min_ind = max(1, min_ind);
   int max_ind = (int)(max_print_Hz / sample_rate_Hz * NFFT + 0.5); max_ind = min(max_ind, NFFT/2);
+  int count = 0;
   for (int i=min_ind; i<max_ind;i++) { //do only up to nyquist
     float freq_Hz = audioAnalysisCepstrum.getSpectrumFreq_Hz(i);
     float spec_dB = 10.0*log10f(audioAnalysisCepstrum.getSpectrumValue_mag2(i));
@@ -168,8 +171,167 @@ void printFullSpectrumAndCepstrum(void) {
     }
     float ceps_dB = 10.0*log10f(ceps_mag2);
 
-    //print the values!
-    Serial.println(String(freq_Hz/1000,1) + ", " + String(spec_dB+70,1) + ", " + String(ceps_dB,1));
+    //shift, scale and limit the values (to make pretty in the plot)
+    spec_dB = spec_dB + 70.0;    // shift to better align with the SerialPlotter
+    ceps_dB = ceps_dB - 20.0;    // shift to better align with the SerialPlotter
+    spec_dB = max(0,min(1.0, spec_dB/90.0));      // scale relevant region to be 0.0 to 1.0
+    ceps_dB = max(0,min(1.0, ceps_dB/60.0));      // scale relevant region to be 0.0 to 1.0
+    spec_dB = map(spec_dB, 0.0, 1.0, 0.0, max_print_Hz); //scale values to fit within the frequency range (for pretty real-time plot)
+    ceps_dB = map(ceps_dB, 0.0, 1.0, 0.0, max_print_Hz); //scale values to fit within the frequency range (for pretty real-time plot)
+
+    //print multiple times in order to fill out the SerialPlotter window
+    int n_repeat = max(1,(floor)(N_ARDUINO_SERIAL_PLOTTER / (max_ind-min_ind+1)));
+    for (int Irepeat=0; Irepeat < n_repeat; Irepeat++) {   
+      if (count <= N_ARDUINO_SERIAL_PLOTTER) {
+        Serial.println(String(freq_Hz,1) + "," + String(spec_dB,1) + "," + String(ceps_dB,1)); 
+        count++;
+      }
+    }
+  }
+
+
+  while (count < N_ARDUINO_SERIAL_PLOTTER) {
+    //fill out the remaining points with zeros
+    Serial.println("-1.0,0.0,0.0");
+    count++;
+  }
+}
+
+// Here is Method 2.5, which prints all the spectrum and cepstrum values within
+// a desired frequency range...but logarithmically with interpolation to fill the
+// Arduino SerialPlotter window.  Sing or whistle like before.
+//
+// Note that this function needs to put the cepstrum on the same frequency basis as
+// the spectrum, which is NOT the native format of the cepstrum.  Down at the fundamental
+// frequency of the voice, there are many more cepstral bins than spectral bins, so
+// I search over the range of cepstral bins that fit within the spectral bin and then 
+// I print out the maximum cepstral value in that range.
+//
+
+float getSumSpectrumOverRange(float *spec_mag2, float fs_Hz, int NFFT, float start_Hz, float end_Hz) {
+  float out_mag2=0.0;
+  
+  //start to understand what range of indices we're going to be computing
+  float start_ind_float = max(0.0,start_Hz/fs_Hz*(float)NFFT);
+  float end_ind_float = min((float)NFFT/2,end_Hz/fs_Hz*(float)NFFT); //or NFFT/2 + 1 ??
+
+  // // compute the sum for the whole points in-between the given bounds
+  int start_ind = (int)ceil(start_ind_float);
+  int end_ind = (int)floor(end_ind_float);
+  int ind = start_ind;
+  while (ind < end_ind) {
+    out_mag2 += 0.5*(spec_mag2[ind] + spec_mag2[ind+1]);
+    //weight_fac += 1.0; //we added one whole point to our averaging
+    
+    ind++; //next step
+  }
+
+  //  //now take care of the ends
+  
+  //lower point and its neighboring whole point
+  int x1 = (int)floor(start_ind_float), x2 = x1+1; //index below and above
+  float start_mag2 = map(start_ind_float, (float)x1, (float)x2, spec_mag2[x1], spec_mag2[x2]);
+  float midA_mag2 = spec_mag2[(int)ceil(start_ind_float)];
+  float weightA = ceil(start_ind_float) - start_ind_float;
+  
+  //upper point and its neigboring whole point
+  x1 = (int)floor(end_ind_float), x2 = x1+1;  //index below and above
+  float end_mag2 = map(start_ind_float, (float)x1, (float)x2, spec_mag2[x1], spec_mag2[x2]);
+  float midB_mag2 = spec_mag2[(int)floor(end_ind_float)];
+  float weightB = end_ind_float - floor(end_ind_float);
+  
+  //join it all together
+  if (ceil(start_ind_float) > floor(end_ind_float)) {
+    //there is no data point in-between...so just get the average of the two points
+    float ave_mag2 = 0.5*(start_mag2 + end_mag2);
+    float weight = end_ind_float - start_ind_float;
+    out_mag2 += weight*ave_mag2; //weighted by how much space the start->end represents
+  } else {
+    //there is one data or more data points in-between
+    float aveA_mag2 = 0.5*(start_mag2 + midA_mag2);
+    float aveB_mag2 = 0.5*(midB_mag2 + end_mag2);
+    out_mag2 +=  ((weightA*aveA_mag2)+(weightB*aveB_mag2));
+  }
+  return out_mag2;
+}
+
+float getMaxCepstrumOverRange(float *ceps_mag2, float fs_Hz, int NFFT, float start_Hz, float end_Hz) {
+  float out_mag2=0.0;
+  
+  //start to understand what range of indices we're going to be computing
+  float start_ind_float = max(0, fs_Hz/end_Hz);
+  float end_ind_float = min(NFFT/2, fs_Hz/start_Hz); //or NFFT/2 + 1 ??
+
+  //lowest point
+  int x1 = (int)floor(start_ind_float), x2 = x1+1; //index below and above
+  float start_mag2 = map(start_ind_float, (float)x1, (float)x2, ceps_mag2[x1], ceps_mag2[x2]);
+  out_mag2 = max(out_mag2, start_mag2);
+
+  // // compute the max for the whole points in-between the given bounds
+  int start_ind = (int)ceil(start_ind_float);
+  int end_ind = (int)floor(end_ind_float);
+  int ind = start_ind;
+  for (int ind=start_ind; ind <= end_ind; ind++) out_mag2 = max(out_mag2, ceps_mag2[ind]);
+
+  //highest point
+  x1 = (int)floor(end_ind_float), x2 = x1+1;  //index below and above
+  float end_mag2 = map(start_ind_float, (float)x1, (float)x2, ceps_mag2[x1], ceps_mag2[x2]);
+  out_mag2 = max(out_mag2, end_mag2);
+
+  return out_mag2;
+}
+
+void printFullSpectrumAndCepstrum_Log(void) {
+  static bool firstTime = true;
+  
+  if (firstTime) {
+    //https://diyrobocars.com/2020/05/04/arduino-serial-plotter-the-missing-manual/
+    Serial.println("BinFreq_kHz:,Spectrum_dB:,Cepstrum_dB:"); //send labels for legend
+    //Serial.println("Min:-10,Max:90");
+    firstTime=false;
+  }  
+  
+  //define the frequencies of interest
+  float min_print_Hz = 40.0;
+  float max_print_Hz = 8000.0;
+  int NFFT = audioAnalysisCepstrum.getNFFT();
+  float fs_Hz = audioAnalysisCepstrum.getSampleRate_Hz();
+  
+  //define the plotting parameters
+  int N_ARDUINO_SERIAL_PLOTTER = 500; //I think that the serial plotter shows the most recent 500 points
+  float step_fac = expf(logf(max_print_Hz/min_print_Hz)/((float)(N_ARDUINO_SERIAL_PLOTTER-1)));
+  float half_step_fac = expf(0.5f*logf(step_fac));
+  
+  //copy out the spectrum and cepstrum
+  float spec_mag2[NFFT], ceps_mag2[NFFT];
+  audioAnalysisCepstrum.getSpectrumArray_mag2(spec_mag2,NFFT);
+  audioAnalysisCepstrum.getCepstrumArray_mag2(ceps_mag2,NFFT);
+  
+  //loop over the frequencies of interest, interpolating as needed
+  int count = 0;
+  float targ_freq_Hz, start_freq_Hz, end_freq_Hz;
+  float spec_dB, ceps_dB;
+  while (count < N_ARDUINO_SERIAL_PLOTTER) {
+    targ_freq_Hz = min_print_Hz * powf(step_fac,count);
+
+    //get the frequency bounds for our calculation
+    start_freq_Hz = targ_freq_Hz / half_step_fac;
+    end_freq_Hz = targ_freq_Hz * half_step_fac;
+    
+    //get sum of spectrum over the window
+    spec_dB = 10.0f*log10f(getSumSpectrumOverRange(spec_mag2,fs_Hz,NFFT,start_freq_Hz,end_freq_Hz));
+
+    //get cepstrum over the window...looks best if using max instead of sum?
+    ceps_dB = 10.0f*log10f(getMaxCepstrumOverRange(ceps_mag2,fs_Hz,NFFT,start_freq_Hz,end_freq_Hz));
+
+    //scale and limit the values (to make pretty) and then print to the USB Serial!
+    spec_dB = spec_dB + 70.0;    // shift to align with the magnitude of the cepstral data
+    spec_dB = max(0.0, min(80.0, spec_dB));  // limit the dB values
+    ceps_dB = max(0.0, min(80.0, ceps_dB));  // limit the dB values
+    spec_dB = map(spec_dB, 0.0, 80.0, 0, max_print_Hz); //scale values to fit within the frequency range (for pretty real-time plot)
+    ceps_dB = map(ceps_dB, 0.0, 80.0, 0, max_print_Hz); //scale values to fit within the frequency range (for pretty real-time plot)
+    Serial.println(String(targ_freq_Hz,1) + "," + String(spec_dB,1) + "," + String(ceps_dB,1)); 
+    count++;
   }
 }
 
@@ -183,7 +345,11 @@ void printFullSpectrumAndCepstrum(unsigned long curTime_millis, unsigned long up
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
-    printFullSpectrumAndCepstrum();
+    if (1) {
+      printFullSpectrumAndCepstrum();
+    } else {
+      printFullSpectrumAndCepstrum_Log();
+    }
     
     lastUpdate_millis = curTime_millis;
   } // end if

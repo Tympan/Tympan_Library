@@ -21,15 +21,15 @@
 #include "AudioAnalysisCepstrum_FD_F32.h"  //the local file holding your custom function
 
 //set the sample rate and block size
-const float sample_rate_Hz = 24000.f; //try diff values, like 24000 or 32000 or 44100 or 48000 or 96000
+const float sample_rate_Hz = 16000.f; //try diff values, like 16000, 24000, 32000, 44100, 48000 or 96000...slower gives more frequency resolution
 const int audio_block_samples = 128;  //choose a power of 2 (16, 32, 64, 128) but no higher than 128
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                       myTympan(TympanRev::E);                //do TympanRev::D or TympanRev::E
-AudioInputI2S_F32            i2s_in(audio_settings);                //Digital audio *from* the Tympan AIC.
+Tympan                         myTympan(TympanRev::E,audio_settings);  //do TympanRev::D or TympanRev::E
+AudioInputI2S_F32              i2s_in(audio_settings);                 //Digital audio *from* the Tympan AIC.
 AudioAnalysisCepstrum_FD_F32   audioAnalysisCepstrum(audio_settings);  //computes spectrum and cepstrum
-AudioOutputI2S_F32           i2s_out(audio_settings);               //Digital audio *to* the Tympan AIC.
+AudioOutputI2S_F32             i2s_out(audio_settings);                //Digital audio *to* the Tympan AIC.
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, audioAnalysisCepstrum, 0);   //connect the Left input to our algorithm
@@ -57,7 +57,7 @@ void setup() {
   AudioMemory_F32(20, audio_settings);
 
   // Configure the frequency-domain algorithm
-  int N_FFT = 8*audio_block_samples;  //choose no more than 4 x audio_block_samples?  Maybe it'll work at 8x or higher?  Maybe not?  Try it!
+  int N_FFT = 8*audio_block_samples;  //choose no more than 8 x audio_block_samples?  Maybe it'll work at 8x or higher?  Maybe not?  Try it!
   #if (OUTPUT_FOR_SERIAL_PLOTTER == false)
     Serial.println("setup: Setting to N_FFT = " + String(N_FFT));
   #endif
@@ -99,7 +99,7 @@ void loop() {
   #else
 
     //print out full spectrum and cepstrum...for serial plotter!
-    printFullSpectrumAndCepstrum(millis(),1000);  //print every 1000 msec
+    printFullSpectrumAndCepstrum(millis(),500);  //print every 500 msec
   
   #endif
   
