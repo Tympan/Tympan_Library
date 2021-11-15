@@ -124,11 +124,14 @@ class TympanStateBase_UI : public TympanStateBase, public SerialManager_UI {
 			}
 		};
 		virtual void printCPUtoGUI(unsigned long curTime_millis = 0, unsigned long updatePeriod_millis = 0) {
+			printCPUtoApp(curTime_millis, updatePeriod_millis);
+		}
+		virtual void printCPUtoApp(unsigned long curTime_millis = 0, unsigned long updatePeriod_millis = 0) {
 			static unsigned long lastUpdate_millis = 0;
 			//has enough time passed to update everything?
 			if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
 			if ((curTime_millis - lastUpdate_millis) >= updatePeriod_millis) { //is it time to update the user interface?
-				Serial.println("TympanStateBase: printCPUtoGUI: sending " + String(getCPUUsage(),1));
+				Serial.println("TympanStateBase: printCPUtoApp: sending " + String(getCPUUsage(),1));
 				setButtonText("cpuValue", String(getCPUUsage(),1));
 				lastUpdate_millis = curTime_millis; //we will use this value the next time around.
 			}
