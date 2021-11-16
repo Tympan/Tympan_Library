@@ -14,7 +14,8 @@ AudioTestSignalGenerator_F32  audioTestGenerator(audio_settings); //move this to
   AudioEffectMultiBandWDRC_IIR_F32_UI multiBandWDRC[2];       //use biquad (IIR) filterbank
   #define FILTER_ORDER 6                                      //usually is 6.  never tried anything else (like 8)
 #endif
-StereoContainerWDRC_UI              stereoContainerWDRC;           //helps with managing the phone App's GUI for left+right.  In AudioEffectMultiBandWDRC_F32.h
+AudioFilterBiquad_F32_UI            notch[2];                 //IIR notch filters
+StereoContainer_Biquad_WDRC_UI      stereoContainerWDRC;           //helps with managing the phone App's GUI for left+right.  See local *.h file (which also references AudioEffectMultiBandWDRC_F32.h)
 AudioOutputI2SQuad_F32              i2s_out(audio_settings);       //Digital audio output to the DAC via the i2s bus.  Should be last, except for SD writing
 AudioSDWriter_F32_UI                audioSDWriter(audio_settings); //this is 2-channels of audio by default, but can be changed to 4 in setup()
 
@@ -35,8 +36,9 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
 
   // ///////////// Do some setup of the algorithm modules.  Maybe would be less confusing if I put them in ConfigureAlgorithms.h??
   //put items inot each side of the stereo container (for better handling the UI elements)
+  stereoContainerWDRC.addPairBiquads(&(notch[LEFT]),&(notch[RIGHT])); //can add generic UI-enabled algorithms to the container as well
   stereoContainerWDRC.addPairMultiBandWDRC(&(multiBandWDRC[LEFT]),&(multiBandWDRC[RIGHT])); 
-
+ 
   // connect each earpiece mic to the earpiece mixer
   patchCord[count++] = new AudioConnection_F32(i2s_in,0,earpieceMixer,0);
   patchCord[count++] = new AudioConnection_F32(i2s_in,1,earpieceMixer,1);
@@ -54,20 +56,25 @@ int makeAudioConnections(void) { //call this in setup() or somewhere like that
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement_Filters, 0); //this is the baseline connection for comparison
   patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0, audioTestMeasurement,     0); //this is the baseline connection for comparison
 
-  //connect the inputs to the compressors from slightly different places
-  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0,                   multiBandWDRC[LEFT],  0); //connect to input of multiBandWDRC used for the left
-  patchCord[count++] = new AudioConnection_F32(earpieceMixer,      earpieceMixer.RIGHT, multiBandWDRC[RIGHT], 0); //connect to the input of multiBandWDRC used for the right
+  //insert notch filters (with inputs from slightly different places due to the test blocks)
+  patchCord[count++] = new AudioConnection_F32(audioTestGenerator, 0,                   notch[LEFT],  0); //connect to input of multiBandWDRC used for the left
+  patchCord[count++] = new AudioConnection_F32(earpieceMixer,      earpieceMixer.RIGHT, notch[RIGHT], 0); //connect to the input of multiBandWDRC used for the right
+
+  //connect to the compressors 
+  patchCord[count++] = new AudioConnection_F32(notch[LEFT],  0, multiBandWDRC[LEFT],  0); //connect to input of multiBandWDRC used for the left
+  patchCord[count++] = new AudioConnection_F32(notch[RIGHT], 0, multiBandWDRC[RIGHT], 0); //connect to the input of multiBandWDRC used for the right
 
   for (int I_LR = LEFT; I_LR <= RIGHT; I_LR++) {
+    //connect the notch filters to the compressors
 
     //Set the algorithms sample rate and block size to align with the global values
+    notch[I_LR].setSampleRate_Hz(audio_settings.sample_rate_Hz);
     multiBandWDRC[I_LR].setSampleRate_Hz(audio_settings.sample_rate_Hz);
     multiBandWDRC[I_LR].setAudioBlockSize(audio_settings.audio_block_samples);
     
     //make filterbank and compressorbank big enough...I'm not sure if this is actually needed
     multiBandWDRC[I_LR].filterbank.set_max_n_filters(MAX_N_CHAN);  //is this needed?
     multiBandWDRC[I_LR].compbank.set_max_n_chan(MAX_N_CHAN);       //is this needed?
-
   }
 
   //send the audio out
@@ -93,9 +100,14 @@ void setupAudioProcessing(void) {
   //make all of the audio connections
   makeAudioConnections();  //see AudioConnections.h
 
+  //configure notch filters
+  const int LEFT = StereoContainer_UI::LEFT, RIGHT = StereoContainer_UI::RIGHT; 
+  int stage = 0;  float notch_Hz = 4000.0;  float notch_BW_Hz = 200.0;  float approx_Q = notch_Hz / notch_BW_Hz;
+  notch[LEFT].setNotch(stage, notch_Hz, approx_Q);  notch[RIGHT].setNotch(stage, notch_Hz, approx_Q);
+  notch[LEFT].bypass(true);notch[RIGHT].bypass(true);  //by defualt, bypass these filters
+
   //make some software connections to allow different parts of the code to talk with each other
   presetManager.attachAlgorithms(&multiBandWDRC[0],&multiBandWDRC[1]);  // the Left and Right WDRC chain
-
   
   //try to load the prescription from the SD card
   for (int i=0; i<presetManager.n_presets; i++) {

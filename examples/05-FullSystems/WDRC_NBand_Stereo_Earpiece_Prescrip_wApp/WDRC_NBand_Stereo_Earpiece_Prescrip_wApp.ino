@@ -64,6 +64,7 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 
 //More includes
 #include      "BTNRH_PresetManager_UI.h"  //must be after N_CHAN is defined
+#include      "StereoContainer_Biquad_WDRC_UI.h"
 #include      "SerialManager.h"     //must be after BTNRH_PresetManager_UI is defined
 #include      "State.h"             //must be after N_CHAN is defined
 #include      "AudioConnections.h"  //let's put them in their own file for clarity
