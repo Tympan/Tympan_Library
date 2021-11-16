@@ -14,6 +14,7 @@
         * All channels mixed back together
         * Broadband gain element
         * Broadband WDRC compressor (used as a limiter)
+    * Adds a notching filter prior to the WDRC for mitigating stationary feedback (bypassed by default)
     * Stereo (each ear is indepenedent)
     * Uses Tympan digital earpieces (or any of the other built-in audio sorces))
     * Can control via TympanRemote App or via USB Serial

@@ -107,7 +107,8 @@ void setupAudioProcessing(void) {
   notch[LEFT].bypass(true);notch[RIGHT].bypass(true);  //by defualt, bypass these filters
 
   //make some software connections to allow different parts of the code to talk with each other
-  presetManager.attachAlgorithms(&multiBandWDRC[0],&multiBandWDRC[1]);  // the Left and Right WDRC chain
+  presetManager.attachPreFilters(&notch[0], &notch[1]); //the left and right pre-filters
+  presetManager.attachWDRCs(&multiBandWDRC[0],&multiBandWDRC[1]);  // the Left and Right WDRC chain
   
   //try to load the prescription from the SD card
   for (int i=0; i<presetManager.n_presets; i++) {

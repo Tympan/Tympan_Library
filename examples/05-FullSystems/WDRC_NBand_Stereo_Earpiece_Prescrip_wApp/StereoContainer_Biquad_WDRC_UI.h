@@ -52,6 +52,6 @@ class StereoContainer_Biquad_WDRC_UI : public StereoContainerWDRC_UI {  //Stereo
 
   protected:
     AudioFilterBiquad_F32_UI *leftBiquad = NULL, *rightBiquad = NULL;
-};
+};  // close StereoContainer_Biquad_WDRC_UI
 
 #endif
