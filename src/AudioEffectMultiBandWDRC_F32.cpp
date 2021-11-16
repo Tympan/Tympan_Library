@@ -179,7 +179,7 @@ void AudioEffectMultiBandWDRC_IIR_F32_UI::setupFromBTNRH(BTNRH_WDRC::CHA_DSL &th
 TR_Page* StereoContainerWDRC_UI::addPage_filterbank(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Filterbank");
-  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
+  TR_Page page_foo; TR_Page *page_foo_h = &page_foo; //these are created as dummies just to hand to UI elements that need to be activated not actually shown in the App's GUI
   if (page_h == NULL) return NULL;
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
@@ -195,7 +195,7 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteForm
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Compressor Bank, Global Parameters");
   if (page_h == NULL) return NULL;
-  //TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
+  //TR_Page page_foo; TR_Page *page_foo_h = &page_foo;  //these are created as dummies just to hand to UI elements that need to be activated not actually shown in the App's GUI
   
 /*   addCard_chooseChan(page_h); //see StereoContainer_UI.h
   if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
@@ -215,7 +215,7 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_globals(TympanRemoteForm
 
 TR_Card* StereoContainerWDRC_UI::addMultiCards_compressorbank_globals(TR_Page *page_h) {
 	if (page_h == NULL) return NULL;
-	TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
+	TR_Page page_foo; TR_Page *page_foo_h = &page_foo;  //these are created as dummies just to hand to UI elements that need to be activated not actually shown in the App's GUI
 
 	TR_Card* ret_val;
 
@@ -235,7 +235,7 @@ TR_Card* StereoContainerWDRC_UI::addMultiCards_compressorbank_globals(TR_Page *p
 TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Compressor Bank");
-  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
+  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;  //these are created as dummies just to hand to UI elements that need to be activated not actually shown in the App's GUI
   if (page_h == NULL) return NULL;
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
@@ -253,7 +253,7 @@ TR_Page* StereoContainerWDRC_UI::addPage_compressorbank_perBand(TympanRemoteForm
 TR_Page* StereoContainerWDRC_UI::addPage_compressor_broadband(TympanRemoteFormatter *gui) {
   if (gui == NULL) return NULL;
   TR_Page *page_h = gui->addPage("Broadband Compressor");
-  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;
+  TR_Page page_foo; TR_Page *page_foo_h = &page_foo;  //these are created as dummies just to hand to UI elements that need to be activated not actually shown in the App's GUI
   if (page_h == NULL) return NULL;
   
   addCard_chooseChan(page_h); //see StereoContainer_UI.h
