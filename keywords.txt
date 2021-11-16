@@ -92,6 +92,7 @@ designFilters			KEYWORD2
 
 AudioFilterBase_F32		KEYWORD1
 AudioFilterBiquad_F32	KEYWORD1
+AudioFilterBiquad_F32_UI	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1
 AudioFilterIIR_F32	KEYWORD1
