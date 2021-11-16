@@ -220,12 +220,21 @@ float AudioFilterBiquad_F32::increment_filter_q(float incr_fac) {
 	}
 	return getQ();
 }
+	
+int AudioFilterBiquad_F32::redesignGivenCutoffAndQ(float new_freq_Hz, float new_Q) {
+	return redesignGivenCutoffAndQ(cur_type_ind, new_freq_Hz, new_Q);
+}
 
-void AudioFilterBiquad_F32::redesignGivenCutoffAndQ(float new_freq_Hz, float new_Q) {
-	switch (cur_type_ind) {
-		case NONE:
-			//do nothing
-			break;
+int AudioFilterBiquad_F32::redesignGivenCutoffAndQ(int filtType, float new_freq_Hz, float new_Q) {	
+
+	new_freq_Hz = max(0.0,min(getSampleRate_Hz()/2.0, new_freq_Hz));
+	new_Q = max(0.0, new_Q);
+	
+	int ret_val = 0;  //assume OK
+	
+	switch (filtType) {
+//		case NONE:
+//			break;
 		case LOWPASS:
 			setLowpass( cur_filt_stage,new_freq_Hz,new_Q);
 			break;
@@ -244,7 +253,11 @@ void AudioFilterBiquad_F32::redesignGivenCutoffAndQ(float new_freq_Hz, float new
 //		case HIGHSHELF:
 //			setHighShelf(cur_filt_stage,cur_gain_for_shelf,new_freq_Hz,new_Q);
 //			break;
+		default:
+			ret_val = -1;
 	}
+	
+	return ret_val;
 	
 } 
 
@@ -268,6 +281,119 @@ String AudioFilterBiquad_F32::getCurFilterTypeString(void) {
 	return String("Not Specified");
 }
 
+void AudioFilterBiquad_F32::setupFromSettings(AudioFilterBiquad_F32_settings &state) {
+	redesignGivenCutoffAndQ(state.cur_type_ind, 
+							state.cutoff_Hz,
+							state.q);
+	bypass(state.is_bypassed);
+}
+void AudioFilterBiquad_F32::getSettings(AudioFilterBiquad_F32_settings *state) {
+	state->cur_type_ind = cur_type_ind;
+	state->is_bypassed = get_is_bypassed();
+	state->cutoff_Hz = getCutoffFrequency_Hz();
+	state->q = getQ();
+}
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// SD methods for settings
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int AudioFilterBiquad_F32_settings_SD::readFromSDFile(SdFile *file, const String &var_name) {
+	const int buff_len = 300;
+	char line[buff_len];
+	
+	//find start of data structure
+	char targ_str[] = "AudioFilterBiquad_F32_settings";
+	//int lines_read = readRowsUntilTargStr(file,line,buff_len,targ_str); //file is incremented so that the next line should be the first part of the DSL data
+	int lines_read = readRowsUntilBothTargStrs(file,line,buff_len,targ_str,var_name.c_str()); //file is incremented so that the next line should be the first part of the DSL data
+	if (lines_read <= 0) {
+		Serial.println("AudioFilterBiquad_F32_settings_SD: readFromSDFile: *** could not find start of " + String(targ_str) + String(" data in file."));
+		return -1;
+	}
+
+	// read the overall settings
+	if (readAndParseLine(file, line, buff_len, &cur_type_ind, 1) < 0) return -1;
+	if (readAndParseLine(file, line, buff_len, &is_bypassed, 1) < 0) return -1;
+	if (readAndParseLine(file, line, buff_len, &cutoff_Hz, 1) < 0) return -1;
+	if (readAndParseLine(file, line, buff_len, &q, 1) < 0) return -1;
+	
+	//write to serial for debugging
+	//printAllValues();
+
+	return 0;
+}
+
+int AudioFilterBiquad_F32_settings_SD::readFromSD(SdFat &sd, String &filename_str, const String &var_name) {
+	int ret_val = 0;
+	char filename[100]; filename_str.toCharArray(filename,99);
+	
+	SdFile file;
+	
+	//open SD
+	ret_val = beginSD_wRetry(&sd,4); //number of retries
+	if (ret_val != 0) { Serial.println("AudioFilterBiquad_F32_settings_SD: readFromSD: *** ERROR ***: could not sd.begin()."); return -1; }
+	
+	//open file
+	if (!(file.open(filename,O_READ))) {   //open for reading
+		Serial.print("AudioFilterBiquad_F32_settings_SD: readFromSD: readFromSD: cannot open file ");
+		Serial.println(filename);
+		return -1;
+	}
+	
+	//read data
+	ret_val = readFromSDFile(&file, var_name);
+	
+	//close file
+	file.close();
+	
+	//return
+	return ret_val;
+}
+
+void AudioFilterBiquad_F32_settings_SD::printToSDFile(SdFile *file, const String &var_name) {
+	char header_str[] = "AudioFilterBiquad_F32_settings";
+	writeHeader(file, header_str, var_name.c_str());
+	
+	writeValuesOnLine(file, &cur_type_ind, 1, true,  "FilterType: 1=LOWPASS, 2=BANDPASS, 3=HIGHPASS, 4=NOTCH", 1);
+	writeValuesOnLine(file, &is_bypassed,  1, true,  "isBypassed: 1 = bypass the filter; 0 = filter is active", 1);
+	writeValuesOnLine(file, &cutoff_Hz,    1, true,  "for LOWPASS or HIGPASS: Cutoff Frequency (Hz);  for BANDPASS or NOTCH: Center Frequency (Hz)", 1);
+	writeValuesOnLine(file, &q,            1, false, "Filter Q (width / center)", 1);   //no trailing comma on the last one 
+	
+	writeFooter(file); 
+}
+
+int AudioFilterBiquad_F32_settings_SD::printToSD(SdFat &sd, String &filename_str, const String &var_name, bool deleteExisting) {
+	SdFile file;
+	char filename[100]; filename_str.toCharArray(filename,99);
+	
+	//open SD
+	int ret_val = beginSD_wRetry(&sd,5); //number of retries
+	if (ret_val != 0) { Serial.println("AudioFilterBiquad_F32_settings_SD: printToSD: *** ERROR ***: could not sd.begin()."); return -1; }
+	
+	//delete existing file
+	if (deleteExisting) {
+		if (sd.exists(filename)) sd.remove(filename);
+	}
+	
+	//open file
+	file.open(filename,O_RDWR  | O_CREAT | O_APPEND); //open for writing
+	if (!file.isOpen()) {  
+		Serial.print("AudioFilterBiquad_F32_settings_SD: printToSD: cannot open file ");
+		Serial.println(filename);
+		return -1;
+	}
+	
+	//write data
+	printToSDFile(&file, var_name);
+	
+	//close file
+	file.close();
+	
+	//return
+	return 0;
+}
 
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////

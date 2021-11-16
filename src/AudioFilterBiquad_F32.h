@@ -16,11 +16,35 @@
 #include "SerialManager_UI.h"
 
 
-// Indicates that the code should just pass through the audio
+#include <SdFat.h>     //this was added in Teensyduino 1.54beta3
+#include <SDWriter.h>  //to get macro definition of SD_CONFIG   //in Tympan_Library
+#include <AccessConfigDataOnSD.h>   // in Tympan_Library
+#include <BTNRH_WDRC_Types.h>  //in Tympan_Library
+
+
+// One way to indicate that the code should just pass through the audio
 // without any filtering (as opposed to doing nothing at all)
 #define IIR_F32_PASSTHRU ((const float32_t *) 1)
 
 #define IIR_MAX_STAGES 4  //meaningless right now
+
+class AudioFilterBiquad_F32_settings {
+	public:
+		int cur_type_ind = 0;   //see BiquadFiltType enum
+		int is_bypassed = 1;	//set to 1 to bypass this filter
+		float cutoff_Hz = 4000.0;
+		float q = 1.0;
+		
+		void printAllValues(void) { printAllValues(&Serial); }	
+		void printAllValues(Stream *s) {
+			s->println("AudioFilterBiquad_F32_settings:");
+			s->print("    : Filter type = "); s->println(cur_type_ind);
+			s->print("    : Is bypassed = "); s->println(is_bypassed);
+			s->print("    : Cutoff (Hz) = "); s->println(cutoff_Hz);
+			s->print("    : Filter Q = "); s->println(q);
+		};		
+	protected:	
+};
 
 
 class AudioFilterBase_F32 : public AudioStream_F32 {
@@ -202,6 +226,9 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
 	}
 	//bool get_is_enabled(void) { return is_enabled; }
 
+	virtual void setupFromSettings(AudioFilterBiquad_F32_settings &state); //loads values from "state"
+	virtual void getSettings(AudioFilterBiquad_F32_settings *settings);       //puts result into "state"
+
 	enum BiquadFiltType {NONE=0, LOWPASS, BANDPASS, HIGHPASS, NOTCH, LOWSHELF, HIGHSHELF};
 	String getCurFilterTypeString(void);
    
@@ -216,7 +243,8 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
 	float cur_gain_for_shelf = 1.0;
   
 	//functions with no bounds checking
-	virtual void redesignGivenCutoffAndQ(float new_freq_Hz, float new_Q);
+	virtual int redesignGivenCutoffAndQ(float new_freq_Hz, float new_Q);
+	virtual int redesignGivenCutoffAndQ(int filt_type, float new_freq_Hz, float new_Q);
   
     // pointer to current coefficients or NULL or FIR_PASSTHRU
     const float32_t *coeff_p;
@@ -225,6 +253,29 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
     arm_biquad_casd_df1_inst_f32 iir_inst;
     float32_t StateF32[4*IIR_MAX_STAGES];
 };
+
+
+
+// ///////////////////////////////////////////////////////////////////////////////////////////////
+//
+// State management to help with handling presets
+//
+// ///////////////////////////////////////////////////////////////////////////////////////////////
+
+class AudioFilterBiquad_F32_settings_SD : public AudioFilterBiquad_F32_settings, public Preset_SD_Base {  //look in Preset_SD_Base and in AccessConfigDataOnSD.h for more info on the methods and functions used here
+	public: 
+		AudioFilterBiquad_F32_settings_SD() : AudioFilterBiquad_F32_settings(), Preset_SD_Base() {};
+		AudioFilterBiquad_F32_settings_SD(const AudioFilterBiquad_F32_settings &state) : AudioFilterBiquad_F32_settings(state), Preset_SD_Base() {};
+		using Preset_SD_Base::readFromSDFile; //I don't really understand why these are necessary
+		using Preset_SD_Base::readFromSD;
+		using Preset_SD_Base::printToSD;
+		
+		virtual int readFromSDFile(SdFile *file, const String &var_name);
+		virtual int readFromSD(SdFat &sd, String &filename_str, const String &var_name);
+		void printToSDFile(SdFile *file, const String &var_name);
+		int printToSD(SdFat &sd, String &filename_str, const String &var_name, bool deleteExisting);
+};
+
 
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,7 +290,6 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
 // Again, the signal processing is exactly the same either way.
 //
 // ////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 class AudioFilterBiquad_F32_UI : public AudioFilterBiquad_F32, public SerialManager_UI {
 	public:
@@ -284,13 +334,13 @@ class AudioFilterBiquad_F32_UI : public AudioFilterBiquad_F32, public SerialMana
 		char charMapUp[1+1]   = "1"; //characters for raising the frequencies (the extra +1 is for the terminating NULL)
 		char charMapDown[1+1] = "!"; //characters for lowering the frequencies (the extra +1 is for the terminating NULL)
 
-		//GUI names and whatnot
+		//names for buttons and fields in the GUI...this is not the text shown on the button or fields but is the
+		//behind-the-scenes names for the items so that we can tell the GUI which specific item we want to update
 		String freq_id_str = String("cfreq");
 		String q_id_str = String("q");
 		String BW_id_str = String("bw");
 		String passthru_id_str = String("byp");
 		String normal_id_str = String("norm");
-
 };
 
 
