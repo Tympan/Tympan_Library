@@ -220,6 +220,8 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 	src4 = (block_ch4_1st) ? (&(block_ch4_1st->data[ch4_offset])) : zeros;
 
 #if 0
+	//this path assumes that the audio data has NOT already been scaled to +/-32767.0
+
 	//much less memory efficient, but allows us to use the memcpy_tointerleaveQuad function
 	const int n = audio_block_samples / 2;
 	q15_t tmp_src1[n], tmp_src2[n], tmp_src3[n], tmp_src4[n];
@@ -236,13 +238,25 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 								  (int16_t *)tmp_src3, 
 								  (int16_t *)tmp_src4);
 #else
+	
+//  // This block of code assumes that the audio data has NOT already been scaled to +/-32767.0
+//	int16_t *d = dest;
+//	for (int i=0; i < audio_block_samples / 2; i++) {
+//		*d++ = (int16_t)((q15_t)(*src1++ * 32768)); //left 1...does the q15_t ensure saturating math?
+//		*d++ = (int16_t)((q15_t)(*src3++ * 32768)); //left 2...does the q15_t ensure saturating math?
+//		*d++ = (int16_t)((q15_t)(*src2++ * 32768)); //right 1...does the q15_t ensure saturating math?
+//		*d++ = (int16_t)((q15_t)(*src4++ * 32768)); //right 2...does the q15_t ensure saturating math?
+//	}
+	
+	//This block of code assumes that the audio data HAS ALREADY been scaled to +/-32767.0
+	//interleave the given source data into the output array
 	int16_t *d = dest;
 	for (int i=0; i < audio_block_samples / 2; i++) {
-		*d++ = (int16_t)((q15_t)(*src1++ * 32768)); //left 1...does the q15_t ensure saturating math?
-		*d++ = (int16_t)((q15_t)(*src3++ * 32768)); //left 2...does the q15_t ensure saturating math?
-		*d++ = (int16_t)((q15_t)(*src2++ * 32768)); //right 1...does the q15_t ensure saturating math?
-		*d++ = (int16_t)((q15_t)(*src4++ * 32768)); //right 2...does the q15_t ensure saturating math?
-	}
+		*d++ = (int16_t)(*src1++); //left 1
+		*d++ = (int16_t)(*src3++); //left 2  (note it is src3, not src2!!!)
+		*d++ = (int16_t)(*src2++); //right 1 (note it is src2, not src3!!!
+		*d++ = (int16_t)(*src4++); //right 2
+	}	
 
 #endif
 	//arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );  //clear out this number of bytes..which should equal AUDIO_BLOCK_SAMPLES/2 * 4chan * 2bytes/samp
@@ -257,8 +271,10 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 }  
 
 
+//scale with saturation
+#define F32_TO_I16_NORM_FACTOR (32767)   //which is 2^15-1
 void AudioOutputI2SQuad_F32::scale_f32_to_i16(float32_t *p_f32, float32_t *p_i16, int len) {
-	for (int i=0; i<len; i++) { *p_i16++ = max(-32767,min(32767,(*p_f32++) * 32767.f)); }
+	for (int i=0; i<len; i++) { *p_i16++ = max(-F32_TO_I16_NORM_FACTOR,min(F32_TO_I16_NORM_FACTOR,(*p_f32++) * F32_TO_I16_NORM_FACTOR)); }
 }
 #define F32_TO_I24_NORM_FACTOR (8388607)   //which is 2^23-1
 void AudioOutputI2SQuad_F32::scale_f32_to_i24( float32_t *p_f32, float32_t *p_i24, int len) {
@@ -275,13 +291,23 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i3
 void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
 		audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset) //all three of these are changed upon return  
 {
-	//Receive the incoming audio blocks
-	audio_block_f32_t *block_f32 = receiveReadOnly_f32(chan); // channel 1
+
+	//get some working memory
+	audio_block_f32_t *block_f32_scaled = AudioStream_F32::allocate_f32(); //allocate for scaled data (from F32 scale of +/- 1.0 to int16 scale of +/- 32767)
+	if (block_f32_scaled==NULL) return;  //fail
 	
-	//is it valid?
-	if (block_f32) {
-		//it is valid.  now process it.
+	//Receive the incoming audio blocks
+	audio_block_f32_t *block_f32 = receiveReadOnly_f32(chan); // get one channel
+
+	//Is there any data?
+	if (block_f32 == NULL) {
+		//Serial.print("Output_i2s_quad: update: did not receive chan " + String(chan));
 		
+		//fill with zeros
+		for (int i=0; i<audio_block_samples; i++) block_f32_scaled->data[i] = 0.0f;
+
+	} else {
+		//Process the given data	
 		if (chan == 0) {
 			if (block_f32->length != audio_block_samples) {
 				Serial.print("AudioOutputI2SQuad_F32: *** WARNING ***: audio_block says len = ");
@@ -290,30 +316,34 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 				Serial.println(audio_block_samples);
 			}
 		} 
-	
 		
-		//shuffle between the two buffers that the isr() routines looks for
-		__disable_irq();
-		if (block_1st == NULL) {
-			block_1st = block_f32; //here were are temporarily holding onto the working memory for use by the isr()
-			ch_offset = 0;
-			__enable_irq();
-		} else if (block_2nd == NULL) {
-			block_2nd = block_f32; //here were are temporarily holding onto the working memory for use by the isr()
-			__enable_irq();
-		} else {
-			audio_block_f32_t *tmp = block_1st;
-			block_1st = block_2nd;
-			block_2nd = block_f32; //here were are temporarily holding onto the working memory for use by the isr()
-			ch_offset = 0;
-			__enable_irq();
-			AudioStream_F32::release(tmp);  //here we are releaseing an older audio buffer used as working memory
-		}
-		AudioStream_F32::transmit(block_f32,chan);  //transmit the original audio block that we acquired here via receiveReadOnly_F32()
-		//AudioStream_F32::release(block_f32);	 //release the original audio block that we acquired here via receiveReadOnly_F32()
+		//scale the F32 data (+/- 1.0) to fit within Int16 (+/- 32767.0), though we're still float32 data type
+		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		block_f32_scaled->length = block_f32->length;
+		block_f32_scaled->id = block_f32->id;
+		block_f32_scaled->fs_Hz  = block_f32->fs_Hz;
+		
+		//transmit and release the original (not scaled) audio data
+		AudioStream_F32::transmit(block_f32, chan);
+		AudioStream_F32::release(block_f32);
+	}
+	
+	//shuffle the scaled data between the two buffers that the isr() routines looks for
+	__disable_irq();
+	if (block_1st == NULL) {
+		block_1st = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
+		ch_offset = 0;
+		__enable_irq();
+	} else if (block_2nd == NULL) {
+		block_2nd = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
+		__enable_irq();
 	} else {
-		//Serial.print("Output_i2s_quad: update: did not receive chan ");
-		//Serial.println(chan);
+		audio_block_f32_t *tmp = block_1st;
+		block_1st = block_2nd;
+		block_2nd = block_f32_scaled; //here were are temporarily holding onto the working memory for use by the isr()
+		ch_offset = 0;
+		__enable_irq();
+		AudioStream_F32::release(tmp);  //here we are releaseing an older audio buffer used as working memory
 	}
 
 }

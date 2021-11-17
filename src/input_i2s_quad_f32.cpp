@@ -180,31 +180,58 @@ void AudioInputI2SQuad_F32::isr(void)
 		//end = (int16_t *)&i2s_rx_buffer[audio_block_samples];
 	}
 	
-	//De-interleave and copy to destination audio buffers.  
-	//Note the unexpected order!!! Chan 1, 3, 2, 4
-	const float32_t scale = 1.0f/32767.0f;
-	if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
-		offset = AudioInputI2SQuad_F32::block_offset;
-		if (offset <= (uint32_t)(audio_block_samples/2)) {
-			//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer)/2);
-			arm_dcache_delete((void*)src, I2S_BUFFER_TO_USE_BYTES/2);
-			
-			AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
-			dest1_f32 = &(block_ch1->data[offset]);
-			dest2_f32 = &(block_ch2->data[offset]);
-			dest3_f32 = &(block_ch3->data[offset]);
-			dest4_f32 = &(block_ch4->data[offset]);
-			for (int i=0; i < audio_block_samples/2; i++) {
-				*dest1_f32++ = scale*((float32_t) *src++);  //left 1
-				*dest3_f32++ = scale*((float32_t) *src++);  //left 2 (note chan 3!!)
-				*dest2_f32++ = scale*((float32_t) *src++);  //right 1 (note chan 2!!)
-				*dest4_f32++ = scale*((float32_t) *src++);  //right 2
+	#if 0
+		//data in DMA is int16 (ie, +/-32767), so this block of code will copy to f32 buffer *and* it will scale it to be +/- 1.0
+	
+		//De-interleave and copy to destination audio buffers.  
+		//Note the unexpected order!!! Chan 1, 3, 2, 4
+		const float32_t scale = 1.0f/32767.0f;
+		if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
+			offset = AudioInputI2SQuad_F32::block_offset;
+			if (offset <= (uint32_t)(audio_block_samples/2)) {
+				//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer)/2);
+				arm_dcache_delete((void*)src, I2S_BUFFER_TO_USE_BYTES/2);
+				
+				AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
+				dest1_f32 = &(block_ch1->data[offset]);
+				dest2_f32 = &(block_ch2->data[offset]);
+				dest3_f32 = &(block_ch3->data[offset]);
+				dest4_f32 = &(block_ch4->data[offset]);
+				for (int i=0; i < audio_block_samples/2; i++) {
+					*dest1_f32++ = scale*((float32_t) *src++);  //left 1
+					*dest3_f32++ = scale*((float32_t) *src++);  //left 2 (note chan 3!!)
+					*dest2_f32++ = scale*((float32_t) *src++);  //right 1 (note chan 2!!)
+					*dest4_f32++ = scale*((float32_t) *src++);  //right 2
+				}
 			}
-		}
-	} //else {
-	//	Serial.println("Quad: ISR: do not have all data blocks.");
-	//}
-	//digitalWriteFast(3, LOW);
+		} 
+	
+	#else
+		//This block of code only copies the data into F32 buffers but leaves the scaling at +/-32767.0
+		//which will then be scaled in the update() method instead of here
+	
+		//De-interleave and copy to destination audio buffers.  
+		//Note the unexpected order!!! Chan 1, 3, 2, 4
+		if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
+			offset = AudioInputI2SQuad_F32::block_offset;
+			if (offset <= (uint32_t)(audio_block_samples/2)) {
+				//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer)/2);
+				arm_dcache_delete((void*)src, I2S_BUFFER_TO_USE_BYTES/2);
+				
+				AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
+				dest1_f32 = &(block_ch1->data[offset]);
+				dest2_f32 = &(block_ch2->data[offset]);
+				dest3_f32 = &(block_ch3->data[offset]);
+				dest4_f32 = &(block_ch4->data[offset]);
+				for (int i=0; i < audio_block_samples/2; i++) {
+					*dest1_f32++ = ((float32_t) *src++);  //left 1
+					*dest3_f32++ = ((float32_t) *src++);  //left 2 (note chan 3!!)
+					*dest2_f32++ = ((float32_t) *src++);  //right 1 (note chan 2!!)
+					*dest4_f32++ = ((float32_t) *src++);  //right 2
+				}
+			}
+		} 
+	#endif
 }
 
 #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
@@ -223,8 +250,9 @@ void AudioInputI2SQuad_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32
 void AudioInputI2SQuad_F32::update_1chan(int chan, unsigned long counter, audio_block_f32_t *&out_block) {
 	if (!out_block) return;
 		
-	//scale the float values so that the maximum possible audio values span -1.0 to + 1.0
-	//scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples); //don't need this anymore...it's done in the ISR
+	//incoming data is still scaled like int16 (so, +/-32767.).  Here we need to re-scale
+	//the values so that the maximum possible audio values spans the F32 stadard of +/-1.0
+	scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples);
 	
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_block->id = counter;
