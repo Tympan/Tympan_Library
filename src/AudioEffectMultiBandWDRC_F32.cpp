@@ -217,7 +217,7 @@ TR_Card* StereoContainerWDRC_UI::addMultiCards_compressorbank_globals(TR_Page *p
 	if (page_h == NULL) return NULL;
 	TR_Page page_foo; TR_Page *page_foo_h = &page_foo;  //these are created as dummies just to hand to UI elements that need to be activated not actually shown in the App's GUI
 
-	TR_Card* ret_val;
+	TR_Card* ret_val = NULL;
 
 	addCard_chooseChan(page_h); //see StereoContainer_UI.h
 	if ((leftWDRC != NULL) && (rightWDRC != NULL)) {
