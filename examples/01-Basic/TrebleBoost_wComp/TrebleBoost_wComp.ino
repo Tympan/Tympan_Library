@@ -20,12 +20,12 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 Tympan                    myTympan(TympanRev::E, audio_settings); //do TympanRev::D or TympanRev::E
-AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
-AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
-AudioFilterBiquad_F32     hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
+AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio *from* the Tympan AIC. 
+AudioFilterBiquad_F32     hp_filt1(audio_settings);   //Biquad (IIR) filter doing a highpass filter.  Left.
+AudioFilterBiquad_F32     hp_filt2(audio_settings);   //Biquad (IIR) filter doing a highpass filter.  Right.
 AudioEffectCompWDRC_F32   comp1(audio_settings);      //Compresses the dynamic range of the audio.  Left.
 AudioEffectCompWDRC_F32   comp2(audio_settings);      //Compresses the dynamic range of the audio.  Right.
-AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
+AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, hp_filt1, 0);   //connect the Left input to the left highpass filter
