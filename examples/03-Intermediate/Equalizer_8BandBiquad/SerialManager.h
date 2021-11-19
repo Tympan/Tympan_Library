@@ -48,37 +48,37 @@ void SerialManager::respondToByte(char c) {
     case 'g': case 'G':
       printEqSettings(); break;
     case '1':
-      val=incrementChannelGain(gainIncrement_dB,0); Serial.println("Changed gain to " + String(val) + " dB"); break;
+      val=incrementChannelGain(gainIncrement_dB,0); Serial.println("Changed gain 1 to " + String(val) + " dB"); break;
     case '2':
-      val=incrementChannelGain(gainIncrement_dB,1); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(gainIncrement_dB,1); Serial.println("Changed gain 2 to " + String(val) + " dB");  break;
     case '3':
-      val=incrementChannelGain(gainIncrement_dB,2); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(gainIncrement_dB,2); Serial.println("Changed gain 3 to " + String(val) + " dB");  break;
     case '4':
-      val=incrementChannelGain(gainIncrement_dB,3); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(gainIncrement_dB,3); Serial.println("Changed gain 4 to " + String(val) + " dB");  break;
     case '5':
-      val=incrementChannelGain(gainIncrement_dB,4); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(gainIncrement_dB,4); Serial.println("Changed gain 5 to " + String(val) + " dB");  break;
     case '6':
-      val=incrementChannelGain(gainIncrement_dB,5); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(gainIncrement_dB,5); Serial.println("Changed gain 6 to " + String(val) + " dB");  break;
     case '7':
-      val=incrementChannelGain(gainIncrement_dB,6); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(gainIncrement_dB,6); Serial.println("Changed gain 7 to " + String(val) + " dB");  break;
     case '8':
-      val=incrementChannelGain(gainIncrement_dB,7); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(gainIncrement_dB,7); Serial.println("Changed gain 8 to " + String(val) + " dB");  break;
     case 'q':
-      val=incrementChannelGain(-gainIncrement_dB,0); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,0); Serial.println("Changed gain 1 to " + String(val) + " dB");  break;
     case 'w':
-      val=incrementChannelGain(-gainIncrement_dB,1); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,1); Serial.println("Changed gain 2 to " + String(val) + " dB");  break;
     case 'e':
-      val=incrementChannelGain(-gainIncrement_dB,2); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,2); Serial.println("Changed gain 3 to " + String(val) + " dB");  break;
     case 'r':
-      val=incrementChannelGain(-gainIncrement_dB,3); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,3); Serial.println("Changed gain 4 to " + String(val) + " dB");  break;
     case 't':
-      val=incrementChannelGain(-gainIncrement_dB,4); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,4); Serial.println("Changed gain 5 to " + String(val) + " dB");  break;
     case 'y':
-      val=incrementChannelGain(-gainIncrement_dB,5); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,5); Serial.println("Changed gain 6 to " + String(val) + " dB");  break;
     case 'u':
-      val=incrementChannelGain(-gainIncrement_dB,6); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,6); Serial.println("Changed gain 7 to " + String(val) + " dB");  break;
     case 'i':
-      val=incrementChannelGain(-gainIncrement_dB,7); Serial.println("Changed gain to " + String(val) + " dB");  break;
+      val=incrementChannelGain(-gainIncrement_dB,7); Serial.println("Changed gain 8 to " + String(val) + " dB");  break;
   }
 }
 

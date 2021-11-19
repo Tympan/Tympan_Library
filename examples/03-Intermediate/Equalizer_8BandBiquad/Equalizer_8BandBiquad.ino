@@ -7,6 +7,9 @@
 *            
 *   This is mono only.  It takes the audio from the left mic or left input,
 *   processes it, and sends it out to both ears.
+*   
+*   You can control the per-channel gain from the SerialMonitor via USB Serial.
+*   This example does not have support for the TympanRemote phone App.
 *
 *   Blue potentiometer adjusts the digital gain applied to the filtered audio signal.
 *
@@ -72,45 +75,16 @@ void setupEqualizer(void) {
   //choose the filter order for the Biquad (IIR) filters used in the filterbank.  Max is N=6.
   //Smaller gives a more gentle transition and Higher gives a steeper transition.
   //For N=6, you get a 3rd order roll-off for the low transition and 3rd order roll-off for the high transition
-  int filter_order = 6;
+  int filter_order = 6;  //Note, this has never been tested this with any value other than 6
 
   //design the filters!
-  filterbank.designFilters(N_EQ_BANDS, filter_order, sample_rate_Hz, audio_block_samples, crossFreq_Hz);
+  int ret_val = filterbank.designFilters(N_EQ_BANDS, filter_order, sample_rate_Hz, audio_block_samples, crossFreq_Hz);
+  if (ret_val < 0) Serial.println("setupEqualizer: *** ERROR ***: the filters failed to be created.  Why??");
 
   //initialize the gain for each gain block
   for (int i=0; i<N_EQ_BANDS; i++) gainBlocks[i].setGain_dB(0.0); //set to zer gain
-  
   gainBlocks[3].setGain_dB(-20.0);  // as an example, let's cut the 4th band (ie, band index 3) by 20 dB.
   
-}
-
-//print out the gain for each eq channel
-void printEqSettings(void) {
-  Serial.println("Equalizer Settings, Number of Bands = " + String(N_EQ_BANDS));
-
-  for (int i=0; i<N_EQ_BANDS; i++) { //loop over each EQ band
-    
-    //print the channel number
-    Serial.print(" Chan " + String(i) + ": ");
-
-    //print the frequency bounds
-    if (i==0) {
-      //this is the lowpass filter
-       Serial.print(" Below " + String(filterbank.state.get_crossover_freq_Hz(0)) + " Hz: ");
-    } else if (i < (N_EQ_BANDS-1)) {
-      //this is one of the bandpass filters
-      Serial.print(" " + String(filterbank.state.get_crossover_freq_Hz(i-1)) + " to ");
-      Serial.print(String(filterbank.state.get_crossover_freq_Hz(i)) + " Hz: ");
-    } else {
-      //this is the highpass filter
-      Serial.print(" Above " + String(filterbank.state.get_crossover_freq_Hz(i-1)) + " Hz: ");
-    }
-
-    //print the gain value
-    Serial.print(String(gainBlocks[i].getGain_dB()) + " dB");
-    Serial.println(); //this line is finished!
-    
-  } //end the loop over EQ bands
 }
 
 // define the setup() function, the function that is called once when the device is booting
@@ -201,10 +175,43 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
   } // end if
 } //end servicePotentiometer();
 
+
+// /////////////////// Routines to help the user set/view the settings via the Serial Link
+
 float incrementChannelGain(float increment_dB,int Ichan) {
   if ((Ichan < 0) || (Ichan >= N_EQ_BANDS)) return -999.9; //check for invalid inputs
 
   float old_val_dB = gainBlocks[Ichan].getGain_dB();
   float new_val_dB = gainBlocks[Ichan].setGain_dB(old_val_dB + increment_dB);
   return new_val_dB;
+}
+
+
+//print out the gain for each eq channel
+void printEqSettings(void) {
+  Serial.println("Equalizer Settings, Number of Bands = " + String(N_EQ_BANDS));
+
+  for (int i=0; i<N_EQ_BANDS; i++) { //loop over each EQ band
+    
+    //print the channel number
+    Serial.print(" Chan " + String(i+1) + ": ");
+
+    //print the frequency bounds
+    if (i==0) {
+      //this is the lowpass filter
+       Serial.print(" Below " + String(filterbank.state.get_crossover_freq_Hz(0)) + " Hz: ");
+    } else if (i < (N_EQ_BANDS-1)) {
+      //this is one of the bandpass filters
+      Serial.print(" " + String(filterbank.state.get_crossover_freq_Hz(i-1)) + " to ");
+      Serial.print(String(filterbank.state.get_crossover_freq_Hz(i)) + " Hz: ");
+    } else {
+      //this is the highpass filter
+      Serial.print(" Above " + String(filterbank.state.get_crossover_freq_Hz(i-1)) + " Hz: ");
+    }
+
+    //print the gain value
+    Serial.print(String(gainBlocks[i].getGain_dB()) + " dB");
+    Serial.println(); //this line is finished!
+    
+  } //end the loop over EQ bands
 }
