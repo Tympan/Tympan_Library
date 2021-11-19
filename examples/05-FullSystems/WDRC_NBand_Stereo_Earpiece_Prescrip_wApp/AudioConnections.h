@@ -105,6 +105,7 @@ void setupAudioProcessing(void) {
   int stage = 0;  float notch_Hz = 4000.0;  float notch_BW_Hz = 200.0;  float approx_Q = notch_Hz / notch_BW_Hz;
   notch[LEFT].setNotch(stage, notch_Hz, approx_Q);  notch[RIGHT].setNotch(stage, notch_Hz, approx_Q);
   notch[LEFT].bypass(true);notch[RIGHT].bypass(true);  //by defualt, bypass these filters
+  notch[LEFT].freq_increment_fac = notch[RIGHT].freq_increment_fac = 1.0+100.0/4000.0; //make a super-fine step size!
 
   //make some software connections to allow different parts of the code to talk with each other
   presetManager.attachPreFilters(&notch[0], &notch[1]); //the left and right pre-filters
