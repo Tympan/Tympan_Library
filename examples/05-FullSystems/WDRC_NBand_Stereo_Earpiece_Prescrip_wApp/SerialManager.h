@@ -4,6 +4,7 @@
 
 #include <Tympan_Library.h>
 #include "State.h"
+#include "StereoContainer_Biquad_WDRC_UI.h"
 
 //classes from the main sketch that might be used here
 extern Tympan myTympan;               //defined in main *.ino file
@@ -16,7 +17,7 @@ extern AudioEffectMultiBandWDRC_F32_UI multiBandWDRC[2];
 #else
 extern AudioEffectMultiBandWDRC_IIR_F32_UI multiBandWDRC[2];
 #endif
-extern StereoContainerWDRC_UI stereoContainerWDRC; 
+extern StereoContainer_Biquad_WDRC_UI stereoContainerWDRC; 
 extern BTNRH_StereoPresetManager_UI presetManager;
 
 //extern const int N_CHAN;
@@ -186,7 +187,7 @@ void SerialManager::createTympanRemoteLayout(void) {
   TR_Card *card_h;  //dummy handle for a card
 
   //Add first page to GUI
-  page_h = myGUI.addPage("WDRC " + String(MAX_N_CHAN) + "-Band System");
+  page_h = myGUI.addPage("WDRC " + String(MAX_N_CHAN) + "-Band and Notching");
 
       //Add a button group ("card") for Volume
       card_h = page_h->addCard("Volume Knob (dB)");
@@ -206,7 +207,7 @@ void SerialManager::createTympanRemoteLayout(void) {
 //          card_h->addButton("Full-On Gain","D", "preset1", 6);  //displayed string, command, button ID, button width (out of 12)
       
       //Add a button group ("card") for the CPU reporting...use a button set that is built into myState for you!
-      card_h = myState.addCard_cpuReporting(page_h);
+      card_h = myState.addCard_cpuReporting(page_h); 
       
       //Add a button group for SD recording...use a button set that is built into AudioSDWriter_F32_UI for you!
       card_h = audioSDWriter.addCard_sdRecord(page_h);
@@ -218,6 +219,10 @@ void SerialManager::createTympanRemoteLayout(void) {
       
   //Add second page for more control of earpieces
   page_h = earpieceMixer.addPage_digitalEarpieces(&myGUI); //use its predefined page for controlling the digital earpieces
+
+  //add notch filters
+  page_h = stereoContainerWDRC.addPage_filterSettings(&myGUI);
+  page_h->setName("Notch Filtering");
 
   //add MultiBand WDRC pages
   page_h = myGUI.addPage("WDRC Globals");

@@ -11,16 +11,18 @@
 class BTNRH_Preset {
   public:
     BTNRH_Preset(){};
-    BTNRH_Preset(const BTNRH_WDRC::CHA_DSL &dsl_L, const BTNRH_WDRC::CHA_WDRC &bb_L, const int filt_order) {
-      specifyPreset(dsl_L, bb_L, filt_order);
+    BTNRH_Preset(const AudioFilterBiquad_F32_settings &preFilt_L, const BTNRH_WDRC::CHA_DSL &dsl_L, const BTNRH_WDRC::CHA_WDRC &bb_L, const int filt_order) {
+      specifyPreset(preFilt_L, dsl_L, bb_L, filt_order);
     }
 
     void specifyPreset(const BTNRH_Preset & preset) {
-      specifyPreset(preset.wdrc_perBand, 
+      specifyPreset(preset.pre_filter,
+                    preset.wdrc_perBand, 
                     preset.wdrc_broadband, 
                     preset.n_filter_order);
     }
-    void specifyPreset(const BTNRH_WDRC::CHA_DSL &dsl, const BTNRH_WDRC::CHA_WDRC &bb, const int n_order) {
+    void specifyPreset(const AudioFilterBiquad_F32_settings &preFilt, const BTNRH_WDRC::CHA_DSL &dsl, const BTNRH_WDRC::CHA_WDRC &bb, const int n_order) {
+      pre_filter = preFilt;
       if (n_order < 1) {
         Serial.println("BTNRH_Preset: *** WARNING ***: setting filter order to " + String(n_order) + " which should be >= 1"); 
       }
@@ -90,16 +92,29 @@ class BTNRH_Preset {
  //         ", scale_fac = " + String(scale_fac) + ", tkgain = " + String(new_wdrc->tkgain[i]));
       }
 
+      //copy elements that do not need to be interpolated
+      pre_filter = prevPreset.pre_filter;
+      
       return 0;  //normal finish, no error
     }
 
     int saveToSD(String fname, bool start_new_file) {
+    
+
+      //write the biquad info
+      String var_name0 = preFilt_var_name + suffix_var_name;
+      Serial.println("Biquad_BTNRH_Preset: saveToSD: writing preset, " + var_name0);
+      pre_filter.printToSD(fname, var_name0, start_new_file);
+
+      //after the first element is written, flip to false
+      start_new_file= false; //don't start a new file for future channels...everything else will be appended
+
+      //write the per-band settings
       String var_name1 = perBand_var_name + suffix_var_name;
       Serial.println("BTNRH_Preset: saveToSD: writing preset, " + var_name1);
       wdrc_perBand.printToSD(fname, var_name1, start_new_file);
-      
-      start_new_file= false; //don't start a new file for future channels...everything else will be appended
-  
+
+      //write the broadband settings
       String var_name2 = broadband_var_name + suffix_var_name;
       Serial.println("BTNRH_Preset: saveToSD: writing preset, " + var_name2);
       wdrc_broadband.printToSD(fname, var_name2, start_new_file);
@@ -109,6 +124,7 @@ class BTNRH_Preset {
 //      Serial.println("BTNRH_Preset: saveToSD: writing preset, " + var_name3);
 //      afc.printToSD(fname, var_name3, start_new_file);
 
+
       return 0; //return OK
     }
 
@@ -117,11 +133,13 @@ class BTNRH_Preset {
     CHA_DSL_SD wdrc_perBand;    //left and right
     CHA_WDRC_SD wdrc_broadband; //left and right
     //CHA_AFC_SD afc; //left and right    
+    AudioFilterBiquad_F32_settings_SD pre_filter;
     int left_or_right = 0; //default to left
-
+    
     //used for saving and retrieving these presets from the SD card
     String name = "Preset";
-    const int n_datatypes = 2; //there is dsl and bb (eventually there will be afc)
+    //const int n_datatypes = 2; //there is dsl and bb (eventually there will be afc)
+    String preFilt_var_name = String("preFilt");
     String perBand_var_name = String("dsl");
     String broadband_var_name = String("bb");
     String suffix_var_name = String("");  //default to no suffix on the variable names in the preset file
@@ -156,24 +174,33 @@ class BTNRH_Preset {
 class BTNRH_Stereo_Preset {
   public:
     BTNRH_Stereo_Preset(){};
-    BTNRH_Stereo_Preset(const BTNRH_WDRC::CHA_DSL &dsl_L, const BTNRH_WDRC::CHA_DSL &dsl_R, const BTNRH_WDRC::CHA_WDRC &bb_L, const BTNRH_WDRC::CHA_WDRC &bb_R, const int filt_order) {
-      specifyPreset(dsl_L, dsl_R, bb_L, bb_R, filt_order);
+    BTNRH_Stereo_Preset(const AudioFilterBiquad_F32_settings &preFilt_L, const AudioFilterBiquad_F32_settings &preFilt_R,
+                               const BTNRH_WDRC::CHA_DSL &dsl_L,             const BTNRH_WDRC::CHA_DSL &dsl_R, 
+                               const BTNRH_WDRC::CHA_WDRC &bb_L,             const BTNRH_WDRC::CHA_WDRC &bb_R, 
+                               const int filt_order) {
+      specifyPreset(preFilt_L, preFilt_R, dsl_L, dsl_R, bb_L, bb_R, filt_order);
     }
 
     //specify this preset using another preset
     void specifyPreset(const BTNRH_Stereo_Preset &preset) {
-      specifyPreset(preset.preset_LR[0].wdrc_perBand,  preset.preset_LR[1].wdrc_perBand,
+      specifyPreset(preset.preset_LR[0].pre_filter,    preset.preset_LR[1].pre_filter,
+                    preset.preset_LR[0].wdrc_perBand,  preset.preset_LR[1].wdrc_perBand,
                     preset.preset_LR[0].wdrc_broadband,preset.preset_LR[1].wdrc_broadband,
                     preset.preset_LR[0].n_filter_order);
     }
 
     //specify this preset using individual BTNRH data types
-    void specifyPreset(const BTNRH_WDRC::CHA_DSL &dsl_L, const BTNRH_WDRC::CHA_DSL &dsl_R, const BTNRH_WDRC::CHA_WDRC &bb_L, const BTNRH_WDRC::CHA_WDRC &bb_R, const int n_order) {
+    void specifyPreset(const AudioFilterBiquad_F32_settings &preFilt_L, const AudioFilterBiquad_F32_settings &preFilt_R,
+                       const BTNRH_WDRC::CHA_DSL &dsl_L,             const BTNRH_WDRC::CHA_DSL &dsl_R, 
+                       const BTNRH_WDRC::CHA_WDRC &bb_L, const BTNRH_WDRC::CHA_WDRC &bb_R, 
+                       const int n_order)
+    {
+      
       for (int I_LR=0; I_LR < n_LR; I_LR++) {  //loop over left-right
         if (I_LR == 0) {
-          preset_LR[I_LR].specifyPreset(dsl_L, bb_L, n_order); 
+          preset_LR[I_LR].specifyPreset(preFilt_L, dsl_L, bb_L, n_order); 
         } else {
-          preset_LR[I_LR].specifyPreset(dsl_R, bb_R, n_order); 
+          preset_LR[I_LR].specifyPreset(preFilt_R, dsl_R, bb_R, n_order); 
         }
         
         preset_LR[I_LR].left_or_right = I_LR;  
@@ -218,7 +245,8 @@ class BTNRH_StereoPresetManager_UI : public PresetManager_UI {   //most of the A
     const String preset_fnames[N_PRESETS] = {String("Preset_16_00.txt"), String("Preset_16_01.txt")};  //filenames for reading off SD      
 
     //attach the underlying algorithms that will be manipulated by changing the preset
-    virtual void attachAlgorithms(AudioEffectMultiBandWDRC_Base_F32_UI *left, AudioEffectMultiBandWDRC_Base_F32_UI *right) { leftWDRC = left; rightWDRC = right; };
+    virtual void attachWDRCs(AudioEffectMultiBandWDRC_Base_F32_UI *left, AudioEffectMultiBandWDRC_Base_F32_UI *right) { leftWDRC = left; rightWDRC = right; };
+    virtual void attachPreFilters(AudioFilterBiquad_F32_UI *left, AudioFilterBiquad_F32_UI *right) { leftPreFilt = left; rightPreFilt = right; };
 
     //methods to implement that are required (or nearly required) by PresetManagerBase and PresetManager_UI (see PresetManager_UI.h in Tympan_Library)
     virtual int setToPreset(int i, bool update_gui = false);
@@ -268,24 +296,29 @@ class BTNRH_StereoPresetManager_UI : public PresetManager_UI {   //most of the A
 
   protected:
     AudioEffectMultiBandWDRC_Base_F32_UI *leftWDRC=NULL, *rightWDRC=NULL;
+    AudioFilterBiquad_F32_UI *leftPreFilt=NULL, *rightPreFilt=NULL;
     int max_allowed_n_chan = INIT_MAX_ALLOWED_N_CHAN;
 };
 
 int BTNRH_StereoPresetManager_UI::setToPreset(int Ipreset, bool update_gui) {
   if ((Ipreset < 0) || (Ipreset >= n_presets)) return Ipreset;  //out of bounds!
-  
+
   //push the left and right presets to the left and right algorithms
   int i_left=0, i_right = 1; 
-  
+
+  // configure the left algorithms
   Serial.println("BTNRH_PresetManager: setToPreset: setting to preset " + String(Ipreset) + ", left channel...");
-  leftWDRC->setupFromBTNRH(  presets[Ipreset].preset_LR[i_left].wdrc_perBand,  
-                             presets[Ipreset].preset_LR[i_left].wdrc_broadband,  
-                             presets[Ipreset].preset_LR[i_left].n_filter_order); 
-                             
+  leftWDRC->setupFromBTNRH(       presets[Ipreset].preset_LR[i_left].wdrc_perBand,  
+                                  presets[Ipreset].preset_LR[i_left].wdrc_broadband,  
+                                  presets[Ipreset].preset_LR[i_left].n_filter_order); 
+  leftPreFilt->setupFromSettings( presets[Ipreset].preset_LR[i_left].pre_filter);
+
+  // configure the right algorithms
   Serial.println("BTNRH_PresetManager: setToPreset: setting to preset " + String(Ipreset) + ", right channel...");
-  rightWDRC->setupFromBTNRH( presets[Ipreset].preset_LR[i_right].wdrc_perBand, 
-                             presets[Ipreset].preset_LR[i_right].wdrc_broadband, 
-                             presets[Ipreset].preset_LR[i_right].n_filter_order); 
+  rightWDRC->setupFromBTNRH(      presets[Ipreset].preset_LR[i_right].wdrc_perBand, 
+                                  presets[Ipreset].preset_LR[i_right].wdrc_broadband, 
+                                  presets[Ipreset].preset_LR[i_right].n_filter_order); 
+  rightPreFilt->setupFromSettings(presets[Ipreset].preset_LR[i_right].pre_filter);                               
 
   //set state
   cur_preset_ind = Ipreset;
@@ -405,14 +438,14 @@ int BTNRH_StereoPresetManager_UI::resetPresetToFactory(int Ipreset, bool update_
       {
         #include "Preset_16_00.h" //the hardwired settings here in this sketch's directory          
         presets[Ipreset].name = String("Preset A");       
-        presets[Ipreset].specifyPreset(dsl_left, dsl_right, bb_left, bb_right, presets[Ipreset].preset_LR[0].n_filter_order); //dsl_left, dsl_right, bb_left, and bb_right are from the *.h file
+        presets[Ipreset].specifyPreset(preFilt_left, preFilt_right, dsl_left, dsl_right, bb_left, bb_right, presets[Ipreset].preset_LR[0].n_filter_order); //dsl_left, dsl_right, bb_left, and bb_right are from the *.h file
         break;
       }
     case 1:
       {
         #include "Preset_16_01.h" //the hardwired settings here in this sketch's directory            
         presets[Ipreset].name = String("Preset B");
-        presets[Ipreset].specifyPreset(dsl_left, dsl_right, bb_left, bb_right, presets[Ipreset].preset_LR[0].n_filter_order); //dsl_left, dsl_right, bb_left, and bb_right are from the *.h file
+        presets[Ipreset].specifyPreset(preFilt_left, preFilt_right, dsl_left, dsl_right, bb_left, bb_right, presets[Ipreset].preset_LR[0].n_filter_order); //dsl_left, dsl_right, bb_left, and bb_right are from the *.h file
         break;
       }        
   }
@@ -441,6 +474,9 @@ void BTNRH_StereoPresetManager_UI::rebuildPresetFromSources(int Ipreset) {
     rightWDRC->getWDRC( &(presets[i].preset_LR[right_ind].wdrc_broadband));
     //rightWDRC->getAFC(&(presets[i].preset_LR[right_ind].afc            ));     
   }
+
+  if (leftPreFilt != NULL)  leftPreFilt->getSettings( &(presets[i].preset_LR[left_ind].pre_filter));
+  if (rightPreFilt != NULL) rightPreFilt->getSettings(&(presets[i].preset_LR[right_ind].pre_filter));
 
 }
 

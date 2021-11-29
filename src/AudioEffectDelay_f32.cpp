@@ -35,9 +35,9 @@ void AudioEffectDelay_F32::update(void)
 	
 	audio_block_f32_t *all_output[8];
 	for (int channel=0; channel<8; channel++) { //loop over the different amounts of delay that might be requested
-		if (!(activemask & (1<<channel))) continue;
+		//if (!(activemask & (1<<channel))) continue;
 		all_output[channel] = allocate_f32(); 
-		if (!all_output[channel]) continue;
+		//if (!all_output[channel]) continue;
 	}
 
 	//do the acutal processing
@@ -79,7 +79,7 @@ void AudioEffectDelay_F32::receiveIncomingData(audio_block_f32_t *input) {
 		//if (!Serial) Serial.println("AudioEffectDelay_F32::receiveIncomingData: Allocating queue[head].");
 		queue[head] = allocate_f32(); 
 		if (queue[head] == NULL) {
-			//if (!Serial) Serial.println("AudioEffectDelay_F32::receiveIncomingData: Null memory 1.  Returning.");
+			if (!Serial) Serial.println("AudioEffectDelay_F32::receiveIncomingData: Null memory 1.  Returning.");
 			return;
 		}			
 	}

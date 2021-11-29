@@ -262,8 +262,21 @@ void AudioFilterbankFIR_F32::update(void) {
 	AudioStream_F32::release(block);
 }
 
-int AudioFilterbankFIR_F32::set_n_filters(int val) {
-	int new_n_filters = min(val, (int)filters.size()); 
+int AudioFilterbankFIR_F32::set_n_filters(int requested_n_filters) {
+	
+	//check the allowed size for number of filters
+	int cur_filter_vector_size = (int)filters.size();
+	if (cur_filter_vector_size == 0) set_max_n_filters(requested_n_filters); //max size has never been set!  set the max number of filters to the requested number
+	int new_n_filters = min(requested_n_filters, (int)filters.size()); //limit the requested size to the max allowed size
+	
+	//notify user if number of filters was changed
+	if (new_n_filters != requested_n_filters) {
+		Serial.println("AudioFilterbankFIR_F32: set_n_filters: *** WARNING ***");
+		Serial.println("    : requested " + String(requested_n_filters) + " filters, but was limited to " + String(new_n_filters));
+		Serial.println("    : If you want more filters, use set_max_n_filters(new_value)");
+	}
+	
+	//set the number of filters
 	int n_filters = state.set_n_filters(new_n_filters);
 	for (int Ichan = 0; Ichan < new_n_filters; Ichan++) {
 		if (Ichan < n_filters) {
@@ -393,8 +406,20 @@ void AudioFilterbankBiquad_F32::update(void) {
 	AudioStream_F32::release(block);
 }
 
-int AudioFilterbankBiquad_F32::set_n_filters(int val) {
-	int new_n_filters = min(val, (int)filters.size()); 
+int AudioFilterbankBiquad_F32::set_n_filters(int requested_n_filters) {
+	//check the allowed size for number of filters
+	int cur_filter_vector_size = (int)filters.size();
+	if (cur_filter_vector_size == 0) set_max_n_filters(requested_n_filters); //max size has never been set!  set the max number of filters to the requested number
+	int new_n_filters = min(requested_n_filters, (int)filters.size()); //limit the requested size to the max allowed size
+	
+	//notify user if number of filters was changed
+	if (new_n_filters != requested_n_filters) {
+		Serial.println("AudioFilterbankBiquad_F32:set_n_filters: *** WARNING ***");
+		Serial.println("    : requested " + String(requested_n_filters) + " filters, but was limited to " + String(new_n_filters));
+		Serial.println("    : If you want more filters, use set_max_n_filters(new_value)");
+	}
+	
+	//set the number of filters
 	int n_filters = state.set_n_filters(new_n_filters);
 	for (int Ichan = 0; Ichan < new_n_filters; Ichan++) {
 		if (Ichan < n_filters) {
@@ -410,10 +435,17 @@ int AudioFilterbankBiquad_F32::set_n_filters(int val) {
 
 int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq) {
 
+	if (n_chan < 2) {
+		Serial.println("AudioFilterBankIIR_F32: designFilters: *** ERROR ***");
+		Serial.println("  : must have at least two filters.  Requested only " + String(n_chan));
+		Serial.println("  : returning without designing the filters...");
+		return -1;		
+	}
+
 	//check the input values
 	if ((n_iir % 2) == 1) {  //is it an odd number?
 		Serial.println("AudioFilterBankIIR_F32: designFilters: *** WARNING ***");
-		Serial.println("  : requested n_iir = " + String(n_iir) + " is odd.  This class only supports even.");
+		Serial.println("  : requested n_iir = " + String(n_iir) + " is odd.  This class only supports even."); 
 		if (n_iir >= 3) {
 			n_iir = n_iir - 1;
 		}
@@ -427,12 +459,25 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	}
 	
 	///more validation of inputs
-	n_chan = set_n_filters(n_chan); //will automatically limit to the max allowed number of filters
-	if (n_chan <= 0) { enable(false); return -1; }  //invalid inputs
+	int given_n_chan = n_chan;
+	n_chan = set_n_filters(given_n_chan); //will automatically limit to the max allowed number of filters
+	if (n_chan <= 0) {  //invalid inputs
+		Serial.println("AudioFilterBankIIR_F32: designFilters: *** ERROR ***");
+		Serial.println("   : requested " + String(given_n_chan) + " channels but could only allocate " + String(n_chan));
+		Serial.println("   : returning without designing the filters...");
+		enable(false); 
+		return -1;
+	}  
 	
 	//sort and enforce minimum seperation of the crossover frequencies
 	float freqs_Hz[n_chan];
-	if (freqs_Hz == NULL) { enable(false); return -1; }  //failed to allocate memory
+	if (freqs_Hz == NULL) {   //failed to allocate memory
+		Serial.println("AudioFilterBankIIR_F32: designFilters: *** ERROR ***");
+		Serial.println("   : Failed to allocate memory for " + String(n_chan) + " frequency values");
+		Serial.println("   : returning without designing the filters...");
+		enable(false); 
+		return -1; 
+	}
 	int n_crossover = n_chan - 1;
 	for (int i=0; i<n_crossover;i++) { freqs_Hz[i] = crossover_freq[i]; } //copy to known-writable memory
 	sortFrequencies(freqs_Hz, n_crossover);	  //sort the frequencies from smallest to highest
@@ -458,7 +503,7 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	
 	//call the designer
 	float td_msec = 0.000;  //assumed max delay (?) for the time-alignment process?
-	int ret_val = filterbankDesigner.createFilterCoeff_SOS(n_chan, n_iir, sample_rate_Hz, td_msec, freqs_Hz,filter_sos, filter_delay);
+	int ret_val = filterbankDesigner.createFilterCoeff_SOS(n_chan, n_iir, sample_rate_Hz, td_msec, freqs_Hz, filter_sos, filter_delay);
 	
 	if (ret_val < 0) { enable(false); return -1; } //failed to compute coefficients
 	

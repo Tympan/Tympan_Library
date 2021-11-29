@@ -305,7 +305,7 @@ int AudioConfigIIRFilterBank_F32::iir_filterbank_sos(float *sos, int *d, float *
 	#endif
 	
 	//convert to second order sections
-	Serial.println("AudioConfigIIRFilterBank_F32::iir_filterbank_sos: converting to second order sections");
+	Serial.println("AudioConfigIIRFilterBank_F32::iir_filterbank_sos: converting to second-order sections");
 	float bk[3], ak[3];  //each biquad is 3 b coefficients and 3 a coefficients
 	int out_ind ;  
 	int n_biquad = nz / 2;

@@ -6,6 +6,13 @@
 
 // //////////////////////////// LEFT SIDE
 
+AudioFilterBiquad_F32_settings preFilt_left = {
+  4,      //FilterType: 1=LOWPASS, 2=BANDPASS, 3=HIGHPASS, 4=NOTCH
+  1,      //isBypassed: 1 = bypass the filter; 0 = filter is active
+  4000.0, //for LOWPASS or HIGPASS: Cutoff Frequency (Hz);  for BANDPASS or NOTCH: Center Frequency (Hz)
+  20.0    //Filter Q (width / center)...0.707 for low/high pass, maybe 5-20 for a bandpass or notch
+};
+
 // Here is the per-band prescription to be our default behavior of the multi-band processing
 BTNRH_WDRC::CHA_DSL dsl_left = {5,  // attack (ms)
   50,      // release (ms)
@@ -36,6 +43,15 @@ BTNRH_WDRC::CHA_WDRC bb_left = {1.0, // attack time (ms)
 
 
 // //////////////////////////// RIGHT SIDE
+
+
+AudioFilterBiquad_F32_settings preFilt_right = {
+  4,      //FilterType: 1=LOWPASS, 2=BANDPASS, 3=HIGHPASS, 4=NOTCH
+  1,      //isBypassed: 1 = bypass the filter; 0 = filter is active
+  4000.0, //for LOWPASS or HIGPASS: Cutoff Frequency (Hz);  for BANDPASS or NOTCH: Center Frequency (Hz)
+  20.0    //Filter Q (width / center)...0.707 for low/high pass, maybe 5-20 for a bandpass or notch
+};
+
 
 // Here is the per-band prescription to be our default behavior of the multi-band processing
 BTNRH_WDRC::CHA_DSL dsl_right = {5,  // attack (ms)

@@ -579,11 +579,11 @@ bool BLE_UI::processCharacterTriple(char mode_char, char chan_char, char data_ch
 	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
 	if (mode_char != ID_char) return false;  //ID_char is from SerialManager_UI.h
 	
-	return processCharacter(data_char);
+	return processSingleCharacter(data_char);
 }
 
 //respond to serial commands
-bool BLE_UI::processCharacter(char c) {
+bool BLE_UI::processSingleCharacter(char c) {
   
 	bool ret_val = true;
 	switch (c) {

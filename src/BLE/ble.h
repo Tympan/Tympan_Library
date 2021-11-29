@@ -50,7 +50,7 @@ class BLE_UI : public BLE, public SerialManager_UI
 		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
 		virtual void setFullGUIState(bool activeButtonsOnly = false) {}; 
 		// ///////// end of required methods
-		virtual bool processCharacter(char data_char);
+		virtual bool processSingleCharacter(char data_char);
 
 };
 
