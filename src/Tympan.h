@@ -10,7 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
-enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1 };
+enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1, MICROMOD };
 
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (TympanRev::A)
@@ -150,6 +150,21 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
 					BT_serial_speed = 9600;
 					Rev_Test = 22;
+					assumed_BT_firmware = 7;
+					break;
+
+				case  (TympanRev::MICROMOD):    //Based on the Teensy Micromod
+					//Teensy MicroMod Pin Numbering
+					resetAIC = 26;  //Teensy pin that goes to the reset pin of the audio AIC
+					potentiometer = NOT_A_FEATURE;
+					amberLED = 13;
+					redLED = NOT_A_FEATURE;
+					BT_nReset = 9;
+					BT_REGEN = 14;
+					BT_PIO0 = 5;
+					BT_PIO5 = 2;
+					enableStereoExtMicBias = NOT_A_FEATURE;
+					BT_serial_speed = 9600;
 					assumed_BT_firmware = 7;
 					break;
 
