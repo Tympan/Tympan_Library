@@ -55,6 +55,7 @@ AudioConnection_F32       patchCord33(gainBlocks[2],0,mixer,2);   //connect gain
 AudioConnection_F32       patchCord34(gainBlocks[3],0,mixer,3);   //connect gain block back to mixer
 AudioConnection_F32       patchCord35(gainBlocks[4],0,mixer,4);   //connect gain block back to mixer
 AudioConnection_F32       patchCord36(gainBlocks[5],0,mixer,5);   //connect gain block back to mixer
+AudioConnection_F32       patchCord36(gainBlocks[6],0,mixer,6);   //connect gain block back to mixer
 AudioConnection_F32       patchCord37(gainBlocks[7],0,mixer,7);   //connect gain block back to mixer
 
 AudioConnection_F32       patchCord51(mixer,0,gainOverall,0);     //connect gain block back to mixer

@@ -141,6 +141,12 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 	void setAudioBlockSamples(const int _audio_block_samples) {
 		audio_block_samples = _audio_block_samples;
 	}
+	float getFrequency_Hz(void) { return _Frequency; }
+	float setFrequency_Hz(float _freq_Hz) { frequency(_freq_Hz); return getFrequency_Hz(); }
+	float getAmplitude(void) { return _magnitude; }
+	float setAmplitude(float amp) { amplitude(amp); return getAmplitude(); }
+	
+	
   private:
     inline float32_t applyMod(uint32_t sample, audio_block_f32_t *lfo);
     const float32_t _PI;
