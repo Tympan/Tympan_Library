@@ -107,15 +107,28 @@ int TympanBase::serviceLEDs(const unsigned int curTime_millis, const bool flag_b
   static unsigned long lastUpdate_millis = 0;
   if (lastUpdate_millis > curTime_millis) { lastUpdate_millis = 0; } //account for possible wrap-around
   unsigned long dT_millis = curTime_millis - lastUpdate_millis;
-  
   if (flag_blink_fast) {
-    if (dT_millis > 50) {  //fast toggle
-      toggleLEDs();
+	  
+ 	if (dT_millis > 50) {  //fast toggle
+      //If amberLED pin is valid, then toggle it
+      if (pins.amberLED!=NOT_A_FEATURE)
+	  	{
+			toggleLEDs(true, false);
+		}
       lastUpdate_millis = curTime_millis;
     }
   } else {
     if (dT_millis > 1000) {  //slow toggle
-      toggleLEDs(true,true); //blink both
+      //If amberLED pin is valid, then toggle it
+      if (pins.amberLED!=NOT_A_FEATURE)
+	  	{
+			toggleLEDs(true, false);
+		}
+    //If redLED pin is valid, then toggle it
+		if (pins.redLED!=NOT_A_FEATURE)
+	  	{
+			toggleLEDs(false, true);
+		}
       lastUpdate_millis = curTime_millis;
     }
   }
