@@ -3,7 +3,7 @@
 #define EarpieceMixer_F32_h
 
 #include <AICShield.h>  //to get the EarpieceShield class
-#include <AudioEffectDelay_F32.h>
+#include <AudioEffectDelay_f32.h>
 #include <AudioMixer_F32.h>
 #include <AudioSummer_F32.h>
 
