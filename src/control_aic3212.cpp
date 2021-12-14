@@ -191,7 +191,8 @@
 
 
 //ADC Processing Block
-#define AIC3212_ADC_PROCESSING_BLOCK_REG 0x003d // page 0 register 61
+#define AIC3212_ADC_PROCESSING_BLOCK_PAGE   0x00 
+#define AIC3212_ADC_PROCESSING_BLOCK_REG    0x3d // page 0 register 61
 
 
 // Enable the ADC and configure for digital mics (if desired)
@@ -237,6 +238,9 @@
 #define AIC3212_DIGITAL_MIC_DIN2_LEFT_RIGHT 0b00000011   //Rising Edge: Left; Falling Edge Right
 
 
+#define AIC3212_ADC_POWERTUNE_PAGE      0x01
+#define AIC3212_ADC_POWERTUNE_REG       0x3D
+
 
 
 
@@ -246,19 +250,24 @@ Aic_3212_I2c_Address i2cAddress = Bus_0;
 
 
 // ---------------------- Functions -------------------
+/*Set I2C Bus based on two possible bus addresses.
+*/
 void AudioControlAIC3212::setI2Cbus(int i2cBusIndex)
 {
   // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
   switch (i2cBusIndex) {
 	case 0:
     i2cAddress = Bus_0;
-    myWire = &Wire; break;
+    myWire = &Wire; 
+    break;
 	case 1:
     i2cAddress = Bus_1;
-		myWire = &Wire1; break; 
+		myWire = &Wire1; 
+    break; 
 	default:
     i2cAddress = Bus_0;
-		myWire = &Wire; break;
+		myWire = &Wire; 
+    break;
   }
 }
 
@@ -380,13 +389,6 @@ bool AudioControlAIC3212::setMicBias(int n) {
   return false;
 }
 
-
-
-
-
-
-
-
 bool AudioControlAIC3212::enableDigitalMicInputs(bool desired_state) {
 	if (desired_state == true) {
 		aic_readPage 
@@ -409,11 +411,10 @@ bool AudioControlAIC3212::enableDigitalMicInputs(bool desired_state) {
     //Do not configure the ADC for digital mics
     aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNELS_ON);
 
-
-   //Set AIC's pin "BCLK2" to clock input for digital microphone
+   //Disable AIC's pin "BCLK2" to clock input for digital microphone
     aic_writePage(AIC3212_BCLK2_PIN_CTRL_PAGE, AIC3212_BCLK2_PIN_CTRL_REG, AIC3212_BCLK2_DISABLED);
 
-    //Set the AIC's pin "DIN2" to Digital Microphone input
+    //Disable the AIC's pin "DIN2" to Digital Microphone input
     aic_writePage(AIC3212_DIN2_PIN_CTRL_PAGE, AIC3212_DIN2_PIN_CTRL_REG, AIC3212_DIN2_DISABLED)
 		return false;
 	}
@@ -435,12 +436,20 @@ void AudioControlAIC3212::aic_reset() {
 
 void AudioControlAIC3212::aic_initADC() {
   if (debugToSerial) Serial.println("INFO: Initializing AIC ADC");
-  aic_writeRegister(AIC3212_ADC_PROCESSING_BLOCK_REG, PRB_R);  // processing blocks - ADC
- 
-  aic_goToPage(AIC3212_MICPGA_PAGE);
-  aic_writeRegister(61, 0); // 0x3D // Select ADC PTM_R4 Power Tune?  (this line is from datasheet (application guide, Section 4.2)
-  aic_writeRegister(71, 0b00110001); // 0x47 // Set MicPGA startup delay to 3.1ms
-  aic_writeRegister(AIC3212_MICPGA_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_2_5); // power up mic bias
+  aic_writePage(AIC3212_ADC_PROCESSING_BLOCK_PAGE, AIC3212_ADC_PROCESSING_BLOCK_REG, PRB_R);  // processing blocks - ADC
+  aic_writePage(AIC3212_ADC_POWERTUNE_PAGE, AIC3212_ADC_POWERTUNE_REG, Adc_Powertune_Settings.PTM_R4); // 0x3D // Select ADC PTM_R4 Power Tune?  (this line is from datasheet (application guide, Section 4.2)
+
+
+
+
+
+
+
+
+
+
+  aic_writePage(1, 71, 0b00110001); // 0x47 // Set MicPGA startup delay to 3.1ms
+  aic_writeAddress(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_2_5); // power up mic bias
 
   aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT); //page is AIC3212_MICPGA_PAGE
   aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);//page is AIC3212_MICPGA_PAGE
