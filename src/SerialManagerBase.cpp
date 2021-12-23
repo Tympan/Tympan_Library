@@ -47,8 +47,9 @@ void SerialManagerBase::respondToByte(char c) {
       break;
     case STREAM_LENGTH:
       if (c == DATASTREAM_SEPARATOR) {
-        // Get the datastream length:
-        stream_length = *((int*)(stream_data));
+        // Get the datastream length from stream_data.
+        int* stream_data_as_int = reinterpret_cast<int*>(stream_data);
+        stream_length = *stream_data_as_int;
         serial_read_state = STREAM_DATA;
         stream_chars_received = 0;
         Serial.print("SerialManagerBase: RespondToByte: Stream length = ");
