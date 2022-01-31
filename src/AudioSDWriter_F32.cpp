@@ -1,5 +1,45 @@
 
-#include "AudioSDWriter_F32.h"
+
+#include "AudioSDWriter_F32.h"	
+
+
+int AudioSDWriter_F32::setWriteDataType(WriteDataType type) {
+	Print *serial_ptr = &Serial1;
+	int write_nbytes = DEFAULT_SDWRITE_BYTES;
+
+	//get info from previous objects
+	if (buffSDWriter) {
+		serial_ptr = buffSDWriter->getSerial();
+		write_nbytes = buffSDWriter->getWriteSizeBytes();
+	}
+
+	//make the full method call
+	return setWriteDataType(type, serial_ptr, write_nbytes);
+}
+
+int AudioSDWriter_F32::setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps) {
+	stopRecording();
+	writeDataType = type;
+	if (!buffSDWriter) {
+		if (!sd) {
+			sd = new SdFs();
+		}
+		
+		//Serial.println("AudioSDWriter_F32: setWriteDataType: creating buffSDWriter...");
+		buffSDWriter = new BufferedSDWriter(sd, serial_ptr, writeSizeBytes);
+		if (buffSDWriter) {
+			buffSDWriter->setNChanWAV(numWriteChannels);
+			if (bufferLength_samps >= 0) {
+				allocateBuffer(bufferLength_samps); //leave empty for default buffer size
+			} else {
+				//if we don't allocateBuffer() here, it simply lets BufferedSDWrite create it last-minute
+			}
+		} else {
+			Serial.print("AudioSDWriter_F32: setWriteDataType: *** ERROR *** Could not create buffered SD writer.");
+		}
+	}
+	if (buffSDWriter == NULL) { return -1; } else { return 0; };
+}
 
 void AudioSDWriter_F32::prepareSDforRecording(void) {
   if (current_SD_state == STATE::UNPREPARED) {
@@ -53,7 +93,7 @@ int AudioSDWriter_F32::deleteAllRecordings(void) {
 		
 	} else {
 		//SD subsystem is in the wrong state to start recording
-		if (serial_ptr) serial_ptr->println("AudioSDWriter: clear: not in correct state to start.");
+		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: clear: not in correct state to start."));
 		return_val = -1;
 	}
 	
@@ -95,7 +135,7 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 					done = true;
 				}
 			} else {
-				if (serial_ptr) serial_ptr->println("AudioSDWriter: start: Cannot do more than 999 files.");
+				if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: Cannot do more than 999 files."));
 				done = true; //don't loop again
 			} //close if (recording_count)
 				
@@ -103,7 +143,7 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 
 	} else {
 		//SD subsystem is in the wrong state to start recording
-		if (serial_ptr) serial_ptr->println("AudioSDWriter: start: not in correct state to start.");
+		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
 		return_val = -1;
 	}
 	
@@ -112,6 +152,10 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 
 int AudioSDWriter_F32::startRecording(char* fname) {
   int return_val = 0;
+  
+  	//check to see if the SD has been initialized
+	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+  
   if (current_SD_state == STATE::STOPPED) {
 	//try to open the file on the SD card
 	if (openAsWAV(fname)) { //returns TRUE if the file opened successfully
@@ -129,13 +173,13 @@ int AudioSDWriter_F32::startRecording(char* fname) {
 	  
 	} else {
 	  if (serial_ptr) {
-		serial_ptr->print("AudioSDWriter: start: Failed to open ");
+		serial_ptr->print(F("AudioSDWriter: start: Failed to open "));
 		serial_ptr->println(fname);
 	  }
 	  return_val = -1;
 	}
   } else {
-	if (serial_ptr) serial_ptr->println("AudioSDWriter: start: not in correct state to start.");
+	if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
 	return_val = -1;
   }
   return return_val;
@@ -251,3 +295,165 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
   //now push it into the buffer via the base class BufferedSDWriter
   if (buffSDWriter) buffSDWriter->copyToWriteBuffer(ptr_audio,nsamps,numChan);
 }
+
+
+
+int AudioSDWriter_F32::serviceSD_withWarnings(AudioInputI2S_F32 &i2s_in) {
+  int bytes_written = serviceSD_withWarnings();
+  if ( bytes_written > 0 ) checkMemoryI2S(i2s_in);
+  return bytes_written;
+}
+int AudioSDWriter_F32::serviceSD_withWarnings(AudioInputI2SQuad_F32 &i2s_in) {
+  int bytes_written = serviceSD_withWarnings();
+  if ( bytes_written > 0 ) checkMemoryI2S(i2s_in);
+  return bytes_written;
+}
+
+int AudioSDWriter_F32::serviceSD_withWarnings(void) {
+  static int max_max_bytes_written = 0; //for timing diagnotstics
+  static int max_bytes_written = 0; //for timing diagnotstics
+  static int max_dT_micros = 0; //for timing diagnotstics
+  static int max_max_dT_micros = 0; //for timing diagnotstics
+
+  unsigned long dT_micros = micros();  //for timing diagnotstics
+  //int bytes_written = audioSDWriter.serviceSD();
+  int bytes_written = serviceSD(); 
+  dT_micros = micros() - dT_micros;  //timing calculation
+
+  if ( bytes_written > 0 ) {
+    
+    max_bytes_written = max(max_bytes_written, bytes_written);
+    max_dT_micros = max((int)max_dT_micros, (int)dT_micros);
+   
+    if (dT_micros > 10000) {  //if the write took a while, print some diagnostic info
+      max_max_bytes_written = max(max_bytes_written,max_max_bytes_written);
+      max_max_dT_micros = max(max_dT_micros, max_max_dT_micros);
+      
+      Serial.print("serviceSD: bytes written = ");
+      Serial.print(bytes_written); Serial.print(", ");
+      Serial.print(max_bytes_written); Serial.print(", ");
+      Serial.print(max_max_bytes_written); Serial.print(", ");
+      Serial.print("dT millis = "); 
+      Serial.print((float)dT_micros/1000.0,1); Serial.print(", ");
+      Serial.print((float)max_dT_micros/1000.0,1); Serial.print(", "); 
+      Serial.print((float)max_max_dT_micros/1000.0,1);Serial.print(", ");      
+      Serial.println();
+      max_bytes_written = 0;
+      max_dT_micros = 0;     
+    }
+  }
+  return bytes_written;
+}     
+
+void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2S_F32 &i2s_in) {
+    //print a warning if there has been an SD writing hiccup
+
+	//if (audioSDWriter.getQueueOverrun() || i2s_in.get_isOutOfMemory()) {
+	if (i2s_in.get_isOutOfMemory()) {
+		float approx_time_sec = ((float)(millis()-getStartTimeMillis()))/1000.0;
+		if (approx_time_sec > 0.1) {
+		  Serial.print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
+		  Serial.println(approx_time_sec);
+		}
+	}
+
+    i2s_in.clear_isOutOfMemory();
+}
+
+void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SQuad_F32 &i2s_in) {
+	//print a warning if there has been an SD writing hiccup
+
+	//if (audioSDWriter.getQueueOverrun() || i2s_in.get_isOutOfMemory()) {
+	if (i2s_in.get_isOutOfMemory()) {
+		float approx_time_sec = ((float)(millis()-getStartTimeMillis()))/1000.0;
+		if (approx_time_sec > 0.1) {
+			Serial.print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
+			Serial.println(approx_time_sec);
+		}
+	}
+
+	i2s_in.clear_isOutOfMemory();
+}
+
+
+
+
+
+// ////////////////////////////////////////////// Implement the UI methods
+
+void AudioSDWriter_F32_UI::printHelp(void) {
+	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
+	Serial.println(F(" AudioSDWriter: Prefix = ") + prefix);
+	Serial.println(F("   r,s,d: SD record/stop/deleteAll")); 
+};
+
+
+bool AudioSDWriter_F32_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
+	bool return_val = false;
+	if (mode_char != ID_char) return return_val; //does the mode character match our ID character?  if so, it's us!
+
+	//we ignore the chan_char and only work with the data_char
+	return_val = true;  //assume that we will find this character
+	switch (data_char) {    
+		case 'r':
+			Serial.println("AudioSDWriter_F32_UI: begin SD recording");
+			startRecording(); 			//AudioSDWriter_F32 method
+			setSDRecordingButtons();	//update the GUI buttons
+			break;
+		case 's':
+			Serial.println("AudioSDWriter_F32_UI: stop SD recording");
+			stopRecording(); 			//AudioSDWriter_F32 method
+			setSDRecordingButtons();	//update the GUI buttons
+			break;
+		case 'd':
+			Serial.println("AudioSDWriter_F32_UI: deleting all recordings");
+		    stopRecording();			//AudioSDWriter_F32 method
+			deleteAllRecordings();		//AudioSDWriter_F32 method
+			setSDRecordingButtons();    //update the GUI buttons
+			break;
+		default:
+			return_val = false;  //we did not process this character
+	}
+	return return_val;		
+};
+
+void AudioSDWriter_F32_UI::setFullGUIState(bool activeButtonsOnly) {
+	setSDRecordingButtons(activeButtonsOnly);
+}
+void AudioSDWriter_F32_UI::setSDRecordingButtons(bool activeButtonsOnly) {
+	if (getState() == AudioSDWriter_F32::STATE::RECORDING) {
+		setButtonState("recordStart",true);
+	} else {
+		setButtonState("recordStart",false);
+	}
+	setButtonText("sdFname",getCurrentFilename());
+};
+
+TR_Card* AudioSDWriter_F32_UI::addCard_sdRecord(TR_Page *page_h) {
+	return addCard_sdRecord(page_h, getPrefix());
+}
+TR_Card* AudioSDWriter_F32_UI::addCard_sdRecord(TR_Page *page_h, String prefix) {
+	if (page_h == NULL) return NULL;
+	TR_Card *card_h = page_h->addCard(F("Record Audio to SD Card"));
+	if (card_h == NULL) return NULL;
+	
+	card_h->addButton("Start", prefix+"r", "recordStart", 6);  //label, command, id, width
+	card_h->addButton("Stop",  prefix+"s", "",            6);  //label, command, id, width
+	card_h->addButton("",      "",         "sdFname",     12); //label, command, id, width  //display the filename
+	return card_h;
+}
+
+TR_Page* AudioSDWriter_F32_UI::addPage_sdRecord(TympanRemoteFormatter *gui) {
+  if (gui == NULL) return NULL;
+  TR_Page *page_h = gui->addPage("SD Audio Writer");
+  if (page_h == NULL) return NULL;
+  addCard_sdRecord(page_h);
+  return page_h;
+
+}
+
+
+
+
+
+

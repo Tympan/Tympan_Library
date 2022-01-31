@@ -33,7 +33,8 @@
 #ifndef output_i2s_f32_h_
 #define output_i2s_f32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <arm_math.h>
 #include "AudioStream_F32.h"
 //include "AudioStream.h"
 #include "DMAChannel.h"
@@ -56,22 +57,39 @@ public:
 	void sub_begin_i32(void);
 	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
+
+	friend class AudioInputI2S_F32;
+	#if defined(__IMXRT1062__)
+	friend class AudioOutputI2SQuad_F32;
+	friend class AudioInputI2SQuad_F32;
+	//friend class AudioOutputI2SHex;
+	//friend class AudioInputI2SHex;
+	//friend class AudioOutputI2SOct;
+	//friend class AudioInputI2SOct;
+	#endif
+
 	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
 	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
 	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
-	static float setI2SFreq(const float);
+	static float setI2SFreq_T3(const float);
+
+
+
 protected:
-	//AudioOutputI2S_F32(const AudioSettings &settings): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
+	AudioOutputI2S_F32(int dummy): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	static void config_i2s(void);
 	static void config_i2s(bool);
-	static void config_i2s_i16(void);
-	static void config_i2s_i32(void);
+	static void config_i2s(float);
+	static void config_i2s(bool, float);
+	//static void config_i2s_i16(void,float);
+	//static void config_i2s_i32(void,float);
 	static audio_block_f32_t *block_left_1st;
 	static audio_block_f32_t *block_right_1st;
 	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr_16(void);
 	static void isr_32(void);
+	static void isr(void);
 private:
 	static audio_block_f32_t *block_left_2nd;
 	static audio_block_f32_t *block_right_2nd;
@@ -83,6 +101,17 @@ private:
 	volatile uint8_t enabled = 1;
 };
 
+
+class AudioOutputI2Sslave_F32 : public AudioOutputI2S_F32
+{
+public:
+	AudioOutputI2Sslave_F32(void) : AudioOutputI2S_F32(0) { begin(); } ;
+	void begin(void);
+	friend class AudioInputI2Sslave_F32;
+	friend void dma_ch0_isr(void);
+protected:
+	static void config_i2s(void);
+};
 
 
 

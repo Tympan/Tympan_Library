@@ -33,9 +33,10 @@
 #ifndef _input_i2s_f32_h_
 #define _input_i2s_f32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <arm_math.h> 
 #include "AudioStream_F32.h"
-#include "AudioStream.h"
+#include "AudioStream.h"   //Do we really need this?? (Chip, 2020-10-31)
 #include "DMAChannel.h"
 
 class AudioInputI2S_F32 : public AudioStream_F32
@@ -65,6 +66,7 @@ protected:
 	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr_32(void);
+	static void isr(void);
 	virtual void update_1chan(int, audio_block_f32_t *&);
 private:
 	static audio_block_f32_t *block_left_f32;
@@ -75,6 +77,15 @@ private:
 	static int flag_out_of_memory;
 	static unsigned long update_counter;
 };
+
+class AudioInputI2Sslave_F32 : public AudioInputI2S_F32
+{
+public:
+	AudioInputI2Sslave_F32(void) : AudioInputI2S_F32(0) { begin(); }
+	void begin(void);
+	friend void dma_ch1_isr(void);
+};
+
 
 
 #endif

@@ -3,6 +3,8 @@
 #ifndef _AccessConfigDataOnSD_h
 #define _AccessConfigDataOnSD_h
 
+#include <SdFat.h>
+
 class AccessConfigDataOnSD {
 	public: 
 		virtual int trimLeadingWhitespace(char *line, int buff_len) {
@@ -83,7 +85,7 @@ class AccessConfigDataOnSD {
 		}
 		
 		
-		int getNonEmptyLine(SdFile_Gre *file, char *line, int buff_len) {
+		int getNonEmptyLine(SdFile *file, char *line, int buff_len) {
 			int n=0;
 			while (n==0) { 
 				if ((n = file->fgets(line, buff_len)) <= 0) return -1; 
@@ -94,7 +96,7 @@ class AccessConfigDataOnSD {
 		}
 		
 		//read and parse floating point values from a line
-		int readAndParseLine(SdFile_Gre *file, char *line, int buff_len, float out_val[], int n_val, int round_digit = 99) {
+		int readAndParseLine(SdFile *file, char *line, int buff_len, float out_val[], int n_val, int round_digit = 99) {
 			int nchar;
 			if ((nchar = getNonEmptyLine(file, line, buff_len)) <= 0) return -1;
 			char *p_str = line;
@@ -114,7 +116,7 @@ class AccessConfigDataOnSD {
 		}
 
 		//read and parse integer values from a line
-		int readAndParseLine(SdFile_Gre *file, char *line, int buff_len, int out_val[], int n_val) {
+		int readAndParseLine(SdFile *file, char *line, int buff_len, int out_val[], int n_val) {
 			int nchar;
 			if ((nchar = getNonEmptyLine(file, line, buff_len)) <= 0) return -1;
 			char *p_str = line;
@@ -125,8 +127,32 @@ class AccessConfigDataOnSD {
 			}
 			return 0;
 		}
+		
+		int readRowsUntilBothTargStrs(SdFile *file, char *line, int buff_len, const char *targ_str, const char *targ_str2) {
+			//bool found_start = false;
+			int n;
 
-		int readRowsUntilTargStr(SdFile_Gre *file, char *line, int buff_len, const char *targ_str) {
+			
+			//Serial.println("BTNRH_WDRC: CHA_DSL: findStartOfDSL: reading file...");
+			int line_count = 0;
+			while ((n = file->fgets(line, buff_len)) > 0) {
+				line_count++;
+				
+				//Serial.print(n);Serial.print(": ");
+				n=trimComments(line,n);  //stop the line wherever a commen starts
+				//Serial.print(n);Serial.print(": ");
+				n=trimLeadingWhitespace(line,n);  //stop the line wherever a commen starts
+				//Serial.print(n);Serial.print(": ");
+				
+				bool is_match = (isInString(line, n, targ_str) && isInString(line, n, targ_str2));					
+				if (is_match) return line_count;  //find if in string
+		
+			}
+			//Serial.println(F("\nDone"));
+			return -1;
+		}
+
+		int readRowsUntilTargStr(SdFile *file, char *line, int buff_len, const char *targ_str) {
 			//bool found_start = false;
 			int n;
 
@@ -150,7 +176,7 @@ class AccessConfigDataOnSD {
 			return -1;
 		}			
 		
-		void writeHeader(SdFile_Gre *file, const char *type_name, const char *var_name) {
+		void writeHeader(SdFile *file, const char *type_name, const char *var_name) {
 			file->println();
 			file->print(type_name);
 			file->print(" ");
@@ -160,7 +186,7 @@ class AccessConfigDataOnSD {
 		}
 		
 		//write integer values
-		void writeValuesOnLine(SdFile_Gre *file, int out_val[], int n_val, bool trailing_comma, const char* comment, int total_in_row = -1) {
+		void writeValuesOnLine(SdFile *file, int out_val[], int n_val, bool trailing_comma, const char* comment, int total_in_row = -1) {
 			if (total_in_row < n_val) total_in_row = n_val;
 			file->print(" ");
 			if (total_in_row == 1) { //write a single value
@@ -183,7 +209,7 @@ class AccessConfigDataOnSD {
 		}
 
 		//write float values
-		void writeValuesOnLine(SdFile_Gre *file, float out_val[], int n_val, bool trailing_comma, const char* comment, int total_in_row = -1) {
+		void writeValuesOnLine(SdFile *file, float out_val[], int n_val, bool trailing_comma, const char* comment, int total_in_row = -1) {
 			if (total_in_row < n_val) total_in_row = n_val;
 			file->print(" ");
 			if (total_in_row == 1) {  //write a single value
@@ -204,7 +230,7 @@ class AccessConfigDataOnSD {
 			file->print(" \t// "); file->print(comment);
 			file->println();
 		}
-		void writeFooter(SdFile_Gre *file) {
+		void writeFooter(SdFile *file) {
 			file->println("};");
 			file->println();
 		}

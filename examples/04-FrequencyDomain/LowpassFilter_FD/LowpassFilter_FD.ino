@@ -15,28 +15,24 @@
 // This example code is in the public domain (MIT License)
 
 #include <Tympan_Library.h>
-#include "AudioEffectLowpassFD_F32.h"  //the local file holding your custom function
+#include "AudioEffectLowpass_FD_F32.h"  //the local file holding your custom function
 
 //set the sample rate and block size
-const float sample_rate_Hz = 24000.f; ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
+const float sample_rate_Hz = 24000.f; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
 const int audio_block_samples = 32;     //for freq domain processing choose a power of 2 (16, 32, 64, 128) but no higher than 128
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                       myTympan(TympanRev::D);     //TympanRev::C or TympanRev::C or TympanRev::E
-AudioInputI2S_F32            i2s_in(audio_settings);           //Digital audio *from* the Tympan AIC.
-AudioSynthWaveformSine_F32   sinewave(audio_settings);
-AudioEffectLowpassFD_F32     audioEffectLowpassFD(audio_settings);  //create the frequency-domain processing block
-AudioOutputI2S_F32           i2s_out(audio_settings);          //Digital audio *to* the Tympan AIC.
+Tympan                       myTympan(TympanRev::E);                //do TympanRev::D or TympanRev::E
+AudioInputI2S_F32            i2s_in(audio_settings);                //Digital audio *from* the Tympan AIC.
+AudioEffectLowpass_FD_F32    audioEffectLowpassFD(audio_settings);  //create the frequency-domain processing block
+AudioOutputI2S_F32           i2s_out(audio_settings);               //Digital audio *to* the Tympan AIC.
 
 //Make all of the audio connections
-#if 1
-  AudioConnection_F32       patchCord1(i2s_in, 0, audioEffectLowpassFD, 0);    //connect the Left input
-#else
-  AudioConnection_F32       patchCord1(sinewave, 0, audioEffectLowpassFD, 0);    //connect the Left input
-#endif
-AudioConnection_F32       patchCord12(audioEffectLowpassFD, 0, i2s_out, 0);  //connect the input to the local Freq Domain processor
-AudioConnection_F32       patchCord13(audioEffectLowpassFD, 0, i2s_out, 1);  //connect the Right gain to the Right output
+AudioConnection_F32       patchCord1(i2s_in, 0, audioEffectLowpassFD, 0);   //connect the Left input to our algorithm
+AudioConnection_F32       patchCord2(audioEffectLowpassFD, 0, i2s_out, 0);  //connect the algorithm to the left output
+AudioConnection_F32       patchCord3(audioEffectLowpassFD, 0, i2s_out, 1);  //connect the algorithm to the right output
+
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 15.0f; //gain on the microphone
@@ -54,6 +50,7 @@ void setup() {
   // Configure the frequency-domain algorithm
   int N_FFT = 128;
   audioEffectLowpassFD.setup(audio_settings,N_FFT); //do after AudioMemory_F32();
+  audioEffectLowpassFD.setCutoff_Hz(1000.0f);
 
  //Enable the Tympan to start the audio flowing!
   myTympan.enable(); // activate AIC
@@ -66,10 +63,6 @@ void setup() {
   //Set the desired volume levels
   myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
-
-  //define sine wave properites (if used for debugging)
-  sinewave.frequency(1000.0f);
-  sinewave.amplitude(0.025f);
 
   // configure the blue potentiometer
   servicePotentiometer(millis(),0);  //update based on the knob setting the "0" is not relevant here.
@@ -85,7 +78,7 @@ void loop() {
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
 
   //check to see whether to print the CPU and Memory Usage
-  printCPUandMemory(millis(),3000); //print every 3000 msec
+  myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
 } //end loop();
 
@@ -122,42 +115,10 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
         //use the potentiometer to set the freq-domain low-pass filter
         const float min_val = logf(200.f), max_val = logf(12000.f); //set desired range
         float lowpass_Hz = expf(min_val + (max_val - min_val)*val);
-        audioEffectLowpassFD.setLowpassFreq_Hz(lowpass_Hz);
+        audioEffectLowpassFD.setCutoff_Hz(lowpass_Hz);
         Serial.print("servicePotentiometer: Lowpass (Hz) = "); Serial.println(lowpass_Hz); //print text to Serial port for debugging
       #endif
     }
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
-
-
-//This routine prints the current and maximum CPU usage and the current usage of the AudioMemory that has been allocated
-void printCPUandMemory(unsigned long curTime_millis, unsigned long updatePeriod_millis) {
-  //static unsigned long updatePeriod_millis = 3000; //how many milliseconds between updating gain reading?
-  static unsigned long lastUpdate_millis = 0;
-
-  //has enough time passed to update everything?
-  if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
-  if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-    Serial.print("printCPUandMemory: ");
-    Serial.print("CPU Cur/Peak: ");
-    Serial.print(audio_settings.processorUsage());
-    //Serial.print(AudioProcessorUsage()); //if not using AudioSettings_F32
-    Serial.print("%/");
-    Serial.print(audio_settings.processorUsageMax());
-    //Serial.print(AudioProcessorUsageMax());  //if not using AudioSettings_F32
-    Serial.print("%,   ");
-    Serial.print("Dyn MEM Int16 Cur/Peak: ");
-    Serial.print(AudioMemoryUsage());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax());
-    Serial.print(",   ");
-    Serial.print("Dyn MEM Float32 Cur/Peak: ");
-    Serial.print(AudioMemoryUsage_F32());
-    Serial.print("/");
-    Serial.print(AudioMemoryUsageMax_F32());
-    Serial.println();
-
-    lastUpdate_millis = curTime_millis; //we will use this value the next time around.
-  }
-}

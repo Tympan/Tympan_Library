@@ -1,9 +1,10 @@
-/* 
+/*
 	control_aic3206
-	
+
 	Created: Brendan Flynn (http://www.flexvoltbiosensor.com/) for Tympan, Jan-Feb 2017
 	Purpose: Control module for Texas Instruments TLV320AIC3206 compatible with Teensy Audio Library
- 
+	Updates: Chip Audette (OpenAudio) 2017 through 2020+
+
 	License: MIT License.  Use at your own risk.
  */
 
@@ -19,11 +20,11 @@
 #  define AIC_FS                                                     44100UL
 #endif
 
-//#define AIC_BITS                                                        16
-#define AIC_BITS                                                        32
+#define AIC_BITS                                                        16
+//#define AIC_BITS                                                        32
 
-#define AIC_I2S_SLAVE                                                     1
-#if AIC_I2S_SLAVE
+#define IS_AIC_I2S_FOLLOWER                                                     1
+#if IS_AIC_I2S_FOLLOWER
 // Direction of BCLK and WCLK (reg 27) is input if a slave:
 # define AIC_CLK_DIR                                                    0
 #else
@@ -67,7 +68,7 @@
 // FS = 90.3168MHz / (8*2*128) = 44100 Hz.
 // MOD = 90.3168MHz / (8*2) = 5644800 Hz
 
-// Actual from Teensy: 44117.64706Hz * 128 => 5647058.82368Hz * 8*2 => 90352941.17888Hz
+// Actual from Teensy 3.x: 44117.64706Hz * 128 => 5647058.82368Hz * 8*2 => 90352941.17888Hz
 
 // DAC clock config.
 // Note: MDAC*DOSR/32 >= RC, where RC is 8 for the default filter.
@@ -78,7 +79,7 @@
 
 #define MODE_STANDARD	(1)
 #define MODE_LOWLATENCY (2)
-#define MODE_PDM	(3)
+#define MODE_PDM	(3)   //compatible with digital mics
 #define ADC_DAC_MODE    (MODE_PDM)
 
 
@@ -126,7 +127,7 @@
 	#define PRB_R                                                             1
 
 #endif  //for standard vs low-latency vs PDM setup
-	
+
 #endif // end fs if block
 
 //**************************** Chip Setup **********************************//
@@ -175,24 +176,33 @@
 #define TYMPAN_ADC_MUTE_REG 0x0052 //  page 0, register 82
 #define TYMPAN_ADC_UNMUTE 0x00
 
-
 void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
 {
   // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
   switch (i2cBusIndex) {
-	case 0:
-    i2cAddress = Bus_0;
-    myWire = &Wire; break;
-	//case 1:
-	//	myWire = &Wire1; break;  //defined in WireKinetis.h via Teensy's 
-	case 2:
-    i2cAddress = Bus_2;
-		myWire = &Wire2; break; //defined in WireKinetis.h via Teensy's Wire.h
-	//case 3:
-	//	myWire = &Wire3; break; //commented out in WireKinetis.h?? Why?
-	default:
-    i2cAddress = Bus_0;
-		myWire = &Wire; break;
+		case 0:
+			myWire = &Wire; break;
+		case 1:
+			myWire = &Wire1; break;  //defined in WireKinetis.h via Teensy's
+		case 2:
+			myWire = &Wire2; break; //defined in WireKinetis.h via Teensy's Wire.h
+		//case 3:
+		//	myWire = &Wire3; break; //commented out in WireKinetis.h?? Why?
+		case 4:
+		{
+			pinMode(7,INPUT_PULLUP); delay(10); 
+			int pinVal = digitalRead(7);
+			if(pinVal == 1){		// production Rev D
+				myWire = &Wire2;
+			} else {						// prototype Rev D with op amps
+				myWire = &Wire;
+				setResetPin(35);
+			}
+			Serial.print("Control I2C Select: "); Serial.println(pinVal+1);
+			break;
+		}
+		default:
+			myWire = &Wire; break;
   }
 }
 bool AudioControlAIC3206::enable(void) {
@@ -201,17 +211,19 @@ bool AudioControlAIC3206::enable(void) {
   delay(5);
 
   //hard reset the AIC
-  //Serial.println("Hardware reset of AIC...");
-  //define RESET_PIN  21
-  #define RESET_PIN (resetPinAIC)
-  pinMode(RESET_PIN,OUTPUT); 
-  digitalWrite(RESET_PIN,HIGH);delay(50); //not reset
-  digitalWrite(RESET_PIN,LOW);delay(50);  //reset
-  digitalWrite(RESET_PIN,HIGH);delay(50);//not reset
-	
+  //Serial.print("AudioControlAIC3206: enable: Hardware reset of AIC on pin ");Serial.println(resetPinAIC);
+  pinMode(resetPinAIC,OUTPUT);
+  digitalWrite(resetPinAIC,HIGH);delay(50); //not reset
+  digitalWrite(resetPinAIC,LOW);delay(50);  //reset
+  digitalWrite(resetPinAIC,HIGH);delay(50);//not reset
+
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_reset...");
   aic_reset(); //delay(50);  //soft reset
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_init...");
   aic_init(); //delay(10);
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_ADC...");
   aic_initADC(); //delay(10);
+  //if (debugToSerial) Serial.println("AudioControlAIC3206: enable: about to aic_DAC...");
   aic_initDAC(); //delay(10);
 
   aic_readPage(0, 27); // check a specific register - a register read test
@@ -232,6 +244,7 @@ bool AudioControlAIC3206::inputLevel(float volume) {
 }
 
 bool AudioControlAIC3206::inputSelect(int n) {
+	
   if ( n == AudioControlAIC3206::IN1 ) {
     // USE LINE IN SOLDER PADS
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
@@ -241,10 +254,9 @@ bool AudioControlAIC3206::inputSelect(int n) {
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     // BIAS OFF
     setMicBias(TYMPAN_MIC_BIAS_OFF);
-	
-
     if (debugToSerial) Serial.println("Set Audio Input to Line In");
     return true;
+
   } else if ( n == AudioControlAIC3206::IN3_wBIAS ) {
     // mic-jack = IN3
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
@@ -254,11 +266,10 @@ bool AudioControlAIC3206::inputSelect(int n) {
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     // BIAS on, using default
     setMicBias(TYMPAN_DEFAULT_MIC_BIAS);
-
     if (debugToSerial) Serial.println("Set Audio Input to JACK AS MIC, BIAS SET TO DEFAULT 2.5V");
     return true;
+
   } else if ( n == AudioControlAIC3206::IN3 ) {
-    // 1
     // mic-jack = IN3
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -267,9 +278,9 @@ bool AudioControlAIC3206::inputSelect(int n) {
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     // BIAS Off
     setMicBias(TYMPAN_MIC_BIAS_OFF);
-
     if (debugToSerial) Serial.println("Set Audio Input to JACK AS LINEIN, BIAS OFF");
     return true;
+	
   } else if ( n == AudioControlAIC3206::IN2 ) {
     // on-board = IN2
 	aic_goToPage(TYMPAN_MICPGA_PAGE);
@@ -280,9 +291,31 @@ bool AudioControlAIC3206::inputSelect(int n) {
     // BIAS Off
     setMicBias(TYMPAN_MIC_BIAS_OFF);
     if (debugToSerial) Serial.println("Set Audio Input to Tympan On-Board MIC, BIAS OFF");
-
     return true;
-  }
+	
+  } else if ( n == AudioControlAIC3206::IN3_IN2 ) {
+  	aic_goToPage(TYMPAN_MICPGA_PAGE);
+    aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);  //pink jack
+    aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
+    aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN2 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);  //on-board mic
+    aic_writeRegister(TYMPAN_MICPGA_RIGHT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
+    // BIAS Off
+    setMicBias(TYMPAN_MIC_BIAS_OFF); 
+	if (debugToSerial) Serial.println("Set Audio Input to Left: JACK AS LINEIN, Right: On-Board MIC");
+	return true;
+	
+  } else if ( n == AudioControlAIC3206::IN3_wBIAS_IN2 ) {
+  	aic_goToPage(TYMPAN_MICPGA_PAGE);
+    aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);  //pink jack
+    aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
+    aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN2 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);  //on-board mic
+    aic_writeRegister(TYMPAN_MICPGA_RIGHT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
+    // BIAS Off
+    setMicBias(TYMPAN_DEFAULT_MIC_BIAS); 
+	if (debugToSerial) Serial.println("Set Audio Input to Left: JACK AS MIC, Right: On-Board MIC");
+	return true;
+		
+  } 
   Serial.print("AudioControlAIC3206: ERROR: Unable to Select Input - Value not supported: ");
   Serial.println(n);
   return false;
@@ -314,24 +347,24 @@ bool AudioControlAIC3206::enableDigitalMicInputs(bool desired_state) {
 	if (desired_state == true) {
 		//change the AIC's pin "MFP4" to clock input for digital microphone
 		aic_writePage(0,55,0b00001110);  //page 0, register 55, bits D4-D1 to 0111
-		
+
 		//change the AIC's pin "MFP3" to Digital Microphone input
 		aic_writePage(0,56,0b00000010);  //page 0, register 56, bits D2-D1 to 01
-		
+
 		//change the ADC to use the digital mic
 		aic_writePage(0,81,0b11011100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left+Right Dig Mic enabled, 1gain per word clock
-		
+
 		return true;
 	} else {
-		//change the AIC's pin "MFP4" to clock input for digital microphone
+		//change the AIC's pin "MFP4" 
 		aic_writePage(0,55,0b00000010);  //page 0, register 55, set to "disabled" ???  is this the default state?
-		
-		//change the IAC's pin "MFP3" to Digital Microphone input
+
+		//change the AIC's pin "MFP3"
 		aic_writePage(0,56,0b00000010);  //page 0, register 56, set to "disabled" ???  is this the default state?
 
 		//change the ADC to NOT use the digital mic
 		aic_writePage(0,81,0b11000000);  //page 0, register 81, Left+Right ADC powered, GPIO as Dig Mic In, Left+Right Dig Mic disabled, gain per word clock
-		
+
 		return false;
 	}
 }
@@ -367,7 +400,7 @@ void AudioControlAIC3206::aic_initADC() {
   aic_writeRegister(TYMPAN_MICPGA_RIGHT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE); // enable Right MicPGA, set gain to 0 dB  //page is TYMPAN_MICPGA_PAGE
 
   //aic_writePage(1, 58, 0b11111100); // Anti-thump on aill input channels...doesn't seem to od anything here.  :(
-  
+
   aic_writeAddress(TYMPAN_ADC_MUTE_REG, TYMPAN_ADC_UNMUTE); // Unmute Left and Right ADC Digital Volume Control
   aic_writeAddress(TYMPAN_ADC_CHANNEL_POWER_REG, TYMPAN_ADC_CHANNELS_ON); // Unmute Left and Right ADC Digital Volume Control
 }
@@ -402,7 +435,7 @@ float AudioControlAIC3206::setInputGain_dB(float orig_gain_dB, int Ichan) {
 	}
 
 	if (Ichan == 0) {
-		aic_writePage(TYMPAN_MICPGA_PAGE, TYMPAN_MICPGA_LEFT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Left MicPGA 
+		aic_writePage(TYMPAN_MICPGA_PAGE, TYMPAN_MICPGA_LEFT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Left MicPGA
 	} else {
 		aic_writePage(TYMPAN_MICPGA_PAGE, TYMPAN_MICPGA_RIGHT_VOLUME_REG, TYMPAN_MICPGA_VOLUME_ENABLE | volume_int); // enable Right MicPGA
 	}
@@ -495,11 +528,11 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		flag_full = true;  //always do a full reconfiguration the first time through.
 		firstTime = false;
 	}
-	
-	// PLAYBACK SETUP: 
+
+	// PLAYBACK SETUP:
 	//	HPL/HPR are headphone output left and right
 	//	LOL/LOR are line output left and right
-	
+
 	if (flag_full) {
 		aic_writeAddress(TYMPAN_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
 
@@ -509,16 +542,16 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		aic_writeRegister(17, 0b01000000); // page 1, mute HPR Driver, 0 gain
 		aic_writeRegister(18, 0b01000000); // page 1, mute LOL Driver, 0 gain
 		aic_writeRegister(19, 0b01000000); // page 1, mute LOR Driver, 0 gain
-		
+
 		aic_writePage(0, 63, 0); //disable LDAC/RDAC
-		
+
 		aic_goToPage(1);
 		aic_writeRegister( 9, 0); //page 1,  Power down HPL/HPR and LOL/LOR drivers
 		aic_writeRegister(12, 0); //page 1, unroute from HPL
 		aic_writeRegister(13, 0); //page 1, unroute from HPR
 		aic_writeRegister(14, 0); //page 1, unroute from LOL
-		aic_writeRegister(15, 0); //page 1, unroute from LOR	
-	
+		aic_writeRegister(15, 0); //page 1, unroute from LOR
+
 		//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
 		aic_writeRegister(20, 0b10100101);  //soft routing step is 200ms, 5.0 time constants, assume 6K resistance
 	}
@@ -546,12 +579,12 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Headphone Jack");
 		return true;
   } else if (n == TYMPAN_OUTPUT_LINE_OUT) {
-    
+
 		aic_goToPage(1);
 		//Register(1, 20, 0x25); //Page1, 0x14 De-Pop
 		aic_writeRegister(14, 0b00001000); //Page1, route LDAC/RDAC to LOL/LOR
 		aic_writeRegister(15, 0b00001000); //Page1, route LDAC/RDAC to LOL/LOR
-		if (flag_full)	aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC		
+		if (flag_full)	aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
 		aic_goToPage(1);
 		aic_writeRegister(18, 0); //Page1, unmute LOL Driver, 0 gain
 		aic_writeRegister(19, 0); //Page1, unmute LOR Driver, 0 gain
@@ -571,18 +604,18 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		aic_writeRegister(13, 0b00001000); //Page 1, route LDAC/RDAC to HPL/HPR
 		aic_writeRegister(14, 0b00001000); //Page 1, route LDAC/RDAC to LOL/LOR
 		aic_writeRegister(15, 0b00001000); //Page 1, route LDAC/RDAC to LOL/LOR
-		
+
 		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
-		
+
 		aic_goToPage(1);
 		aic_writeRegister(18, 0); //Page 1, unmute LOL Driver, 0 gain
-		aic_writeRegister(19, 0); //Page 1, unmute LOR Driver, 0 gain		
+		aic_writeRegister(19, 0); //Page 1, unmute LOR Driver, 0 gain
 		aic_writeRegister(16, 0); //Page 1, unmute HPL Driver, 0 gain
 		aic_writeRegister(17, 0); //Page 1, unmute HPR Driver, 0 gain
 
 		if (flag_full) {
-			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
-			
+			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers
+
 			delay(50);
 			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
@@ -590,26 +623,26 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		}
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Headphone Jack and Line out");
-		return true;	
+		return true;
   } else if (n == TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO) {
-	  
+
 		aic_goToPage(1);
 		aic_writeRegister(12, 0b00001000); //Page 1, route Left DAC Pos to Headphone Left
 		aic_writeRegister(13, 0b00010000); //Page 1, route Left DAC Neg to Headphone Right
 		aic_writeRegister(14, 0b00010000); //Page 1, route Right DAC Neg to Lineout Left
 		aic_writeRegister(15, 0b00001000); //Page 1, route Right DAC Pos to Lineout Right
-		
+
 		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
-		
+
 		aic_goToPage(1);
 		aic_writeRegister(18, 0); //Page 1, unmute LOL Driver, 0 gain
-		aic_writeRegister(19, 0); //Page 1, unmute LOR Driver, 0 gain		
+		aic_writeRegister(19, 0); //Page 1, unmute LOR Driver, 0 gain
 		aic_writeRegister(16, 0); //Page 1, unmute HPL Driver, 0 gain
 		aic_writeRegister(17, 0); //Page 1, unmute HPR Driver, 0 gain
 
 		if (flag_full) {
-			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
-			
+			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers
+
 			delay(50);
 			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
@@ -617,7 +650,7 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		}
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Diff Headphone Jack and Line out");
-		return true;			
+		return true;
   }
   Serial.print("AudioControlAIC3206: ERROR: Unable to Select Output - Value not supported: ");
   Serial.println(n);
@@ -637,15 +670,15 @@ void AudioControlAIC3206::muteLineOut(bool flag) {
 		} else {
 			//mute
 			aic_writeRegister(18,curValL & 0b10111111); //Page1, mute LOL driver, same gain as before
-		}		
+		}
 		//unmute
 		if (!(curValR & 0b01000000))  { //is this bit low?
 			//already muted
 		} else {
 			//mute
 			aic_writeRegister(19,curValR & 0b10111111); //Page1, mute LOR driver, same gain as before
-		}	
-	
+		}
+
 	} else {
 		//unmute
 		if (curValL & 0b01000000)  {   //is this bit high?
@@ -653,20 +686,20 @@ void AudioControlAIC3206::muteLineOut(bool flag) {
 		} else {
 			//unmute
 			aic_writeRegister(18,curValL | 0b0100000000); //Page1, unmute LOL driver, same gain as before
-		}		
+		}
 		//unmute
 		if (curValR & 0b01000000)  { //is this bit high?
 			//already active
 		} else {
 			//unmute
 			aic_writeRegister(19,curValR | 0b0100000000); //Page1, unmute LOR driver, same gain as before
-		}			
+		}
 	}
 }
 
 void AudioControlAIC3206::aic_init() {
   if (debugToSerial) Serial.println("AudioControlAIC3206: Initializing AIC");
-  
+
   // PLL
   aic_goToPage(0);
   aic_writeRegister(4, 3); // page 0, 0x04 low PLL clock range, MCLK is PLL input, PLL_OUT is CODEC_CLKIN
@@ -707,9 +740,8 @@ void AudioControlAIC3206::aic_init() {
 unsigned int AudioControlAIC3206::aic_readPage(uint8_t page, uint8_t reg)
 {
   unsigned int val;
-
-  if (aic_goToPage(page)) {    
-    myWire->beginTransmission(i2cAddress);
+  if (aic_goToPage(page)) {
+    myWire->beginTransmission(AIC3206_I2C_ADDR);
     myWire->write(reg);
     unsigned int result = myWire->endTransmission();
     if (result != 0) {
@@ -720,7 +752,7 @@ unsigned int AudioControlAIC3206::aic_readPage(uint8_t page, uint8_t reg)
       val = 300 + result;
       return val;
     }
-    if (myWire->requestFrom(i2cAddress, 1) < 1) {
+    if (myWire->requestFrom(AIC3206_I2C_ADDR, 1) < 1) {
       Serial.print("AudioControlAIC3206: ERROR: Read Page.  Page: ");Serial.print(page);
       Serial.print(" Reg: ");Serial.print(reg);
       Serial.println(".  Nothing to return");
@@ -762,7 +794,7 @@ bool AudioControlAIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) 
 		Serial.print(" Val: ");Serial.println(val);
 	}
 	if (aic_goToPage(page)) {
-		//myWire->beginTransmission(i2cAddress);
+		//myWire->beginTransmission(AIC3206_I2C_ADDR);
 		//myWire->write(reg); //delay(10);
 		//myWire->write(val); //delay(10);
 		//uint8_t result = myWire->endTransmission();
@@ -774,7 +806,7 @@ bool AudioControlAIC3206::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) 
 	return false;
 }
 bool AudioControlAIC3206::aic_writeRegister(uint8_t reg, uint8_t val) {  //assumes page has already been set
-	myWire->beginTransmission(i2cAddress);
+	myWire->beginTransmission(AIC3206_I2C_ADDR);
 	myWire->write(reg); //delay(1); //delay(10); //was delay(10)
 	myWire->write(val); //delay(1);//delay(10); //was delay(10)
 	uint8_t result = myWire->endTransmission();
@@ -788,7 +820,7 @@ bool AudioControlAIC3206::aic_writeRegister(uint8_t reg, uint8_t val) {  //assum
 }
 
 bool AudioControlAIC3206::aic_goToPage(byte page) {
-  myWire->beginTransmission(i2cAddress);
+  myWire->beginTransmission(AIC3206_I2C_ADDR);
   myWire->write(0x00); //delay(1); //delay(10);// page register  //was delay(10) from BPF
   myWire->write(page); //delay(1); //delay(10);// go to page   //was delay(10) from BPF
   byte result = myWire->endTransmission();
@@ -849,15 +881,15 @@ int AudioControlAIC3206::readMicDetect(void) {
 
 
 
-float AudioControlAIC3206::setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chanIndex, int biquadIndex) 
+float AudioControlAIC3206::setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chanIndex, int biquadIndex)
 {
-	//Purpose: Creare biquad filter coefficients to be applied within 3206 hardware, ADC (input) side	
+	//Purpose: Creare biquad filter coefficients to be applied within 3206 hardware, ADC (input) side
 	//
 	// type is type of filter: 1 = Lowpass, 2=highpass
 	// cutoff_Hz is the cutoff frequency in Hz
 	// chanIndex is 0=both, 1=left, 2=right
 	// biquadIndex is 0-4 for biquad A through biquad B, depending upon ADC mode
-	
+
 	const int ncoeff = 5;
 	float coeff_f32[ncoeff];
 	uint32_t coeff_uint32[ncoeff];
@@ -876,14 +908,14 @@ float AudioControlAIC3206::setBiquadOnADC(int type, float cutoff_Hz, float sampl
 	setBiquadCoeffOnADC(chanIndex, biquadIndex, coeff_uint32); //needs twos-compliment
 	return cutoff_Hz;
 }
-	
+
 
 void AudioControlAIC3206::computeBiquadCoeff_LP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
 	// Compute common filter functions...all second order filters...all with Matlab convention on a1 and a2 coefficients
 	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
-	
+
 	//cutoff_Hz = freq_Hz;
-	
+
 	//int coeff[5];
 	double w0 = freq_Hz * (2.0 * 3.141592654 / sampleRate_Hz);
 	double sinW0 = sin(w0);
@@ -895,21 +927,21 @@ void AudioControlAIC3206::computeBiquadCoeff_LP_f32(float freq_Hz, float sampleR
 	/* b1 */ coeff[1] = (1.0 - cosW0) * scale;
 	/* b2 */ coeff[2] = coeff[0];
 	/* a0 = 1.0 in Matlab style */
-	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;  
-	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  
-	
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;
+
 	//flip signs for TI convention...see section 2.3.3.1.10.2 of TI Application Guide http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	coeff[1] = coeff[1]/2.0;
 	coeff[3] = -coeff[3]/2.0;
-	coeff[4] = -coeff[4];	
+	coeff[4] = -coeff[4];
 }
 
 void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleRate_Hz, float q, float *coeff) {
 	// Compute common filter functions...all second order filters...all with Matlab convention on a1 and a2 coefficients
 	// http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
-	
+
 	//cutoff_Hz = freq_Hz;
-	
+
 	double w0 = freq_Hz * (2 * 3.141592654 / sampleRate_Hz);
 	double sinW0 = sin(w0);
 	double alpha = sinW0 / ((double)q * 2.0);
@@ -919,9 +951,9 @@ void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleR
 	/* b1 */ coeff[1] = -(1.0 + cosW0) * scale;
 	/* b2 */ coeff[2] = coeff[0];
 	/* a0 = 1.0 in Matlab style */
-	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale; 
-	/* a2 */ coeff[4] = (1.0 - alpha) * scale;  
-	
+	/* a1 */ coeff[3] = (-2.0 * cosW0) * scale;
+	/* a2 */ coeff[4] = (1.0 - alpha) * scale;
+
 	//flip signs and scale for TI convention...see section 2.3.3.1.10.2 of TI Application Guide http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	coeff[1] = coeff[1]/2.0;
 	coeff[3] = -coeff[3]/2.0;
@@ -936,7 +968,7 @@ void AudioControlAIC3206::computeBiquadCoeff_HP_f32(float freq_Hz, float sampleR
 //	for (int i=0; i<3; i++) {
 //		//scale
 //		coeff_f32[i] *= (float)CONST_2_31_m1;
-//		
+//
 //		//truncate
 //		coeff[i] = (int32_t)coeff_f32[i];
 //	}
@@ -945,7 +977,7 @@ void AudioControlAIC3206::convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coe
 	for (int i=0; i< ncoeff; i++) {
 		//scale
 		coeff_f32[i] *= (float)CONST_2_31_m1;
-		
+
 		//truncate
 		coeff_i32[i] = (int32_t)coeff_f32[i];
 	}
@@ -955,48 +987,48 @@ int AudioControlAIC3206::setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uin
 {
 	//See TI application guide for the AIC3206 http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	//See section 2.3.3.1.10.2
-		
+
 	//power down the AIC to allow change in coefficients
 	uint32_t prev_state = aic_readPage(0x00,0x51);
 	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
-	
+
 	//use table 2-14 from TI Application Guide...
-	int page_reg_table[]={ 
+	int page_reg_table[]={
 		8, 36, 9, 44,   // N0, start of Biquad A
 		8, 40, 9, 48,   // N1
 		8, 44, 9, 52,   // N2
 		8, 48, 9, 56,   // D1
 		8, 52, 8, 64,   // D2
 		8, 56, 9, 64,    // start of biquad B
-		8, 60, 9, 68, 
-		8, 64, 9, 72, 
-		8, 68, 9, 76, 
-		8, 72, 9, 80, 
+		8, 60, 9, 68,
+		8, 64, 9, 72,
+		8, 68, 9, 76,
+		8, 72, 9, 80,
 		8, 76, 9, 84,   // start of Biquad C
-		8, 80, 9, 88, 
-		8, 84, 9, 92, 
-		8, 88, 9, 96, 
-		8, 92, 9, 100, 
+		8, 80, 9, 88,
+		8, 84, 9, 92,
+		8, 88, 9, 96,
+		8, 92, 9, 100,
 		8, 96, 9, 104,   // start of Biquad D
 		8, 100, 9, 108,
-		8, 104, 9, 112, 
-		8, 108, 9, 116, 
-		8, 112, 9, 120, 
+		8, 104, 9, 112,
+		8, 108, 9, 116,
+		8, 112, 9, 120,
 		8, 116, 9, 124,  //start of Biquad E
-		8, 120, 10, 8, 
-		8, 124, 10, 12, 
-		9, 8, 10, 16, 
-	    9, 12, 10, 20 
+		8, 120, 10, 8,
+		8, 124, 10, 12,
+		9, 8, 10, 16,
+	    9, 12, 10, 20
 	};
-		
+
 	const int rows_per_biquad = 5;
 	const int table_ncol = 4;
 	int chan_offset;
-	
+
 	switch (chanIndex) {
 		case BOTH_CHAN:
 			chan_offset = 0;
-			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);		
+			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
 			chan_offset = 1;
 			writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex*rows_per_biquad*table_ncol,table_ncol);
 			break;
@@ -1011,8 +1043,8 @@ int AudioControlAIC3206::setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uin
 		default:
 			return -1;
 			break;
-	}	
-	
+	}
+
 	//power the ADC back up
 	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
 	return 0;
@@ -1027,17 +1059,17 @@ void AudioControlAIC3206::writeBiquadCoeff(uint32_t *coeff_uint32, int *page_reg
 		c = coeff_uint32[i];
 		aic_writePage(page,reg,(uint8_t)(c>>24));
 		aic_writePage(page,reg+1,(uint8_t)(c>>16));
-		aic_writePage(page,reg+2,(uint8_t)(c>>8));	
+		aic_writePage(page,reg+2,(uint8_t)(c>>8));
 	}
 	return;
-}	
+}
 
-	
+
 void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz) { //fs_Hz is sample rate
 	//see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
 	uint32_t coeff[3];
 	if (enable) {
-		HP_cutoff_Hz = cutoff_Hz; 
+		HP_cutoff_Hz = cutoff_Hz;
 		#if 0
 			//original
 			sample_rate_Hz = fs_Hz;
@@ -1048,7 +1080,7 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 			computeFirstOrderHPCoeff_f32(cutoff_Hz, fs_Hz, coeff_f32);
 			convertCoeff_f32_to_i32(coeff_f32, (int32_t *)coeff, 3);
 		#endif
-		
+
 		//Serial.print("enableHPFonADC: coefficients, Hex: ");
 		//Serial.print(coeff[0],HEX);
 		//Serial.print(", ");
@@ -1056,15 +1088,15 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 		//Serial.print(", ");
 		//Serial.print(coeff[2],HEX);
 		//Serial.println();
-		
+
 	} else {
 		//disable
 		HP_cutoff_Hz = cutoff_Hz;
-		
+
 		//see Table 5-4 in TI application guide  Coeff C4, C5, C6
 		coeff[0] = 0x7FFFFFFF; coeff[1] = 0; coeff[2]=0;
 	}
-	
+
 	setHpfIIRCoeffOnADC(BOTH_CHAN, coeff); //needs twos-compliment
 }
 
@@ -1072,7 +1104,7 @@ void AudioControlAIC3206::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
 void AudioControlAIC3206::computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff) {
 	//cutoff_Hz is the cutoff frequency in Hz
 	//fs_Hz is the sample rate in Hz
-	
+
 	//First-order Butterworth IIR
 	//From https://www.dsprelated.com/showcode/199.php
 	const float pi = 3.141592653589793;
@@ -1092,7 +1124,7 @@ void AudioControlAIC3206::setHpfIIRCoeffOnADC(int chan, uint32_t *coeff) {
 	//power down the AIC to allow change in coefficients
 	uint32_t prev_state = aic_readPage(0x00,0x51);
 	aic_writePage(0x00,0x51,prev_state & (0b00111111));  //clear first two bits
-	
+
 	if (chan == BOTH_CHAN) {
 		setHpfIIRCoeffOnADC_Left(coeff);
 		setHpfIIRCoeffOnADC_Right(coeff);
@@ -1105,13 +1137,13 @@ void AudioControlAIC3206::setHpfIIRCoeffOnADC(int chan, uint32_t *coeff) {
 	//power the ADC back up
 	aic_writePage(0x00,0x51,prev_state);  //clear first two bits
 }
-		
+
 void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
 	int page;
 	uint32_t c;
-	
+
 	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
-	
+
 	//Coeff N0, Coeff C4
 	page = 8;
 	c = coeff[0];
@@ -1125,19 +1157,19 @@ void AudioControlAIC3206::setHpfIIRCoeffOnADC_Left(uint32_t *coeff) {
 	aic_writePage(page,28,(uint8_t)(c>>24));
 	aic_writePage(page,29,(uint8_t)(c>>16));
 	aic_writePage(page,30,(uint8_t)(c>>8));
-	
+
 	//Coeff N2, Coeff C6
 	c = coeff[2];
 	aic_writePage(page,32,(uint8_t)(c>>24));
 	aic_writePage(page,33,(uint8_t)(c>>16));
-	aic_writePage(page,34,(uint8_t)(c>>8));	
+	aic_writePage(page,34,(uint8_t)(c>>8));
 }
 void AudioControlAIC3206::setHpfIIRCoeffOnADC_Right(uint32_t *coeff) {
 	int page;
 	uint32_t c;
-	
+
 	//See TI AIC3206 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
-				
+
 	//Coeff N0, Coeff C36
 	page = 9;
 	c = coeff[0];
@@ -1150,7 +1182,7 @@ void AudioControlAIC3206::setHpfIIRCoeffOnADC_Right(uint32_t *coeff) {
 	aic_writePage(page,36,(uint8_t)(c>>24));
 	aic_writePage(page,37,(uint8_t)(c>>16));
 	aic_writePage(page,38,(uint8_t)(c>>8));
-	
+
 	//Coeff N2, Coeff C39
 	c = coeff[2];;
 	aic_writePage(page,40,(uint8_t)(c>>24));
@@ -1163,7 +1195,7 @@ bool AudioControlAIC3206::mixInput1toHPout(bool state) {
 	int page = 1;
 	int reg;
 	uint8_t val;
-	
+
 	//loop over both channels
 	for (reg = 12; reg <= 13; reg++) { //reg 12 is Left, reg 13 is right
 		val = aic_readPage(page,reg);

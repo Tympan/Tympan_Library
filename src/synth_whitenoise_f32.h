@@ -34,7 +34,7 @@
 
 #ifndef synth_whitenoise_f32_h_
 #define synth_whitenoise_f32_h_
-#include "Arduino.h"
+#include <Arduino.h>
 //#include "AudioStream.h"  //2020-04-11 Tring to remove dependence upon AudioStream, especially Aud
 #include "AudioStream_F32.h"
 #include "utility/dspinst.h"

@@ -11,7 +11,7 @@
 #ifndef record_queue_f32_h_
 #define record_queue_f32_h_
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "AudioStream_F32.h"
 
 #define MAX_RECORD_QUEUE 200

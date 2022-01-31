@@ -63,11 +63,44 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
   
       //convert to dB and calibrate (via maxdB)
       for (int k=0; k < n; k++) env_dB_block->data[k] = maxdB + db2(env[k]); //maxdb in the private section 
-      
+
+	  
       // apply wide-dynamic range compression
-      WDRC_circuit_gain(env_dB_block->data, gain_out, n, exp_cr, exp_end_knee, tkgn, tk, cr, bolt);
+      //WDRC_circuit_gain(env_dB_block->data, gain_out, n, exp_cr, exp_end_knee, tkgn, tk, cr, bolt);
+	  WDRC_circuit_gain_preComputedParams(env_dB_block->data, gain_out, n);
       AudioStream_F32::release(env_dB_block);
     }
+
+	// Here is a faster method, but it gives the wrong answers.  The transition points (the knee points) are correct
+	// but the computed gains are wrong
+/* 	void WDRC_circuit_gain_preComputedParams(float *env_dB, float *gain_out, const int n) {
+		float *pdb = env_dB; //just rename it to keep the code below unchanged (input SPL dB)
+		float gdb;
+		for (int k = 0; k < n; k++) {  //loop over each sample
+			if (pdb[k] < exp_end_knee) {  //if below the expansion threshold, do expansion
+			  //expansion region.
+			  gdb = gain_at_exp_end_knee - ((exp_end_knee-pdb[k])*exp_cr_const); //reduce gain the farther down you are from the end of the expansion region
+			} else if ((pdb[k] < tk_tmp) && (cr >= 1.0f)) {  //if below the compression threshold, go linear
+				gdb = tkgn;  //we're in the linear region.  Apply linear gain.
+			} else if (pdb[k] > pblt) { //we're beyond the compression region into the limitting region
+				gdb = bolt + ((pdb[k] - pblt) / 10.0f) - pdb[k]; //10:1 limiting!
+			} else {
+				gdb = cr_const * pdb[k] + tkgo; 
+			}
+			gain_out[k] = undb2(gdb);
+			//y[k] = x[k] * undb2(gdb); //apply the gain
+		}
+		last_gain = gain_out[n-1];  //hold this value, in case the user asks for it later (not needed for the algorithm)
+	} */
+	
+	//instead, for now, let's just point to the full code and accept the computational penalty
+	void WDRC_circuit_gain_preComputedParams(float *env_dB, float *gain_out, const int n) {
+		WDRC_circuit_gain(env_dB, gain_out, n, 
+			exp_cr, exp_end_knee, 
+			tkgn, tk, cr, bolt);
+		
+	}
+
 
     //original call to WDRC_circuit
     //void WDRC_circuit(float *x, float *y, float *pdb, int n, float tkgn, float tk, float cr, float bolt)
@@ -76,8 +109,8 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     void WDRC_circuit_gain(float *env_dB, float *gain_out, const int n,
         const float exp_cr, const float exp_end_knee,
         const float tkgn, const float tk, const float cr, const float bolt) 
-      //exp_cr = compression ratio for expansion
-      //exp_end_knee = kneepoint for end of the expansion region
+		//exp_cr = compression ratio for expansion
+		//exp_end_knee = kneepoint for end of the expansion region
     	//tkgn = gain (dB?) at start of compression (ie, gain for linear behavior?)
     	//tk = compression start kneepoint (pre-compression, dB SPL?)
     	//cr = compression ratio
@@ -92,9 +125,11 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
           tk_tmp = bolt - tkgn;  //if so, lower the compression threshold to be the pre-gain value resulting in "bolt"
       }
 
-      tkgo = tkgn + tk_tmp * (1.0f - 1.0f / cr);  //intermediate calc
-      pblt = cr * (bolt - tkgo); //calc input level (dB) where we need to start limiting, not just compression
       const float cr_const = ((1.0f / cr) - 1.0f); //pre-calc a constant that we'll need later
+      //tkgo = tkgn + tk_tmp * (1.0f - 1.0f / cr);  //intermediate calc
+	  tkgo = tkgn + tk_tmp * (-cr_const);  //intermediate calc
+      pblt = cr * (bolt - tkgo); //calc input level (dB) where we need to start limiting, not just compression
+
 
       //compute gain at transition between expansion and linear/compression regions
       float gain_at_exp_end_knee = tkgn;
@@ -102,7 +137,7 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
         gain_at_exp_end_knee  = cr_const * exp_end_knee + tkgo;
       }
 
-      float exp_cr_const = 1.0/max(0.01,exp_cr) - 1.0;
+      float exp_cr_const = 1.0f/max(0.01f,exp_cr) - 1.0f;
       for (k = 0; k < n; k++) {  //loop over each sample
         if (pdb[k] < exp_end_knee) {  //if below the expansion threshold, do expansion
           //expansion region.
@@ -135,9 +170,12 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       //setParams(gha.maxdB, gha.tkgain, gha.cr, gha.tk, gha.bolt); //also sets calcEnvelope
       setParams_from_CHA_WDRC(&gha);
     }
-    void setParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {
+    void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha) { //ignores any sample rate that is in GHA
       setParams(gha->maxdB, gha->exp_cr, gha->exp_end_knee, gha->tkgain, gha->cr, gha->tk, gha->bolt); //also sets calcEnvelope
     }
+	void getParams_from_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha) {
+		gha->maxdB = maxdB; gha->exp_cr = exp_cr; gha->exp_end_knee = exp_end_knee; gha->tkgain = tkgn; gha->cr = cr; gha->tk = tk; gha->bolt = bolt;
+	}
     void setParams(float _maxdB, float _exp_cr, float _exp_end_knee, float _tkgain, float _cr, float _tk, float _bolt) {
       maxdB = _maxdB;
       exp_cr = _exp_cr;
@@ -146,7 +184,30 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
       tk = _tk;
       cr = _cr;
       bolt = _bolt;
+	  
+	  recomputeDerivedQuantities();
     }
+
+	void recomputeDerivedQuantities(void) { 
+		tk_tmp = tk;   //temporary, threshold for start of compression (input SPL dB)
+      
+		if ((tk_tmp + tkgn) > bolt) { //after gain, would the compression threshold be above the output-limitting threshold ("bolt")
+          tk_tmp = bolt - tkgn;  //if so, lower the compression threshold to be the pre-gain value resulting in "bolt"
+		}
+
+		cr_const = ((1.0f / cr) - 1.0f); //pre-calc a constant that we'll need later
+		//tkgo = tkgn + tk_tmp * (1.0f - 1.0f / cr);  //intermediate calc
+		tkgo = tkgn + tk_tmp * (-cr_const);  //intermediate calc
+		pblt = cr * (bolt - tkgo); //calc input level (dB) where we need to start limiting, not just compression
+
+		//compute gain at transition between expansion and linear/compression regions
+		gain_at_exp_end_knee = tkgn;
+		if (tk_tmp < exp_end_knee) {
+			gain_at_exp_end_knee  = cr_const * exp_end_knee + tkgo;
+		}
+
+		exp_cr_const = 1.0f/max(0.01f,exp_cr) - 1.0f;		
+	}
 
     //set the linear gain of the system
     float setGain_dB(float linear_gain_dB) {
@@ -157,22 +218,24 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
     float incrementGain_dB(float increment_dB) {
       return setGain_dB(getGain_dB() + increment_dB);
     }    
+
+
 	
     float getGain_dB(void) { return tkgn;  }	//returns the linear gain of the system
 	float getCurrentGain(void) { return last_gain; }
 	float getCurrentGain_dB(void) { return db2(getCurrentGain()); }
     
-	float setMaxdB(float32_t _maxdB) { return maxdB = _maxdB; }
+	float setMaxdB(float32_t _maxdB) { maxdB = _maxdB; recomputeDerivedQuantities(); return maxdB;}
 	float getMaxdB(void) { return maxdB; }
-	float setKneeExpansion_dBSPL(float32_t _knee) { return exp_end_knee = _knee; }
+	float setKneeExpansion_dBSPL(float32_t _knee) { exp_end_knee = _knee; recomputeDerivedQuantities(); return exp_end_knee; }
 	float getKneeExpansion_dBSPL(void) { return exp_end_knee; }
-	float setExpansionCompRatio(float32_t _cr) { return exp_cr = _cr; }
+	float setExpansionCompRatio(float32_t _cr) { exp_cr = _cr; recomputeDerivedQuantities(); return exp_cr; }
 	float getExpansionCompRatio(void) { return exp_cr; }
-	float setKneeCompressor_dBSPL(float32_t _knee) { return tk = _knee; }
+	float setKneeCompressor_dBSPL(float32_t _knee) { tk = _knee; recomputeDerivedQuantities(); return tk; }
 	float getKneeCompressor_dBSPL(void) { return tk; }
-	float setCompRatio(float32_t _cr) { return cr = _cr; }
+	float setCompRatio(float32_t _cr) { cr = _cr; recomputeDerivedQuantities(); return cr;}
 	float getCompRatio(void) { return cr; }
-	float setKneeLimiter_dBSPL(float32_t _bolt) { return bolt = _bolt; }
+	float setKneeLimiter_dBSPL(float32_t _bolt) { bolt = _bolt; recomputeDerivedQuantities(); return bolt; }
 	float getKneeLimiter_dBSPL(void) { return bolt; }
 
     //dB functions.  Feed it the envelope amplitude (not squared) and it computes 20*log10(x) or it does 10.^(x/20)
@@ -212,7 +275,9 @@ class AudioCalcGainWDRC_F32 : public AudioStream_F32
   private:
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
     float maxdB, exp_cr, exp_end_knee, tkgn, tk, cr, bolt;
+	float tk_tmp, cr_const, tkgo, pblt, gain_at_exp_end_knee, exp_cr_const;
 	float last_gain = 1.0;  //what was the last gain value computed for the signal
 };
 
 #endif
+

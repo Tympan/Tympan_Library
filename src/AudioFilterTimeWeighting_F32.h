@@ -2,9 +2,10 @@
 #ifndef _AudioFilterTimeWeighting_F32_h
 #define _AudioFilterTimeWeighting_F32_h
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <arm_math.h>
 #include "AudioStream_F32.h"
-#include "arm_math.h"
+
 
 #define TIME_CONST_SLOW  (1.0f)
 #define TIME_CONST_FAST	 (0.125f)

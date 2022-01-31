@@ -5,12 +5,12 @@ Tympan Library
 
 **Purpose**: This library allows you to program your own audio processing algorithms for the Tympan!  It owes a big debt to the [Teensy Audio Library](http://www.pjrc.com/teensy/td_libs_Audio.html) and all of its contributors.
 
-**Note**: These instructions were based on the *Arduino IDE 1.8.13* and *Teensyduino 1.53*. If you have different versions of either of these or have downloaded different versions, the program may or may not function as expected. You may revert or upgrade to the stated versions or check for solutions on the [Tympan Forum](https://forum.tympan.org/).
+**Note**: These instructions were based on the *Arduino IDE 1.8.15* and *Teensyduino 1.54*. If you have different versions of either of these or have downloaded different versions, the program may or may not function as expected. You may revert or upgrade to the stated versions or check for solutions on the [Tympan Forum](https://forum.tympan.org/).
 
 Requirements
 ------------
 
-**Hardware**: This "master" branch of this library is intended to be used with Tympan RevC or Tympan RevD.  The "develop" branch of this library expands support to include Tympan RevE.  We expect to merge the RevE support into the master branch in late June 2021.  All versions of the Tympan are, at their heart, compatible with the Teensy brand of microcontrollers.  Hence, many of the instructions below relate to Teensy.  For reference, Tympan RevC and RevD are Teensy 3.6 whereas the Tympan RevE is Teensy 4.1.
+**Hardware**: All versions of the Tympan are, at their heart, compatible with the Teensy brand of microcontrollers.  Hence, many of the instructions below relate to Teensy.  For reference, Tympan RevD is Teensy 3.6 whereas the Tympan RevE is Teensy 4.1.
 
 **Arduino IDE (Windows/Linux)**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the actual Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
 
@@ -18,7 +18,6 @@ Requirements
 
 **Teensyduino (Mac, MASTER branch)**: Recent versions of OS X do not support the Teensyduino Add-On installer, so there is a full [Teensyduino IDE](https://www.pjrc.com/teensy/td_download.html) available from the Teensy project which just needs to be downloaded and extracted from its ZIP file.
 
-**Teensyduino for DEVELOP branch**:  As of June 2021, the "develop" branch of this library requires a beta release of Teensyduino v1.54.  The beta can be downloaded from the [Teensy forum](https://forum.pjrc.com/forums/6-Announcements).  Most development up to June of 2021 has occured using 1.54 Beta 5, though any later Beta ought to work.
 
 Installing the Tympan Library
 ------------
@@ -31,9 +30,11 @@ Installing the Tympan Library
 Connect the Tympan Audio Board
 ------------------
 
-Open or restart the Arduino IDE. Before you can compile programs, you will need to tell the Arduino IDE that you want to program for Teensy. Under the "Tools" menu, choose "Board" and then "Teensy 3.6" (for Tympan RevC or RevD).  Also, under the "Tools" menu, choose "USB Type" and select "Serial + MIDI + Audio". 
+Open or restart the Arduino IDE. Before you can compile programs, you will need to tell the Arduino IDE that you want to program for Teensy. Under the "Tools" menu, choose "Board" and then "Teensy 4.1" for Tympan RevE (choose "Teensy 3.6" for Tympan RevD).  Also, under the "Tools" menu, choose "USB Type" and select "Serial + MIDI + Audio". 
 
 If you haven't already, plug in the Tympan Audio Board to your computer using the micro USB cable. You will see orange lights. Power the unit ON using the white switch on the side and you will see the blue blinking light which indicates power. If you already had the Tympan Audio Board plugged in, turn the power off and then on again to power cycle prior to proceeding. Make sure you see the message that the device drivers are being installed.
+
+Once your Tympan is connected to the computer via the micro USB cable and powered on, you can select the device by choosing "Port" under the "Tools" menu and and select the one that is associated with the Teensy (on Windows, it'll say "Teensy" in its name).
 
 Try Some Examples
 -------------
@@ -48,7 +49,7 @@ Once the basic audio pass-thru program works, you can try the next example:
 
 * **Basic Gain:** As your second trial, you try this example, which adds gain to the audio.  The blue volume knob adjust the amount of gain.  Easy!  
 
-While the Tympan is connected to your computer (via USB) and running the Basic Gain example, you can communicate with your Tympan to find out what it's doing.  Under the Arduino IDE's "Tools" menu, select "Port" and select the one that is associated with the Teensy (on Windows, it'll say "Teensy" in its name).  Once you've selected the Teensy's port, you can open the "Serial Monitor" from the "Tools" menu.  On the Tympan, you can turn its blue volume knob.  Looking at the Serial Monitor window, you can see that it has told you what volume setting it's now using.  In the other example programs, the Serial Monitor is used extensively to monitor what the Tympan is doing.
+While the Tympan is connected to your computer (via USB) and running the Basic Gain example, you can communicate with your Tympan to find out what it's doing.  Under the Arduino IDE's "Tools" menu, select "Port" and select the one that is associated with the Teensy (on Windows, it'll say "Teensy" in its name).  Once you've selected the Teensy's port, you can open the "Serial Monitor" from the "Tools" menu.  On the Tympan, you can turn its blue volume knob.  Looking at the Serial Monitor window, you can see that it reports the volume setting it's now using.  In the other example programs, the Serial Monitor is used extensively to monitor what the Tympan is doing.
 
 Once this works, you can work your way down the examples list to see how they add complexity and capability.  Have fun!
 

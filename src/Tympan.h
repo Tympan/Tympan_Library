@@ -10,7 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
-enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
+enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1 };
 
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (TympanRev::A)
@@ -21,6 +21,8 @@ enum class TympanRev { A, C, D, D0, D1, D2, D3, D4 };
 #define TYMPAN_REV_D3 (TympanRev::D3)
 #define TYMPAN_REV_D4 (TympanRev::D4)
 #define TYMPAN_REV_D (TympanRev::D)
+#define TYMPAN_REV_E (TympanRev::E)
+#define TYMPAN_REV_E1 (TympanRev::E1)
 //define TYMPAN_REV_D_CCP (TympanRev::D_CCP)
 
 //the Tympan is a Teensy audio library "control" object
@@ -57,6 +59,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 2;  //PTD0
 					reversePot = true;
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already stereo, can't do mono.
+					default_BT_mode = BT_DATA_MODE;
+					assumed_BT_firmware = NOT_A_FEATURE;
 					break;
 				case (TympanRev::C) :   //First released Tympan hardware.  Sold in blue case.
 					//Teensy 3.6 Pin Numbering
@@ -68,6 +72,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_REGEN = NOT_A_FEATURE;
 					BT_PIO4 = 2;  //PTD0
 					enableStereoExtMicBias = NOT_A_FEATURE; //mic jack is already mono, can't do stereo.
+					default_BT_mode = BT_DATA_MODE;
+					assumed_BT_firmware = NOT_A_FEATURE;
 					break;
 				case (TympanRev::D0) : case (TympanRev::D1) :  //RevD development...first with BC127 BT module
 					//Teensy 3.6 Pin Numbering
@@ -80,6 +86,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
+					assumed_BT_firmware = 5;
 					break;
 				case (TympanRev::D2) :   //RevD development...includes on-board preamp
 					//Teensy 3.6 Pin Numbering
@@ -93,6 +100,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_PIO4 = 33;  //PTE24
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
+					assumed_BT_firmware = 5;
 					break;
 				case (TympanRev::D3) :  //Built for OpenTact
 					//Teensy 3.6 Pin Numbering
@@ -107,6 +115,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 20; //PTD5
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
+					assumed_BT_firmware = 5;
 					break;
 				case (TympanRev::D4) :  case (TympanRev::D) :  //RevD release candidate
 					//Teensy 3.6 Pin Numbering
@@ -117,12 +126,33 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					BT_nReset = 34;  //PTE25, active LOW reset
 					BT_REGEN = 31;  //must pull high to enable BC127
 					BT_PIO0 = 56;   //hard reset for the BT module if HIGH at start.  Otherwise, outputs the connection state
-					BT_PIO4 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
+					BT_PIO5 = 33;  //PTE24...actually it's BT_PIO5 ??? JM: YES, IT IS BT_PIO5!
 					enableStereoExtMicBias = 20; //PTD5
 					//AIC_Shield_enableStereoExtMicBias = 41;
 					BT_serial_speed = 9600;
 					Rev_Test = 44;
+					assumed_BT_firmware = 5;
+
 					break;
+				case  (TympanRev::E) : case (TympanRev::E1) :    //Earliest trials with Tympan 4 with Rev A
+					//Teensy 4.0 Pin Numbering
+					resetAIC = 26;  //Teensy pin that goes to the reset pin of the audio AIC
+					potentiometer = 17;  //Teensy pin to potentiometer that is often used as a volume control
+					amberLED = 15;  // Teensy pin to the amber LED
+					redLED = 16;  // Teensy pin to the red LED
+					BT_nReset = 9; //
+					BT_REGEN = 14;
+					//BT_PIO4 = NOT_A_FEATURE;
+					BT_PIO0 = 5;
+					//BT_PIO5 = 2;
+					BT_PIO5 = 2;  //This is actually PIO5 but we don't have a name for this.  We don't really use this anyway, so whatever.  (WEA 10/24/2020)
+					reversePot = true;  //need to check this.  Is the pot really wired backwards like the old RevA???  Since it worked correctly (not reversed) on Rev D, I bet that it's correct on RevE, too.
+					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
+					BT_serial_speed = 9600;
+					Rev_Test = 22;
+					assumed_BT_firmware = 7;
+					break;
+
 /* 				case (TympanRev::D_CCP):  //the Tympan functions itself are same as RevD, but added some features to support the CCP shield
 					//Teensy 3.6 Pin Numbering
 					resetAIC = 35;  //PTC8
@@ -141,7 +171,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)
 					CCP_bigLED =  53;    //same as SCK_2 (alt)
 					CCP_littleLED = 41;    //same as AIC_Shield_enableStereoExtMicBias
-					CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2 */
+					CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2 
+*/
 			}
 		}
 		//#if defined(SEREMU_INTERFACE)
@@ -161,9 +192,14 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		int BT_REGEN = NOT_A_FEATURE;
 		int BT_PIO0 = NOT_A_FEATURE;
 		int BT_PIO4 = NOT_A_FEATURE;  //PTD0
+		int BT_PIO5 = NOT_A_FEATURE;
 		int Rev_Test = NOT_A_FEATURE;
 		bool reversePot = false;
 		int enableStereoExtMicBias = NOT_A_FEATURE;
+		
+		enum BT_modes {BT_DATA_MODE, BT_COMMAND_MODE};
+		int default_BT_mode = BT_COMMAND_MODE;
+		int assumed_BT_firmware = 7;  // firmware level for BC127
 		//int AIC_Shield_enableStereoExtMicBias = NOT_A_FEATURE;
 		//int CCP_atten1 = NOT_A_FEATURE, CCP_atten2 = NOT_A_FEATURE;
 		//int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED = NOT_A_FEATURE;
@@ -204,18 +240,23 @@ class TympanBase : public AudioControlAIC3206, public Print
 			setAudioSettings(_as);
 		}
 
+		int testTympanRev(TympanRev tympanRev);
 		void setupPins(const TympanPins &_pins);
 		void setAudioSettings(const AudioSettings_F32 &_aud_set) { audio_settings = _aud_set; }  //shallow copy
 		void forceBTtoDataMode(bool state);
 
 		//TympanPins getTympanPins(void) { return &pins; }
 		int setAmberLED(int _value) { digitalWrite(pins.amberLED,_value); return _value; }
+		int setGreenLED(int _value) { digitalWrite(pins.amberLED,_value); return _value; }	//Tympan RevE2 (ASA build) has a green LED instead of an amber one
 		int setRedLED(int _value) { digitalWrite(pins.redLED,_value); return _value; }
 		//int setCCPBigLED(int _value) { if (pins.CCP_bigLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_bigLED,_value); return _value; } return NOT_A_FEATURE;}
 		//int setCCPLittleLED(int _value) { if (pins.CCP_littleLED != NOT_A_FEATURE) { digitalWrite(pins.CCP_littleLED,_value); return _value; } return NOT_A_FEATURE;}
 		//int setCCPEnable28V(int _value) { if (pins.CCP_enable28V != NOT_A_FEATURE) { digitalWrite(pins.CCP_enable28V,_value); return _value; } return NOT_A_FEATURE; }
 		//int setCCPEnableAtten1(int _value) { if (pins.CCP_atten1 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten1,_value); return _value; } return NOT_A_FEATURE; }
 		//int setCCPEnableAtten2(int _value) { if (pins.CCP_atten2 != NOT_A_FEATURE) { digitalWrite(pins.CCP_atten2,_value); return _value; } return NOT_A_FEATURE; }
+		int serviceLEDs(const unsigned int , const bool flag_blink_fast = false);
+		int toggleLEDs(const bool useAmber = true, const bool useRed = true);
+		
 		int readPotentiometer(void) {
 			//Serial.print("TympanBase: readPot, pin "); Serial.println(pins.potentiometer);
 			int val = analogRead(pins.potentiometer);
@@ -226,7 +267,18 @@ class TympanBase : public AudioControlAIC3206, public Print
 		//int setEnableStereoExtMicBiasAIC(int new_state);  //use for AIC Shield
 	
 		TympanRev getTympanRev(void) { return pins.tympanRev; }
+		TympanPins getTympanPins(void) { return pins; }
 		int getPotentiometerPin(void) { return pins.potentiometer; }
+		int read_BT_PIO0(void) { 
+			if (pins.BT_PIO0 == NOT_A_FEATURE) { 
+				return -1; 
+			} else { 
+				return digitalRead(pins.BT_PIO0); 
+			} 
+		}
+		int getPin_BT_PIO0(void) { return pins.BT_PIO0; }
+		int getPin_BT_RST(void)  { return pins.BT_nReset; }
+		
 		//#if defined(SEREMU_INTERFACE)
 		//	usb_seremu_class *getUSBSerial(void) { return USB_Serial; }
 		//#else
@@ -235,49 +287,65 @@ class TympanBase : public AudioControlAIC3206, public Print
 		HardwareSerial *getBTSerial(void) { return BT_Serial; }
 		void beginBothSerial(void) { beginBothSerial(115200, pins.BT_serial_speed); }
 		void beginBothSerial(int USB_speed, int BT_speed) {
-			USB_Serial->begin(USB_speed); delay(50);
+			//USB_Serial->begin(USB_speed);  //Not needed for Teensy?
+			delay(50);
 			beginBluetoothSerial(BT_speed);
+			setEchoAllPrintToBT(false); //by default, do NOT send print() to the BT serial (it used to be the opposite)
 		}
 		int USB_dtr() { return USB_Serial->dtr(); }
 
 		void beginBluetoothSerial(void) { beginBluetoothSerial(pins.BT_serial_speed); }
 		void beginBluetoothSerial(int BT_speed);
-		void clearAndConfigureBTSerialRevD(void);
+		void clearAndConfigureBTSerialRevD(void);  //assumes BT is being used for BT Classic (not BLE)
 
 		bool mixBTAudioWithOutput(bool state) { return mixInput1toHPout(state); } //bluetooth audio is on Input1
 		void echoIncomingBTSerial(void) {
 			while (BT_Serial->available()) USB_Serial->write(BT_Serial->read());//echo messages from BT serial over to USB Serial
 		}
-		void setBTAudioVolume(int vol); //vol is 0 (min) to 15 (max).  Only Rev D.  Only works when you are connected via Bluetooth!!!!
-
-
+		void setBTAudioVolume(int vol); //vol is 0 (min) to 15 (max).  Only Rev D (and Rev E?).  Only works when you are connected via Bluetooth!!!!
+		int getBTCommMode(void) { return BT_mode; }   //BT_DATA_MODE or BT_COMMAND_MODE
+		int setBTCommMode(int val) { return BT_mode = val; }  //BT_DATA_MODE or BT_COMMAND_MODE
+		int setBTFirmwareRev(int val) { return BT_firmware = val; }
+		int getBTFirmwareRev(void) { return BT_firmware; }
+		void shutdownBT(void);
+		
 		//I want to enable an easy way to print to both USB and BT serial with one call.
 		//So, I inhereted the Print class, which gives me all of the Arduino print/write
 		//methods except for the most basic write().  Here, I define write() so that all
 		//of print() and println() and all of that works transparently.  Yay!
+		bool setEchoAllPrintToBT(bool val) { return echoAllPrintToBT = val; }
+		bool getEchoAllPrintToBT(bool val) { return echoAllPrintToBT; }
 		using Print::write;
 		virtual size_t write(uint8_t foo) {
-			if (USB_dtr()) USB_Serial->write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
-			return BT_Serial->write(foo);
-			//if (USB_dtr()) Serial.write(foo); //the USB Serial can jam up, so make sure that something is open on the PC side
-			//return Serial1.write(foo);
+			if (echoAllPrintToBT) {	
+				USB_serial_write(foo);  //write to USB
+				return BT_serial_write(foo);   //write same thing to Bluetooth
+			} else {
+				return USB_serial_write(foo);  //write to USB
+			}
 		}
 		virtual size_t write(const uint8_t *buffer, size_t orig_size) { //this should be faster than the core write(uint8_t);
-			//USB_Serial->write('t');
-			size_t count = 0;
-			size_t size = orig_size;
-			int i=0;
-			if (USB_dtr()) {
-				//while (size--) count += USB_Serial->write(*buffer++);
-				while (size--) USB_Serial->write(buffer[i++]);
-				//return count;
+			if (echoAllPrintToBT) {	
+				USB_serial_write(buffer,orig_size); //write to USB
+				return BT_serial_write(buffer,orig_size); //write same thing to Bluetooth
+			} else {
+				return USB_serial_write(buffer,orig_size); //write to USB
 			}
-			size = orig_size;
-			while (size--) count += BT_Serial->write(*buffer++);
-			return count;
 		}
 		virtual size_t write(const char *str) { return write((const uint8_t *)str, strlen(str)); } //should use the faster write
 		virtual void flush(void) { USB_Serial->flush(); BT_Serial->flush(); }
+		
+		
+		//Serial writing and reading methods specific to USB or Bluetooth.
+		//These are primarily for internal use, but if the user wants to invoke them, go ahead!
+		virtual size_t USB_serial_write(uint8_t foo); //write a single byte
+		virtual size_t BT_serial_write(uint8_t foo);  //write single byte
+		virtual size_t USB_serial_write(const uint8_t *buffer, size_t size);  //write array of bytes (but does this ever get called?)
+		virtual size_t BT_serial_write(const uint8_t *buffer, size_t size); //write array of bytes (but does this ever get called?)
+		virtual int USB_serial_available(void) { return USB_Serial->available(); }
+		virtual int BT_serial_available(void);
+		virtual int USB_serial_read(void) { return USB_Serial->read(); }
+		virtual int BT_serial_read(void);
 
 		//using TympanPrint::print;
 		//using TympanPrint::println;
@@ -297,9 +365,17 @@ class TympanBase : public AudioControlAIC3206, public Print
 			}
 		}
 		
-		int FreeRam() {
-		  char top; //this new variable is, in effect, the mem location of the edge of the heap
-		  return &top - reinterpret_cast<char*>(sbrk(0));
+		static int FreeRam(void) {
+			#if defined(__IMXRT1062__)  //this branch is for Teensy 4.1 (ie, Tympan RevE)
+				//extern unsigned long _heap_start;
+				extern unsigned long _heap_end;
+				extern char *__brkval;
+
+				return (char *)&_heap_end - __brkval;
+			#else  //this branch is for Teensy 3.6 (ie, Tympan RevC and RevD)
+				char top; //this new variable is, in effect, the mem location of the edge of the heap
+				return &top - reinterpret_cast<char*>(sbrk(0));
+			#endif
 		}
 		void printCPUandMemoryMessage(void) {
 		  print("CPU Cur/Pk: ");
@@ -326,9 +402,19 @@ class TympanBase : public AudioControlAIC3206, public Print
 	protected:
 		TympanPins pins;
 		AudioSettings_F32 audio_settings;
-		
+		int BT_mode = TympanPins::BT_DATA_MODE;
+		static const int BT_uint8_buff_len = 256;
+		int BT_uint8_buff_ind = 0;
+		int BT_uint8_buff_end = 0;
+		uint8_t BT_uint8_buff[BT_uint8_buff_len];
+		bool echoAllPrintToBT = false;  //by default, do not echo print() to the BT serial
+		int BT_firmware = 7;
 
-};
+		virtual size_t write_BC127_V7_command_mode(const uint8_t *buffer, size_t size);
+		virtual void read_BC127_V7_command_mode(void);
+		static int interpret2DigitHexAscii(char *str);
+
+}; //close the class TympanBase
 
 class Tympan : public TympanBase {
 	public:
@@ -358,6 +444,13 @@ class Tympan : public TympanBase {
 			TympanBase::setupPins(myPins);
 			TympanBase::setAudioSettings(_as);
 		}
+		Tympan(const TympanPins &_myPins) : TympanBase() {
+			TympanBase::setupPins(_myPins);
+		}
+		Tympan(const TympanPins &_myPins, const AudioSettings_F32 &_as) : TympanBase() {
+			TympanBase::setupPins(_myPins);
+			TympanBase::setAudioSettings(_as);
+		}		
 };
 
 #endif

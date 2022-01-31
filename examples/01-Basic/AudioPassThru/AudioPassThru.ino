@@ -14,7 +14,7 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 // define audio objects and connections
-Tympan                        myTympan(TympanRev::D);  //do TympanRev::D or TympanRev::C
+Tympan                        myTympan(TympanRev::E);  //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32         	  i2s_in;        //Digital audio *from* the Tympan AIC.
 AudioOutputI2S_F32        	  i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
 
@@ -49,7 +49,11 @@ void setup(void)
 
 void loop(void)
 {
-  // Nothing to do - just looping input to output
-  delay(2000);
   Serial.println("Running...");
+  
+  // Let's blink the LED!
+  myTympan.setRedLED(true);   // turn on the Tympan's red LED
+  delay(1000);                // wait for a second
+  myTympan.setRedLED(false);  // turn off the Tympan's red LED
+  delay(1000);                // wait for a second 
 }

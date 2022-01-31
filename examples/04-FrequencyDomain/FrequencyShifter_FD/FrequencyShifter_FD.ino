@@ -35,14 +35,14 @@
 #include "SerialManager.h"
 
 //set the sample rate and block size
-const float sample_rate_Hz = 44117.f; ; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
+const float sample_rate_Hz = 44100.f; //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
 const int audio_block_samples = 64;     //for freq domain processing choose a power of 2 (16, 32, 64, 128) but no higher than 128
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                        audioHardware(TympanRev::D);     //do TympanRev::C or TympanRev::D
+Tympan                        audioHardware(TympanRev::E);     //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32             i2s_in(audio_settings);          //Digital audio *from* the Tympan AIC.
-AudioEffectFreqShiftFD_F32    freqShift(audio_settings);       //create the frequency-domain processing block
+AudioEffectFreqShift_FD_F32    freqShift(audio_settings);      //Freq domain processing!  https://github.com/Tympan/Tympan_Library/blob/master/src/AudioEffectFreqShiftFD_F32.h
 AudioEffectGain_F32           gain1;                           //Applies digital gain to audio data.
 AudioOutputI2S_F32            i2s_out(audio_settings);         //Digital audio out *to* the Tympan AIC.
 

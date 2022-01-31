@@ -55,8 +55,12 @@ AudioConvert_I16toF32	KEYWORD1
 AudioConvert_F32toI16	KEYWORD1
 
 AudioEffectCompressor_F32	KEYWORD1
-AudioEffectCompWDRC_F32	KEYWORD1
+AudioEffectCompWDRC_F32		KEYWORD1
+AudioEffectCompBankWDRC_F32		KEYWORD1
+AudioEffectCompBankWDRC_F32_UI		KEYWORD1
+AudioEffectCompBankWDRCState		KEYWORD1
 AudioEffectCompDecWDRC_F32	KEYWORD1
+AudioEffectCompWDRC_F32_UI	KEYWORD1
 
 AudioEffectDelay_F32	KEYWORD1
 
@@ -65,16 +69,38 @@ setGain_dB		KEYWORD2
 
 AudioEffectFeedbackCancel_F32	KEYWORD1
 AudioEffectFeedbackCancel_LoopBack_F32	KEYWORD1
-AudioEffectFreqShiftFD_F32	KEYWORD1
+AudioEffectFormantShift_FD_F32	KEYWORD1
+setScaleFactor		KEYWORD2
+getScaleFactor		KEYWORD2	
 
+AudioEffectFreqShift_FD_F32	KEYWORD1
+setShift_bins			KEYWORD2
+getShift_bins			KEYWORD2
+getShift_Hz			KEYWORD2
 
+AudioEffectMultiBandWDRC_F32_UI	KEYWORD1
+AudioEffectMultiBandWDRC_IIR_F32_UI	KEYWORD1
+StereoContainerWDRC_UI		KEYWORD1
+
+AudioFilterbankBase_F32		KEYWORD1
+AudioFilterbankBiquad_F32	KEYWORD1
+AudioFilterbankBiquad_F32_UI	KEYWORD1
+AudioFilterbankFIR_F32		KEYWORD1
+AudioFilterbankFIR_F32_UI	KEYWORD1
+AudioFilterbankState		KEYWORD1
+designFilters			KEYWORD2
+
+AudioFilterBase_F32		KEYWORD1
 AudioFilterBiquad_F32	KEYWORD1
+AudioFilterBiquad_F32_UI	KEYWORD1
 AudioFilterFIR_F32	KEYWORD1
 AudioFilterFreqWeighting_F32	KEYWORD1
 AudioFilterIIR_F32	KEYWORD1
 AudioFilterTimeWeighting_F32	KEYWORD1
 setTimeConst_sec	KEYWORD2
 getTimeConst_sec	KEYWORD2
+
+AudioFreqDomainBase_FD_F32	KEYWORD1
 
 AudioInputI2S_F32	KEYWORD1
 AudioInputI2SQuad_F32	KEYWORD1
@@ -84,6 +110,7 @@ gain			KEYWORD2
 mute			KEYWORD2
 switchChannel		KEYWORD2
 AudioMixer8_F32		KEYWORD1
+AudioMixer16_F32	KEYWORD1
 AudioMathAdd_F32	KEYWORD1
 AudioMathMultiply_F32	KEYWORD1
 AudioMathOffset_F32	KEYWORD1
@@ -114,6 +141,8 @@ startRecording		KEYWORD2
 stopRecording		KEYWORD2
 SDWriter		KEYWORD1
 BufferedSDWriter	KEYWORD1
+AudioSDWriter_F32_UI	KEYWORD1
+
 
 AudioSummer4_F32	KEYWORD1
 AudioSummer8_F32	KEYWORD1
@@ -144,6 +173,34 @@ AudioTestSignalMeasurementMulti_F32	KEYWORD1
 AudioControlTestAmpSweep_F32	KEYWORD1
 AudioControlTestFreqSweep_F32	KEYWORD1
 
+BLE			KEYWORD1
+BLE_UI			KEYWORD1
+BC127			KEYWORD1
+isConnected		KEYWORD2
+isAdvertising		KEYWORD2
+
+EarpieceMixerState	KEYWORD1
+EarpieceMixer_F32	KEYWORD1
+processData		KEYWORD2
+setTympanAndShield	KEYWORD2
+configureFrontRearMixer	KEYWORD2
+setInputAnalogVsPDM	KEYWORD2
+configureLeftRightMixer	KEYWORD2
+setTargetMicDelay_samps	KEYWORD2
+setMicDelay_samps	KEYWORD2
+state			KEYWORD2
+
+EarpieceMixer_F32_UI	KEYWORD1
+
+EarpieceShield		KEYWORD1
+PDM_LEFT_FRONT		KEYWORD2
+PDM_LEFT_REAR		KEYWORD2
+PDM_RIGHT_FRONT		KEYWORD2
+PDM_RIGHT_REAR		KEYWORD2
+OUTPUT_LEFT_TYMPAN	KEYWORD2
+OUTPUT_RIGHT_TYMPAN	KEYWORD2
+OUTPUT_LEFT_EARPIECE	KEYWORD2
+OUTPUT_RIGHT_EARPIECE	KEYWORD2
 
 FFT_F32			KEYWORD1
 useHanningWindow	KEYWORD2
@@ -157,15 +214,34 @@ getNBuffBlocks		KEYWORD2
 getFFTObject		KEYWORD2
 IFFT_Overlapped_F32	KEYWORD1
 
+SerialManagerBase	KEYWORD1
+respondToByte		KEYWORD2
+add_UI_element		KEYWORD2
+
+SerialManager_UI	KEYWORD1
+printHelp		KEYWORD2
+processCharacter	KEYWORD2
+processCharacterTriple	KEYWORD2
+setFullGUIState		KEYWORD2
+
+StereoContainer_UI	KEYWORD1
+add_item_pair		KEYWORD2
+set_cur_channel		KEYWORD2
+get_cur_channel		KEYWORD2
+
+
 TympanRev		KEYWORD1
 TympanPins		KEYWORD1
 Tympan			KEYWORD1
 TympanBase		KEYWORD1
 beginBothSerial		KEYWORD2
 setAmberLED		KEYWORD2
-setRedLED		KEYWORD2
-readPotentiometer	KEYWORD2
+setRedLED			KEYWORD2
+setGreenLED		KEYWORD2
+readPotentiometer		KEYWORD2
 getTympanRev		KEYWORD2
+TympanStateBase		KEYWORD1
+
 TympanRemoteFormatter	KEYWORD1
 TR_Page			KEYWORD1
 TR_Card			KEYWORD1

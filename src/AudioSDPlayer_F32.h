@@ -30,27 +30,40 @@
  *  The F32 conversion is under the MIT License.  Use at your own risk.
 */
 
-#ifndef audioSDPlayer_F32_h_
-#define audioSDPlayer_F32_h_
+#ifndef AudioSDPlayer_F32_h_
+#define AudioSDPlayer_F32_h_
 
 #include "Arduino.h"
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
-#include <SdFat_Gre.h>   
+
+#include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 
 class AudioSDPlayer_F32 : public AudioStream_F32
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes  
   public:
-    AudioSDPlayer_F32(void) : AudioStream_F32(0, NULL), block_left_f32(NULL), block_right_f32(NULL) { 
+    AudioSDPlayer_F32(void) : AudioStream_F32(0, NULL), sd_ptr(NULL)
+	{ 
       init();
     }
-    AudioSDPlayer_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), block_left_f32(NULL), block_right_f32(NULL)
+    AudioSDPlayer_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(NULL)
       { 
         init();
         setSampleRate_Hz(settings.sample_rate_Hz);
         setBlockSize(settings.audio_block_samples);
-      }  
+      }
+    AudioSDPlayer_F32(SdFs * _sd,const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(_sd)
+    { 	 
+        init();
+        setSampleRate_Hz(settings.sample_rate_Hz);
+        setBlockSize(settings.audio_block_samples);
+	}
+	
+	//~AudioSDPlayer_F32(void) {
+	//	delete sd_ptr;
+	//}
+	
     void init(void);
     void begin(void);  //begins SD card
     bool play(const String &filename) { return play(filename.c_str()); }
@@ -66,10 +79,16 @@ class AudioSDPlayer_F32 : public AudioStream_F32
       return sample_rate_Hz;
     }
     int setBlockSize(int block_size) { return audio_block_samples = block_size; };
+    bool isFileOpen(void) {
+      if (file.isOpen()) return true;
+      return false;
+    }  
+	void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
   
   private:
-    SdFatSdioEX sd;
-    SdFile_Gre file;
+    //SdFs sd;
+	SdFs *sd_ptr;
+	SdFile file;
     bool consume(uint32_t size);
     bool parse_format(void);
     uint32_t header[10];    // temporary storage of wav header data
@@ -78,8 +97,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
     uint16_t channels = 1; //number of audio channels
     uint16_t bits = 16;  // number of bits per sample
     uint32_t bytes2millis;
-    audio_block_f32_t *block_left_f32;
-    audio_block_f32_t *block_right_f32;
+    audio_block_f32_t *block_left_f32 = NULL;
+    audio_block_f32_t *block_right_f32 = NULL;
     uint16_t block_offset;    // how much data is in block_left & block_right
     uint8_t buffer[512];    // buffer one block of data
     uint16_t buffer_offset;   // where we're at consuming "buffer"
@@ -92,10 +111,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
     float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
     int audio_block_samples = AUDIO_BLOCK_SAMPLES;
     
-    bool isFileOpen(void) {
-      if (file.isOpen()) return true;
-      return false;
-    }  
+
     uint32_t updateBytes2Millis(void);
 };
 

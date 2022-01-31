@@ -8,13 +8,13 @@ void AudioMathAdd_F32::update(void) {
 
   in = AudioStream_F32::receiveReadOnly_f32(1);
   if (!in) {
-    release(block);
+    AudioStream_F32::release(block);
     return;
   }
 
   arm_add_f32(block->data, in->data, block->data, block->length);
-  release(in);
+  AudioStream_F32::release(in);
 
-  transmit(block);
-  release(block);
+  AudioStream_F32::transmit(block);
+  AudioStream_F32::release(block);
 }

@@ -15,7 +15,7 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::D);  //do TympanRev::D or TympanRev::C
+Tympan                    myTympan(TympanRev::E);  //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Tympan AIC.
 AudioEffectGain_F32       gain1, gain2;  //Applies digital gain to audio data.
 AudioOutputI2S_F32        i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
@@ -63,6 +63,9 @@ void loop() {
 
   //check the potentiometer
   servicePotentiometer(millis(),100); //service the potentiometer every 100 msec
+
+  //let's blink the LEDs!
+  myTympan.serviceLEDs(millis());   //defaults to a slow toggle (see Tympan.h and Tympan.cpp)
 
 } //end loop();
 

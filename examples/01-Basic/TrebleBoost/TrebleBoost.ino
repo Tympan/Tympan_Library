@@ -18,13 +18,13 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::D);     //do TympanRev::D or TympanRev::C
-AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
-AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
-AudioFilterBiquad_F32     hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
+Tympan                    myTympan(TympanRev::E,audio_settings);     //do TympanRev::D or TympanRev::E
+AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio *from* the Tympan AIC. 
+AudioFilterBiquad_F32     hp_filt1(audio_settings);   //Biquad (IIR) filter doing a highpass filter.  Left.
+AudioFilterBiquad_F32     hp_filt2(audio_settings);   //Biquad (IIR) filter doing a highpass filter.  Right.
 AudioEffectGain_F32       gain1;                      //Applies digital gain to audio data.  Left.
 AudioEffectGain_F32       gain2;                      //Applies digital gain to audio data.  Right.
-AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio out *to* the Teensy Audio Board DAC.
+AudioOutputI2S_F32        i2s_out(audio_settings);    //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, hp_filt1, 0);   //connect the Left input
@@ -79,6 +79,9 @@ void loop() {
   //periodically print the CPU and Memory Usage
   myTympan.printCPUandMemory(millis(),3000); //print every 3000 msec
 
+  //Blink the LEDs!
+  myTympan.serviceLEDs(millis());   //defaults to a slow toggle (see Tympan.h and Tympan.cpp)
+
 } //end loop();
 
 
@@ -115,5 +118,3 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
     lastUpdate_millis = curTime_millis;
   } // end if
 } //end servicePotentiometer();
-
-

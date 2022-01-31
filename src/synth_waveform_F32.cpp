@@ -2,19 +2,15 @@
 #include "synth_waveform_F32.h"
 
 void AudioSynthWaveform_F32::update(void) {
-  audio_block_f32_t *block, *lfo;
-
-   block_counter++;
+	block_counter++;
 	
-  //if (_magnitude == 0.0f) return;
+  //get input block (the modulation of the frequency)
+  audio_block_f32_t *lfo = receiveReadOnly_f32(0);
   
-
-  block = allocate_f32();
+  //get output block
+  audio_block_f32_t *block = allocate_f32();
   if (!block) return;
   
-  
-
-  lfo = receiveReadOnly_f32(0);
   switch (_OscillatorMode) {
     case OSCILLATOR_MODE_SINE:
         for (int i = 0; i < audio_block_samples; i++) {
@@ -71,29 +67,33 @@ void AudioSynthWaveform_F32::update(void) {
   if (_magnitude != 1.0f) {
     arm_scale_f32(block->data, _magnitude, block->data, audio_block_samples);
   }
-
-  if (lfo) {
-    release(lfo);
-  }
   
   block->id = block_counter;
 
   AudioStream_F32::transmit(block);
   AudioStream_F32::release(block);
+  AudioStream_F32::release(lfo);
 }
 
 inline float32_t AudioSynthWaveform_F32::applyMod(uint32_t sample, audio_block_f32_t *lfo) {
-  if (_PortamentoSamples > 0 && _CurrentPortamentoSample++ < _PortamentoSamples) {
-    _Frequency+=_PortamentoIncrement;
-  }
+	
+	if (_PortamentoSamples > 0 && _CurrentPortamentoSample++ < _PortamentoSamples) {
+		_Frequency+=_PortamentoIncrement;
+	}
 
-  float32_t osc_frequency = _Frequency;
+	float32_t osc_frequency = _Frequency;
 
-  if (lfo && _PitchModAmt > 0.0f) {
-    osc_frequency = _Frequency * powf(2.0f, 0.0f / 1200.0f + lfo->data[sample] * _PitchModAmt);
-  }
+	if (lfo && _PitchModAmt > 0.0f) {
+		if (_ModMode == MOD_MODE_PER_OCT) {
+			//input signal is assumed to be a pitch shift where 1.0 is one octave
+			osc_frequency = _Frequency * powf(2.0f, 0.0f / 1200.0f + lfo->data[sample] * _PitchModAmt);
+		} else {
+			//input signal is assumed to be a frequency value in Hz
+			osc_frequency = _Frequency + lfo->data[sample] * _PitchModAmt;
+		}
+	}
 
-  _PhaseIncrement = osc_frequency * twoPI / sample_rate_Hz;
+	_PhaseIncrement = osc_frequency * twoPI / sample_rate_Hz;
 
-  return osc_frequency;
+	return osc_frequency;
 }

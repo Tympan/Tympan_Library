@@ -12,7 +12,9 @@
 #ifndef AudioConfigFIRFilterBank_F32_h
 #define AudioConfigFIRFilterBank_F32_h
 
-#include <Tympan_Library.h>
+//#include <Tympan_Library.h>
+#include <Arduino.h>  //for calloc() and free()
+#include "AudioSettings_F32.h"
 
 class AudioConfigFIRFilterBank_F32 {
   //GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node  
@@ -39,19 +41,21 @@ class AudioConfigFIRFilterBank_F32 {
     //      float *filter_coeff (output): array of FIR filter coefficients that are computed by this
     //          routine.  You must have pre-allocated the array such as: float filter_coeff[N_CHAN][N_FIR];
     //Optional Usage: if you want 8 default filters spaced logarithmically, use: float *corner_freq = NULL
-    void createFilterCoeff(const int n_chan, const int n_fir, const float sample_rate_Hz, float *corner_freq, float *filter_coeff) {
-      float *cf = corner_freq;
-      int flag__free_cf = 0;
-      if (cf == NULL) {
-        //compute corner frequencies that are logarithmically spaced
-        cf = (float *) calloc(n_chan, sizeof(float));
-        flag__free_cf = 1;
-        computeLogSpacedCornerFreqs(n_chan, sample_rate_Hz, cf);
-      }
-      const int window_type = 0;  //0 = Hamming, 1=Blackmann, 2 = Hanning
-      fir_filterbank(filter_coeff, cf, n_chan, n_fir, window_type, sample_rate_Hz);
-      if (flag__free_cf) free(cf); 
-    }
+	int createFilterCoeff(const int n_chan, const int n_fir, const float sample_rate_Hz, float *corner_freq, float *filter_coeff) {
+		int ret_val = 0;  //zero means OK
+		float *cf = corner_freq;
+		int flag__free_cf = 0;
+		if (cf == NULL) {
+			//compute corner frequencies that are logarithmically spaced
+			cf = (float *) calloc(n_chan, sizeof(float));
+			flag__free_cf = 1;
+			computeLogSpacedCornerFreqs(n_chan, sample_rate_Hz, cf);
+		}
+		const int window_type = 0;  //0 = Hamming, 1=Blackmann, 2 = Hanning
+		ret_val = fir_filterbank(filter_coeff, cf, n_chan, n_fir, window_type, sample_rate_Hz);
+		if (flag__free_cf) free(cf); 
+		return ret_val;
+	}
 
     //compute frequencies that space zero to nyquist.  Leave zero off, because it is assumed to exist in the later code.
     //example of an *8* channel set of frequencies: cf = {317.1666, 502.9734, 797.6319, 1264.9, 2005.9, 3181.1, 5044.7}
@@ -81,7 +85,7 @@ class AudioConfigFIRFilterBank_F32 {
       return n;
     }
 
-    void fir_filterbank(float *bb, float *cf, const int nc, const int nw_orig, const int wt, const float sr);
+    int fir_filterbank(float *bb, float *cf, const int nc, const int nw_orig, const int wt, const float sr);
 };
 #endif
 

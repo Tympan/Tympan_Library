@@ -19,14 +19,16 @@
 #define TYMPAN_INPUT_LINE_IN            (AudioControlAIC3206::IN1)   //uses IN1, on female Arduino-style headers (shared with BT Audio)
 #define TYMPAN_INPUT_BT_AUDIO	        (AudioControlAIC3206::IN1)   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
 #define TYMPAN_INPUT_ON_BOARD_MIC       (AudioControlAIC3206::IN2)   //uses IN2, for analog signals from microphones on PCB
-#define TYMPAN_INPUT_JACK_AS_LINEIN     (AudioControlAIC3206::IN3)   //uses IN3, for analog signals from mic jack, no mic bias 
+#define TYMPAN_INPUT_JACK_AS_LINEIN     (AudioControlAIC3206::IN3)   //uses IN3, for analog signals from mic jack, no mic bias
 #define TYMPAN_INPUT_JACK_AS_MIC        (AudioControlAIC3206::IN3_wBIAS)   //uses IN3, for analog signals from mic jack, with mic bias
+#define TYMPAN_LEFT_JACK_AS_LINEIN_RIGHT_ON_BOARD_MIC   (AudioControlAIC3206::IN3_IN2) //use pink jack for left and on-board mic for right
+#define TYMPAN_LEFT_JACK_AS_MIC_RIGHT_ON_BOARD_MIC      (AudioControlAIC3206::IN3_wBIAS_IN2) //use pink jack (with bias) for left and on-board mic for right
 
 
 //convenience names to use with outputSelect()
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
 #define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
-#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out 
+#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out
 #define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
 
 //names to use with setMicBias() to set the amount of bias voltage to use
@@ -42,16 +44,7 @@
 #define RIGHT_CHAN 2
 
 //define AIC3206_DEFAULT_I2C_BUS 0   //bus zero is &Wire
-#define AIC3206_DEFAULT_RESET_PIN 22
-
-
-//Link I2C Address to the AIC bus that is used. 
-/*Note that the AIC's on the Tympan Rev-D and derived shields use the same I2C address*/
-typedef enum {
-  Bus_0 =    0x18, 
-  Bus_2 =    0x18
-} Aic_3206_I2c_Address;
-
+#define AIC3206_DEFAULT_RESET_PIN 42
 
 class AudioControlAIC3206: public TeensyAudioControl
 {
@@ -59,31 +52,31 @@ public:
 	//GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
 	AudioControlAIC3206(void) {   //specify nothing
 		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
-		debugToSerial = false; 
+		debugToSerial = false;
 	}
 	AudioControlAIC3206(bool _debugToSerial) {  //specify debug
 		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
-		debugToSerial = _debugToSerial;		
+		debugToSerial = _debugToSerial;
 	}
 	AudioControlAIC3206(int _resetPin) {  //specify reset pin (minimum recommended!)
-		resetPinAIC = _resetPin; 
+		resetPinAIC = _resetPin;
 		//setI2Cbus(AIC3206_DEFAULT_I2C_BUS);
-		debugToSerial = false; 
-	}	
+		debugToSerial = false;
+	}
 	AudioControlAIC3206(int _resetPin, int i2cBusIndex) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
-		setResetPin(_resetPin); 
+		setResetPin(_resetPin);
 		setI2Cbus(i2cBusIndex);
-		debugToSerial = false; 
+		debugToSerial = false;
 	}
 	AudioControlAIC3206(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  //specify everything
-		setResetPin(_resetPin); 
+		setResetPin(_resetPin);
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;
 	}
-	enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS};
+	enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS, IN3_IN2, IN3_wBIAS_IN2};
 	virtual bool enable(void);
 	virtual bool disable(void);
-	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster. 
+	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster.
 	bool volume(float n);
 	static float applyLimitsOnVolumeSetting(float vol_dB);
 	float volume_dB(float vol_dB);  //set both channels to the same volume
@@ -91,7 +84,7 @@ public:
 	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
 	bool inputSelect(int n);
-	float applyLimitsOnInputGainSetting(float gain_dB);  
+	float applyLimitsOnInputGainSetting(float gain_dB);
 	float setInputGain_dB(float gain_dB);   //set both channels to the same gain
 	float setInputGain_dB(float gain_dB, int chan); //set each channel seperately (0 = left; 1 = right)
 	bool setMicBias(int n);
@@ -101,21 +94,21 @@ public:
 	bool debugToSerial;
     unsigned int aic_readPage(uint8_t page, uint8_t reg);
     bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
-	
+
 	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz); //first-order HP applied within this 3206 hardware, ADC (input) side
 	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
 	void setHpfIIRCoeffOnADC(int chan, uint32_t *coeff); //alternate way of settings the same 1st-order HP filter
 	float setBiquadOnADC(int type, float cutoff_Hz, float sampleRate_Hz, int chan, int biquadIndex); //lowpass applied within 3206 hardware, ADC (input) side
 	int setBiquadCoeffOnADC(int chanIndex, int biquadIndex, uint32_t *coeff_uint32);
 	void writeBiquadCoeff(uint32_t *coeff_uint32, int *page_reg_table, int table_ncol);
-	
+
 	float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
 	void muteLineOut(bool state);
 	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
 	bool enableDigitalMicInputs(bool desired_state);
-	
+
 protected:
   TwoWire *myWire = &Wire;  //from Wire.h
   void setI2Cbus(int i2cBus);
@@ -124,7 +117,7 @@ protected:
   void aic_initDAC(void);
   void aic_initADC(void);
   void setResetPin(int pin) { resetPinAIC = pin; }
-  
+
   bool aic_writeAddress(uint16_t address, uint8_t val);
   bool aic_goToPage(uint8_t page);
   bool aic_writeRegister(uint8_t reg, uint8_t val);  //assumes page has already been set
@@ -140,6 +133,8 @@ protected:
   void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
+
+
 };
 
 
