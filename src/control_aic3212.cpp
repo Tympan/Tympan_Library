@@ -127,9 +127,10 @@
 //**************************** Chip Setup **********************************//
 
 // Software Reset
+#define AIC3212_SOFTWARE_RESET_BOOK       0x00
 #define AIC3212_SOFTWARE_RESET_PAGE       0x00
 #define AIC3212_SOFTWARE_RESET_REG        0x01
-#define AIC3212_SOFTWARE_RESET_INITIATE           0b00000001
+#define AIC3212_SOFTWARE_RESET_INITIATE   0x01
 
 
 //******************* INPUT DEFINITIONS *****************************//
@@ -138,8 +139,8 @@
 #define AIC3212_MICPGA_LEFT_POSITIVE_REG  0x34 // page 1 register 52
 #define AIC3212_MICPGA_RIGHT_POSITIVE_REG 0x37 // page 1 register 55
 /* Possible settings for registers using 40kohm resistors:
-    Left  Mic PGA P-Term (Reg 0x34)
-    Right Mic PGA P-Term (Reg 0x37)*/
+		Left  Mic PGA P-Term (Reg 0x34)
+		Right Mic PGA P-Term (Reg 0x37)*/
 #define AIC3212_MIC_ROUTING_POSITIVE_IN1          0b11000000 //
 #define AIC3212_MIC_ROUTING_POSITIVE_IN2          0b00110000 //
 #define AIC3212_MIC_ROUTING_POSITIVE_IN3          0b00001100 //
@@ -148,8 +149,8 @@
 #define AIC3212_MICPGA_LEFT_NEGATIVE_REG   0x36 // page 1 register 54
 #define AIC3212_MICPGA_RIGHT_NEGATIVE_REG  0x39 // page 1 register 57
 /* Possible settings for registers:
-    Left  Mic PGA M-Term (Reg 0x36)
-    Right Mic PGA M-Term (Reg 0x39) */
+		Left  Mic PGA M-Term (Reg 0x36)
+		Right Mic PGA M-Term (Reg 0x39) */
 #define AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L   0b11000000 //
 #define AIC3212_MIC_ROUTING_NEGATIVE_IN2_REVERSE  0b00110000 //
 #define AIC3212_MIC_ROUTING_NEGATIVE_IN3_REVERSE  0b00001100 //
@@ -159,7 +160,7 @@
 #define AIC3212_MIC_ROUTING_RESISTANCE_10k         0b01010101
 #define AIC3212_MIC_ROUTING_RESISTANCE_20k         0b10101010
 #define AIC3212_MIC_ROUTING_RESISTANCE_40k         0b11111111
-#define AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT     TYMPAN_MIC_ROUTING_RESISTANCE_10k //datasheet (application notes) defaults to 20K...why?
+#define AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT     AIC3212_MIC_ROUTING_RESISTANCE_10k //datasheet (application notes) defaults to 20K...why?
 
 
 // Volume for Mic PGA
@@ -170,7 +171,8 @@
 
 
 //Mic Bias
-#define AIC3212_MICPGA_BIAS_REG               0x33 // page 1 reg 0x33
+#define AIC3212_MIC_BIAS_PAGE              0x01 // page 1 reg 0x33
+#define AIC3212_MIC_BIAS_REG               0x33 // page 1 reg 0x33
 /*Possible settings for Mic Bias EXT*/
 #define AIC3212_MIC_BIAS_EXT_MASK                 0b11110000
 #define AIC3212_MIC_BIAS_EXT_POWER_ON             0b01000000 //only on if jack is inserted
@@ -181,7 +183,7 @@
 #define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_3   0x00110000 //regradless of CM
 
 /*Possible settings for Mic Bias*/
-#define AIC3212_MIC_BIAS_EXT_MASK                 0b00001111 
+#define AIC3212_MIC_BIAS_MASK                     0b00001111 
 #define AIC3212_MIC_BIAS_POWER_ON                 0b00000100 //only on if jack is inserted
 #define AIC3212_MIC_BIAS_POWER_OFF                0b00000000  
 #define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_1_62      0b00000000 //for CM = 0.9V
@@ -246,185 +248,183 @@
 
 
 // -------------------- Local Variables --------------
-Aic_3212_I2c_Address i2cAddress = Bus_0;
-
+//AIC3212_I2C_Address i2cAddress = AIC3212_I2C_Address::Bus_0;
 
 // ---------------------- Functions -------------------
 /*Set I2C Bus based on two possible bus addresses.
 */
 void AudioControlAIC3212::setI2Cbus(int i2cBusIndex)
 {
-  // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
-  switch (i2cBusIndex) {
+	// Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
+	switch (i2cBusIndex) {
 	case 0:
-    i2cAddress = Bus_0;
-    myWire = &Wire; 
-    break;
-	case 1:
-    i2cAddress = Bus_1;
-		myWire = &Wire1; 
-    break; 
-	default:
-    i2cAddress = Bus_0;
+		//i2cAddress = AIC3212_I2C_Address::Bus_0;
 		myWire = &Wire; 
-    break;
-  }
+		break;
+	case 1:
+		//i2cAddress = AIC3212_I2C_Address::Bus_1;
+		myWire = &Wire1; 
+		break; 
+	default:
+		//i2cAddress = AIC3212_I2C_Address::Bus_0;
+		myWire = &Wire; 
+		break;
+	}
 }
 
 bool AudioControlAIC3212::enable(void) {
-  delay(10);
-  myWire->begin();
-  delay(5);
+	delay(10);
+	myWire->begin();
+	delay(5);
 
-  //Hard reset the AIC
-  //Serial.println("Hardware reset of AIC...");
-  #define RESET_PIN (resetPinAIC)
-  pinMode(RESET_PIN,OUTPUT); 
-  digitalWrite(RESET_PIN,HIGH);delay(50); //not reset
-  digitalWrite(RESET_PIN,LOW);delay(50);  //reset
-  digitalWrite(RESET_PIN,HIGH);delay(50);//not reset
+	//Hard reset the AIC
+	//Serial.println("Hardware reset of AIC...");
+	pinMode(resetPinAIC,OUTPUT); 
+	digitalWrite(resetPinAIC,HIGH);delay(50); //not reset
+	digitalWrite(resetPinAIC,LOW);delay(50);  //reset
+	digitalWrite(resetPinAIC,HIGH);delay(50);//not reset
 	
-  aic_reset(); //delay(50);  //soft reset
-  aic_init(); //delay(10);
-  aic_initADC(); //delay(10);
-  aic_initDAC(); //delay(10);
+	aic_reset(); //delay(50);  //soft reset
+	aic_init(); //delay(10);
+	aic_initADC(); //delay(10);
+	aic_initDAC(); //delay(10);
 
-  aic_readPage(0, 27); // check a specific register - a register read test
+	aic_readPage(0, 27); // check a specific register - a register read test
 
-  if (debugToSerial) Serial.println("AIC3212 enable done");
+	if (debugToSerial) Serial.println("AIC3212 enable done");
 
-  return true;
+	return true;
 
 }
 
 
 bool AudioControlAIC3212::disable(void) {
-  return true;
+	return true;
 }
 
 //dummy function to keep compatible with Teensy Audio Library
 bool AudioControlAIC3212::inputLevel(float volume) {
-  return false;
+	return false;
 }
 
 
 bool AudioControlAIC3212::inputSelect(int n) {
-  if ( n == AudioControlAIC3212::IN1 ) {
-    // USE LINE IN SOLDER PADS
-	aic_goToPage(AIC3212_MICPGA_PAGE);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    // BIAS OFF
-    setMicBias(AIC3212_MIC_BIAS_OFF);
+	if ( n == AudioControlAIC3212::IN1 ) {
+		// USE LINE IN SOLDER PADS
+		aic_goToPage(AIC3212_MICPGA_PAGE);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		// BIAS OFF
+		setMicBias(AIC3212_MIC_BIAS_OFF);
 	
 
-    if (debugToSerial) Serial.println("Set Audio Input to Line In");
-    return true;
-  } else if ( n == AudioControlAIC3212::IN3_wBIAS ) {
-    // mic-jack = IN3
-	aic_goToPage(AIC3212_MICPGA_PAGE);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    // BIAS on, using default
-    setMicBias(AIC3212_DEFAULT_MIC_BIAS);
+		if (debugToSerial) Serial.println("Set Audio Input to Line In");
+		return true;
+	} else if ( n == AudioControlAIC3212::IN3_wBIAS ) {
+		// mic-jack = IN3
+		aic_goToPage(AIC3212_MICPGA_PAGE);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		// BIAS on, using default
+		setMicBias(AIC3212_DEFAULT_MIC_BIAS);
 
-    if (debugToSerial) Serial.println("Set Audio Input to JACK AS MIC, BIAS SET TO DEFAULT 2.5V");
-    return true;
-  } else if ( n == AudioControlAIC3212::IN3 ) {
-    // 1
-    // mic-jack = IN3
-	aic_goToPage(AIC3212_MICPGA_PAGE);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    // BIAS Off
-    setMicBias(AIC3212_MIC_BIAS_OFF);
+		if (debugToSerial) Serial.println("Set Audio Input to JACK AS MIC, BIAS SET TO DEFAULT 2.5V");
+		return true;
+	} else if ( n == AudioControlAIC3212::IN3 ) {
+		// 1
+		// mic-jack = IN3
+		aic_goToPage(AIC3212_MICPGA_PAGE);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		// BIAS Off
+		setMicBias(AIC3212_MIC_BIAS_OFF);
 
-    if (debugToSerial) Serial.println("Set Audio Input to JACK AS LINEIN, BIAS OFF");
-    return true;
-  } else if ( n == AudioControlAIC3212::IN2 ) {
-    // on-board = IN2
-	aic_goToPage(AIC3212_MICPGA_PAGE);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-    // BIAS Off
-    setMicBias(AIC3212_MIC_BIAS_OFF);
-    if (debugToSerial) Serial.println("Set Audio Input to Tympan On-Board MIC, BIAS OFF");
+		if (debugToSerial) Serial.println("Set Audio Input to JACK AS LINEIN, BIAS OFF");
+		return true;
+	} else if ( n == AudioControlAIC3212::IN2 ) {
+		// on-board = IN2
+		aic_goToPage(AIC3212_MICPGA_PAGE);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
+		// BIAS Off
+		setMicBias(AIC3212_MIC_BIAS_OFF);
+		if (debugToSerial) Serial.println("Set Audio Input to Tympan On-Board MIC, BIAS OFF");
 
-    return true;
-  }
-  Serial.print("AudioControlAIC3212: ERROR: Unable to Select Input - Value not supported: ");
-  Serial.println(n);
-  return false;
+		return true;
+	}
+	Serial.print("AudioControlAIC3212: ERROR: Unable to Select Input - Value not supported: ");
+	Serial.println(n);
+	return false;
 }
 
 bool AudioControlAIC3212::setMicBias(int n) {
-  aic_goToPage(AIC3212_MIC_BIAS_PAGE);
+	aic_goToPage(AIC3212_MIC_BIAS_PAGE);
 
-  if (n == AIC3212_MIC_BIAS_1_62) {
-    aic_writeRegister(AIC3212_MICPGA_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_1_62); // power up mic bias
-    return true;
-  } else if (n == AIC3212_MIC_BIAS_2_4) {
-    aic_writeRegister(AIC3212_MICPGA_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_2_4); // power up mic bias
-    return true;
-  } else if (n == AIC3212_MIC_BIAS_3_0) {
-    aic_writeRegister(AIC3212_MICPGA_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_0); // power up mic bias
-    return true;
-  } else if (n == AIC3212_MIC_BIAS_3_3) {
-    aic_writeRegister(AIC3212_MICPGA_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_3); // power up mic bias
-    return true;
-  } else if (n == AIC3212_MIC_BIAS_OFF) {
-    aic_writeRegister(AIC3212_MICPGA_BIAS_REG, AIC3212_MIC_BIAS_POWER_OFF); // power up mic bias
-    return true;
-  }
-  Serial.print("AudioControlAIC3212: ERROR: Unable to set MIC BIAS - Value not supported: ");
-  Serial.println(n);
-  return false;
+	if (n == AIC3212_MIC_BIAS_1_62) {
+		aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_1_62); // power up mic bias
+		return true;
+	} else if (n == AIC3212_MIC_BIAS_2_4) {
+		aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_2_4); // power up mic bias
+		return true;
+	} else if (n == AIC3212_MIC_BIAS_3_0) {
+		aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_0); // power up mic bias
+		return true;
+	} else if (n == AIC3212_MIC_BIAS_3_3) {
+		aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_3); // power up mic bias
+		return true;
+	} else if (n == AIC3212_MIC_BIAS_OFF) {
+		aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_OFF); // power up mic bias
+		return true;
+	}
+	Serial.print("AudioControlAIC3212: ERROR: Unable to set MIC BIAS - Value not supported: ");
+	Serial.println(n);
+	return false;
 }
 
 bool AudioControlAIC3212::enableDigitalMicInputs(bool desired_state) {
 	if (desired_state == true) {
-		aic_readPage 
-    //Configure the ADC for digital mics
-    aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, 
-                        AIC3212_ADC_CHANNELS_ON | 
-                        AIC3212_ADC_LEFT_CONFIGURE_FOR_DIG_MIC | AIC3212_ADC_RIGHT_CONFIGURE_FOR_DIG_MIC);
+		//Configure the ADC for digital mics
+		aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, 
+		              AIC3212_ADC_CHANNELS_ON | 
+		              AIC3212_ADC_LEFT_CONFIGURE_FOR_DIG_MIC | AIC3212_ADC_RIGHT_CONFIGURE_FOR_DIG_MIC);
 
-    //Set AIC's pin "BCLK2" to clock input for digital microphone
-    aic_writePage(AIC3212_BCLK2_PIN_CTRL_PAGE, AIC3212_BCLK2_PIN_CTRL_REG, AIC3212_BCLK2_ENABLE_PDM_CLK);
+		//Set AIC's pin "BCLK2" to clock input for digital microphone
+		aic_writePage(AIC3212_BCLK2_PIN_CTRL_PAGE, AIC3212_BCLK2_PIN_CTRL_REG, AIC3212_BCLK2_ENABLE_PDM_CLK);
 
 		//Set the AIC's pin "DIN2" to Digital Microphone input
-    aic_writePage(AIC3212_DIN2_PIN_CTRL_PAGE, AIC3212_DIN2_PIN_CTRL_REG, AIC3212_DIN2_ENABLED)
+		aic_writePage(AIC3212_DIN2_PIN_CTRL_PAGE, AIC3212_DIN2_PIN_CTRL_REG, AIC3212_DIN2_ENABLED);
 
-    //set the AIC's digital mic routing to DIN2 
-    aic_writePage(AIC3212_DIGITAL_MIC_SETTING_PAGE, AIC3212_DIGITAL_MIC_SETTING_REG, AIC3212_DIGITAL_MIC_DIN2_LEFT_RIGHT);
+		//set the AIC's digital mic routing to DIN2 
+		aic_writePage(AIC3212_DIGITAL_MIC_SETTING_PAGE, AIC3212_DIGITAL_MIC_SETTING_REG, AIC3212_DIGITAL_MIC_DIN2_LEFT_RIGHT);
 		
 		return true;
 	} else {
-    //Do not configure the ADC for digital mics
-    aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNELS_ON);
+		//Do not configure the ADC for digital mics
+		aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, AIC3212_ADC_CHANNELS_ON);
 
-   //Disable AIC's pin "BCLK2" to clock input for digital microphone
-    aic_writePage(AIC3212_BCLK2_PIN_CTRL_PAGE, AIC3212_BCLK2_PIN_CTRL_REG, AIC3212_BCLK2_DISABLED);
+		//Disable AIC's pin "BCLK2" to clock input for digital microphone
+		aic_writePage(AIC3212_BCLK2_PIN_CTRL_PAGE, AIC3212_BCLK2_PIN_CTRL_REG, AIC3212_BCLK2_DISABLED);
 
-    //Disable the AIC's pin "DIN2" to Digital Microphone input
-    aic_writePage(AIC3212_DIN2_PIN_CTRL_PAGE, AIC3212_DIN2_PIN_CTRL_REG, AIC3212_DIN2_DISABLED)
+		//Disable the AIC's pin "DIN2" to Digital Microphone input
+		aic_writePage(AIC3212_DIN2_PIN_CTRL_PAGE, AIC3212_DIN2_PIN_CTRL_REG, AIC3212_DIN2_DISABLED);
 		return false;
 	}
 }
 
 void AudioControlAIC3212::aic_reset() {
-  if (debugToSerial) Serial.println("INFO: Reseting AIC");
-  aic_writePage(AIC3212_SOFTWARE_RESET_PAGE, AIC3212_SOFTWARE_RESET_REG, AIC3212_SOFTWARE_RESET_INITIATE);
+	if (debugToSerial) Serial.println("INFO: Resetting AIC3212");
+	aic_goToBook(AIC3212_SOFTWARE_RESET_BOOK);
+	aic_writePage(AIC3212_SOFTWARE_RESET_PAGE, AIC3212_SOFTWARE_RESET_REG, AIC3212_SOFTWARE_RESET_INITIATE);
 
-  delay(10);
+	delay(10);
 }
 
 
@@ -435,9 +435,9 @@ void AudioControlAIC3212::aic_reset() {
 // aic_writeRegister(AIC3212_RIGHT_MICPGA_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
 
 void AudioControlAIC3212::aic_initADC() {
-  if (debugToSerial) Serial.println("INFO: Initializing AIC ADC");
-  aic_writePage(AIC3212_ADC_PROCESSING_BLOCK_PAGE, AIC3212_ADC_PROCESSING_BLOCK_REG, PRB_R);  // processing blocks - ADC
-  aic_writePage(AIC3212_ADC_POWERTUNE_PAGE, AIC3212_ADC_POWERTUNE_REG, Adc_Powertune_Settings.PTM_R4); // 0x3D // Select ADC PTM_R4 Power Tune?  (this line is from datasheet (application guide, Section 4.2)
+	if (debugToSerial) Serial.println("INFO: Initializing AIC ADC");
+	aic_writePage(AIC3212_ADC_PROCESSING_BLOCK_PAGE, AIC3212_ADC_PROCESSING_BLOCK_REG, PRB_R);	// processing blocks - ADC
+	aic_writePage(AIC3212_ADC_POWERTUNE_PAGE, AIC3212_ADC_POWERTUNE_REG, static_cast<uint8_t>(AIC3212_ADC_Powertune_Settings::PTM_R4)); // 0x3D // Select ADC PTM_R4 Power Tune?	(this line is from datasheet (application guide, Section 4.2)
 
 
 
@@ -445,36 +445,34 @@ void AudioControlAIC3212::aic_initADC() {
 
 
 
+	/* CAB TODO: WORKING HERE */
+	// aic_writePage(1, 71, 0b00110001); // 0x47 // Set MicPGA startup delay to 3.1ms
+	// aic_writeAddress(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_2_5); // power up mic bias
 
+	// aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT); //page is AIC3212_MICPGA_PAGE
+	// aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);//page is AIC3212_MICPGA_PAGE
+	// aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);//page is AIC3212_MICPGA_PAGE
+	// aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);//page is AIC3212_MICPGA_PAGE
+	// aic_writeRegister(AIC3212_MICPGA_LEFT_VOLUME_REG, AIC3212_MICPGA_VOLUME_ENABLE); // enable Left MicPGA, set gain to 0 dB	//page is AIC3212_MICPGA_PAGE
+	// aic_writeRegister(AIC3212_MICPGA_RIGHT_VOLUME_REG, AIC3212_MICPGA_VOLUME_ENABLE); // enable Right MicPGA, set gain to 0 dB	//page is AIC3212_MICPGA_PAGE
 
-
-  aic_writePage(1, 71, 0b00110001); // 0x47 // Set MicPGA startup delay to 3.1ms
-  aic_writeAddress(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_2_5); // power up mic bias
-
-  aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT); //page is AIC3212_MICPGA_PAGE
-  aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);//page is AIC3212_MICPGA_PAGE
-  aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);//page is AIC3212_MICPGA_PAGE
-  aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);//page is AIC3212_MICPGA_PAGE
-  aic_writeRegister(AIC3212_MICPGA_LEFT_VOLUME_REG, AIC3212_MICPGA_VOLUME_ENABLE); // enable Left MicPGA, set gain to 0 dB  //page is AIC3212_MICPGA_PAGE
-  aic_writeRegister(AIC3212_MICPGA_RIGHT_VOLUME_REG, AIC3212_MICPGA_VOLUME_ENABLE); // enable Right MicPGA, set gain to 0 dB  //page is AIC3212_MICPGA_PAGE
-
-  //aic_writePage(1, 58, 0b11111100); // Anti-thump on aill input channels...doesn't seem to od anything here.  :(
-  
-  aic_writePage(AIC3212_ADC_MUTE_PAGE, AIC3212_ADC_MUTE_REG, AIC3212_ADC_UNMUTE); // Unmute Left and Right ADC Digital Volume Control
-  aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, AIC3212_ADC_CHANNELS_ON); // Unmute Left and Right ADC Digital Volume Control
+	// //aic_writePage(1, 58, 0b11111100); // Anti-thump on aill input channels...doesn't seem to od anything here.	:(
+	
+	// aic_writePage(AIC3212_ADC_MUTE_PAGE, AIC3212_ADC_MUTE_REG, AIC3212_ADC_UNMUTE); // Unmute Left and Right ADC Digital Volume Control
+	// aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, AIC3212_ADC_CHANNELS_ON); // Unmute Left and Right ADC Digital Volume Control
 }
 
 // set MICPGA volume, 0-47.5dB in 0.5dB setps
 float AudioControlAIC3212::applyLimitsOnInputGainSetting(float gain_dB) {
-  if (gain_dB < 0.0) {
-    gain_dB = 0.0; // 0.0 dB
-    //Serial.println("AudioControlAIC3212: WARNING: Attempting to set MIC volume outside range");
-  }
-  if (gain_dB > 47.5) {
-    gain_dB = 47.5; // 47.5 dB
-    //Serial.println("AudioControlAIC3212: WARNING: Attempting to set MIC volume outside range");
-  }
-  return gain_dB;
+	if (gain_dB < 0.0) {
+		gain_dB = 0.0; // 0.0 dB
+		//Serial.println("AudioControlAIC3212: WARNING: Attempting to set MIC volume outside range");
+	}
+	if (gain_dB > 47.5) {
+		gain_dB = 47.5; // 47.5 dB
+		//Serial.println("AudioControlAIC3212: WARNING: Attempting to set MIC volume outside range");
+	}
+	return gain_dB;
 }
 float AudioControlAIC3212::setInputGain_dB(float orig_gain_dB, int Ichan) {
 	float gain_dB = applyLimitsOnInputGainSetting(orig_gain_dB);
@@ -632,8 +630,8 @@ bool AudioControlAIC3212::outputSelect(int n, bool flag_full) {
 
 		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Headphone Jack");
 		return true;
-  } else if (n == AIC3212_OUTPUT_LINE_OUT) {
-    
+	} else if (n == AIC3212_OUTPUT_LINE_OUT) {
+		
 		aic_goToPage(1);
 		//Register(1, 20, 0x25); //Page1, 0x14 De-Pop
 		aic_writeRegister(14, 0b00001000); //Page1, route LDAC/RDAC to LOL/LOR
@@ -652,9 +650,9 @@ bool AudioControlAIC3212::outputSelect(int n, bool flag_full) {
 
 		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Line Out");
 		return true;
-  }  else if (n == AIC3212_OUTPUT_HEADPHONE_AND_LINE_OUT) {
+	} else if (n == AIC3212_OUTPUT_HEADPHONE_AND_LINE_OUT) {
 		aic_goToPage(1);
-	  	aic_writeRegister(12, 0b00001000); //Page 1, route LDAC/RDAC to HPL/HPR
+			aic_writeRegister(12, 0b00001000); //Page 1, route LDAC/RDAC to HPL/HPR
 		aic_writeRegister(13, 0b00001000); //Page 1, route LDAC/RDAC to HPL/HPR
 		aic_writeRegister(14, 0b00001000); //Page 1, route LDAC/RDAC to LOL/LOR
 		aic_writeRegister(15, 0b00001000); //Page 1, route LDAC/RDAC to LOL/LOR
@@ -678,8 +676,8 @@ bool AudioControlAIC3212::outputSelect(int n, bool flag_full) {
 
 		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Headphone Jack and Line out");
 		return true;	
-  } else if (n == AIC3212_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO) {
-	  
+	} else if (n == AIC3212_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO) {
+		
 		aic_goToPage(1);
 		aic_writeRegister(12, 0b00001000); //Page 1, route Left DAC Pos to Headphone Left
 		aic_writeRegister(13, 0b00010000); //Page 1, route Left DAC Neg to Headphone Right
@@ -705,10 +703,10 @@ bool AudioControlAIC3212::outputSelect(int n, bool flag_full) {
 
 		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Diff Headphone Jack and Line out");
 		return true;			
-  }
-  Serial.print("AudioControlAIC3212: ERROR: Unable to Select Output - Value not supported: ");
-  Serial.println(n);
-  return false;
+	}
+	Serial.print("AudioControlAIC3212: ERROR: Unable to Select Output - Value not supported: ");
+	Serial.println(n);
+	return false;
 }
 
 void AudioControlAIC3212::muteLineOut(bool flag) {
@@ -752,110 +750,172 @@ void AudioControlAIC3212::muteLineOut(bool flag) {
 }
 
 void AudioControlAIC3212::aic_init() {
-  if (debugToSerial) Serial.println("AudioControlAIC3212: Initializing AIC");
-  
-  // PLL
-  aic_goToPage(0);
-  aic_writeRegister(4, 3); // page 0, 0x04 low PLL clock range, MCLK is PLL input, PLL_OUT is CODEC_CLKIN
-  aic_writeRegister(5, (PLL_J != 0 ? 0x91 : 0x11)); //Page 0
-  aic_writeRegister(6, PLL_J); //Page 0
-  aic_writeRegister(7, PLL_D >> 8);//Page 0
-  aic_writeRegister(8, PLL_D &0xFF);//Page 0
+	if (debugToSerial) {
+		Serial.println("AudioControlAIC3212: Initializing AIC");
+		Serial.print("  7-bit I2C address: 0x"); Serial.println(static_cast<uint8_t>(i2cAddress), HEX);
+	}
+	
+	// PLL
+	aic_goToBook(0);
+	aic_goToPage(0);
+	aic_writePage(0, 4, 3);
+	aic_writeRegister(4, 3); // page 0, 0x04 low PLL clock range, MCLK is PLL input, PLL_OUT is CODEC_CLKIN
+	aic_writeRegister(5, (PLL_J != 0 ? 0x91 : 0x11)); //Page 0
+	aic_writeRegister(6, PLL_J); //Page 0
+	aic_writeRegister(7, PLL_D >> 8);//Page 0
+	aic_writeRegister(8, PLL_D &0xFF);//Page 0
 
-  // CLOCKS
-  aic_writeRegister(11, 0x80 | NDAC); //Page 0, 0x0B
-  aic_writeRegister(12, 0x80 | MDAC); //Page 0, 0x0C
-  aic_writeRegister(13, 0); //Page 0, 0x0D
-  aic_writeRegister(14, DOSR); //Page 0, 0x0E
-  // aic_writeRegister(18, 0); //Page 0, 0x12 // powered down, ADC_CLK same as DAC_CLK
-  // aic_writeRegister(19, 0); //Page 0, 0x13 // powered down, ADC_MOD_CLK same as DAC_MOD_CLK
-  aic_writeRegister(18, 0x80 | NADC); //Page 0, 0x12
-  aic_writeRegister(19, 0x80 | MADC); //Page 0, 0x13
-  aic_writeRegister(20, AOSR);  //Page 0,
-  aic_writeRegister(30, 0x80 | BCLK_N); //Page 0, power up BLCK N Divider, default is 128
+	// CLOCKS
+	aic_writeRegister(11, 0x80 | NDAC); //Page 0, 0x0B
+	aic_writeRegister(12, 0x80 | MDAC); //Page 0, 0x0C
+	aic_writeRegister(13, 0); //Page 0, 0x0D
+	aic_writeRegister(14, DOSR); //Page 0, 0x0E
+	// aic_writeRegister(18, 0); //Page 0, 0x12 // powered down, ADC_CLK same as DAC_CLK
+	// aic_writeRegister(19, 0); //Page 0, 0x13 // powered down, ADC_MOD_CLK same as DAC_MOD_CLK
+	aic_writeRegister(18, 0x80 | NADC); //Page 0, 0x12
+	aic_writeRegister(19, 0x80 | MADC); //Page 0, 0x13
+	aic_writeRegister(20, AOSR);	//Page 0,
+	aic_writeRegister(30, 0x80 | BCLK_N); //Page 0, power up BLCK N Divider, default is 128
 
-  // POWER
-  aic_goToPage(1);
-  aic_writeRegister(0x01, 8); //Page 1, Reg 1, Val = 8 = 0b00001000 = disable weak connection AVDD to DVDD.  Keep headphone charge pump disabled.
-  aic_writeRegister(0x02, 0); //Page 1,  Reg 2, Val = 0 = 0b00000000 = Enable Master Analog Power Control
-  aic_writeRegister(0x7B, 1); //Page 1,  Reg 123, Val = 1 = 0b00000001 = Set reference to power up in 40ms when analog blocks are powered up
-  aic_writeRegister(0x7C, 6); //Page 1,  Reg 124, Val = 6 = 0b00000110 = Charge Pump, full peak current (000), clock divider (110) to Div 6 = 333 kHz
-  aic_writeRegister(0x01, 10); //Page 1,  Reg 1, Val = 10 = 0x0A = 0b00001010.  Activate headphone charge pump.
-  aic_writeRegister(0x0A, 0); //Page 1,  Reg 10, Val = 0 = common mode 0.9 for full chip, HP, LO  // from WHF/CHA
-  aic_writeRegister(0x47, 0x31); //Page 1,  Reg 71, val = 0x31 = 0b00110001 = Set input power-up time to 3.1ms (for ADC)
-  aic_writeRegister(0x7D, 0x53); //Page 1,  Reg 125, Val = 0x53 = 0b01010011 = 0 10 1 00 11: HPL is master gain, Enable ground-centered mode, 100% output power, DC offset correction  // from WHF/CHA
+	// POWER
+	aic_goToPage(1);
+	aic_writeRegister(0x01, 8); //Page 1, Reg 1, Val = 8 = 0b00001000 = disable weak connection AVDD to DVDD.	Keep headphone charge pump disabled.
+	aic_writeRegister(0x02, 0); //Page 1,  Reg 2, Val = 0 = 0b00000000 = Enable Master Analog Power Control
+	aic_writeRegister(0x7B, 1); //Page 1,  Reg 123, Val = 1 = 0b00000001 = Set reference to power up in 40ms when analog blocks are powered up
+	aic_writeRegister(0x7C, 6); //Page 1,  Reg 124, Val = 6 = 0b00000110 = Charge Pump, full peak current (000), clock divider (110) to Div 6 = 333 kHz
+	aic_writeRegister(0x01, 10); //Page 1,  Reg 1, Val = 10 = 0x0A = 0b00001010.  Activate headphone charge pump.
+	aic_writeRegister(0x0A, 0); //Page 1,  Reg 10, Val = 0 = common mode 0.9 for full chip, HP, LO  // from WHF/CHA
+	aic_writeRegister(0x47, 0x31); //Page 1,  Reg 71, val = 0x31 = 0b00110001 = Set input power-up time to 3.1ms (for ADC)
+	aic_writeRegister(0x7D, 0x53); //Page 1,  Reg 125, Val = 0x53 = 0b01010011 = 0 10 1 00 11: HPL is master gain, Enable ground-centered mode, 100% output power, DC offset correction  // from WHF/CHA
 
-  // !!!!!!!!! The below writes are from WHF/CHA - probably don't need?
-  // aic_writePage(1, 1, 10); // 10 = 0b00001010 // weakly connect AVDD to DVDD.  Activate charge pump
- aic_writePage(0, 27, 0x01 | AIC_CLK_DIR | (AIC_BITS == 32 ? 0x30 : 0)); //Page 0, 0x1B
-  // aic_writePage(0, 28, 0); // 0x1C
+	// !!!!!!!!! The below writes are from WHF/CHA - probably don't need?
+	// aic_writePage(1, 1, 10); // 10 = 0b00001010 // weakly connect AVDD to DVDD.  Activate charge pump
+	aic_writePage(0, 27, 0x01 | AIC_CLK_DIR | (AIC_BITS == 32 ? 0x30 : 0)); //Page 0, 0x1B
+	// aic_writePage(0, 28, 0); // 0x1C
 }
 
 unsigned int AudioControlAIC3212::aic_readPage(uint8_t page, uint8_t reg)
 {
-  unsigned int val;
+	unsigned int val;
 
-  if (aic_goToPage(page)) {    
-    myWire->beginTransmission(i2cAddress);
-    myWire->write(reg);
-    unsigned int result = myWire->endTransmission();
-    if (result != 0) {
-      Serial.print("AudioControlAIC3212: ERROR: Read Page.  Page: ");Serial.print(page);
-      Serial.print(" Reg: ");Serial.print(reg);
-      Serial.print(".  Received Error During Read Page: ");
-      Serial.println(result);
-      val = 300 + result;
-      return val;
-    }
-    if (myWire->requestFrom(i2cAddress, 1) < 1) {
-      Serial.print("AudioControlAIC3212: ERROR: Read Page.  Page: ");Serial.print(page);
-      Serial.print(" Reg: ");Serial.print(reg);
-      Serial.println(".  Nothing to return");
-      val = 400;
-      return val;
-    }
-    if (myWire->available() >= 1) {
-      uint16_t val = myWire->read();
-	  if (debugToSerial) {
-		Serial.print("AudioControlAIC3212: Read Page.  Page: ");Serial.print(page);
+	if (aic_goToPage(page)) {
+		myWire->beginTransmission(static_cast<uint8_t>(i2cAddress));
+		myWire->write(reg);
+		unsigned int result = myWire->endTransmission();
+		if (result != 0) {
+			Serial.print("AudioControlAIC3212: ERROR: Read Page.  Page: ");Serial.print(page);
+			Serial.print(" Reg: ");Serial.print(reg);
+			Serial.print(".  Received Error During Read Page: ");
+			Serial.println(result);
+			val = 300 + result;
+			return val;
+		}
+		if (myWire->requestFrom(static_cast<uint8_t>(i2cAddress), 1U) < 1) {
+			Serial.print("AudioControlAIC3212: ERROR: Read Page.  Page: ");Serial.print(page);
+			Serial.print(" Reg: ");Serial.print(reg);
+			Serial.println(".  Nothing to return");
+			val = 400;
+			return val;
+		}
+		if (myWire->available() >= 1) {
+			uint16_t val = myWire->read();
+			if (debugToSerial) {
+				Serial.print("AudioControlAIC3212: Read Page.   Page: ");Serial.print(page);
+				Serial.print(" Reg: ");Serial.print(reg);
+				Serial.print(".  Received: 0x");
+				Serial.println(val, HEX);
+			}
+			return val;
+		}
+	} else {
+		Serial.print("AudioControlAIC3212: INFO: Read Page.	Page: ");Serial.print(page);
 		Serial.print(" Reg: ");Serial.print(reg);
-		Serial.print(".  Received: ");
-		Serial.println(val, HEX);
-	  }
-      return val;
-    }
-  } else {
-    Serial.print("AudioControlAIC3212: INFO: Read Page.  Page: ");Serial.print(page);
-    Serial.print(" Reg: ");Serial.print(reg);
-    Serial.println(".  Failed to go to read page.  Could not go there.");
-    val = 500;
-    return val;
-  }
-  val = 600;
-  return val;
+		Serial.println(".  Failed to go to read page.  Could not go there.");
+		val = 500;
+		return val;
+	}
+	val = 600;
+	return val;
 }
 
 
 bool AudioControlAIC3212::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) {
+	bool success = true;
+
 	if (debugToSerial) {
 		Serial.print("AudioControlAIC3212: Write Page.  Page: ");Serial.print(page);
 		Serial.print(" Reg: ");Serial.print(reg);
-		Serial.print(" Val: ");Serial.println(val);
+		Serial.print(" Val: 0x");Serial.println(val, HEX);
 	}
-	if (aic_goToPage(page)) {
+
+	success = aic_goToPage(page);
+
+	if (success) {
 		//myWire->beginTransmission(i2cAddress);
 		//myWire->write(reg); //delay(10);
 		//myWire->write(val); //delay(10);
 		//uint8_t result = myWire->endTransmission();
 		//if (result == 0) return true;
-		return aic_writeRegister(reg, val);
+		success = aic_writeRegister(reg, val);
 	} else {
 		//Serial.print("AudioControlAIC3212: Received Error During aic_goToPage()");
 	}
-	return false;
+
+	if (debugToSerial) {
+		uint8_t readval = 0;
+		aic_readRegister(reg, &readval);
+		Serial.print("                     Read Val: 0x"); Serial.println(readval, HEX);
+	}
+
+	return success;
 }
+
+unsigned int AudioControlAIC3212::aic_readRegister(uint8_t reg, uint8_t *pVal) {
+	unsigned int errcode = 0;
+
+	myWire->beginTransmission(static_cast<uint8_t>(i2cAddress));
+	myWire->write(reg);
+	unsigned int result = myWire->endTransmission();
+	if (result != 0) {
+		Serial.print("AudioControlAIC3212: ERROR: Read register.  Reg: "); Serial.print(reg);
+		Serial.print(".  Received Error During Write Address: ");
+		Serial.println(result);
+		errcode = 300 + result;
+	}
+
+	if (errcode == 0) {
+		if (myWire->requestFrom(static_cast<uint8_t>(i2cAddress), 1U) < 1) {
+			Serial.print("AudioControlAIC3212: ERROR: Read register.  Reg: "); Serial.print(reg);
+			Serial.println(".  Received Error During Request.");
+			errcode = 400;
+		}
+	} else {
+		// Already failed
+	}
+
+	if (errcode == 0) {
+		if (myWire->available() >= 1) {
+			*pVal = myWire->read();
+			// if (debugToSerial) {
+			// 	Serial.print("AudioControlAIC3212: Read Reg: "); Serial.print(reg);
+			// 	Serial.print(".  Received: ");
+			// 	Serial.println(*pVal, HEX);
+			// }
+		} else {
+			// Empty response
+			Serial.print("AudioControlAIC3212: ERROR: Read register.  Reg: "); Serial.print(reg);
+			Serial.println(".  Empty Response.");			
+			errcode = 500;
+		}
+	} else {
+		// Already failed
+	}
+
+	return errcode;
+}
+
 bool AudioControlAIC3212::aic_writeRegister(uint8_t reg, uint8_t val) {  //assumes page has already been set
-	myWire->beginTransmission(i2cAddress);
+	myWire->beginTransmission(static_cast<uint8_t>(i2cAddress));
 	myWire->write(reg); //delay(1); //delay(10); //was delay(10)
 	myWire->write(val); //delay(1);//delay(10); //was delay(10)
 	uint8_t result = myWire->endTransmission();
@@ -868,24 +928,41 @@ bool AudioControlAIC3212::aic_writeRegister(uint8_t reg, uint8_t val) {  //assum
 	return false;
 }
 
-bool AudioControlAIC3212::aic_goToPage(byte page) {
-  myWire->beginTransmission(i2cAddress);
-  myWire->write(0x00); //delay(1); //delay(10);// page register  //was delay(10) from BPF
-  myWire->write(page); //delay(1); //delay(10);// go to page   //was delay(10) from BPF
-  byte result = myWire->endTransmission();
-  if (result != 0) {
-    Serial.print("AudioControlAIC3212: Received Error During goToPage(): Error = ");
-    Serial.println(result);
-    if (result == 2) {
-      // failed to transmit address
-      //return aic_goToPage(page);
-    } else if (result == 3) {
-      // failed to transmit data
-      //return aic_goToPage(page);
-    }
-    return false;
-  }
-  return true;
+bool AudioControlAIC3212::aic_goToBook(uint8_t book) {
+	bool success = true;
+
+	if (debugToSerial) {
+		Serial.print("AudioControlAIC3212: Go To Book "); Serial.println(book);
+	}
+	// Go to page 0 of current book
+	success = aic_goToPage(0x00);
+	if (success) {
+		// Select book by writing to register 0x7F (127)
+		success = aic_writeRegister(0x7F, book);
+	} else {
+		// Already failed
+	}
+	return success;
+}
+
+bool AudioControlAIC3212::aic_goToPage(uint8_t page) {
+	myWire->beginTransmission(static_cast<uint8_t>(i2cAddress));
+	myWire->write(0x00); //delay(1); //delay(10);// page register  //was delay(10) from BPF
+	myWire->write(page); //delay(1); //delay(10);// go to page   //was delay(10) from BPF
+	byte result = myWire->endTransmission();
+	if (result != 0) {
+		Serial.print("AudioControlAIC3212: Received Error During goToPage(): Error = ");
+		Serial.println(result);
+		if (result == 2) {
+			// failed to transmit address
+			//return aic_goToPage(page);
+		} else if (result == 3) {
+			// failed to transmit data
+			//return aic_goToPage(page);
+		}
+		return false;
+	}
+	return true;
 }
 
 bool AudioControlAIC3212::updateInputBasedOnMicDetect(int setting) {

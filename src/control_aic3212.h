@@ -17,7 +17,7 @@
 
 //convenience names to use with inputSelect() to set whnch analog inputs to use
 #define AIC3212_INPUT_LINE_IN            (AudioControlAIC3212::IN1)   //uses IN1, on female Arduino-style headers (shared with BT Audio)
-#define AIC3212_INPUT_BT_AUDIO	        	(AudioControlAIC3212::IN1)   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
+#define AIC3212_INPUT_BT_AUDIO	         (AudioControlAIC3212::IN1)   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
 #define AIC3212_INPUT_ON_BOARD_MIC       (AudioControlAIC3212::IN2)   //uses IN2, for analog signals from microphones on PCB
 #define AIC3212_INPUT_JACK_AS_LINEIN     (AudioControlAIC3212::IN3)   //uses IN3, for analog signals from mic jack, no mic bias 
 #define AIC3212_INPUT_JACK_AS_MIC        (AudioControlAIC3212::IN3_wBIAS)   //uses IN3, for analog signals from mic jack, with mic bias
@@ -41,31 +41,28 @@
 #define LEFT_CHAN 1
 #define RIGHT_CHAN 2
 
-//define AIC3212_DEFAULT_I2C_BUS 0   //bus zero is &Wire
-#define AIC3212_DEFAULT_RESET_PIN 		24//A10 on the Rev-E2
-
+//define AIC3212_DEFAULT_I2C_BUS              0  // bus zero is &Wire
+#define AIC3212_DEFAULT_RESET_PIN            24  // A10 on the Rev-E2
+#define AIC3212_DEFAULT_I2C_ADDRESS   0b0011000  // 7-Bit address
 
 //Link I2C Address to the AIC bus that is used. 
 /*I2C address is set by GPI3 & GPI4 (active high) on the AIC:
-		8-Bit I2C Address = "0011 0000" + GPI4<<2 + GPI3<<1 + R/W  */
-typedef enum {
-  Bus_0 =    0b00110000
-  Bus_1 =    0b00110010,
-  Bus_2 =    0b00110100, 
-  Bus_3 = 	 0b00110110,
-} Aic_3212_I2c_Address;
+		7-Bit I2C Address = "001 1000" + GPI4<<1 + GPI3 */
+// enum class AIC3212_I2C_Address : uint8_t {
+// 	Bus_0 = 0b0011000,
+// 	Bus_1 = 0b0011001,
+// 	Bus_2 = 0b0011010, 
+// 	Bus_3 = 0b0011011,
+// };
 
 /*NOTE!!! This assumes Left and Right ADC Modulator is fed by Left and Right ADC PGA,
  overwriting bits D0-D5*/
-typedef enum {
-  uint8_t PTM_R4 = 0b00000000,  //default setting at AIC startup
-  uint8_t PTM_R3 = 0b01000000,
-  uint8_t PTM_R2 = 0b10000000,
-  uint8_t PTM_R1 = 0b11000000
-}  Adc_Powertune_Settings;
-
-
-
+enum class AIC3212_ADC_Powertune_Settings : uint8_t {
+	PTM_R4 = 0b00000000,  //default setting at AIC startup
+	PTM_R3 = 0b01000000,
+	PTM_R2 = 0b10000000,
+	PTM_R1 = 0b11000000
+};
 
 
 class AudioControlAIC3212: public TeensyAudioControl
@@ -82,14 +79,16 @@ public:
 		resetPinAIC = _resetPin; 
 		debugToSerial = false; 
 	}	
-	AudioControlAIC3212(int _resetPin, int i2cBusIndex) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
+	AudioControlAIC3212(int _resetPin, int i2cBusIndex, uint8_t _i2cAddress) {  //specify reset pin and i2cBus (minimum if using for 2nd AIC)
 		setResetPin(_resetPin); 
 		setI2Cbus(i2cBusIndex);
+		i2cAddress = _i2cAddress;
 		debugToSerial = false; 
 	}
-	AudioControlAIC3212(int _resetPin, int i2cBusIndex, bool _debugToSerial) {  //specify everything
+	AudioControlAIC3212(int _resetPin, int i2cBusIndex, uint8_t _i2cAddress, bool _debugToSerial) {  //specify everything
 		setResetPin(_resetPin); 
 		setI2Cbus(i2cBusIndex);
+		i2cAddress = _i2cAddress;
 		debugToSerial = _debugToSerial;
 	}
 	enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS};
@@ -111,8 +110,8 @@ public:
 	bool enableMicDetect(bool);
 	int  readMicDetect(void);
 	bool debugToSerial;
-    unsigned int aic_readPage(uint8_t page, uint8_t reg);
-    bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
+	unsigned int aic_readPage(uint8_t page, uint8_t reg);
+	bool aic_writePage(uint8_t page, uint8_t reg, uint8_t val);
 	
 	void setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz); //first-order HP applied within this 3212 hardware, ADC (input) side
 	float getHPCutoff_Hz(void) { return HP_cutoff_Hz; }
@@ -129,28 +128,31 @@ public:
 	bool enableDigitalMicInputs(bool desired_state);
 	
 protected:
-  TwoWire *myWire = &Wire;  //from Wire.h
-  void setI2Cbus(int i2cBus);
-  void aic_reset(void);
-  void aic_init(void);
-  void aic_initDAC(void);
-  void aic_initADC(void);
-  void setResetPin(int pin) { resetPinAIC = pin; }
-  
-  bool aic_goToPage(uint8_t page);
-  bool aic_writeRegister(uint8_t reg, uint8_t val);  //assumes page has already been set
-  int prevMicDetVal = -1;
-  int resetPinAIC = AIC3212_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
-  float HP_cutoff_Hz = 0.0f;
-  float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
-  void setHpfIIRCoeffOnADC_Left(uint32_t *coeff);
-  void setHpfIIRCoeffOnADC_Right(uint32_t *coeff);
+	TwoWire *myWire = &Wire;  //from Wire.h
+	uint8_t i2cAddress = AIC3212_DEFAULT_I2C_ADDRESS;
+	void setI2Cbus(int i2cBus);
+	void aic_reset(void);
+	void aic_init(void);
+	void aic_initDAC(void);
+	void aic_initADC(void);
+	void setResetPin(int pin) { resetPinAIC = pin; }
+	
+	bool aic_goToBook(uint8_t book);
+	bool aic_goToPage(uint8_t page);
+	unsigned int aic_readRegister(uint8_t reg, uint8_t *pVal); // Assumes page has already been set
+	bool aic_writeRegister(uint8_t reg, uint8_t val);  //assumes page has already been set
+	int prevMicDetVal = -1;
+	int resetPinAIC = AIC3212_DEFAULT_RESET_PIN;  //AIC reset pin, Rev C
+	float HP_cutoff_Hz = 0.0f;
+	float sample_rate_Hz = 44100; //only used with HP_cutoff_Hz to design HP filter on ADC, if used
+	void setHpfIIRCoeffOnADC_Left(uint32_t *coeff);
+	void setHpfIIRCoeffOnADC_Right(uint32_t *coeff);
 
-  void computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff);
-  //void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
-  void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
-  void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
-  void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
+	void computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff);
+	//void computeFirstOrderHPCoeff_i32(float cutoff_Hz, float fs_Hz, int32_t *coeff);
+	void computeBiquadCoeff_LP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+	void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
+	void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
 };
 
 
