@@ -258,15 +258,15 @@ void AudioControlAIC3212::setI2Cbus(int i2cBusIndex)
 	// Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
 	switch (i2cBusIndex) {
 	case 0:
-		//i2cAddress = AIC3212_I2C_Address::Bus_0;
 		myWire = &Wire; 
 		break;
 	case 1:
-		//i2cAddress = AIC3212_I2C_Address::Bus_1;
 		myWire = &Wire1; 
 		break; 
+	case 2:
+		myWire = &Wire2; 
+		break; 
 	default:
-		//i2cAddress = AIC3212_I2C_Address::Bus_0;
 		myWire = &Wire; 
 		break;
 	}
