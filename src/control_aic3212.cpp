@@ -9,120 +9,121 @@
 
 #include "control_aic3212.h"
 
+namespace tlv320aic3212 {
 
-//********************************  Constants  *******************************//
-#ifndef AIC_FS
-#  define AIC_FS                                                     44100UL
-#endif
+// //********************************  Constants  *******************************//
+// #ifndef AIC_FS
+// #  define AIC_FS                                                     44100UL
+// #endif
 
-#define AIC_BITS                                                        32
+// #define AIC_BITS                                                        32
 
-#define AIC_I2S_SLAVE                                                     1
-#if AIC_I2S_SLAVE
-// Direction of BCLK and WCLK (reg 27) is input if a slave:
-# define AIC_CLK_DIR                                                    0
-#else
-// If master, make outputs:
-# define AIC_CLK_DIR                                                   0x0C
-#endif
+// #define AIC_I2S_SLAVE                                                     1
+// #if AIC_I2S_SLAVE
+// // Direction of BCLK and WCLK (reg 27) is input if a slave:
+// # define AIC_CLK_DIR                                                    0
+// #else
+// // If master, make outputs:
+// # define AIC_CLK_DIR                                                   0x0C
+// #endif
 
-//#ifndef AIC_CODEC_CLKIN_BCLK
-//# define AIC_CODEC_CLKIN_BCLK                                           0
-//#endif
+// //#ifndef AIC_CODEC_CLKIN_BCLK
+// //# define AIC_CODEC_CLKIN_BCLK                                           0
+// //#endif
 
-//**************************** Clock Setup **********************************//
+// //**************************** Clock Setup **********************************//
 
-//**********************************  44100  *********************************//
-#if AIC_FS == 44100
+// //**********************************  44100  *********************************//
+// #if AIC_FS == 44100
 
-// MCLK = 180000000 * 16 / 255 = 11.294117 MHz // FROM TEENSY, FIXED
+// // MCLK = 180000000 * 16 / 255 = 11.294117 MHz // FROM TEENSY, FIXED
 
-// PLL setup.  PLL_OUT = MCLK * R * J.D / P
-//// J.D = 7.5264, P = 1, R = 1 => 90.32 MHz // FROM 12MHz CHA AND WHF //
-// J.D = 7.9968, P = 1, R = 1 => 90.3168 MHz // For 44.1kHz exact
-// J.D = 8.0000000002, P = 1, R = 1 => 9.35294117888MHz // for TEENSY 44.11764706kHz
-#define PLL_J                                                             8
-#define PLL_D                                                             0
+// // PLL setup.  PLL_OUT = MCLK * R * J.D / P
+// //// J.D = 7.5264, P = 1, R = 1 => 90.32 MHz // FROM 12MHz CHA AND WHF //
+// // J.D = 7.9968, P = 1, R = 1 => 90.3168 MHz // For 44.1kHz exact
+// // J.D = 8.0000000002, P = 1, R = 1 => 9.35294117888MHz // for TEENSY 44.11764706kHz
+// #define PLL_J                                                             8
+// #define PLL_D                                                             0
 
-// Bitclock divisor.
-// BCLK = DAC_CLK/N = PLL_OUT/NDAC/N = 32*fs or 16*fs
-// PLL_OUT = fs*NDAC*MDAC*DOSR
-// BLCK = 32*fs = 1411200 = PLL
-#if AIC_BITS == 16
-#define BCLK_N                                                            8
-#elif AIC_BITS == 32
-#define BCLK_N                                                            4
-#endif
+// // Bitclock divisor.
+// // BCLK = DAC_CLK/N = PLL_OUT/NDAC/N = 32*fs or 16*fs
+// // PLL_OUT = fs*NDAC*MDAC*DOSR
+// // BLCK = 32*fs = 1411200 = PLL
+// #if AIC_BITS == 16
+// #define BCLK_N                                                            8
+// #elif AIC_BITS == 32
+// #define BCLK_N                                                            4
+// #endif
 
-// ADC/DAC FS setup.
-// ADC_MOD_CLK = CODEC_CLKIN / (NADC * MADC)
-// DAC_MOD_CLK = CODEC_CLKIN / (NDAC * MDAC)
-// ADC_FS = PLL_OUT / (NADC*MADC*AOSR)
-// DAC_FS = PLL_OUT / (NDAC*MDAC*DOSR)
-// FS = 90.3168MHz / (8*2*128) = 44100 Hz.
-// MOD = 90.3168MHz / (8*2) = 5644800 Hz
+// // ADC/DAC FS setup.
+// // ADC_MOD_CLK = CODEC_CLKIN / (NADC * MADC)
+// // DAC_MOD_CLK = CODEC_CLKIN / (NDAC * MDAC)
+// // ADC_FS = PLL_OUT / (NADC*MADC*AOSR)
+// // DAC_FS = PLL_OUT / (NDAC*MDAC*DOSR)
+// // FS = 90.3168MHz / (8*2*128) = 44100 Hz.
+// // MOD = 90.3168MHz / (8*2) = 5644800 Hz
 
-// Actual from Teensy: 44117.64706Hz * 128 => 5647058.82368Hz * 8*2 => 90352941.17888Hz
+// // Actual from Teensy: 44117.64706Hz * 128 => 5647058.82368Hz * 8*2 => 90352941.17888Hz
 
-// DAC clock config.
-// Note: MDAC*DOSR/32 >= RC, where RC is 8 for the default filter.
-// See Table 2-21
-// http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
-// PB1 - RC = 8.  Use M8, N2
-// PB25 - RC = 12.  Use M8, N2
+// // DAC clock config.
+// // Note: MDAC*DOSR/32 >= RC, where RC is 8 for the default filter.
+// // See Table 2-21
+// // http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+// // PB1 - RC = 8.  Use M8, N2
+// // PB25 - RC = 12.  Use M8, N2
 
-#define MODE_STANDARD	(1)
-#define MODE_LOWLATENCY (2)
-#define MODE_PDM	(3)
-#define ADC_DAC_MODE    (MODE_PDM)
+// #define MODE_STANDARD	(1)
+// #define MODE_LOWLATENCY (2)
+// #define MODE_PDM	(3)
+// #define ADC_DAC_MODE    (MODE_PDM)
 
 
-#if (ADC_DAC_MODE == MODE_STANDARD)
+// #if (ADC_DAC_MODE == MODE_STANDARD)
 
-	//standard setup for 44 kHz
-	#define DOSR                                                            128
-	#define NDAC                                                              2
-	#define MDAC                                                              8
+// 	//standard setup for 44 kHz
+// 	#define DOSR                                                            128
+// 	#define NDAC                                                              2
+// 	#define MDAC                                                              8
 
-	#define AOSR                                                            128
-	#define NADC                                                              2
-	#define MADC                                                              8
+// 	#define AOSR                                                            128
+// 	#define NADC                                                              2
+// 	#define MADC                                                              8
 
-	// Signal Processing Modes, Playback and Recording....for standard operation (AOSR 128)
-	#define PRB_P                                                             1
-	#define PRB_R                                                             1
+// 	// Signal Processing Modes, Playback and Recording....for standard operation (AOSR 128)
+// 	#define PRB_P                                                             1
+// 	#define PRB_R                                                             1
 
-#elif (ADC_DAC_MODE == MODE_LOWLATENCY)
-	//low latency setup
-	//standard setup for 44 kHz
-	#define DOSR                                                            32
-	#define NDAC                                                              (2*4/2)
-	#define MDAC                                                              4
+// #elif (ADC_DAC_MODE == MODE_LOWLATENCY)
+// 	//low latency setup
+// 	//standard setup for 44 kHz
+// 	#define DOSR                                                            32
+// 	#define NDAC                                                              (2*4/2)
+// 	#define MDAC                                                              4
 
-	#define AOSR                                                            32
-	#define NADC                                                              (2*4/2)
-	#define MADC                                                              4
+// 	#define AOSR                                                            32
+// 	#define NADC                                                              (2*4/2)
+// 	#define MADC                                                              4
 
-	// Signal Processing Modes, Playback and Recording....for low-latency operation (AOSR 32)
-	#define PRB_P                                                             17    //DAC
-	#define PRB_R                                                             13    //ADC
+// 	// Signal Processing Modes, Playback and Recording....for low-latency operation (AOSR 32)
+// 	#define PRB_P                                                             17    //DAC
+// 	#define PRB_R                                                             13    //ADC
 
-#elif (ADC_DAC_MODE == MODE_PDM)
-	#define DOSR                                                            128
-	#define NDAC                                                              2
-	#define MDAC                                                              8
+// #elif (ADC_DAC_MODE == MODE_PDM)
+// 	#define DOSR                                                            128
+// 	#define NDAC                                                              2
+// 	#define MDAC                                                              8
 
-	#define AOSR                                                             64
-	#define NADC                                                              4
-	#define MADC                                                              8
+// 	#define AOSR                                                             64
+// 	#define NADC                                                              4
+// 	#define MADC                                                              8
 
-	// Signal Processing Modes, Playback and Recording.
-	#define PRB_P                                                             1
-	#define PRB_R                                                             1
+// 	// Signal Processing Modes, Playback and Recording.
+// 	#define PRB_P                                                             1
+// 	#define PRB_R                                                             1
 
-#endif  //for standard vs low-latency vs PDM setup
+// #endif  //for standard vs low-latency vs PDM setup
 	
-#endif // end fs if block
+// #endif // end fs if block
 
 //**************************** Chip Setup **********************************//
 
@@ -245,6 +246,39 @@
 
 
 
+// -------------------- Device Configuration --------------------
+
+const Config DefaultConfig {
+	.fs = 44100UL,
+	.i2s_bits = I2S_Word_Length::I2S_32_BITS,
+	.i2s_clk_dir = I2S_Clock_Dir::AIC_INPUT,
+	.pll = {
+		.range = PLL_Clock_Range::HIGH_RANGE,
+		.src = PLL_Source::MCLK1,
+		.r = 1,
+		.j = 8,
+		.d = 0,
+		.p = 1,
+		.clkin_div = 1,
+		.enabled = true
+	},
+	.dac = {
+		.clk_src = ADC_DAC_Clock_Source::PLL_CLK,
+		.ndac = 8,
+		.mdac = 8,
+		.dosr = 32,
+		.prb_p = 1,
+		.ptm_p = DAC_PowerTune_Mode::PTM_P4
+	},
+	.adc = {
+		.clk_src = ADC_DAC_Clock_Source::PLL_CLK,
+		.nadc = 8,
+		.madc = 8,
+		.aosr = 32,
+		.prb_r = 1,
+		.ptm_r = ADC_PowerTune_Mode::PTM_R4
+	}
+};
 
 
 // -------------------- Local Variables --------------
@@ -309,6 +343,24 @@ bool AudioControlAIC3212::inputLevel(float volume) {
 
 
 bool AudioControlAIC3212::inputSelect(int n) {
+	bool success = true;
+	switch (n) {
+		case AUDIO_INPUT_MIC:
+			success = inputSelect(Inputs::MIC);
+			break;
+		default:
+			Serial.println("Selected input not implemented.");
+			break;
+	}
+	return success;
+}
+
+bool inputSelect(Inputs left, Inputs right) {
+
+	Serial.println("CAB WORKING HERE");
+
+
+
 	if ( n == AudioControlAIC3212::IN1 ) {
 		// USE LINE IN SOLDER PADS
 		aic_goToPage(AIC3212_MICPGA_PAGE);
@@ -389,38 +441,35 @@ bool AudioControlAIC3212::setMicBias(int n) {
 	return false;
 }
 
-bool AudioControlAIC3212::enableDigitalMicInputs(bool desired_state) {
-	if (desired_state == true) {
-		//Configure the ADC for digital mics
-		aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, 
-		              AIC3212_ADC_CHANNELS_ON | 
-		              AIC3212_ADC_LEFT_CONFIGURE_FOR_DIG_MIC | AIC3212_ADC_RIGHT_CONFIGURE_FOR_DIG_MIC);
+bool AudioControlAIC3212::enableDigitalMicInputs(bool _enable) {
+	if (_enable == true) {
+		aic_goToBook(0);
+		// Set GPIO2 to ADC_MOD_CLK for digital mics 
+		aic_writePage(4, 0x57, 0b00101000);
+		// Set GPI1 to data input
+		aic_writePage(4, 0x5C, 0b00010000);
+		// Set digital mic input to GPI1 (Left = rising edge; Right = falling edge)
+		aic_writePage(4, 0x65, 0b00000000);
 
-		//Set AIC's pin "BCLK2" to clock input for digital microphone
-		aic_writePage(AIC3212_BCLK2_PIN_CTRL_PAGE, AIC3212_BCLK2_PIN_CTRL_REG, AIC3212_BCLK2_ENABLE_PDM_CLK);
-
-		//Set the AIC's pin "DIN2" to Digital Microphone input
-		aic_writePage(AIC3212_DIN2_PIN_CTRL_PAGE, AIC3212_DIN2_PIN_CTRL_REG, AIC3212_DIN2_ENABLED);
-
-		//set the AIC's digital mic routing to DIN2 
-		aic_writePage(AIC3212_DIGITAL_MIC_SETTING_PAGE, AIC3212_DIGITAL_MIC_SETTING_REG, AIC3212_DIGITAL_MIC_DIN2_LEFT_RIGHT);
-		
-		return true;
+		// Enable ADC; Configure Left and Right for digital mics (no soft-stepping)
+		aic_writePage(0, 0x51, 0b11010100);
 	} else {
-		//Do not configure the ADC for digital mics
-		aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, AIC3212_ADC_CHANNELS_ON);
-
-		//Disable AIC's pin "BCLK2" to clock input for digital microphone
-		aic_writePage(AIC3212_BCLK2_PIN_CTRL_PAGE, AIC3212_BCLK2_PIN_CTRL_REG, AIC3212_BCLK2_DISABLED);
-
-		//Disable the AIC's pin "DIN2" to Digital Microphone input
-		aic_writePage(AIC3212_DIN2_PIN_CTRL_PAGE, AIC3212_DIN2_PIN_CTRL_REG, AIC3212_DIN2_DISABLED);
-		return false;
+		aic_goToBook(0);
+		// Disable ADC; Configure Left and Right channels as not Digital Mics
+		aic_writePage(0, 0x51, 0x00);
+		// Disable GPI1 as digital mic input
+		aic_writePage(4, 0x5C, 0x00);
+		// Disable ADC_MOD_CLK on GPIO2
+		aic_writePage(4, 0x57, 0x00); 
 	}
+	return _enable;
 }
 
 void AudioControlAIC3212::aic_reset() {
-	if (debugToSerial) Serial.println("INFO: Resetting AIC3212");
+	if (debugToSerial) {
+		Serial.println("INFO: Resetting AIC3212");
+		Serial.print("  7-bit I2C address: 0x"); Serial.println(static_cast<uint8_t>(i2cAddress), HEX);
+	}
 	aic_goToBook(AIC3212_SOFTWARE_RESET_BOOK);
 	aic_writePage(AIC3212_SOFTWARE_RESET_PAGE, AIC3212_SOFTWARE_RESET_REG, AIC3212_SOFTWARE_RESET_INITIATE);
 
@@ -436,14 +485,10 @@ void AudioControlAIC3212::aic_reset() {
 
 void AudioControlAIC3212::aic_initADC() {
 	if (debugToSerial) Serial.println("INFO: Initializing AIC ADC");
-	aic_writePage(AIC3212_ADC_PROCESSING_BLOCK_PAGE, AIC3212_ADC_PROCESSING_BLOCK_REG, PRB_R);	// processing blocks - ADC
-	aic_writePage(AIC3212_ADC_POWERTUNE_PAGE, AIC3212_ADC_POWERTUNE_REG, static_cast<uint8_t>(AIC3212_ADC_Powertune_Settings::PTM_R4)); // 0x3D // Select ADC PTM_R4 Power Tune?	(this line is from datasheet (application guide, Section 4.2)
+	//aic_writePage(AIC3212_ADC_PROCESSING_BLOCK_PAGE, AIC3212_ADC_PROCESSING_BLOCK_REG, PRB_R);	// processing blocks - ADC
+	//aic_writePage(AIC3212_ADC_POWERTUNE_PAGE, AIC3212_ADC_POWERTUNE_REG, static_cast<uint8_t>(ADC_Powertune_Mode::PTM_R4)); // 0x3D // Select ADC PTM_R4 Power Tune?	(this line is from datasheet (application guide, Section 4.2)
 
-
-
-
-
-
+	Serial.println("CAB: WORK IN PROGRESS");
 
 	/* CAB TODO: WORKING HERE */
 	// aic_writePage(1, 71, 0b00110001); // 0x47 // Set MicPGA startup delay to 3.1ms
@@ -571,142 +616,119 @@ float AudioControlAIC3212::volume_dB(float vol_dB) {
 
 void AudioControlAIC3212::aic_initDAC() {
 	if (debugToSerial) Serial.println("AudioControlAIC3212: Initializing AIC DAC");
-	outputSelect(AIC3212_OUTPUT_HEADPHONE_JACK_OUT); //default
+	// outputSelect(AIC3212_OUTPUT_HEADPHONE_JACK_OUT); //default
+	outputSelect(Outputs::HP, Outputs::HP);
 }
 
-bool AudioControlAIC3212::outputSelect(int n, bool flag_full) {
+bool AudioControlAIC3212::outputSelect(Outputs left, Outputs right, bool flag_full) {
 	static bool firstTime = true;
 	if (firstTime) {
 		flag_full = true;  //always do a full reconfiguration the first time through.
 		firstTime = false;
 	}
-	
-	// PLAYBACK SETUP: 
-	//	HPL/HPR are headphone output left and right
-	//	LOL/LOR are line output left and right
-	
+
+	aic_goToBook(0);
+
 	if (flag_full) {
-		aic_writePage(AIC3212_DAC_PROCESSING_BLOCK_PAGE, AIC3212_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
+		// Mute HP and Speaker Drivers
+		aic_writePage(1, 0x1F, 0xB9);
+		aic_writePage(1, 0x20, 0xB9);
+		aic_writePage(1, 0x30, 0x00);
 
-		//mute, disable, then power-down everything
-		aic_goToPage(1);
-		aic_writeRegister(16, 0b01000000); // page 1, mute HPL Driver, 0 gain
-		aic_writeRegister(17, 0b01000000); // page 1, mute HPR Driver, 0 gain
-		aic_writeRegister(18, 0b01000000); // page 1, mute LOL Driver, 0 gain
-		aic_writeRegister(19, 0b01000000); // page 1, mute LOR Driver, 0 gain
-		
-		aic_writePage(0, 63, 0); //disable LDAC/RDAC
-		
-		aic_goToPage(1);
-		aic_writeRegister( 9, 0); //page 1,  Power down HPL/HPR and LOL/LOR drivers
-		aic_writeRegister(12, 0); //page 1, unroute from HPL
-		aic_writeRegister(13, 0); //page 1, unroute from HPR
-		aic_writeRegister(14, 0); //page 1, unroute from LOL
-		aic_writeRegister(15, 0); //page 1, unroute from LOR	
+		// Unroute DAC outputs
+		aic_writePage(1, 0x16, 0x00);
+		aic_writePage(1, 0x1B, 0x00);
+		aic_writePage(1, 0x1C, 0x7F);
+		aic_writePage(1, 0x1D, 0x7F);
+		aic_writePage(1, 0x24, 0x7F);
+		aic_writePage(1, 0x25, 0x7F);
+
+		// Reset charge pump control
+		aic_writePage(1, 0x21, 0x28);  // Charge Pump Clock Divide = 4 (Default)
+		aic_writePage(1, 0x22, 0x3E);  // Headphone output offset correction (Default)
+		aic_writePage(1, 0x23, 0x30);  // Enable dynamic offset calibration
+
+		// TODO: Enable pop reduction?
+		// 	//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
+		// 	aic_writeRegister(20, 0b10100101);  //soft routing step is 200ms, 5.0 time constants, assume 6K resistance
+	}
+
+	uint8_t 
+		p1_r16 = 0x00,
+		p1_r1B = 0x00,
+		p1_r2E = 0x7F,
+		p1_r2F = 0x7F,
+		p1_r16_2 = 0x00,
+		p1_r1F = 0xB9,
+		p1_r20 = 0xB9,
+		p1_r30 = 0x00,
+		p1_r1B_2 = 0x00,
+		p1_r2D = 0x00;
+
+	if (left == Outputs::HP) {
+		p1_r1B |= 0x20;  // Left DAC is routed to HPL driver.
+		p1_r1F = 0x80;  // Unmute HPL driver, set gain = 0dB
+		p1_r1B_2 |= 0x22;  // Left DAC is routed and HPL driver powered on.
+	}
+	if (right == Outputs::HP) {
+		p1_r1B |= 0x10;  // Right DAC is routed to HPR driver.
+		p1_r20 = 0x80;  // Unmute HPR driver, set gain = 0dB
+		p1_r1B_2 |= 0x11;  // Right DAC is routed and HPR driver powered on.
+	}
+	if (left == Outputs::SPK) {
+		p1_r16 |= 0x80;  // Left DAC M-terminal is routed to LOL driver.
+		p1_r2E = 0x00;   // LOL Output Routed to SPKL Driver, Volume Control: 0dB
+		p1_r16_2 |= 0x82; // Routed & LOL output driver power-up
+		p1_r30 |= 0x10;  // SPKL Driver Volume = 6 dB
+		p1_r2D |= 0x02;  // SPKL Driver Power-Up
+	}
+	if (right == Outputs::SPK) {
+		p1_r16 |= 0x40;  // Right DAC M-terminal is routed to LOR driver.
+		p1_r2F = 0x00;   // LOR Output Routed to SPKR Driver, Volume Control: 0dB
+		p1_r16_2 |= 0x41; // Routed & LOR output driver power-up
+		p1_r30 |= 0x01;  // SPKR Driver Volume = 6 dB
+		p1_r2D |= 0x01;  // SPKR Driver Power-Up
+	}
+
+	// Set DAC PowerTune Mode
+	aic_writePage(1, 0x03, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Left DAC PTM
+	aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Right DAC PTM
+
+	// Route DAC outputs
+	aic_writePage(1, 0x16, p1_r16);
+	aic_writePage(1, 0x1B, p1_r1B);
+	aic_writePage(1, 0x2E, p1_r2E);
+	aic_writePage(1, 0x2F, p1_r2F);
+
+	// Power up LDAC and RDAC
+	aic_writePage(0, 0x3F, 
+		((left == Outputs::NONE) ? 0x00 : 0x80)       // Left DAC channel
+		| ((right == Outputs::NONE) ? 0x00 : 0x40));  // Right DAC channel
 	
-		//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
-		aic_writeRegister(20, 0b10100101);  //soft routing step is 200ms, 5.0 time constants, assume 6K resistance
-	}
+	// Power up LOL and LOR
+	aic_writePage(1, 0x16, p1_r16_2);
 
-	if (n == AIC3212_OUTPUT_HEADPHONE_JACK_OUT) {
+	// Unmute drivers
+	aic_writePage(1, 0x1F, p1_r1F);  // Unmute HPL driver
+	aic_writePage(1, 0x20, p1_r20);  // Unmute HPR driver
+	aic_writePage(1, 0x30, p1_r30);  // Unmute SPKL & SPLR
 
-		aic_goToPage(1);
-		//aic_writeRegister(20, 0x25); // Page 1, 0x14 De-Pop
-		//aic_writeRegister(12, 8); // Page 1,  route LDAC/RDAC to HPL/HPR
-		//aic_writeRegister(13, 8); // Page 1,  route LDAC/RDAC to HPL/HPR
-		aic_writeRegister(12, 0b00001000); // Page 1,  route LDAC/RDAC to HPL/HPR
-		aic_writeRegister(13, 0b00001000); // Page 1,  route LDAC/RDAC to HPL/HPR
-		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
-		aic_goToPage(1);
-		aic_writeRegister(16, 0); // Page 1,  unmute HPL Driver, 0 gain
-		aic_writeRegister(17, 0); // Page 1,  unmute HPR Driver, 0 gain
-		if (flag_full) {
-			aic_writePage(1, 9, 0x30); // Page 1,  Power up HPL/HPR drivers  0b00110000
-			delay(50);
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
-		}
+	// Headphone power-up
+	aic_writePage(1, 0x09, 0x70);  // Headphone Driver Output Stage is 25%.
+	aic_writePage(1, 0x1B, p1_r1B_2);  // Power up HP Drivers
+	// CAB TODO: Add delay?
+	aic_writePage(1, 0x09, 0x10);  // Headphone Driver Output Stage is 100%.
 
-		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Headphone Jack");
-		return true;
-	} else if (n == AIC3212_OUTPUT_LINE_OUT) {
-		
-		aic_goToPage(1);
-		//Register(1, 20, 0x25); //Page1, 0x14 De-Pop
-		aic_writeRegister(14, 0b00001000); //Page1, route LDAC/RDAC to LOL/LOR
-		aic_writeRegister(15, 0b00001000); //Page1, route LDAC/RDAC to LOL/LOR
-		if (flag_full)	aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC		
-		aic_goToPage(1);
-		aic_writeRegister(18, 0); //Page1, unmute LOL Driver, 0 gain
-		aic_writeRegister(19, 0); //Page1, unmute LOR Driver, 0 gain
-		if (flag_full) {
-			aic_writePage(1, 9, 0b00001100); // Power up LOL/LOR drivers
-			delay(50);
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
-		}
+	// Power up Speaker Drivers
+	aic_writePage(1, 0x2D, p1_r2D);
+	// CAB TODO: Add delay?
 
-		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Line Out");
-		return true;
-	} else if (n == AIC3212_OUTPUT_HEADPHONE_AND_LINE_OUT) {
-		aic_goToPage(1);
-			aic_writeRegister(12, 0b00001000); //Page 1, route LDAC/RDAC to HPL/HPR
-		aic_writeRegister(13, 0b00001000); //Page 1, route LDAC/RDAC to HPL/HPR
-		aic_writeRegister(14, 0b00001000); //Page 1, route LDAC/RDAC to LOL/LOR
-		aic_writeRegister(15, 0b00001000); //Page 1, route LDAC/RDAC to LOL/LOR
-		
-		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
-		
-		aic_goToPage(1);
-		aic_writeRegister(18, 0); //Page 1, unmute LOL Driver, 0 gain
-		aic_writeRegister(19, 0); //Page 1, unmute LOR Driver, 0 gain		
-		aic_writeRegister(16, 0); //Page 1, unmute HPL Driver, 0 gain
-		aic_writeRegister(17, 0); //Page 1, unmute HPR Driver, 0 gain
+	// Unmute LDAC and RDAC
+	aic_writePage(0, 0x40, 
+		((left == Outputs::NONE) ? 0x08 : 0x00)       // Left DAC channel
+		| ((right == Outputs::NONE) ? 0x04 : 0x00));  // Right DAC channel
 
-		if (flag_full) {
-			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
-			
-			delay(50);
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
-		}
-
-		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Headphone Jack and Line out");
-		return true;	
-	} else if (n == AIC3212_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO) {
-		
-		aic_goToPage(1);
-		aic_writeRegister(12, 0b00001000); //Page 1, route Left DAC Pos to Headphone Left
-		aic_writeRegister(13, 0b00010000); //Page 1, route Left DAC Neg to Headphone Right
-		aic_writeRegister(14, 0b00010000); //Page 1, route Right DAC Neg to Lineout Left
-		aic_writeRegister(15, 0b00001000); //Page 1, route Right DAC Pos to Lineout Right
-		
-		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
-		
-		aic_goToPage(1);
-		aic_writeRegister(18, 0); //Page 1, unmute LOL Driver, 0 gain
-		aic_writeRegister(19, 0); //Page 1, unmute LOR Driver, 0 gain		
-		aic_writeRegister(16, 0); //Page 1, unmute HPL Driver, 0 gain
-		aic_writeRegister(17, 0); //Page 1, unmute HPR Driver, 0 gain
-
-		if (flag_full) {
-			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers  
-			
-			delay(50);
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
-			aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
-		}
-
-		if (debugToSerial) Serial.println("AudioControlAIC3212: Set Audio Output to Diff Headphone Jack and Line out");
-		return true;			
-	}
-	Serial.print("AudioControlAIC3212: ERROR: Unable to Select Output - Value not supported: ");
-	Serial.println(n);
-	return false;
+	return true;
 }
 
 void AudioControlAIC3212::muteLineOut(bool flag) {
@@ -752,31 +774,101 @@ void AudioControlAIC3212::muteLineOut(bool flag) {
 void AudioControlAIC3212::aic_init() {
 	if (debugToSerial) {
 		Serial.println("AudioControlAIC3212: Initializing AIC");
-		Serial.print("  7-bit I2C address: 0x"); Serial.println(static_cast<uint8_t>(i2cAddress), HEX);
 	}
 	
-	// PLL
+	// ################################################################
+	// # Power and Analog Configuration
+	// ################################################################
+
 	aic_goToBook(0);
-	aic_goToPage(0);
-	aic_writePage(0, 4, 3);
-	aic_writeRegister(4, 3); // page 0, 0x04 low PLL clock range, MCLK is PLL input, PLL_OUT is CODEC_CLKIN
-	aic_writeRegister(5, (PLL_J != 0 ? 0x91 : 0x11)); //Page 0
-	aic_writeRegister(6, PLL_J); //Page 0
-	aic_writeRegister(7, PLL_D >> 8);//Page 0
-	aic_writeRegister(8, PLL_D &0xFF);//Page 0
+	aic_writePage(1, 0x01, 0x00);  // Disable weak AVDD to DVDD connection and make analog supplies available
+	aic_writePage(1, 0x7a, 0x01);  // REF charging time = 40ms
+	aic_writePage(1, 0x79, 0x33);  // Set the quick charge of input coupling cap for analog inputs
 
-	// CLOCKS
-	aic_writeRegister(11, 0x80 | NDAC); //Page 0, 0x0B
-	aic_writeRegister(12, 0x80 | MDAC); //Page 0, 0x0C
-	aic_writeRegister(13, 0); //Page 0, 0x0D
-	aic_writeRegister(14, DOSR); //Page 0, 0x0E
-	// aic_writeRegister(18, 0); //Page 0, 0x12 // powered down, ADC_CLK same as DAC_CLK
-	// aic_writeRegister(19, 0); //Page 0, 0x13 // powered down, ADC_MOD_CLK same as DAC_MOD_CLK
-	aic_writeRegister(18, 0x80 | NADC); //Page 0, 0x12
-	aic_writeRegister(19, 0x80 | MADC); //Page 0, 0x13
-	aic_writeRegister(20, AOSR);	//Page 0,
-	aic_writeRegister(30, 0x80 | BCLK_N); //Page 0, power up BLCK N Divider, default is 128
+	// ################################################################
+	// # Clock configuration
+	// ################################################################
 
+	// Set ADC_CLKIN and DAC_CLKIN
+	aic_writePage(0, 0x04, static_cast<uint8_t>(pConfig->dac.clk_src) << 4 
+	                       | static_cast<uint8_t>(pConfig->adc.clk_src));
+	// PLL Settings:
+	if (pConfig->pll.enabled) {
+		// Set PLL_CLKIN and PLL Speed Range
+		aic_writePage(0, 0x05, static_cast<uint8_t>(pConfig->pll.range)
+		                       | static_cast<uint8_t>(pConfig->pll.src) << 2);
+		// Power up the PLL; set scalers P and R
+		aic_writePage(0, 0x06, 0x80   // Power up
+		                       | ((pConfig->pll.p & 0x07) << 4)
+		                       | (pConfig->pll.r & 0x0F));
+		// Set Scaler J
+		aic_writePage(0, 0x07, pConfig->pll.j & 0x3F);
+		// Set Scaler D (MSB)
+		aic_writePage(0, 0x08, (pConfig->pll.d >> 8) & 0x3F);
+		// Set Scaler D (LSB)
+		aic_writePage(0, 0x08, pConfig->pll.d & 0xFF);
+		// Set PLL Divider (CLKIN_DIV)
+		aic_writePage(0, 0x0A, pConfig->pll.clkin_div & 0x7F);
+	} else {
+		aic_writePage(0, 0x06, 0x00);  // Power down PLL
+	}
+
+	// Set up DAC Clock
+	//  NDAC divider ON, Scaler NDAC
+	aic_writePage(0, 0x0B, (pConfig->dac.ndac != 0 ? 0x80 : 0x00)
+	                       | (pConfig->dac.ndac & 0x7F));
+	//  MDAC divider ON, Scaler MDAC
+	aic_writePage(0, 0x0C, (pConfig->dac.mdac != 0 ? 0x80 : 0x00)
+	                       | (pConfig->dac.mdac & 0x7F));
+	//  DOSR (MSB)
+	aic_writePage(0, 0x0D, (pConfig->dac.dosr >> 8) & 0x03);
+	//  DOSR (LSB)
+	aic_writePage(0, 0x0E, pConfig->dac.dosr & 0xFF);
+
+	// Set up ADC Clock
+	//  NADC divider ON, Scaler NADC
+	aic_writePage(0, 0x12, (pConfig->adc.nadc != 0 ? 0x80 : 0x00)
+	                       | (pConfig->adc.nadc & 0x7F));
+	//  MADC divider ON, Scaler MADC
+	aic_writePage(0, 0x13, (pConfig->adc.madc != 0 ? 0x80 : 0x00)
+	                       | (pConfig->adc.madc & 0x7F));
+	//  AOSR
+	aic_writePage(0, 0x14, pConfig->adc.aosr & 0xFF);
+
+	// ################################################################
+	// # Audio Serial Interface Routing Configuration - Audio Serial Interface #1
+	// ################################################################
+
+	// ASI #1 in I2S Mode, xx-bit, DOUT1 is output
+	//  TODO: Check whether we need DOUT1 High Impedance Output Control
+	aic_writePage(4, 0x01, (static_cast<uint8_t>(pConfig->i2s_bits) << 3));
+	if (pConfig->i2s_clk_dir == I2S_Clock_Dir::AIC_INPUT) {
+		// Configure WCLK1 and BCLK1 as inputs to ASI #1
+		aic_writePage(4, 0x0A, 0x00);
+	} else {
+		// Configure WCLK1 and BCLK1 as outputs of ASI #1
+		aic_writePage(4, 0x0A, 0x24);
+	}
+	aic_writePage(4, 0x07, 0x01); // ASI1_DOUT is sourced from ADC
+	aic_writePage(4, 0x76, 0x06); // DAC input data is sourced from ASI1_DIN
+
+	// ################################################################
+	// # Signal Processing Settings
+	// ################################################################
+
+	// Processing Blocks (PRB)
+	aic_writePage(0, 0x3C, pConfig->dac.prb_p & 0x1F);  // Set DAC PRB_P
+	aic_writePage(0, 0x3D, pConfig->adc.prb_r & 0x1F);  // Set ADC PRB_R
+
+	// PowerTune Modes (PTM)
+	aic_writePage(1, 0x03, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2);  // Set Left DAC PTM_P
+	aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2);  // Set Right DAC PTM_P
+	aic_writePage(1, 0x3D, static_cast<uint8_t>(pConfig->adc.ptm_r) << 6);  // Set ADC PTM_R
+
+
+	Serial.println('CAB: TODO'); 
+
+	// CAB TODO: Move power control to input and output selection blocks
 	// POWER
 	aic_goToPage(1);
 	aic_writeRegister(0x01, 8); //Page 1, Reg 1, Val = 8 = 0b00001000 = disable weak connection AVDD to DVDD.	Keep headphone charge pump disabled.
@@ -787,11 +879,6 @@ void AudioControlAIC3212::aic_init() {
 	aic_writeRegister(0x0A, 0); //Page 1,  Reg 10, Val = 0 = common mode 0.9 for full chip, HP, LO  // from WHF/CHA
 	aic_writeRegister(0x47, 0x31); //Page 1,  Reg 71, val = 0x31 = 0b00110001 = Set input power-up time to 3.1ms (for ADC)
 	aic_writeRegister(0x7D, 0x53); //Page 1,  Reg 125, Val = 0x53 = 0b01010011 = 0 10 1 00 11: HPL is master gain, Enable ground-centered mode, 100% output power, DC offset correction  // from WHF/CHA
-
-	// !!!!!!!!! The below writes are from WHF/CHA - probably don't need?
-	// aic_writePage(1, 1, 10); // 10 = 0b00001010 // weakly connect AVDD to DVDD.  Activate charge pump
-	aic_writePage(0, 27, 0x01 | AIC_CLK_DIR | (AIC_BITS == 32 ? 0x30 : 0)); //Page 0, 0x1B
-	// aic_writePage(0, 28, 0); // 0x1C
 }
 
 unsigned int AudioControlAIC3212::aic_readPage(uint8_t page, uint8_t reg)
@@ -828,7 +915,7 @@ unsigned int AudioControlAIC3212::aic_readPage(uint8_t page, uint8_t reg)
 			return val;
 		}
 	} else {
-		Serial.print("AudioControlAIC3212: INFO: Read Page.	Page: ");Serial.print(page);
+		Serial.print("AudioControlAIC3212: INFO: Read Page.   Page: ");Serial.print(page);
 		Serial.print(" Reg: ");Serial.print(reg);
 		Serial.println(".  Failed to go to read page.  Could not go there.");
 		val = 500;
@@ -849,22 +936,10 @@ bool AudioControlAIC3212::aic_writePage(uint8_t page, uint8_t reg, uint8_t val) 
 	}
 
 	success = aic_goToPage(page);
-
 	if (success) {
-		//myWire->beginTransmission(i2cAddress);
-		//myWire->write(reg); //delay(10);
-		//myWire->write(val); //delay(10);
-		//uint8_t result = myWire->endTransmission();
-		//if (result == 0) return true;
 		success = aic_writeRegister(reg, val);
 	} else {
 		//Serial.print("AudioControlAIC3212: Received Error During aic_goToPage()");
-	}
-
-	if (debugToSerial) {
-		uint8_t readval = 0;
-		aic_readRegister(reg, &readval);
-		Serial.print("                     Read Val: 0x"); Serial.println(readval, HEX);
 	}
 
 	return success;
@@ -915,6 +990,10 @@ unsigned int AudioControlAIC3212::aic_readRegister(uint8_t reg, uint8_t *pVal) {
 }
 
 bool AudioControlAIC3212::aic_writeRegister(uint8_t reg, uint8_t val) {  //assumes page has already been set
+	if (debugToSerial) {
+		Serial.print("aic_writeRegister: 0x"); Serial.print(reg, HEX); Serial.print(" 0x"); Serial.println(val, HEX);
+	}
+
 	myWire->beginTransmission(static_cast<uint8_t>(i2cAddress));
 	myWire->write(reg); //delay(1); //delay(10); //was delay(10)
 	myWire->write(val); //delay(1);//delay(10); //was delay(10)
@@ -928,11 +1007,15 @@ bool AudioControlAIC3212::aic_writeRegister(uint8_t reg, uint8_t val) {  //assum
 	return false;
 }
 
+bool AudioControlAIC3212::aic_goToPage(uint8_t page) {
+	return aic_writeRegister(0x00, page);
+}
+
 bool AudioControlAIC3212::aic_goToBook(uint8_t book) {
 	bool success = true;
 
 	if (debugToSerial) {
-		Serial.print("AudioControlAIC3212: Go To Book "); Serial.println(book);
+		Serial.print("AudioControlAIC3212: Go To Book "); Serial.print(book); Serial.println(".");
 	}
 	// Go to page 0 of current book
 	success = aic_goToPage(0x00);
@@ -943,26 +1026,6 @@ bool AudioControlAIC3212::aic_goToBook(uint8_t book) {
 		// Already failed
 	}
 	return success;
-}
-
-bool AudioControlAIC3212::aic_goToPage(uint8_t page) {
-	myWire->beginTransmission(static_cast<uint8_t>(i2cAddress));
-	myWire->write(0x00); //delay(1); //delay(10);// page register  //was delay(10) from BPF
-	myWire->write(page); //delay(1); //delay(10);// go to page   //was delay(10) from BPF
-	byte result = myWire->endTransmission();
-	if (result != 0) {
-		Serial.print("AudioControlAIC3212: Received Error During goToPage(): Error = ");
-		Serial.println(result);
-		if (result == 2) {
-			// failed to transmit address
-			//return aic_goToPage(page);
-		} else if (result == 3) {
-			// failed to transmit data
-			//return aic_goToPage(page);
-		}
-		return false;
-	}
-	return true;
 }
 
 bool AudioControlAIC3212::updateInputBasedOnMicDetect(int setting) {
@@ -1334,3 +1397,5 @@ bool AudioControlAIC3212::mixInput1toHPout(bool state) {
 	}
 	return state;
 }
+
+}  // namespace tlv320aic3212
