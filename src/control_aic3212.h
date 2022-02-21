@@ -26,7 +26,7 @@ namespace tlv320aic3212 {
 enum class Inputs {
 	// LINE_IN = 0,
 	MIC = 1,    // IN1L/IN1R with Mic Bias EXT
-	PDM,
+	PDM,        // PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1
 	NONE
 };
 

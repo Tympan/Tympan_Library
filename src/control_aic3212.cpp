@@ -181,7 +181,7 @@ namespace tlv320aic3212 {
 #define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_1_62  0b00000000 //for CM = 0.9V
 #define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_2_4   0b00010000 //for CM = 0.9V
 #define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_0   0x00100000 //for CM = 0.9V
-#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_3   0x00110000 //regradless of CM
+#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_3   0x00110000 //regardless of CM
 
 /*Possible settings for Mic Bias*/
 #define AIC3212_MIC_BIAS_MASK                     0b00001111 
@@ -346,7 +346,7 @@ bool AudioControlAIC3212::inputSelect(int n) {
 	bool success = true;
 	switch (n) {
 		case AUDIO_INPUT_MIC:
-			success = inputSelect(Inputs::MIC);
+			success = inputSelect(Inputs::MIC, Inputs::MIC);
 			break;
 		default:
 			Serial.println("Selected input not implemented.");
@@ -355,66 +355,81 @@ bool AudioControlAIC3212::inputSelect(int n) {
 	return success;
 }
 
-bool inputSelect(Inputs left, Inputs right) {
+bool AudioControlAIC3212::inputSelect(Inputs left, Inputs right) {
+	bool success = true;
 
-	Serial.println("CAB WORKING HERE");
+	uint8_t 
+		// 	// Input common mode?  (B0_P1_R8_D2 already set (0.9??)
+		b0_p1_r51 = 0x00, // Mic Bias (B0_P1_R51)
+		b0_p1_r52 = 0x00, // Left ADCPGA P-Terminal (B0_P1_R52 & R53)
+		b0_p1_r53 = 0x00,
+		b0_p1_r54 = 0x00, // Left ADCPGA M-Terminal (B0_P1_R54)
+		b0_p1_r55 = 0x00, // Right ADCPGA P-Terminal (B0_P1_R55 & R56)
+		b0_p1_r56 = 0x00,
+		b0_p1_r57 = 0x00, // Right ADCPGA M-Terminal (B0_P1_R57)
+		b0_p1_r58 = 0x00, // Input Common Mode Control
+		b0_p1_r59 = 0x80, // Left MICPGA Volume (B0_P1_R59)
+		b0_p1_r60 = 0x80, // Right MICPGA Volume (B0_P1_R60)
+	//	b0_p1_r61 = 0x00, // ADC PowerTune Mode (B0_P1_R61)
+		b0_p4_r87 = 0x00, // GPIO2 as Digital MIC ADC_MOD_CLK (B0_P4_R87)
+		b0_p4_r91 = 0x00, // GPI1 as digital input (B0_P4_R92)
+		b0_p4_r101 = 0x06, // Digital MIC DIN Control (B0_P4_R101)   48??, B0_P4_R65??) Digital MIC DIN 
+		b0_p0_r81 = 0x00, // Power up, Digital Mic Selection (B0_P0_R81)
+		b0_p0_r82 = 0x88; // Unmute, Fine Gain (B0_P0_R82)
 
-
-
-	if ( n == AudioControlAIC3212::IN1 ) {
-		// USE LINE IN SOLDER PADS
-		aic_goToPage(AIC3212_MICPGA_PAGE);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		// BIAS OFF
-		setMicBias(AIC3212_MIC_BIAS_OFF);
-	
-
-		if (debugToSerial) Serial.println("Set Audio Input to Line In");
-		return true;
-	} else if ( n == AudioControlAIC3212::IN3_wBIAS ) {
-		// mic-jack = IN3
-		aic_goToPage(AIC3212_MICPGA_PAGE);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		// BIAS on, using default
-		setMicBias(AIC3212_DEFAULT_MIC_BIAS);
-
-		if (debugToSerial) Serial.println("Set Audio Input to JACK AS MIC, BIAS SET TO DEFAULT 2.5V");
-		return true;
-	} else if ( n == AudioControlAIC3212::IN3 ) {
-		// 1
-		// mic-jack = IN3
-		aic_goToPage(AIC3212_MICPGA_PAGE);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		// BIAS Off
-		setMicBias(AIC3212_MIC_BIAS_OFF);
-
-		if (debugToSerial) Serial.println("Set Audio Input to JACK AS LINEIN, BIAS OFF");
-		return true;
-	} else if ( n == AudioControlAIC3212::IN2 ) {
-		// on-board = IN2
-		aic_goToPage(AIC3212_MICPGA_PAGE);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_LEFT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_POSITIVE_REG, AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		aic_writeRegister(AIC3212_MICPGA_RIGHT_NEGATIVE_REG, AIC3212_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & AIC3212_MIC_ROUTING_RESISTANCE_DEFAULT);
-		// BIAS Off
-		setMicBias(AIC3212_MIC_BIAS_OFF);
-		if (debugToSerial) Serial.println("Set Audio Input to Tympan On-Board MIC, BIAS OFF");
-
-		return true;
+	if (left == Inputs::MIC) {
+		// IN1L with 2.4V Mic Bias EXT
+		b0_p1_r51 |= 0b11011000;  // Power up 2.4V MICBIAS_EXT
+		b0_p1_r52 |= 0b01000000;  // IN1L to Left Mic PGA+ (RIN = 10K)
+		b0_p1_r54 |= 0b01000000;  // CM1L to Left Mic PGA- (RIN = 10K)
+		b0_p1_r59 = 0x00;  // Enable Left MICPGA Volume, 0.0dB
+		b0_p0_r81 |= 0b10000000;  // Power up left ADC
+		b0_p0_r82 &= 0x7F;  // Unmute Left ADC
 	}
-	Serial.print("AudioControlAIC3212: ERROR: Unable to Select Input - Value not supported: ");
-	Serial.println(n);
-	return false;
+	if (right == Inputs::MIC) {
+		// IN1R with 2.4V Mic Bias EXT
+		b0_p1_r51 |= 0b11011000;  // Power up 2.4V MICBIAS_EXT
+		b0_p1_r55 |= 0b01000000;  // IN1R to Right Mic PGA+ (RIN = 10K)
+		b0_p1_r57 |= 0b01000000;  // CM1R to Right Mic PGA- (RIN = 10K)
+		b0_p1_r60 = 0x00;  // Enable Right MICPGA Volume, 0.0dB
+		b0_p0_r81 |= 0b01000000;  // Power up right ADC
+		b0_p0_r82 &= 0xF7;  // Unmute Right ADC
+	}
+	if (left == Inputs::PDM) {
+		// PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1 (Left)
+		b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics
+		b0_p4_r91 = 0b00000010;  // Set GPI1 to data input
+		b0_p4_r101 = 0b00000000;  // Left and Right DIN Both on GPI1
+		b0_p0_r81 |= 0b10010000;  // Power up left ADC, Configure left for digital mic
+		b0_p0_r82 &= 0x7F;  // Unmute Left ADC
+	}
+	if (right == Inputs::PDM) {
+		// PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1 (Right)
+		b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics
+		b0_p4_r91 = 0b00000010;  // Set GPI1 to data input
+		b0_p4_r101 = 0b00000000;  // Left and Right DIN Both on GPI1
+		b0_p0_r81 |= 0b01000100;  // Power up Right ADC, Configure right for digital mic
+		b0_p0_r82 &= 0xF7;  // Unmute Right ADC
+	}
+
+	aic_goToBook(0);
+	aic_writePage(1, 51, b0_p1_r51);  // Mic Bias (B0_P1_R51)
+	aic_writePage(1, 52, b0_p1_r52);  // Left ADC PGA+ (B0_P1_R52
+	aic_writePage(1, 53, b0_p1_r53);  //   & B0_P1_R53)
+	aic_writePage(1, 54, b0_p1_r54);  // Left ADC PGA- (B0_P1_R54)
+	aic_writePage(1, 55, b0_p1_r55);  // Right ADC PGA+ (B0_P1_R55
+	aic_writePage(1, 56, b0_p1_r56);  //   & B0_P1_R56)
+	aic_writePage(1, 57, b0_p1_r57);  // Right ADC PGA- (B0_P1_R57)
+	aic_writePage(1, 58, b0_p1_r58);  // Input Common Mode Control
+	aic_writePage(1, 59, b0_p1_r59);  // Left MIC PGA Volume (B0_P1_R59)
+	aic_writePage(1, 60, b0_p1_r60);  // Right MIC PGA Volume (B0_P1_R60)
+	aic_writePage(4, 87, b0_p4_r87);  // GPIO2 as Digital MIC ADC_MOD_CLK (B0_P4_R87)
+	aic_writePage(4, 91, b0_p4_r91);  // GPI1 as digital input (B0_P4_R92)
+	aic_writePage(4, 101, b0_p4_r101);  // Digital MIC DIN Control (B0_P4_R101)
+	aic_writePage(0, 81, b0_p0_r81);  // Power up, Digital Mic Selection (B0_P0_R81)
+	aic_writePage(0, 82, b0_p0_r82);  // Unmute, Fine Gain (B0_P0_R82)
+
+	return success;
 }
 
 bool AudioControlAIC3212::setMicBias(int n) {
@@ -447,7 +462,7 @@ bool AudioControlAIC3212::enableDigitalMicInputs(bool _enable) {
 		// Set GPIO2 to ADC_MOD_CLK for digital mics 
 		aic_writePage(4, 0x57, 0b00101000);
 		// Set GPI1 to data input
-		aic_writePage(4, 0x5C, 0b00010000);
+		aic_writePage(4, 0x5B, 0b00000010);
 		// Set digital mic input to GPI1 (Left = rising edge; Right = falling edge)
 		aic_writePage(4, 0x65, 0b00000000);
 
@@ -1028,44 +1043,46 @@ bool AudioControlAIC3212::aic_goToBook(uint8_t book) {
 	return success;
 }
 
-bool AudioControlAIC3212::updateInputBasedOnMicDetect(int setting) {
-	//read current mic detect setting
-	int curMicDetVal = readMicDetect();
-	if (curMicDetVal != prevMicDetVal) {
-		if (curMicDetVal) {
-			//enable the microphone input jack as our input
-			inputSelect(setting);
-		} else {
-			//switch back to the on-board mics
-			inputSelect(AIC3212_INPUT_ON_BOARD_MIC);
-		}
-	}
-	prevMicDetVal = curMicDetVal;
-	return (bool)curMicDetVal;
-}
-bool AudioControlAIC3212::enableMicDetect(bool state) {
-	//page 0, register 67
-	byte curVal = aic_readPage(0,67);
-	byte newVal = curVal;
-	if (state) {
-		//enable
-		newVal = 0b111010111 & newVal;  //set bits 4-2 to be 010 to set debounce to 64 msec
-		newVal = 0b10000000 | curVal;  //force bit 1 to 1 to enable headset to detect
-		aic_writePage(0,67,newVal);  //bit 7 (=1) enable headset detect, bits 4-2 (=010) debounce to 64ms
-	} else {
-		//disable
-		newVal = 0b01111111 & newVal;  //force bit 7 to zero to disable headset detect
-		aic_writePage(0,67,newVal);  //bit 7 (=1) enable headset detect, bits 4-2 (=010) debounce to 64ms
-	}
-	return state;
-}
-int AudioControlAIC3212::readMicDetect(void) {
-	//page 0, register 46, bit D4 (for D7-D0)
-	byte curVal = aic_readPage(0,46);
-	curVal = (curVal & 0b00010000);
-	curVal = (curVal != 0);
-	return curVal;
-}
+// bool AudioControlAIC3212::updateInputBasedOnMicDetect(int setting) {
+// 	//read current mic detect setting
+// 	int curMicDetVal = readMicDetect();
+// 	if (curMicDetVal != prevMicDetVal) {
+// 		if (curMicDetVal) {
+// 			//enable the microphone input jack as our input
+// 			inputSelect(setting);
+// 		} else {
+// 			//switch back to the on-board mics
+// 			inputSelect(AIC3212_INPUT_ON_BOARD_MIC);
+// 		}
+// 	}
+// 	prevMicDetVal = curMicDetVal;
+// 	return (bool)curMicDetVal;
+// }
+
+// bool AudioControlAIC3212::enableMicDetect(bool state) {
+// 	//page 0, register 67
+// 	byte curVal = aic_readPage(0,67);
+// 	byte newVal = curVal;
+// 	if (state) {
+// 		//enable
+// 		newVal = 0b111010111 & newVal;  //set bits 4-2 to be 010 to set debounce to 64 msec
+// 		newVal = 0b10000000 | curVal;  //force bit 1 to 1 to enable headset to detect
+// 		aic_writePage(0,67,newVal);  //bit 7 (=1) enable headset detect, bits 4-2 (=010) debounce to 64ms
+// 	} else {
+// 		//disable
+// 		newVal = 0b01111111 & newVal;  //force bit 7 to zero to disable headset detect
+// 		aic_writePage(0,67,newVal);  //bit 7 (=1) enable headset detect, bits 4-2 (=010) debounce to 64ms
+// 	}
+// 	return state;
+// }
+
+// int AudioControlAIC3212::readMicDetect(void) {
+// 	//page 0, register 46, bit D4 (for D7-D0)
+// 	byte curVal = aic_readPage(0,46);
+// 	curVal = (curVal & 0b00010000);
+// 	curVal = (curVal != 0);
+// 	return curVal;
+// }
 
 
 
