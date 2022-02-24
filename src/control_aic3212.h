@@ -201,8 +201,8 @@ public:
 		debugToSerial = _debugToSerial;
 	}
 	//enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS};
-	typedef Inputs Inputs;
-	typedef Outputs Outputs;
+	typedef tlv320aic3212::Inputs Inputs;
+	typedef tlv320aic3212::Outputs Outputs;
 	virtual bool enable(void);
 	virtual bool disable(void);
 	// bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster. 
@@ -250,8 +250,8 @@ protected:
 	void setConfig(const Config *_pConfig) { pConfig = _pConfig; };
 	void aic_reset(void);
 	void aic_init(void);
-	void aic_initDAC(void);
-	void aic_initADC(void);
+	//void aic_initDAC(void);
+	//void aic_initADC(void);
 	void setResetPin(int pin) { resetPinAIC = pin; }
 	
 	bool aic_goToBook(uint8_t book);
