@@ -43,8 +43,11 @@ volume			KEYWORD2
 volume_dB		KEYWORD2
 setInputGain_dB		KEYWORD2
 
-AudioControlSGTL5000_Extended	KEYWORD1
-micBiasEnable		KEYWORD2
+AudioConfigFIRFilter_F32 KEYWORD1
+designLowpass		KEYWORD2
+designBandpass		KEYWORD2
+designBandstop		KEYWORD2
+designHighpass		KEYWORD2
 
 AudioConfigFIRFilterBank_F32	KEYWORD1
 AudioConfigIIRFilterBank_F32	KEYWORD1
@@ -124,6 +127,13 @@ AudioOutputI2S_F32	KEYWORD1
 AudioOutputI2SQuad_F32	KEYWORD1
 AudioOutputUSB_F32	KEYWORD1
 AudioPlayQueue_F32	KEYWORD1
+
+AudioRateDecimator_F32	KEYWORD1
+AudioRateInterpolator_F32	KEYWORD1
+set_startSampleRate_Hz	KEYWORD2
+get_startSampleRate_Hz	KEYWORD2
+
+
 AudioRecordQueue_F32	KEYWORD1
 
 AudioSettings_F32	KEYWORD1

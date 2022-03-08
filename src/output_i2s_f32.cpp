@@ -86,31 +86,59 @@
 //
 //Finally, here is my own Matlab code for computing the mult and div values...(again, just for Teensy 3.x??)
 /*
+
 	%choose the sample rates that you are hoping to hit
 	targ_fs_Hz =  [2000, 8000, 11025, 16000, 22050, 24000, 32000, 44100, floor(44117.64706) , ...
-		48000, 88200, floor(44117.64706 * 2), (37000/256*662), 96000, 176400, floor(44117.64706 * 4), 192000];
-	F_PLL = 180e6;  %choose the clock rate used for this calculation
+		48000, 2*41000, 88200, floor(44117.64706 * 2), (37000/256*662), 96000, 176400, floor(44117.64706 * 4), 192000];
+
+	%choose the PLL (ie, clock speed) values
+	F_PLL_all = [16e6 7236 96e6 120e6 144e6 180e6 192e6 216e6 240e6];  %choose the clock rate used for this calculation
 	PLL_div = 256;
-	all_n=[];all_d=[];
-	for Itarg=1:length(targ_fs_Hz)
-		if (0)
-			[best_d,best_n]=rat((F_PLL/PLL_div)/targ_fs_Hz(Itarg));
+	all_out_str = {};
+	for I_PLL=1:length(F_PLL_all)
+		F_PLL=F_PLL_all(I_PLL);
+		all_n=[];all_d=[];
+		
+		if (I_PLL == 1)
+			out_str = ['#if (F_PLL==' num2str(F_PLL) ')'];
 		else
-			best_n = 1; best_d = 1; best_err = 1e10;
-			for n=1:255
-				d = [1:4095];
-				act_fs_Hz = F_PLL / PLL_div * n ./ d;
-				[err,I] = min(abs(act_fs_Hz - targ_fs_Hz(Itarg)));
-				if err < best_err
-					best_n = n; best_d = d(I);
-					best_err = err;
+			out_str = ['#elif (F_PLL==' num2str(F_PLL) ')'];
+		end
+		all_out_str{end+1}=out_str;
+		
+		out_str='  const tmclk clkArr[numfreqs]={';
+		for Itarg=1:length(targ_fs_Hz)
+			out_str(end+1)='{';
+			if (0)
+				[best_d,best_n]=rat((F_PLL/PLL_div)/targ_fs_Hz(Itarg));
+			else
+				best_n = 1; best_d = 1; best_err = 1e10;
+				for n=1:255
+					d = [1:4095];
+					act_fs_Hz = F_PLL / PLL_div * n ./ d;
+					[err,I] = min(abs(act_fs_Hz - targ_fs_Hz(Itarg)));
+					if err < best_err
+						best_n = n; best_d = d(I);
+						best_err = err;
+					end
 				end
 			end
+			all_n(Itarg) = best_n;
+			all_d(Itarg) = best_d;
+			disp(['fs = ' num2str(targ_fs_Hz(Itarg)) ', n = ' num2str(best_n) ', d = ' num2str(best_d) ', true = ' num2str(F_PLL/PLL_div * best_n / best_d)])
+			out_str=[out_str num2str(best_n) ', ' num2str(best_d) '}'];
+			if Itarg < length(targ_fs_Hz)
+				out_str=[out_str ', '];
+			end
 		end
-		all_n(Itarg) = best_n;
-		all_d(Itarg) = best_d;
-		disp(['fs = ' num2str(targ_fs_Hz(Itarg)) ', n = ' num2str(best_n) ', d = ' num2str(best_d) ', true = ' num2str(F_PLL/PLL_div * best_n / best_d)])
+		out_str=[out_str '};'];
+		all_out_str{end+1}=out_str;
 	end
+	all_out_str{end+1} = '#endif';
+
+	%print out the full code to past into output_i2s
+	strvcat(all_out_str)
+
 */
 
 
@@ -122,28 +150,30 @@ float AudioOutputI2S_F32::setI2SFreq_T3(const float freq_Hz) {
     uint16_t div;
   } __attribute__((__packed__)) tmclk;
 
-  const int numfreqs = 17;
-  const int samplefreqs[numfreqs] = { 2000, 8000, 11025, 16000, 22050, 24000, 32000, 44100, (int)44117.64706 , 48000, 88200, (int)(44117.64706 * 2), (int)(95679.69+0.5), 96000, 176400, (int)(44117.64706 * 4), 192000};
+  const int numfreqs = 18;
+  const int samplefreqs[numfreqs] = { 2000, 8000, 11025, 16000, 22050, 24000, 32000, 44100, (int)44117.64706 , 48000, 82000, 88200, (int)(44117.64706 * 2), (int)(95679.69+0.5), 96000, 176400, (int)(44117.64706 * 4), 192000};
 
-#if (F_PLL==16000000)
-  const tmclk clkArr[numfreqs] = {{4, 125}, {16, 125}, {148, 839}, {32, 125}, {145, 411}, {48, 125}, {64, 125}, {151, 214}, {12, 17}, {96, 125}, {151, 107}, {24, 17}, {124,81}, {192, 125}, {127, 45}, {48, 17}, {255, 83} };
-#elif (F_PLL==72000000)
-  const tmclk clkArr[numfreqs] = {{832, 1125}, {32, 1125}, {49, 1250}, {64, 1125}, {49, 625}, {32, 375}, {128, 1125}, {98, 625}, {8, 51}, {64, 375}, {196, 625}, {16, 51}, {248,729}, {128, 375}, {249, 397}, {32, 51}, {185, 271} };
-#elif (F_PLL==96000000)
-  const tmclk clkArr[numfreqs] = {{2, 375},{8, 375}, {73, 2483}, {16, 375}, {147, 2500}, {8, 125},  {32, 375}, {147, 1250}, {2, 17}, {16, 125}, {147, 625}, {4, 17}, {62,243},{32, 125}, {151, 321}, {8, 17}, {64, 125} };
-#elif (F_PLL==120000000)
-  const tmclk clkArr[numfreqs] = {{8, 1875},{32, 1875}, {89, 3784}, {64, 1875}, {147, 3125}, {32, 625},  {128, 1875}, {205, 2179}, {8, 85}, {64, 625}, {89, 473}, {16, 85}, {119,583}, {128, 625}, {178, 473}, {32, 85}, {145, 354} };
-#elif (F_PLL==144000000)
-  const tmclk clkArr[numfreqs] = {{4, 1125},{16, 1125}, {49, 2500}, {32, 1125}, {49, 1250}, {16, 375},  {64, 1125}, {49, 625}, {4, 51}, {32, 375}, {98, 625}, {8, 51}, {157,923}, {64, 375}, {196, 625}, {16, 51}, {128, 375} };
-#elif (F_PLL==180000000)
-  const tmclk clkArr[numfreqs] = {{9, 3164}, {46, 4043}, {49, 3125}, {73, 3208}, {98, 3125}, {64, 1875},  {183, 4021}, {196, 3125}, {16, 255}, {128, 1875}, {107, 853}, {32, 255}, {238,1749}, {219, 1604}, {214, 853}, {64, 255}, {219, 802} };
-#elif (F_PLL==192000000)
-  const tmclk clkArr[numfreqs] = {{1, 375}, {4, 375}, {37, 2517}, {8, 375}, {73, 2483}, {4, 125}, {16, 375}, {147, 2500}, {1, 17}, {8, 125}, {147, 1250}, {2, 17}, {31,243}, {16, 125}, {147, 625}, {4, 17}, {32, 125} };
-#elif (F_PLL==216000000)
-  const tmclk clkArr[numfreqs] = {{8, 3375}, {32, 3375}, {49, 3750}, {64, 3375}, {49, 1875}, {32, 1125},  {128, 3375}, {98, 1875}, {8, 153}, {64, 1125}, {196, 1875}, {16, 153}, {248,2187}, {128, 1125}, {226, 1081}, {32, 153}, {147, 646} };
-#elif (F_PLL==240000000)
-  const tmclk clkArr[numfreqs] = {{4, 1875}, {16, 1875}, {29, 2466}, {32, 1875}, {89, 3784}, {16, 625}, {64, 1875}, {147, 3125}, {4, 85}, {32, 625}, {205, 2179}, {8, 85}, {119,1166}, {64, 625}, {89, 473}, {16, 85}, {128, 625} };
-#endif
+
+#if (F_PLL==16000000)                                                                                                                                                                                                                                     
+  const tmclk clkArr[numfreqs]={{4, 125}, {16, 125}, {148, 839}, {32, 125}, {145, 411}, {48, 125}, {64, 125}, {151, 214}, {12, 17}, {96, 125}, {164, 125}, {151, 107}, {24, 17}, {124, 81}, {192, 125}, {127, 45}, {48, 17}, {255, 83}};                  
+#elif (F_PLL==7236)                                                                                                                                                                                                                                       
+  const tmclk clkArr[numfreqs]={{212, 3}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}, {255, 1}};                                      
+#elif (F_PLL==96000000)                                                                                                                                                                                                                                   
+  const tmclk clkArr[numfreqs]={{2, 375}, {8, 375}, {74, 2517}, {16, 375}, {147, 2500}, {8, 125}, {32, 375}, {147, 1250}, {2, 17}, {16, 125}, {82, 375}, {147, 625}, {4, 17}, {62, 243}, {32, 125}, {151, 321}, {8, 17}, {64, 125}};                      
+#elif (F_PLL==120000000)                                                                                                                                                                                                                                  
+  const tmclk clkArr[numfreqs]={{8, 1875}, {32, 1875}, {89, 3784}, {64, 1875}, {147, 3125}, {32, 625}, {128, 1875}, {205, 2179}, {8, 85}, {64, 625}, {194, 1109}, {89, 473}, {16, 85}, {119, 583}, {128, 625}, {178, 473}, {32, 85}, {145, 354}};         
+#elif (F_PLL==144000000)                                                                                                                                                                                                                                  
+  const tmclk clkArr[numfreqs]={{4, 1125}, {16, 1125}, {49, 2500}, {32, 1125}, {49, 1250}, {16, 375}, {64, 1125}, {49, 625}, {4, 51}, {32, 375}, {164, 1125}, {98, 625}, {8, 51}, {157, 923}, {64, 375}, {196, 625}, {16, 51}, {128, 375}};               
+#elif (F_PLL==180000000)                                                                                                                                                                                                                                  
+  const tmclk clkArr[numfreqs]={{9, 3164}, {46, 4043}, {49, 3125}, {73, 3208}, {98, 3125}, {64, 1875}, {183, 4021}, {196, 3125}, {241, 3841}, {128, 1875}, {87, 746}, {107, 853}, {32, 255}, {238, 1749}, {219, 1604}, {214, 853}, {64, 255}, {219, 802}};
+#elif (F_PLL==192000000)                                                                                                                                                                                                                                  
+  const tmclk clkArr[numfreqs]={{1, 375}, {4, 375}, {37, 2517}, {8, 375}, {74, 2517}, {4, 125}, {16, 375}, {147, 2500}, {1, 17}, {8, 125}, {41, 375}, {147, 1250}, {2, 17}, {31, 243}, {16, 125}, {147, 625}, {4, 17}, {32, 125}};                        
+#elif (F_PLL==216000000)                                                                                                                                                                                                                                  
+  const tmclk clkArr[numfreqs]={{8, 3375}, {32, 3375}, {49, 3750}, {64, 3375}, {49, 1875}, {32, 1125}, {128, 3375}, {98, 1875}, {8, 153}, {64, 1125}, {183, 1883}, {196, 1875}, {16, 153}, {248, 2187}, {128, 1125}, {226, 1081}, {32, 153}, {147, 646}}; 
+#elif (F_PLL==240000000)                                                                                                                                                                                                                                  
+  const tmclk clkArr[numfreqs]={{4, 1875}, {16, 1875}, {29, 2466}, {32, 1875}, {89, 3784}, {16, 625}, {64, 1875}, {147, 3125}, {4, 85}, {32, 625}, {164, 1875}, {205, 2179}, {8, 85}, {119, 1166}, {64, 625}, {89, 473}, {16, 85}, {128, 625}};           
+#endif                                                                                                                                                                                                                                                    
+
 
   for (int f = 0; f < numfreqs; f++) {
     if ( freq == samplefreqs[f] ) {
