@@ -157,7 +157,6 @@ struct ADC_Config {
 };
 
 struct Config {
-	uint32_t fs;       // Sampling frequency (Hz)
 	I2S_Word_Length i2s_bits;  // I2S data word length
 	I2S_Clock_Dir i2s_clk_dir;  // I2S clock direction
 	PLL_Config pll;    // PLL configuration
@@ -205,6 +204,8 @@ public:
 	typedef tlv320aic3212::Outputs Outputs;
 	virtual bool enable(void);
 	virtual bool disable(void);
+	void setConfig(const Config *_pConfig) { pConfig = _pConfig; };
+
 	// bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster. 
 	bool outputSelect(Outputs both, bool flag_full = true) { return outputSelect(both, both, flag_full); };
 	bool outputSelect(Outputs left, Outputs right, bool flag_full = true);
@@ -247,7 +248,6 @@ protected:
 	TwoWire *myWire = &Wire;  //from Wire.h
 	uint8_t i2cAddress = AIC3212_DEFAULT_I2C_ADDRESS;
 	void setI2Cbus(int i2cBus);
-	void setConfig(const Config *_pConfig) { pConfig = _pConfig; };
 	void aic_reset(void);
 	void aic_init(void);
 	//void aic_initDAC(void);

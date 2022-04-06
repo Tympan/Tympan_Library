@@ -249,7 +249,7 @@ namespace tlv320aic3212 {
 // -------------------- Device Configuration --------------------
 
 const Config DefaultConfig {
-	.fs = 96000UL,
+	// .fs = 96000UL,
 	.i2s_bits = I2S_Word_Length::I2S_32_BITS,
 	.i2s_clk_dir = I2S_Clock_Dir::AIC_INPUT,
 	.pll = {
