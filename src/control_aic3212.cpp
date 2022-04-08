@@ -224,6 +224,10 @@ namespace tlv320aic3212 {
 #define AIC3212_DAC_VOLUME_LEFT_REG         0x41 // page 0 reg 65
 #define AIC3212_DAC_VOLUME_RIGHT_REG        0x42 // page 0 reg 66
 
+//SPKR Volume (for Class D Speaker drivers...but this is fed by the Line-Out, so it's volume is affected by LOL and LOR, too)
+#define AIC3212_SPKR_VOLUME_PAGE            0x01 // page 1 
+#define AIC3212_SPKR_VOLUME_REG         	0x30 // page 1 reg 48
+
 
 //PDM Digital Mic Pin Control
 #define AIC3212_BCLK2_PIN_CTRL_PAGE         0x04
@@ -602,6 +606,33 @@ float AudioControlAIC3212::volume_dB(float vol_left_dB, float vol_right_dB) {
 float AudioControlAIC3212::volume_dB(float vol_dB) {
 	vol_dB = volume_dB(vol_dB, 1);  //set right channel
 	return volume_dB(vol_dB, 0);    //set left channel
+}
+float AudioControlAIC3212::setSpeakerVolume_dB(float target_vol_dB) {
+	int int_targ_vol_dB = (int)(target_vol_dB + 0.5); //round to nearest dB
+	
+	uint8_t val = 0x00;
+	if (int_targ_vol_dB < 0) {
+		int_targ_vol_dB = -99; //mute the output!
+	} else if (int_targ_vol_dB < 12) {
+		int_targ_vol_dB = 6;
+		val = 0b00010001;
+	} else if (int_targ_vol_dB < 18) {
+		int_targ_vol_dB = 12;
+		val = 0b00100010;
+	} else if (int_targ_vol_dB < 24) {
+		int_targ_vol_dB = 18;
+		val = 0b00110011;
+	} else if (int_targ_vol_dB < 30) {
+		int_targ_vol_dB = 24;
+		val = 0b01000100;
+	} else {
+		int_targ_vol_dB = 30;
+		val = 0b01010101;
+	}
+	
+	aic_goToBook(0);
+	aic_writePage(AIC3212_SPKR_VOLUME_PAGE, AIC3212_SPKR_VOLUME_REG, val);
+	return (float)int_targ_vol_dB;
 }
 
 bool AudioControlAIC3212::outputSelect(Outputs left, Outputs right, bool flag_full) {
