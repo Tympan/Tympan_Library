@@ -98,6 +98,9 @@ class SerialManager_UI;  //forward declare.  Assume SerialManager_UI.h will be i
 #define QUADCHAR_CHAR__USE_PERSISTENT_MODE ((char)'_')  //this is an underscore
 
 #define SERIALMANAGERBASE_MAX_UI_ELEMENTS 30
+
+typedef void(*callback_t)(char* payload_p, String* msgType_p, int numBytes);	//typedef for datastream callback pointer 
+
 class SerialManagerBase {
   public:
     SerialManagerBase(void) {};
@@ -118,6 +121,8 @@ class SerialManagerBase {
 	  SINGLE_CHAR,	  STREAM_LENGTH,	  STREAM_DATA,	  QUAD_CHAR_1,	  QUAD_CHAR_2,	  QUAD_CHAR_3
 	};
 	
+	void setDataStreamCallback(callback_t callBackFunc_p);
+
 	SerialManager_UI* add_UI_element(SerialManager_UI *);
 
   protected:
@@ -135,7 +140,8 @@ class SerialManagerBase {
     char GUI_persistent_mode = 'g';  //is this used?  I don't think so.
     String TX_string;
     char mode_char, chan_char, data_char; //for quad_char processing
-	
+	callback_t _datastreamCallback_p = NULL;
+
 	std::vector<SerialManager_UI *> UI_element_ptr;
 };
 
