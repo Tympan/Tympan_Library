@@ -48,7 +48,7 @@ void SerialManagerBase::respondToByte(char c) {
     case STREAM_LENGTH:
       if (c == DATASTREAM_SEPARATOR) {
         // Get the datastream length:
-        stream_length = *((int*)(stream_data));
+        memcpy(&stream_length, &stream_data[0], 4);
         serial_read_state = STREAM_DATA;
         stream_chars_received = 0;
         Serial.print("SerialManagerBase: RespondToByte: Stream length = ");
@@ -145,13 +145,28 @@ void SerialManagerBase::processStream(void) {
     //interpretStreamAFC(idx);
   } else if (streamType == "test") {    
     Serial.println("Stream is of type 'test'.");
-    tmpInt = *((int*)(stream_data+idx)); idx = idx+4;
+    
+    //Print first 4-bytes as integer
+    memcpy(&tmpInt, stream_data+idx, 4);
+    idx = idx+4;
     Serial.print("int is "); Serial.println(tmpInt);
-    tmpFloat = *((float*)(stream_data+idx)); idx = idx+4;
+    
+    //And second 4-bytes as float
+    memcpy(&tmpFloat, stream_data+idx, 4);
     Serial.print("float is "); Serial.println(tmpFloat);
+
   } else {
-    Serial.print("Unknown stream type: ");
-    Serial.println(streamType);
+    // Check if a custom callback was set
+    if (_datastreamCallback_p!=NULL)
+    {
+      _datastreamCallback_p(stream_data+idx, &streamType, stream_length-idx);
+    }
+    // No way to handle the message so ignore it
+    else
+    {
+      Serial.print("Unknown stream type: ");
+      Serial.println(streamType);
+    }
   }
 }
 
@@ -172,6 +187,14 @@ bool SerialManagerBase::interpretQuadChar(char mode_char, char chan_char, char d
 	}
 	return ret_val;
 }
+
+
+void SerialManagerBase::setDataStreamCallback(callback_t callBackFunc_p)
+{
+  Serial.print("Datastream callback set");
+  _datastreamCallback_p = callBackFunc_p;
+}
+
 
 void SerialManagerBase::setFullGUIState(bool activeButtonsOnly) {
 	if (UI_element_ptr.size() == 0) return;	
@@ -240,4 +263,3 @@ void SerialManagerBase::sendTxBuffer(void) {
   }
   TX_string.remove(0,TX_string.length()); //clear out the string
 }
-
