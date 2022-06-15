@@ -164,7 +164,7 @@ class SerialManagerBase {
     
     int serial_read_state; // Are we reading one character at a time, or a stream?
     char stream_data[MAX_DATASTREAM_LENGTH];
-    int stream_length;
+    int stream_length = 0;
     int stream_chars_received;
     BLE *ble;
     char GUI_persistent_mode = 'g';  //is this used?  I don't think so.

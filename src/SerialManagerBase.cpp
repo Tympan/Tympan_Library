@@ -48,11 +48,21 @@ void SerialManagerBase::respondToByte(char c) {
     case STREAM_LENGTH:
       if (c == DATASTREAM_SEPARATOR) {
         // Get the datastream length:
-        memcpy(&stream_length, &stream_data[0], 4);
-        serial_read_state = STREAM_DATA;
-        stream_chars_received = 0;
-        Serial.print("SerialManagerBase: RespondToByte: Stream length = ");
-        Serial.println(stream_length);
+        if (stream_chars_received==4) {
+          memcpy(&stream_length, &stream_data[0], 4);
+          serial_read_state = STREAM_DATA;
+          stream_chars_received = 0;
+          Serial.print("SerialManagerBase: RespondToByte: Stream length = ");
+          Serial.println(stream_length);
+        } 
+        // Error, length must be 4-byte int
+        else {
+          Serial.println("Error: Message length must be 4 byte Int");
+          //Reset for next message
+          serial_read_state = SINGLE_CHAR;
+          stream_chars_received = 0;
+        }
+
       } else {
         stream_data[stream_chars_received] = c;
         stream_chars_received++;
@@ -122,10 +132,11 @@ bool SerialManagerBase::processCharacter(char c) {
 void SerialManagerBase::processStream(void) {
   int idx = 0;
   String streamType;
-  int tmpInt;
-  float tmpFloat;
+  int tmpInt = 0;
+  float tmpFloat = 0;
   
-  while (stream_data[idx] != DATASTREAM_SEPARATOR) {
+  //Look for message type by finding the next separating character 
+  while ( (stream_data[idx] != DATASTREAM_SEPARATOR) && (idx < stream_length) ) {
     streamType.append(stream_data[idx]);
     idx++;
   }
@@ -145,23 +156,29 @@ void SerialManagerBase::processStream(void) {
     //interpretStreamAFC(idx);
   } else if (streamType == "test") {    
     Serial.println("Stream is of type 'test'.");
-    
-    //Print first 4-bytes as integer
-    memcpy(&tmpInt, stream_data+idx, 4);
-    idx = idx+4;
-    Serial.print("int is "); Serial.println(tmpInt);
-    
-    //And second 4-bytes as float
-    memcpy(&tmpFloat, stream_data+idx, 4);
-    Serial.print("float is "); Serial.println(tmpFloat);
 
+    //Print first 4-bytes as integer
+    if ( (stream_length-idx) >= 4) {
+      memcpy(&tmpInt, stream_data+idx, 4);
+      idx = idx+4;
+      Serial.print("int is "); Serial.println(tmpInt);
+    }
+
+    //Print the next 4-bytes as float
+    if (stream_length-idx >= 4) {    
+      memcpy(&tmpFloat, stream_data+idx, 4);
+      Serial.print("float is "); Serial.println(tmpFloat);
+    }
+  
+  // Else the message type was not identifued
   } else {
-    // Check if a custom callback was set
+    // If a custom callback was set, call it
     if (_datastreamCallback_p!=NULL)
     {
       _datastreamCallback_p(stream_data+idx, &streamType, stream_length-idx);
     }
-    // No way to handle the message so ignore it
+
+    // Else no message type found, so ignore it
     else
     {
       Serial.print("Unknown stream type: ");
