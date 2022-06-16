@@ -128,6 +128,12 @@ bool SerialManagerBase::processCharacter(char c) {
 	return ret_val;
 }
 
+//Override this virtual function in your derived class to do something
+void SerialManagerBase::callbackFunct(char* payload_p, String* msgType_p, int numBytes)
+{    
+  Serial.print("Unknown message type: ");
+  Serial.println(*msgType_p);
+}
 
 void SerialManagerBase::processStream(void) {
   int idx = 0;
@@ -169,21 +175,10 @@ void SerialManagerBase::processStream(void) {
       memcpy(&tmpFloat, stream_data+idx, 4);
       Serial.print("float is "); Serial.println(tmpFloat);
     }
-  
-  // Else the message type was not identifued
-  } else {
-    // If a custom callback was set, call it
-    if (_datastreamCallback_p!=NULL)
-    {
-      _datastreamCallback_p(stream_data+idx, &streamType, stream_length-idx);
-    }
-
-    // Else no message type found, so ignore it
-    else
-    {
-      Serial.print("Unknown stream type: ");
-      Serial.println(streamType);
-    }
+  }
+  // Else the message type was not identified.  Try callback function
+  else {
+      callbackFunct(stream_data+idx, &streamType, stream_length-idx);
   }
 }
 
@@ -204,14 +199,6 @@ bool SerialManagerBase::interpretQuadChar(char mode_char, char chan_char, char d
 	}
 	return ret_val;
 }
-
-
-void SerialManagerBase::setDataStreamCallback(callback_t callBackFunc_p)
-{
-  Serial.print("Datastream callback set");
-  _datastreamCallback_p = callBackFunc_p;
-}
-
 
 void SerialManagerBase::setFullGUIState(bool activeButtonsOnly) {
 	if (UI_element_ptr.size() == 0) return;	

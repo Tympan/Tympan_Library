@@ -88,7 +88,7 @@
 			Use RealTerm to send a 'test' message: 
 			0x02 0x0D 0x00 0x00 0x00 0x03 0x74 0x65 0x73 0x74 0x03 0xD2 0x02 0x96 0x49 0xD2 0x02 0x96 0x49 0x04
 				1. DATASTREAM_START_CHAR 	(0x02)
-				2.	Message Length (int32): (0x000D) = 13 
+				2.	Message Length (int32): (0x0000000D) = 13 
 				3.	DATASTREAM_SEPARATOR 	(0x03)
 				4.	Message Type (char): 	(0x74657374) = 'test'
 				5.	DATASTREAM_SEPARATOR 	(0x03)
@@ -103,9 +103,8 @@
                 - int is 1234567890
                 - float is 1228890.25
 
-			To register a callback when a datastream message is received, use setDataStreamCallback() and set a unique message type (i.e. not 'gha', 'dsl', afc', or 'test'):
- 			- `serialManager.setDataStreamCallback(&dataStreamCallback);`
-			- `void dataStreamCallback(char* payload_p, String *msgType_p, int numBytes)`
+			To register a callback when a datastream message is received, override callbackFunct() in your derived class (e.g., SerialManager)
+			- `void SerialManager::callbackFunct(char* payload_p, String *msgType_p, int numBytes)`
 
 	License: MIT License.  Use at your own risk.  Have fun!
 */
@@ -129,8 +128,6 @@ class SerialManager_UI;  //forward declare.  Assume SerialManager_UI.h will be i
 
 #define SERIALMANAGERBASE_MAX_UI_ELEMENTS 30
 
-typedef void(*callback_t)(char* payload_p, String* msgType_p, int numBytes);	//typedef for datastream callback pointer 
-
 class SerialManagerBase {
   public:
     SerialManagerBase(void) {};
@@ -151,8 +148,6 @@ class SerialManagerBase {
 	  SINGLE_CHAR,	  STREAM_LENGTH,	  STREAM_DATA,	  QUAD_CHAR_1,	  QUAD_CHAR_2,	  QUAD_CHAR_3
 	};
 	
-	void setDataStreamCallback(callback_t callBackFunc_p);
-
 	SerialManager_UI* add_UI_element(SerialManager_UI *);
 
   protected:
@@ -170,11 +165,9 @@ class SerialManagerBase {
     char GUI_persistent_mode = 'g';  //is this used?  I don't think so.
     String TX_string;
     char mode_char, chan_char, data_char; //for quad_char processing
-	callback_t _datastreamCallback_p = NULL;
 
 	std::vector<SerialManager_UI *> UI_element_ptr;
+	virtual void callbackFunct(char* payload_p, String* msgType_p, int numBytes);
 };
-
-
 
 #endif
