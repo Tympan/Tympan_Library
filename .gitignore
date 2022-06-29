@@ -55,3 +55,4 @@ Temporary Items
 *.sublime-workspace
 *.sublime-project
 examples/01-Basic/TympanPDMMics/~$Spreadsheet of AIC Clocks.xlsx
+.pio
