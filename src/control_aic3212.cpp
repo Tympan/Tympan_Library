@@ -646,22 +646,22 @@ bool AudioControlAIC3212::outputSelect(Outputs left, Outputs right, bool flag_fu
 
 	if (flag_full) {
 		// Mute HP and Speaker Drivers
-		aic_writePage(1, 0x1F, 0xB9);
-		aic_writePage(1, 0x20, 0xB9);
-		aic_writePage(1, 0x30, 0x00);
+		aic_writePage(1, 0x1F, 0xB9); 	// b0_p1_r31: HPL Unipolar mode; Muted
+		aic_writePage(1, 0x20, 0xB9);	// b0_p1_r32: HPR Unipolar mode; Muted
+		aic_writePage(1, 0x30, 0x00);	// b0_p1_r48: SPK Amplifier volume: Muted
 
 		// Unroute DAC outputs
-		aic_writePage(1, 0x16, 0x00);
-		aic_writePage(1, 0x1B, 0x00);
-		aic_writePage(1, 0x1C, 0x7F);
-		aic_writePage(1, 0x1D, 0x7F);
-		aic_writePage(1, 0x24, 0x7F);
-		aic_writePage(1, 0x25, 0x7F);
+		aic_writePage(1, 0x16, 0x00);	//b0_p1_r22: Lint Out Amp Control 1: Disconnect all
+		aic_writePage(1, 0x1B, 0x00);	//b0_p1_r27: HP Amp Control 1: Disconnect all
+		aic_writePage(1, 0x1C, 0x7F);	//b0_p1_r12: Receiver Output Driver De-Pop Control: Disabled
+		aic_writePage(1, 0x1D, 0x7F);	//b0_p1_r29: HP Amp 3: not routed to HPR Driver
+		aic_writePage(1, 0x24, 0x7F);	//b0_p1_r36: Rec Amp Control 1
+		aic_writePage(1, 0x25, 0x7F);	//b0_p1_r37: Not Routed to RECP Driver
 
 		// Reset charge pump control
-		aic_writePage(1, 0x21, 0x28);  // Charge Pump Clock Divide = 4 (Default)
-		aic_writePage(1, 0x22, 0x3E);  // Headphone output offset correction (Default)
-		aic_writePage(1, 0x23, 0x30);  // Enable dynamic offset calibration
+		aic_writePage(1, 0x21, 0x28);  // Charge Pump Clock Divide = 4 (Default);
+		aic_writePage(1, 0x22, 0x3E);  // Headphone output offset correction disabled (Default); Full peak load
+		aic_writePage(1, 0x23, 0x30);  // Charge Pump Control 3: Enable dynamic offset calibration for ground centered headphones
 
 		// TODO: Enable pop reduction?
 		// 	//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
@@ -669,40 +669,40 @@ bool AudioControlAIC3212::outputSelect(Outputs left, Outputs right, bool flag_fu
 	}
 
 	uint8_t 
-		p1_r16 = 0x00,
-		p1_r1B = 0x00,
-		p1_r2E = 0x7F,
-		p1_r2F = 0x7F,
+		p1_r16 = 0x00,		//b0_p1_r22: Line Out Amp: Not powered, not routed
+		p1_r1B = 0x00,		//b0_p1_r27: HP Amp Control 1: Not powered, Not routed
+		p1_r2E = 0x7F,		//b0_p1_r46: SPK Amp Control 2: Not routed
+		p1_r2F = 0x7F,		//b0_p1_r47: SPK Amp Control 3: Not routed
 		p1_r16_2 = 0x00,
 		p1_r1F = 0xB9,
 		p1_r20 = 0xB9,
 		p1_r30 = 0x00,
 		p1_r1B_2 = 0x00,
-		p1_r2D = 0x00;
+		p1_B0_P1_R8)r2D = 0x00;
 
 	if (left == Outputs::HP) {
-		p1_r1B |= 0x20;  // Left DAC is routed to HPL driver.
-		p1_r1F = 0x80;  // Unmute HPL driver, set gain = 0dB
-		p1_r1B_2 |= 0x22;  // Left DAC is routed and HPL driver powered on.
+		p1_r1B |= 0x20;  	// b0_p1_r27: HP Amp Control 1: Left DAC is routed to HPL driver.
+		p1_r1F = 0x80;  	// b0_p1_r31: HPL Volume: Unmute HPL driver, set gain = 0dB
+		p1_r1B_2 |= 0x22;  	// b0_p1_r27: HP Amp Control 1: Left DAC is routed and HPL driver powered on.
 	}
 	if (right == Outputs::HP) {
-		p1_r1B |= 0x10;  // Right DAC is routed to HPR driver.
-		p1_r20 = 0x80;  // Unmute HPR driver, set gain = 0dB
-		p1_r1B_2 |= 0x11;  // Right DAC is routed and HPR driver powered on.
+		p1_r1B |= 0x10;  	// b0_p1_r27: HP Amp Control 1: Right DAC is routed to HPR driver.
+		p1_r20 = 0x80;  	// b0_p1_r32: HPR Volume: Unmute HPR driver, set gain = 0dB
+		p1_r1B_2 |= 0x11;  	// b0_p1_r27: HP Amp Control 1: Right DAC is routed and HPR driver powered on.
 	}
 	if (left == Outputs::SPK) {
-		p1_r16 |= 0x80;  // Left DAC M-terminal is routed to LOL driver.
-		p1_r2E = 0x00;   // LOL Output Routed to SPKL Driver, Volume Control: 0dB
-		p1_r16_2 |= 0x82; // Routed & LOL output driver power-up
-		p1_r30 |= 0x10;  // SPKL Driver Volume = 6 dB
-		p1_r2D |= 0x02;  // SPKL Driver Power-Up
+		p1_r16 |= 0x80;  	// b0_p1_r22: Line Out Amp: Left DAC M-terminal is routed to LOL driver.
+		p1_r2E = 0x00;   	// b0_p1_r46: SPK Amp Control 2: LOL Output Routed to SPKL Driver, Volume Control: 0dB
+		p1_r16_2 |= 0x82; 	// b0_p1_r22: Line Out Amp: Routed & LOL output driver power-up
+		p1_r30 |= 0x10;  	// b0_p1_r48: SPKL Volume = 6 dB
+		p1_r2D |= 0x02;  	// b0_p1_r45: SPL Amp Control 1: SPKL Driver Power-Up
 	}
 	if (right == Outputs::SPK) {
-		p1_r16 |= 0x40;  // Right DAC M-terminal is routed to LOR driver.
-		p1_r2F = 0x00;   // LOR Output Routed to SPKR Driver, Volume Control: 0dB
-		p1_r16_2 |= 0x41; // Routed & LOR output driver power-up
-		p1_r30 |= 0x01;  // SPKR Driver Volume = 6 dB
-		p1_r2D |= 0x01;  // SPKR Driver Power-Up
+		p1_r16 |= 0x40;  	// b0_p1_r22: Line Out Amp: Right DAC M-terminal is routed to LOR driver.
+		p1_r2F = 0x00;   	// b0_p1_r47: SPK Amp Control 3: LOR Output Routed to SPKR Driver, Volume Control: 0dB
+		p1_r16_2 |= 0x41; 	// b0_p1_r22: Line Out Amp: Routed & LOR output driver power-up
+		p1_r30 |= 0x01;  	// b0_p1_r48: SPKR Driver Volume = 6 dB
+		p1_r2D |= 0x01;  	// b0_p1_r45: SPL Amp Control 1: SPKR Driver Power-Up
 	}
 
 	// Set DAC PowerTune Mode
@@ -710,36 +710,36 @@ bool AudioControlAIC3212::outputSelect(Outputs left, Outputs right, bool flag_fu
 	aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Right DAC PTM
 
 	// Route DAC outputs
-	aic_writePage(1, 0x16, p1_r16);
-	aic_writePage(1, 0x1B, p1_r1B);
-	aic_writePage(1, 0x2E, p1_r2E);
-	aic_writePage(1, 0x2F, p1_r2F);
+	aic_writePage(1, 0x16, p1_r16);		// b0_p1_r22: Line Out Amp
+	aic_writePage(1, 0x1B, p1_r1B);		// b0_p1_r27: HP Amp Control 1
+	aic_writePage(1, 0x2E, p1_r2E);		// b0_p1_r46: SPK Amp Control 2
+	aic_writePage(1, 0x2F, p1_r2F);		// b0_p1_r47: SPK Amp Control 3
 
 	// Power up LDAC and RDAC
-	aic_writePage(0, 0x3F, 
-		((left == Outputs::NONE) ? 0x00 : 0x80)       // Left DAC channel
-		| ((right == Outputs::NONE) ? 0x00 : 0x40));  // Right DAC channel
+	aic_writePage(0, 0x3F, 				// b0_p1_r63: DAC Analog Gain Flags Register 1
+		((left == Outputs::NONE) ? 0x00 : 0x80)       // Left DAC channel: Set gain = to programmed gain 
+		| ((right == Outputs::NONE) ? 0x00 : 0x40));  // Right DAC channel: Set gain = to programmed gain 
 	
 	// Power up LOL and LOR
-	aic_writePage(1, 0x16, p1_r16_2);
+	aic_writePage(1, 0x16, p1_r16_2);	// b0_p1_r22: Line Out Amp:
 
 	// Unmute drivers
-	aic_writePage(1, 0x1F, p1_r1F);  // Unmute HPL driver
-	aic_writePage(1, 0x20, p1_r20);  // Unmute HPR driver
-	aic_writePage(1, 0x30, p1_r30);  // Unmute SPKL & SPLR
+	aic_writePage(1, 0x1F, p1_r1F);  // b0_p1_r31: HPL Volume: Unmute
+	aic_writePage(1, 0x20, p1_r20);  // b0_p1_r32: HPR Volume: Unmute 
+	aic_writePage(1, 0x30, p1_r30);  // b0_p1_r48: SPKL Volume: Unmute SPKL & SPLR
 
 	// Headphone power-up
-	aic_writePage(1, 0x09, 0x70);  // Headphone Driver Output Stage is 25%.
-	aic_writePage(1, 0x1B, p1_r1B_2);  // Power up HP Drivers
+	aic_writePage(1, 0x09, 0x70);  		// b0_p1_r9: Headphone Driver Output Stage is 25%.
+	aic_writePage(1, 0x1B, p1_r1B_2);  	// b0_p1_r27: HP Amp Control 1: Power up HP Drivers
 	// CAB TODO: Add delay?
-	aic_writePage(1, 0x09, 0x10);  // Headphone Driver Output Stage is 100%.
+	aic_writePage(1, 0x09, 0x10);  		// b0_p1_r9: Headphone Driver Output Stage is 100%.
 
 	// Power up Speaker Drivers
-	aic_writePage(1, 0x2D, p1_r2D);
+	aic_writePage(1, 0x2D, p1_r2D);		// b0_p1_r45: SPL Amp Control 1
 	// CAB TODO: Add delay?
 
 	// Unmute LDAC and RDAC
-	aic_writePage(0, 0x40, 
+	aic_writePage(0, 0x40, 				// b0_p0_r64: Primary DAC Master Volume
 		((left == Outputs::NONE) ? 0x08 : 0x00)       // Left DAC channel
 		| ((right == Outputs::NONE) ? 0x04 : 0x00));  // Right DAC channel
 
