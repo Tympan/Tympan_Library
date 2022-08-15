@@ -81,7 +81,7 @@ class AudioRateDecimator_F32 : public AudioStream_F32 {
 };
 
 
-bool AudioRateDecimator_F32::begin(const float32_t *cp, const int _n_coeffs, const int _dec_fac, const int block_size) {  //or, you can provide it with the block size
+inline bool AudioRateDecimator_F32::begin(const float32_t *cp, const int _n_coeffs, const int _dec_fac, const int block_size) {  //or, you can provide it with the block size
 	coeff_p = cp;
 	n_coeffs = _n_coeffs;
 	dec_fac = _dec_fac;
@@ -105,7 +105,7 @@ bool AudioRateDecimator_F32::begin(const float32_t *cp, const int _n_coeffs, con
 }
 
 
-void AudioRateDecimator_F32::update(void)
+inline void AudioRateDecimator_F32::update(void)
 {
 	audio_block_f32_t *block, *block_new;
 
@@ -146,7 +146,7 @@ void AudioRateDecimator_F32::update(void)
 }
 
 
-int AudioRateDecimator_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
+inline int AudioRateDecimator_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
 	if ((is_enabled == false) || (block==NULL) || (block_new==NULL)) return -1;
 	
 	//check to make sure our decimator instance has the right size
@@ -168,7 +168,7 @@ int AudioRateDecimator_F32::processAudioBlock(audio_block_f32_t *block, audio_bl
 }
 
 
-void AudioRateDecimator_F32::printCoeff(int start_ind, int end_ind) {
+inline void AudioRateDecimator_F32::printCoeff(int start_ind, int end_ind) {
 	start_ind = min(n_coeffs-1,max(0,start_ind));
 	end_ind = min(n_coeffs-1,max(0,end_ind));
 	Serial.print("AudioRateDecimator_F32: printCoeff [" + String(start_ind) + ", " + String(end_ind) + "): ");

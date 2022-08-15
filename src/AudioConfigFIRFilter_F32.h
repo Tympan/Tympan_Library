@@ -61,21 +61,21 @@ class AudioConfigFIRFilter_F32 {
 
 #include "utility/BTNRH_rfft.h"
 
-int AudioConfigFIRFilter_F32::designLowpass(int n_fir, float freq_Hz, float sample_rate_Hz, float *filter_coeff) {
+inline int AudioConfigFIRFilter_F32::designLowpass(int n_fir, float freq_Hz, float sample_rate_Hz, float *filter_coeff) {
   float freq1_Hz = 0.0;     //low edge of bandpass
   float freq2_Hz = freq_Hz; //high edge of bandpass
   return designBandpass(n_fir, freq1_Hz, freq2_Hz, sample_rate_Hz, filter_coeff);
 }
-int AudioConfigFIRFilter_F32::designHighpass(int n_fir, float freq_Hz, float sample_rate_Hz, float *filter_coeff) {
+inline int AudioConfigFIRFilter_F32::designHighpass(int n_fir, float freq_Hz, float sample_rate_Hz, float *filter_coeff) {
   float freq1_Hz = freq_Hz;            //low edge of bandpass
   float freq2_Hz = sample_rate_Hz/2.0; //high edge of bandpass
   return designBandpass(n_fir, freq1_Hz, freq2_Hz, sample_rate_Hz, filter_coeff);
 }
-int AudioConfigFIRFilter_F32::designBandpass(int n_fir, float freq1_Hz, float freq2_Hz, float sample_rate_Hz, float *filter_coeff) {
+inline int AudioConfigFIRFilter_F32::designBandpass(int n_fir, float freq1_Hz, float freq2_Hz, float sample_rate_Hz, float *filter_coeff) {
   int is_bandpass = 1; //one for bandpass
   return designPassOrStop(is_bandpass, n_fir, freq1_Hz, freq2_Hz, sample_rate_Hz, filter_coeff);
 }
-int AudioConfigFIRFilter_F32::designBandstop(int n_fir, float freq1_Hz, float freq2_Hz, float sample_rate_Hz, float *filter_coeff) {
+inline int AudioConfigFIRFilter_F32::designBandstop(int n_fir, float freq1_Hz, float freq2_Hz, float sample_rate_Hz, float *filter_coeff) {
   int is_bandpass = 0; //zero for bandstop
   return designPassOrStop(is_bandpass, n_fir, freq1_Hz, freq2_Hz, sample_rate_Hz, filter_coeff);
 }
@@ -84,7 +84,7 @@ int AudioConfigFIRFilter_F32::designBandstop(int n_fir, float freq1_Hz, float fr
 //nw_orig = length of the window
 //nw = number of coefficients (could be larger than nw_orig
 //ww = array of window coefficients
-void AudioConfigFIRFilter_F32::createWindow(int wt, int nw_orig, int nw, float *ww) {
+inline void AudioConfigFIRFilter_F32::createWindow(int wt, int nw_orig, int nw, float *ww) {
   //float sm = 0.0;
   float w, p;
   float a = 0.16f;  //for blackman window
@@ -105,7 +105,7 @@ void AudioConfigFIRFilter_F32::createWindow(int wt, int nw_orig, int nw, float *
   }  
 }
 
-int AudioConfigFIRFilter_F32::designPassOrStop(int is_bandpass, int n_fir, float freq1_Hz, float freq2_Hz, float sample_rate_Hz, float *filter_coeff) {
+inline int AudioConfigFIRFilter_F32::designPassOrStop(int is_bandpass, int n_fir, float freq1_Hz, float freq2_Hz, float sample_rate_Hz, float *filter_coeff) {
 
   //remap the names to match BTNRH example
   int nw_orig = n_fir;       //use BTNRH name

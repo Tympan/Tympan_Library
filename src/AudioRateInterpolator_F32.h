@@ -81,7 +81,7 @@ class AudioRateInterpolator_F32 : public AudioStream_F32 {
 };
 
 
-bool AudioRateInterpolator_F32::begin(const float32_t *cp, const int _n_coeffs, const int _upsamp_fac, const int block_size) {  //or, you can provide it with the block size
+inline bool AudioRateInterpolator_F32::begin(const float32_t *cp, const int _n_coeffs, const int _upsamp_fac, const int block_size) {  //or, you can provide it with the block size
 	coeff_p = cp;
 	n_coeffs = _n_coeffs;
 	upsamp_fac = _upsamp_fac;
@@ -104,7 +104,7 @@ bool AudioRateInterpolator_F32::begin(const float32_t *cp, const int _n_coeffs, 
 	return get_is_enabled();
 }
 
-void AudioRateInterpolator_F32::update(void)
+inline void AudioRateInterpolator_F32::update(void)
 {
 	audio_block_f32_t *block, *block_new;
 
@@ -145,7 +145,7 @@ void AudioRateInterpolator_F32::update(void)
 }
 
 
-int AudioRateInterpolator_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
+inline int AudioRateInterpolator_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
 	if ((is_enabled == false) || (block==NULL) || (block_new==NULL)) return -1;
 	
 	//check to make sure our Interpolator instance has the right size
@@ -167,7 +167,7 @@ int AudioRateInterpolator_F32::processAudioBlock(audio_block_f32_t *block, audio
 }
 
 
-void AudioRateInterpolator_F32::printCoeff(int start_ind, int end_ind) {
+inline void AudioRateInterpolator_F32::printCoeff(int start_ind, int end_ind) {
 	start_ind = min(n_coeffs-1,max(0,start_ind));
 	end_ind = min(n_coeffs-1,max(0,end_ind));
 	Serial.print("AudioRateInterpolator_F32: printCoeff [" + String(start_ind) + ", " + String(end_ind) + "): ");
