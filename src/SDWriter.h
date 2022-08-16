@@ -240,6 +240,10 @@ class BufferedSDWriter : public SDWriter
 			file.FsBaseFile::flush();
 			return file.sync();
 		}
+    else
+    {
+      return false;
+    }
 	}
 
     //how many bytes should each write event be?  Set it here
