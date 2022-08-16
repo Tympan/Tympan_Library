@@ -26,6 +26,7 @@ enum class AICShieldRev { A, CCP, CCP_A };
 #endif
 
 #define AICSHIELD_DEFAULT_RESET_PIN 42
+#define AICSHIELD_VARIANT_RESET_PIN 35
 #define AICSHIELD_DEFAULT_I2C_BUS	2
 #define AICSHIELD_VARIANT_I2C_BUS  0
 #define AICSHIELD_I2C_BUS_SET_INTERNAL	4
@@ -53,29 +54,32 @@ class AICShieldPins {
 						case (AICShieldRev::A) :    //Basic AIC shield (2019 and 2020)
 							//Teensy 3.6 Pin Numbering
 							resetAIC = AICSHIELD_DEFAULT_RESET_PIN; //Fixed 2020-06-01
-							i2cBus = 2;
+							i2cBus = AICSHIELD_DEFAULT_I2C_BUS;
 							enableStereoExtMicBias = 41;
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
 							break;
 
 						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = AICSHIELD_DEFAULT_RESET_PIN;   //Fixed 2020-06-01
-							pinMode(7,INPUT_PULLUP); delay(10); int pinValue = digitalRead(7);
+							resetAIC = AICSHIELD_DEFAULT_RESET_PIN;
+							boardVariantTestPin = 7;
+							pinMode(boardVariantTestPin,INPUT_PULLUP); delay(10); 
+							int pinValue = digitalRead(boardVariantTestPin);
 							if(pinValue == 1){	// production Rev D
-								i2cBus = 2;
+								i2cBus = AICSHIELD_DEFAULT_I2C_BUS;
+								resetAIC = AIC3206_DEFAULT_RESET_PIN;
 							} else {					// prototype Rev D with op amps
-								i2cBus = 0;
-								resetAIC = 35;
+								i2cBus = AICSHIELD_VARIANT_I2C_BUS;
+								resetAIC = AICSHIELD_VARIANT_RESET_PIN;
 							}
 							Serial.print("Shield I2C Select: "); Serial.println(pinValue+1);
-							// i2cBus = 2;
 							enableStereoExtMicBias = 41;
 							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)
 							CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)
 							CCP_bigLED =  53;    //same as SCK_2 (alt)
 							CCP_littleLED_1 = 41;    //same as AIC_Shield_enableStereoExtMicBias
-							CCP_littleLED_2 = 8;     //prototype board variant uses TX_3 pin
+							// Need to add a pin for LED control when targeting prototype variant of Rev D ! ADDED BY JAM JUNE 2021
+							CCP_littleLED_2 = 8;		//same as Tympan D with OpAmp TX_3
 							CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
 							break;
@@ -89,7 +93,7 @@ class AICShieldPins {
 						case (AICShieldRev::A) :    //Basic AIC shield (2019 and 2020)
 							//Teensy 4.1 Pin Numbering
 							resetAIC = 31;
-							i2cBus = 2;
+							i2cBus = AICSHIELD_DEFAULT_I2C_BUS;
 							enableStereoExtMicBias = 29;
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
 							break;
@@ -97,7 +101,7 @@ class AICShieldPins {
 						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
 							//Teensy 4.1 Pin Numbering
 							resetAIC = 31;
-							i2cBus = 2;
+							i2cBus = AICSHIELD_DEFAULT_I2C_BUS;
 							enableStereoExtMicBias =29;
 							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)...NEED TO UPDATE!!!
 							CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)...NEED TO UPDATE!!!
@@ -133,7 +137,7 @@ class AICShieldPins {
 		int CCP_bigLED = NOT_A_FEATURE, CCP_littleLED_1 = NOT_A_FEATURE, CCP_littleLED_2 = NOT_A_FEATURE;
 		int CCP_enable28V = NOT_A_FEATURE;
 		int defaultInput = NOT_A_FEATURE;
-
+		int boardVariantTestPin = NOT_A_FEATURE;
 
 };
 
