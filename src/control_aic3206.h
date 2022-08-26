@@ -73,7 +73,7 @@ public:
 		setI2Cbus(i2cBusIndex);
 		debugToSerial = _debugToSerial;
 	}
-	enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS, IN3_IN2, IN3_wBIAS_IN2};
+	enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS, IN3_IN2, IN3_wBIAS_IN2, IN3_IN1_wBIAS};
 	virtual bool enable(void);
 	virtual bool disable(void);
 	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster.

@@ -315,7 +315,19 @@ bool AudioControlAIC3206::inputSelect(int n) {
 	if (debugToSerial) Serial.println("Set Audio Input to Left: JACK AS MIC, Right: On-Board MIC");
 	return true;
 		
-  } 
+  } else if ( n==AudioControlAIC3206::IN3_IN1_wBIAS ) {
+ 	aic_goToPage(TYMPAN_MICPGA_PAGE);
+	aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);  //pink jack
+    aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
+    aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN1 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT); //Header Jack
+    aic_writeRegister(TYMPAN_MICPGA_RIGHT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
+
+	// BIAS on, using default
+    setMicBias(TYMPAN_DEFAULT_MIC_BIAS);
+    if (debugToSerial) Serial.println("Set Audio Input to Left: JACK AS MIC; Right: Line-In; BIAS SET TO DEFAULT 2.5V");
+    return true;
+  }
+
   Serial.print("AudioControlAIC3206: ERROR: Unable to Select Input - Value not supported: ");
   Serial.println(n);
   return false;
