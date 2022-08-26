@@ -28,8 +28,9 @@ enum class AICShieldRev { A, CCP, CCP_A };
 #define AICSHIELD_DEFAULT_RESET_PIN 42
 #define AICSHIELD_VARIANT_RESET_PIN 35
 #define AICSHIELD_DEFAULT_I2C_BUS	2
-#define AICSHIELD_VARIANT_I2C_BUS  0
+#define AICSHIELD_VARIANT_I2C_BUS  1
 #define AICSHIELD_I2C_BUS_SET_INTERNAL	4
+#define DETECT_TYMPAN_REV_D0_PIN		7		//This pin is tied low on the Rev-D0/1 variant
 
 
 class AICShieldPins {
@@ -47,7 +48,7 @@ class AICShieldPins {
 			
 			switch (tympanRev) { //which Tympan are we connecting to?
 
-				case (TympanRev::D) : case (TympanRev::D4) :   //we're connecting to a Rev D tympan, so the pin numbers below are correct for the TympanD
+				case (TympanRev::D0) : case (TympanRev::D1) : case (TympanRev::D): case (TympanRev::D4) :   //we're connecting to a Rev D tympan, so the pin numbers below are correct for the TympanD
 
 					switch (AICRev) {  //which AIC_shield are we connecting to?
 
@@ -61,19 +62,24 @@ class AICShieldPins {
 
 						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
 							//Teensy 3.6 Pin Numbering
-							resetAIC = AICSHIELD_DEFAULT_RESET_PIN;
-							boardVariantTestPin = 7;
-							pinMode(boardVariantTestPin,INPUT_PULLUP); delay(10); 
-							int pinValue = digitalRead(boardVariantTestPin);
+							/*Detect which Tympan Rev-D is connected*/
+							pinMode(DETECT_TYMPAN_REV_D0_PIN,INPUT_PULLUP); delay(10); 
+							int pinValue = digitalRead(DETECT_TYMPAN_REV_D0_PIN);
+							
 							if(pinValue == 1){	// production Rev D
-								i2cBus = AICSHIELD_DEFAULT_I2C_BUS;
-								resetAIC = AIC3206_DEFAULT_RESET_PIN;
-							} else {					// prototype Rev D with op amps
-								i2cBus = AICSHIELD_VARIANT_I2C_BUS;
-								resetAIC = AICSHIELD_VARIANT_RESET_PIN;
+								resetAIC = AICSHIELD_DEFAULT_RESET_PIN;   //Fixed 2020-06-01
+								i2cBus = 2;
+								enableStereoExtMicBias = 41;
+								defaultInput = AudioControlAIC3206::IN3;  	//IN3 are the screw jacks
+							} 
+							//Tympan Rev-D0/D1 with op-amps
+							else {										
+								resetAIC = 21;   							//The reset pin is the same for the Tympan and the Shield.  So don't call reset again.  Set this to an unused pin.
+								i2cBus = AICSHIELD_VARIANT_I2C_BUS;			//Uses a different I2C bus
+								enableStereoExtMicBias = NOT_A_FEATURE; 	//Mic Bias not routed to the shield
+								defaultInput = NOT_A_FEATURE; 				//This Tympan Rec requires rerouting CCP_R to the lower board
 							}
-							Serial.print("Shield I2C Select: "); Serial.println(pinValue+1);
-							enableStereoExtMicBias = 41;
+							Serial.print("Shield I2C Select: "); Serial.println(i2cBus);
 							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)
 							CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)
 							CCP_bigLED =  53;    //same as SCK_2 (alt)
@@ -81,7 +87,6 @@ class AICShieldPins {
 							// Need to add a pin for LED control when targeting prototype variant of Rev D ! ADDED BY JAM JUNE 2021
 							CCP_littleLED_2 = 8;		//same as Tympan D with OpAmp TX_3
 							CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2
-							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
 							break;
 					}
 					break;
