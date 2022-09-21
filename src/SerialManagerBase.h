@@ -75,9 +75,39 @@
 			 inadvertently invoking these modes, never send characters such as 0x02, 0x03, 0x04.
 			 In fact, you should generally avoid any non-printable character or you risk seeing
 			 unexpected behavior.
-	
-	License: MIT License.  Use at your own risk.  Have fun!
 
+			 Datastreams expect the following message protocol.  Note that the message length and payload are sent as little endian (LSB, MSB):
+			 	1.	DATASTREAM_START_CHAR 	(0x02)
+				2.	Message Length (int32): number of bytes including parts-4 thru part-6
+				3.	DATASTREAM_SEPARATOR 	(0x03)
+				4.	Message Type (char): Avoid using the special characters 0x03 or 0x04.  (if set to ‘test’, it will print out the payload as an int, then a float)
+				5.	DATASTREAM_SEPARATOR 	(0x03)
+				6.	Payload
+				7.	DATASTREAM_END_CHAR 	(0x04)
+
+			Use RealTerm to send a 'test' message: 
+			0x02 0x0D 0x00 0x00 0x00 0x03 0x74 0x65 0x73 0x74 0x03 0xD2 0x02 0x96 0x49 0xD2 0x02 0x96 0x49 0x04
+				1. DATASTREAM_START_CHAR 	(0x02)
+				2.	Message Length (int32): (0x000D) = 13 
+				3.	DATASTREAM_SEPARATOR 	(0x03)
+				4.	Message Type (char): 	(0x74657374) = 'test'
+				5.	DATASTREAM_SEPARATOR 	(0x03)
+				6.	Payload					(0x499602D2, 0x499602D2) = [1234567890, 1234567890]
+				7.	DATASTREAM_END_CHAR 	(0x04)
+
+			- Expected output
+				-  SerialManagerBase: RespondToByte: Start data stream.
+                - SerialManagerBase: RespondToByte: Stream length = 13
+                - SerialManagerBase: RespondToByte: Time to process stream!
+            	- Stream is of type 'test'.
+                - int is 1234567890
+                - float is 1228890.25
+
+			To register a callback when a datastream message is received, use setDataStreamCallback() and set a unique message type (i.e. not 'gha', 'dsl', afc', or 'test'):
+ 			- `serialManager.setDataStreamCallback(&dataStreamCallback);`
+			- `void dataStreamCallback(char* payload_p, String *msgType_p, int numBytes)`
+
+	License: MIT License.  Use at your own risk.  Have fun!
 */
 
 
@@ -98,6 +128,9 @@ class SerialManager_UI;  //forward declare.  Assume SerialManager_UI.h will be i
 #define QUADCHAR_CHAR__USE_PERSISTENT_MODE ((char)'_')  //this is an underscore
 
 #define SERIALMANAGERBASE_MAX_UI_ELEMENTS 30
+
+typedef void(*callback_t)(char* payload_p, String* msgType_p, int numBytes);	//typedef for datastream callback pointer 
+
 class SerialManagerBase {
   public:
     SerialManagerBase(void) {};
@@ -118,6 +151,8 @@ class SerialManagerBase {
 	  SINGLE_CHAR,	  STREAM_LENGTH,	  STREAM_DATA,	  QUAD_CHAR_1,	  QUAD_CHAR_2,	  QUAD_CHAR_3
 	};
 	
+	void setDataStreamCallback(callback_t callBackFunc_p);
+
 	SerialManager_UI* add_UI_element(SerialManager_UI *);
 
   protected:
@@ -129,13 +164,14 @@ class SerialManagerBase {
     
     int serial_read_state; // Are we reading one character at a time, or a stream?
     char stream_data[MAX_DATASTREAM_LENGTH];
-    int stream_length;
+    int stream_length = 0;
     int stream_chars_received;
     BLE *ble;
     char GUI_persistent_mode = 'g';  //is this used?  I don't think so.
     String TX_string;
     char mode_char, chan_char, data_char; //for quad_char processing
-	
+	callback_t _datastreamCallback_p = NULL;
+
 	std::vector<SerialManager_UI *> UI_element_ptr;
 };
 

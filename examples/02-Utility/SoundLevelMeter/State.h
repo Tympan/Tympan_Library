@@ -8,6 +8,10 @@ class State : public TympanStateBase_UI {  // look in TympanStateBase for more s
   public:
     State(AudioSettings_F32 *given_settings, Print *given_serial) : TympanStateBase_UI(given_settings, given_serial) {}
 
+    bool enable_printTextToUSB=true;
+    bool enable_printTextToBLE=false;
+    bool enable_printPlotToBLE=false;
+
     enum FREQ_WEIGHT {FREQ_A_WEIGHT=0, FREQ_C_WEIGHT};
     int cur_freq_weight = FREQ_A_WEIGHT; //default
     

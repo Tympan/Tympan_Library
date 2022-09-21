@@ -14,7 +14,7 @@ Requirements
 
 **Arduino IDE (Windows/Linux)**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the actual Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
 
-**Teensyduino Add-On (Windows/Linux, MASTER branch)**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program Teensy devices (including Tympan) using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to just a few (like Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash).  It's your choice.  
+**Teensyduino Add-On (Windows/Linux, MASTER branch)**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program Teensy devices (including Tympan) using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to these few: Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash.  
 
 **Teensyduino (Mac, MASTER branch)**: Recent versions of OS X do not support the Teensyduino Add-On installer, so there is a full [Teensyduino IDE](https://www.pjrc.com/teensy/td_download.html) available from the Teensy project which just needs to be downloaded and extracted from its ZIP file.
 

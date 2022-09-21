@@ -15,6 +15,7 @@ extern AudioFilterFreqWeighting_F32    freqWeight1;
 extern bool enablePrintMemoryAndCPU(bool);
 extern bool enablePrintLoudnessLevels(bool);
 extern bool enablePrintingToBLE(bool);
+extern bool enablePrintingToBLEplotter(bool);
 extern int setFreqWeightType(int);
 extern int setTimeAveragingType(int);
 
@@ -34,6 +35,7 @@ class SerialManager : public SerialManagerBase {
 
     void updateFreqButtons(void);
     void updateTimeButtons(void);
+    void updateControlButtons(void);
   private:
 
 };
@@ -45,8 +47,9 @@ void SerialManager::printHelp(void) {
   myTympan.println("   c,C: Enable/Disable printing of CPU and Memory usage");
   myTympan.println("   f,F: A-weight or C-weight");  
   myTympan.println("   t,T: FAST time constant or SLOW time constant");
-  myTympan.println("   ],}: Start/Stop sending level to TympanRemote App.");
-  myTympan.println("   l,L: Enable/Disable printing of loudness level");
+  myTympan.println("   l,L: Enable/Disable printing of loudness level to USB");
+  myTympan.println("   v,V: Start/Stop sending level to TympanRemote App.");
+  myTympan.println("   ],}: Start/Stop sending level to TympanRemote App Plotter.");
   myTympan.println("   0:   Reset max loudness value.");
   myTympan.println();
 }
@@ -87,22 +90,32 @@ void SerialManager::respondToByte(char c) {
       updateTimeButtons();
       break;      
     case 'l':
-      myTympan.println("Command Received: enable printing of loudness levels.");
+      myTympan.println("Command Received: enable printing of loudness levels to USB.");
       enablePrintLoudnessLevels(true);
       break;
     case 'L':
-      myTympan.println("Command Received: disable printing of loudness levels.");
+      myTympan.println("Command Received: disable printing of loudness levels to USB.");
       enablePrintLoudnessLevels(false);
+      break;
+    case 'v':
+      myTympan.println("Command Received: enable printing of loudness levels to BLE.");
+      enablePrintingToBLE(true);
+      updateControlButtons();
+      break;
+    case 'V':
+      myTympan.println("Command Received: disable printing of loudness levels to BLE.");
+      enablePrintingToBLE(false);
+      updateControlButtons();
       break;
     case ']':
-      myTympan.println("Command Received: enable printing of loudness levels.");
-      enablePrintingToBLE(true);
-      enablePrintLoudnessLevels(true);
+      myTympan.println("Command Received: enable printing of loudness levels to BLE Plotter.");
+      enablePrintingToBLEplotter(true);
+      //updateControlButtons();
       break;
     case '}':
-      myTympan.println("Command Received: disable printing of loudness levels.");
-      enablePrintingToBLE(false);
-      enablePrintLoudnessLevels(false);
+      myTympan.println("Command Received: disable printing of loudness levels to BLE Plotter.");
+      enablePrintingToBLEplotter(false);
+      //updateControlButtons();
       break;
     case '0':
       myTympan.println("Command Received: reseting max SPL.");
@@ -132,8 +145,15 @@ void SerialManager::createTympanRemoteLayout(void) {
       card_h = page_h->addCard("Time Averaging");
           card_h->addButton("SLOW","T","slowTime",6);  //displayed string, command, button ID, button width (out of 12)
           card_h->addButton("FAST","t","fastTime",6);  //displayed string, command, button ID, button width (out of 12)
-      card_h = page_h->addCard("Maximum SPL");
+      card_h = page_h->addCard("Measured Loudness (dB SPL)");
+          card_h->addButton("Now","","",6);  //displayed string, command, button ID, button width (out of 12)
+          card_h->addButton("","","now",6);  //displayed string, command, button ID, button width (out of 12)
+          card_h->addButton("Max","","",6);  //displayed string, command, button ID, button width (out of 12)
+          card_h->addButton("","","max",6);  //displayed string, command, button ID, button width (out of 12)
+          card_h->addButton("Start","v","start",6);
+          card_h->addButton("Stop","V","stop",6); 
           card_h->addButton("Reset Max","0","resetMax",12);  //displayed string, command, button ID, button width (out of 12)
+        
           
  
   //add some pre-defined pages to the GUI
@@ -147,6 +167,7 @@ void SerialManager::printTympanRemoteLayout(void) {
 
   updateFreqButtons();
   updateTimeButtons();
+  updateControlButtons();
 }
 
 void SerialManager::updateFreqButtons(void) {
@@ -172,6 +193,14 @@ void SerialManager::updateTimeButtons(void) {
       setButtonState("slowTime",false);
       setButtonState("fastTime",true);
       break;  
+  }
+}
+
+void SerialManager::updateControlButtons(void) {
+  if (myState.enable_printTextToBLE) {
+    setButtonState("start",true);
+  } else { 
+    setButtonState("start",false);
   }
 }
 
