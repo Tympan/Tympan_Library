@@ -737,23 +737,29 @@ namespace tlv320aic3212
 
         // Clock Config
         aic_goToPage(0);
-        aic_writePage(0, 0x04, 0x33);
-        aic_writePage(0, 0x05, 0x00);
-        aic_writePage(0, 0x06, 0x91);
-        aic_writePage(0, 0x07, 0x08);
-        aic_writePage(0, 0x08, 0x00);
-        aic_writePage(0, 0x09, 0x00);
-        aic_writePage(0, 0x0a, 0x01);
+        aic_writePage(0, 0x04, 0x00);
+        // aic_writePage(0, 0x04, 0x33);
+        // aic_writePage(0, 0x05, 0x00);
+        aic_writePage(0, 0x06, 0x11);
+        // aic_writePage(0, 0x06, 0x91);
+        // aic_writePage(0, 0x07, 0x08);
+        // aic_writePage(0, 0x08, 0x00);
+        // aic_writePage(0, 0x09, 0x00);
+        // aic_writePage(0, 0x0a, 0x01);
 
         // DAC Clock
-        aic_writePage(0, 0x0b, 0x84);
-        aic_writePage(0, 0x0c, 0x90);
-        aic_writePage(0, 0x0d, 0x00);
-        aic_writePage(0, 0x0e, 0x20);
+        aic_writePage(0, 0x0b, 0x81); // NDAC divider ON; Scaler NDAC = 1
+        aic_writePage(0, 0x0c, 0x88); // MDAC divider ON; Scaler MDAC = 8
+        // aic_writePage(0, 0x0b, 0x84);
+        // aic_writePage(0, 0x0c, 0x90);
+        aic_writePage(0, 0x0d, 0x00); // DOSR = 0 (MSB)
+        aic_writePage(0, 0x0e, 0x20); // DOSR = 32 (LSB)
 
         // ADC Clock
-        aic_writePage(0, 0x12, 0x84);
-        aic_writePage(0, 0x13, 0x90);
+        aic_writePage(0, 0x12, 0x81); // NADC divider ON; Scaler NADC = 1
+        aic_writePage(0, 0x13, 0x88); // MADC divider ON; Scaler MADC = 8
+        // aic_writePage(0, 0x12, 0x84);
+        // aic_writePage(0, 0x13, 0x90);
         aic_writePage(0, 0x14, 0x20);
 
         // Audio Serial Interface Routing
