@@ -226,6 +226,9 @@ namespace tlv320aic3212
         // bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster.
         bool outputSelect(Outputs both, bool flag_full = true) { return outputSelect(both, both, flag_full); };
         bool outputSelect(Outputs left, Outputs right, bool flag_full = true);
+
+        bool outputSelectTest();
+
         bool volume(float n);
         static float applyLimitsOnVolumeSetting(float vol_dB);
         float volume_dB(float vol_dB);                          // set both channels to the same volume
@@ -261,6 +264,15 @@ namespace tlv320aic3212
         bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
         bool enableDigitalMicInputs(bool desired_state);
 
+        bool aic_goToBook(uint8_t book);
+        bool aic_goToPage(uint8_t page);
+
+        unsigned int aic_readRegister(uint8_t reg, uint8_t *pVal); // Assumes page has already been set
+        bool aic_writeRegister(uint8_t reg, uint8_t val);          // assumes page has already been set
+        bool outputSpk(void);
+        bool outputHp(void);
+        bool inputPdm(void);
+
     protected:
         const Config *pConfig = &DefaultConfig;
         TwoWire *myWire = &Wire; // from Wire.h
@@ -273,10 +285,6 @@ namespace tlv320aic3212
         // void aic_initADC(void);
         void setResetPin(int pin) { resetPinAIC = pin; }
 
-        bool aic_goToBook(uint8_t book);
-        bool aic_goToPage(uint8_t page);
-        unsigned int aic_readRegister(uint8_t reg, uint8_t *pVal); // Assumes page has already been set
-        bool aic_writeRegister(uint8_t reg, uint8_t val);          // assumes page has already been set
         int prevMicDetVal = -1;
         int resetPinAIC = AIC3212_DEFAULT_RESET_PIN; // AIC reset pin, Rev C
         float HP_cutoff_Hz = 0.0f;

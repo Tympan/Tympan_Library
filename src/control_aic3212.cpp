@@ -255,7 +255,7 @@ namespace tlv320aic3212
             .clkin_div = 1,
             .enabled = true},
         .dac = {.clk_src = ADC_DAC_Clock_Source::PLL_CLK, .ndac = 8, .mdac = 8, .dosr = 32, .prb_p = 1, .ptm_p = DAC_PowerTune_Mode::PTM_P4},
-        .adc = {.clk_src = ADC_DAC_Clock_Source::PLL_CLK, .nadc = 8, .madc = 8, .aosr = 32, .prb_r = 13, .ptm_r = ADC_PowerTune_Mode::PTM_R4}};
+        .adc = {.clk_src = ADC_DAC_Clock_Source::PLL_CLK, .nadc = 8, .madc = 8, .aosr = 32, .prb_r = 1, .ptm_r = ADC_PowerTune_Mode::PTM_R4}};
 
     // -------------------- Local Variables --------------
     // AIC3212_I2C_Address i2cAddress = AIC3212_I2C_Address::Bus_0;
@@ -707,6 +707,265 @@ namespace tlv320aic3212
         return (float)int_targ_vol_dB;
     }
 
+    bool AudioControlAIC3212::outputSelectTest()
+    {
+        if (debugToSerial)
+        {
+            Serial.println("# AudioControlAIC3212: outputSelectTest");
+        }
+
+        return true;
+    }
+
+    bool AudioControlAIC3212::inputPdm(void)
+    {
+        if (debugToSerial)
+        {
+            Serial.println("# AudioControlAIC3212: Initializing AIC");
+        }
+
+        // // Software Reset
+        // aic_goToBook(0);
+        // aic_goToPage(0);
+        // aic_writeRegister(0x01, 0x01);
+
+        // Power and Analog Configuration
+        aic_goToPage(1);
+        aic_writePage(1, 0x01, 0x00); // Disable weak AVDD to DVDD connection and make analog supplies available
+        aic_writePage(1, 0x7a, 0x01); // REF charging time = 40ms
+        aic_writePage(1, 0x79, 0x33); // Set the quick charge of input coupling cap for analog inputs
+
+        // Clock Config
+        aic_goToPage(0);
+        aic_writePage(0, 0x04, 0x33);
+        aic_writePage(0, 0x05, 0x00);
+        aic_writePage(0, 0x06, 0x91);
+        aic_writePage(0, 0x07, 0x08);
+        aic_writePage(0, 0x08, 0x00);
+        aic_writePage(0, 0x09, 0x00);
+        aic_writePage(0, 0x0a, 0x01);
+
+        // DAC Clock
+        aic_writePage(0, 0x0b, 0x84);
+        aic_writePage(0, 0x0c, 0x90);
+        aic_writePage(0, 0x0d, 0x00);
+        aic_writePage(0, 0x0e, 0x20);
+
+        // ADC Clock
+        aic_writePage(0, 0x12, 0x84);
+        aic_writePage(0, 0x13, 0x90);
+        aic_writePage(0, 0x14, 0x20);
+
+        // Audio Serial Interface Routing
+        aic_goToPage(4);
+        aic_writePage(4, 0x01, 0x00);
+        aic_writePage(4, 0x07, 0x01);
+        aic_writePage(4, 0x0a, 0x00);
+
+        // Signal Processing
+        aic_goToPage(0);
+        aic_writePage(0, 0x3c, 0x01);
+        aic_writePage(0, 0x3d, 0x0d);
+
+        // ADC Input Channel
+        aic_goToPage(4);
+        aic_writePage(4, 0x57, 0x28);
+        aic_writePage(4, 0x5B, 0x02);
+        aic_writePage(4, 0x65, 0x00);
+
+        aic_goToPage(0);
+        aic_writePage(0, 0x53, 0x14);
+        aic_writePage(0, 0x54, 0x14);
+
+        // Init codec
+        aic_goToPage(1);
+        aic_writePage(1, 0x01, 0x00);
+        aic_writePage(1, 0x7a, 0x01);
+
+        // // Output channel config
+        // aic_goToPage(1);
+        // aic_writePage(1, 0x08, 0x00); // Common Mode Register
+        // aic_writePage(1, 0x09, 0x00); // Headphone Output Driver Control
+
+        // aic_writePage(1, 0x1f, 0x80); // HPL Driver Volume Control
+        // aic_writePage(1, 0x20, 0x80); // HPR Driver Volume Control
+
+        // aic_writePage(1, 0x21, 0x28); // Charge Pump Control 1
+        // aic_writePage(1, 0x23, 0x10); // Charge Pump Control 3
+        // aic_writePage(1, 0x1b, 0x33); // Headphone Amplifier Control 1
+
+        // ASI-1 Config
+        aic_goToPage(4);
+        aic_writePage(4, 0x08, 0x50);
+        aic_writePage(4, 0x0a, 0x00);
+        aic_writePage(4, 0x43, 0x02);
+        aic_writePage(4, 0x44, 0x20);
+        aic_writePage(4, 0x76, 0x04);
+
+        // // unmute ADC and DAC
+        aic_goToPage(0);
+        aic_writePage(0, 0x51, 0xd4);
+        aic_writePage(0, 0x52, 0x00);
+        // aic_writePage(0, 0x3f, 0xc0);
+        // aic_writePage(0, 0x40, 0x00);
+
+        return true;
+    }
+
+    bool AudioControlAIC3212::outputHp(void)
+    {
+        if (debugToSerial)
+            Serial.println("# AudioControlAIC3212: outputSelect");
+
+        aic_goToBook(0);
+
+        // // Mute HP and Speaker Drivers
+        // aic_writePage(1, 0x1F, 0xB9);
+        // aic_writePage(1, 0x20, 0xB9);
+        // aic_writePage(1, 0x30, 0x00);
+
+        // // Unroute DAC outputs
+        // aic_writePage(1, 0x16, 0x00);
+        // aic_writePage(1, 0x1B, 0x00);
+        // aic_writePage(1, 0x1C, 0x7F);
+        // aic_writePage(1, 0x1D, 0x7F);
+        // aic_writePage(1, 0x24, 0x7F);
+        // aic_writePage(1, 0x25, 0x7F);
+
+        // Reset charge pump control
+        aic_writePage(1, 0x21, 0x28); // Charge Pump Clock Divide = 4 (Default)
+        aic_writePage(1, 0x22, 0x3E); // Headphone output offset correction (Default)
+        aic_writePage(1, 0x23, 0x30); // Enable dynamic offset calibration
+
+        uint8_t
+            p1_r1B = 0x00,
+            p1_r1F = 0xB9,
+            p1_r20 = 0xB9,
+            p1_r1B_2 = 0x00;
+
+        p1_r1B |= 0x20;   // Left DAC is routed to HPL driver.
+        p1_r1F = 0x80;    // Unmute HPL driver, set gain = 0dB
+        p1_r1B_2 |= 0x22; // Left DAC is routed and HPL driver powered on.
+
+        p1_r1B |= 0x10;   // Right DAC is routed to HPR driver.
+        p1_r20 = 0x80;    // Unmute HPR driver, set gain = 0dB
+        p1_r1B_2 |= 0x11; // Right DAC is routed and HPR driver powered on.
+
+        // Set DAC PowerTune Mode
+        // aic_writePage(1, 0x03, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Left DAC PTM
+        // aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Right DAC PTM
+
+        // Route DAC outputs
+        // aic_writePage(1, 0x16, p1_r16);
+        // aic_writePage(1, 0x1B, p1_r1B);
+        // aic_writePage(1, 0x2E, p1_r2E);
+        // aic_writePage(1, 0x2F, p1_r2F);
+
+        // Power up LDAC and RDAC
+        aic_writePage(0, 0x3F,
+                      (0x80) | (0x40)); // Right DAC channel
+
+        // Power up LOL and LOR
+        // aic_writePage(1, 0x16, p1_r16_2);
+
+        // Unmute drivers
+        aic_writePage(1, 0x1F, p1_r1F); // Unmute HPL driver
+        aic_writePage(1, 0x20, p1_r20); // Unmute HPR driver
+        // aic_writePage(1, 0x30, p1_r30); // Unmute SPKL & SPLR
+
+        // Headphone power-up
+        aic_writePage(1, 0x1B, p1_r1B_2); // Power up HP Drivers
+        // CAB TODO: Add delay?
+        aic_writePage(1, 0x09, 0x10); // Headphone Driver Output Stage is 100%.
+
+        // Unmute LDAC and RDAC
+        aic_writePage(0, 0x40,
+                      0x00); // Right DAC channel
+
+        return true;
+    }
+
+    bool AudioControlAIC3212::outputSpk()
+    {
+        if (debugToSerial)
+            Serial.println("# AudioControlAIC3212: outputSpk");
+
+        aic_goToBook(0);
+
+        // // Mute HP and Speaker Drivers
+        // aic_writePage(1, 0x1F, 0xB9);
+        // aic_writePage(1, 0x20, 0xB9);
+        // aic_writePage(1, 0x30, 0x00);
+
+        // // Unroute DAC outputs
+        // aic_writePage(1, 0x16, 0x00);
+        // aic_writePage(1, 0x1B, 0x00);
+        // aic_writePage(1, 0x1C, 0x7F);
+        // aic_writePage(1, 0x1D, 0x7F);
+        // aic_writePage(1, 0x24, 0x7F);
+        // aic_writePage(1, 0x25, 0x7F);
+
+        // // Reset charge pump control
+        // aic_writePage(1, 0x21, 0x28); // Charge Pump Clock Divide = 4 (Default)
+        // aic_writePage(1, 0x22, 0x3E); // Headphone output offset correction (Default)
+        // aic_writePage(1, 0x23, 0x30); // Enable dynamic offset calibration
+
+        uint8_t
+            p1_r16 = 0x00,
+            p1_r1B = 0x00,
+            p1_r2E = 0x7F,
+            p1_r2F = 0x7F,
+            p1_r16_2 = 0x00,
+            p1_r1F = 0xB9,
+            p1_r20 = 0xB9,
+            p1_r30 = 0x00,
+            p1_r2D = 0x00;
+
+        p1_r16 |= 0x80; // Left DAC M-terminal is routed to LOL driver.
+                        //    p1_r2E = 0b0111100; // LOL Output Routed to SPKL Driver, Volume Control: 0dB
+        p1_r2E = 0x00;
+        p1_r16_2 |= 0x82; // Routed & LOL output driver power-up
+        p1_r30 |= 0x40;   // SPKL Driver Volume = 6 dB
+        p1_r2D |= 0x02;   // SPKL Driver Power-Up
+
+        p1_r16 |= 0x40;   // Right DAC M-terminal is routed to LOR driver.
+        p1_r2F = 0x00;    // LOR Output Routed to SPKR Driver, Volume Control: 0dB
+        p1_r16_2 |= 0x41; // Routed & LOR output driver power-up
+        p1_r30 |= 0x04;   // SPKR Driver Volume = 6 dB
+        p1_r2D |= 0x01;   // SPKR Driver Power-Up
+
+        // Set DAC PowerTune Mode
+        // aic_writePage(1, 0x03, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Left DAC PTM
+        // aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Right DAC PTM
+
+        // Route DAC outputs
+        aic_writePage(1, 0x16, p1_r16);
+        aic_writePage(1, 0x1B, p1_r1B);
+        aic_writePage(1, 0x2E, p1_r2E);
+        aic_writePage(1, 0x2F, p1_r2F);
+
+        // Power up LDAC and RDAC
+        aic_writePage(0, 0x3F,
+                      (0x80)         // Left DAC channel
+                          | (0x40)); // Right DAC channel
+
+        // Power up LOL and LOR
+        aic_writePage(1, 0x16, p1_r16_2);
+
+        // Unmute drivers
+        aic_writePage(1, 0x1F, p1_r1F); // Unmute HPL driver
+        aic_writePage(1, 0x20, p1_r20); // Unmute HPR driver
+        aic_writePage(1, 0x30, p1_r30); // Unmute SPKL & SPLR
+
+        // Power up Speaker Drivers
+        aic_writePage(1, 0x2D, p1_r2D);
+
+        // Unmute LDAC and RDAC
+        aic_writePage(0, 0x40, 0x00); // Right DAC channel
+
+        return true;
+    }
+
     bool AudioControlAIC3212::outputSelect(Outputs left, Outputs right, bool flag_full)
     {
         if (debugToSerial)
@@ -903,23 +1162,29 @@ namespace tlv320aic3212
 
         // Clock Config
         aic_goToPage(0);
-        aic_writePage(0, 0x04, 0x33);
-        aic_writePage(0, 0x05, 0x00);
-        aic_writePage(0, 0x06, 0x91);
-        aic_writePage(0, 0x07, 0x08);
-        aic_writePage(0, 0x08, 0x00);
-        aic_writePage(0, 0x09, 0x00);
-        aic_writePage(0, 0x0a, 0x01);
+        aic_writePage(0, 0x04, 0x00);
+        // aic_writePage(0, 0x04, 0x33);
+        // aic_writePage(0, 0x05, 0x00);
+        aic_writePage(0, 0x06, 0x11);
+        // aic_writePage(0, 0x06, 0x91);
+        // aic_writePage(0, 0x07, 0x08);
+        // aic_writePage(0, 0x08, 0x00);
+        // aic_writePage(0, 0x09, 0x00);
+        // aic_writePage(0, 0x0a, 0x01);
 
         // DAC Clock
-        aic_writePage(0, 0x0b, 0x84);
-        aic_writePage(0, 0x0c, 0x90);
-        aic_writePage(0, 0x0d, 0x00);
-        aic_writePage(0, 0x0e, 0x20);
+        aic_writePage(0, 0x0b, 0x81); // NDAC divider ON; Scaler NDAC = 1
+        aic_writePage(0, 0x0c, 0x88); // MDAC divider ON; Scaler MDAC = 8
+        // aic_writePage(0, 0x0b, 0x84);
+        // aic_writePage(0, 0x0c, 0x90);
+        aic_writePage(0, 0x0d, 0x00); // DOSR = 0 (MSB)
+        aic_writePage(0, 0x0e, 0x20); // DOSR = 32 (LSB)
 
         // ADC Clock
-        aic_writePage(0, 0x12, 0x84);
-        aic_writePage(0, 0x13, 0x90);
+        aic_writePage(0, 0x12, 0x81); // NADC divider ON; Scaler NADC = 1
+        aic_writePage(0, 0x13, 0x88); // MADC divider ON; Scaler MADC = 8
+        // aic_writePage(0, 0x12, 0x84);
+        // aic_writePage(0, 0x13, 0x90);
         aic_writePage(0, 0x14, 0x20);
 
         // Audio Serial Interface Routing
@@ -950,15 +1215,15 @@ namespace tlv320aic3212
 
         // Output channel config
         aic_goToPage(1);
-        aic_writePage(1, 0x08, 0x00);
-        aic_writePage(1, 0x09, 0x00);
+        aic_writePage(1, 0x08, 0x00); // Common Mode Register
+        aic_writePage(1, 0x09, 0x00); // Headphone Output Driver Control
 
-        aic_writePage(1, 0x1f, 0x80);
-        aic_writePage(1, 0x20, 0x80);
+        aic_writePage(1, 0x1f, 0x80); // HPL Driver Volume Control
+        aic_writePage(1, 0x20, 0x80); // HPR Driver Volume Control
 
-        aic_writePage(1, 0x21, 0x28);
-        aic_writePage(1, 0x23, 0x10);
-        aic_writePage(1, 0x1b, 0x33);
+        aic_writePage(1, 0x21, 0x28); // Charge Pump Control 1
+        aic_writePage(1, 0x23, 0x10); // Charge Pump Control 3
+        aic_writePage(1, 0x1b, 0x33); // Headphone Amplifier Control 1
 
         // ASI-1 Config
         aic_goToPage(4);
@@ -1241,6 +1506,7 @@ namespace tlv320aic3212
     { // assumes page has already been set
         if (debugToSerial)
         {
+            Serial.print(i2cAddress);
             // Serial.print("aic_writeRegister: 0x"); Serial.print(reg, HEX); Serial.print(" 0x"); Serial.println(val, HEX);
             Serial.print("w 30 ");
             Serial.print(reg, HEX);
