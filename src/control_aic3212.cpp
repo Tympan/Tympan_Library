@@ -277,7 +277,7 @@ namespace tlv320aic3212
                 .nadc = 1,                                      //Divisor
                 .madc = 8,                                      //Divisor
                 .aosr = 32,                                     //Decimation factor
-                .prb_r = 13,                                    //Decimation Filter
+                .prb_r = 1,                                     //Decimation Filter A
                 .ptm_r = ADC_PowerTune_Mode::PTM_R4}};          //Powertune mode
 
     // -------------------- Local Variables --------------
