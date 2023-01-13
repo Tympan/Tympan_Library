@@ -218,6 +218,14 @@ namespace tlv320aic3212
 #define AIC3212_DAC_VOLUME_LEFT_REG 0x41  // page 0 reg 65
 #define AIC3212_DAC_VOLUME_RIGHT_REG 0x42 // page 0 reg 66
 
+// Headphone Volume 
+#define AIC3212_HP_VOLUME_PAGE 0x01
+#define AIC3212_HPL_VOLUME_REG 0x1F
+#define AIC3212_HPR_VOLUME_REG 0x20
+#define AIC3212_HP_VOLUME_MASK 0b00111111
+#define AIC3212_HP_VOLUME_MIN (int8_t)-6
+#define AIC3212_HP_VOLUME_MAX (int8_t)14
+
 // SPKR Volume (for Class D Speaker drivers...but this is fed by the Line-Out, so it's volume is affected by LOL and LOR, too)
 #define AIC3212_SPKR_VOLUME_PAGE 0x01 // page 1
 #define AIC3212_SPKR_VOLUME_REG 0x30  // page 1 reg 48
@@ -241,21 +249,36 @@ namespace tlv320aic3212
 #define AIC3212_ADC_POWERTUNE_REG 0x3D
 
     // -------------------- Device Configuration --------------------
-
+    /* Clocking
+    Assuming the Tympan sample rate is set to 96kHz, MCLK from the Tympan = 24.576MHz
+    The PLL is not needed; the MCLK will feed right into the ADC and DAC clock busses.
+    ADC_MOD_CLK & DAC_MOD_CLK will be MCLK/8 = 3.072MHz
+    32X Decimation will take that down to 96kHz.
+    */
     const Config DefaultConfig{
-        .i2s_bits = I2S_Word_Length::I2S_32_BITS,
+        .i2s_bits = I2S_Word_Length::I2S_32_BITS,               //16-bit words      
         .i2s_clk_dir = I2S_Clock_Dir::AIC_INPUT,
         .pll = {
             .range = PLL_Clock_Range::LOW_RANGE,
-            .src = PLL_Source::MCLK1,
+            .src = PLL_Source::MCLK1,                    
             .r = 1,
             .j = 8,
             .d = 0,
             .p = 1,
             .clkin_div = 1,
-            .enabled = true},
-        .dac = {.clk_src = ADC_DAC_Clock_Source::PLL_CLK, .ndac = 8, .mdac = 8, .dosr = 32, .prb_p = 1, .ptm_p = DAC_PowerTune_Mode::PTM_P4},
-        .adc = {.clk_src = ADC_DAC_Clock_Source::PLL_CLK, .nadc = 8, .madc = 8, .aosr = 32, .prb_r = 1, .ptm_r = ADC_PowerTune_Mode::PTM_R4}};
+            .enabled = false},                                  //Turn off PLL; not needed!
+        .dac = {.clk_src = ADC_DAC_Clock_Source::MCLK1, 
+                .ndac = 1,                                      //Divisor
+                .mdac = 8,                                      //Divisor
+                .dosr = 32,                                     //Decimation factor
+                .prb_p = 1,                                     //Decimation Filter
+                .ptm_p = DAC_PowerTune_Mode::PTM_P4 },          //Powertune mode
+        .adc = {.clk_src = ADC_DAC_Clock_Source::MCLK1, 
+                .nadc = 1,                                      //Divisor
+                .madc = 8,                                      //Divisor
+                .aosr = 32,                                     //Decimation factor
+                .prb_r = 1,                                     //Decimation Filter A
+                .ptm_r = ADC_PowerTune_Mode::PTM_R4}};          //Powertune mode
 
     // -------------------- Local Variables --------------
     // AIC3212_I2C_Address i2cAddress = AIC3212_I2C_Address::Bus_0;
@@ -283,31 +306,6 @@ namespace tlv320aic3212
         }
     }
 
-    bool AudioControlAIC3212::enable_test(void)
-    {
-        delay(10);
-        myWire->begin();
-        delay(5);
-
-        // Hard reset the AIC
-        if (debugToSerial)
-            Serial.println("# Hardware reset of AIC...");
-        pinMode(resetPinAIC, OUTPUT);
-        digitalWrite(resetPinAIC, HIGH);
-        delay(50); // not reset
-        digitalWrite(resetPinAIC, LOW);
-        delay(50); // reset
-        digitalWrite(resetPinAIC, HIGH);
-        delay(50); // not reset
-
-        // aic_reset(); // delay(50);  //soft reset
-        aic_init_test();
-
-        if (debugToSerial)
-            Serial.println("# AIC3212 enable test done");
-
-        return true;
-    }
 
     bool AudioControlAIC3212::enable(void)
     {
@@ -370,81 +368,97 @@ namespace tlv320aic3212
         if (debugToSerial)
             Serial.println("# AudioControlAIC3212: inputSelect");
         bool success = true;
-
+        
+        // Initialize ADC as muted and powered down
         uint8_t
-            // 	// Input common mode?  (B0_P1_R8_D2 already set (0.9??)
-            b0_p1_r51 = 0x00, // Mic Bias (B0_P1_R51)
-            b0_p1_r52 = 0x00, // Left ADCPGA P-Terminal (B0_P1_R52 & R53)
-            b0_p1_r53 = 0x00,
-            b0_p1_r54 = 0x00, // Left ADCPGA M-Terminal (B0_P1_R54)
-            b0_p1_r55 = 0x00, // Right ADCPGA P-Terminal (B0_P1_R55 & R56)
-            b0_p1_r56 = 0x00,
-            b0_p1_r57 = 0x00,  // Right ADCPGA M-Terminal (B0_P1_R57)
-            b0_p1_r58 = 0x00,  // Input Common Mode Control
-            b0_p1_r59 = 0x80,  // Left MICPGA Volume (B0_P1_R59)
-            b0_p1_r60 = 0x80,  // Right MICPGA Volume (B0_P1_R60)
-                               //	b0_p1_r61 = 0x00, // ADC PowerTune Mode (B0_P1_R61)
-            b0_p4_r87 = 0x00,  // GPIO2 as Digital MIC ADC_MOD_CLK (B0_P4_R87)
-            b0_p4_r91 = 0x00,  // GPI1 as digital input (B0_P4_R92)
-            b0_p4_r101 = 0x06, // Digital MIC DIN Control (B0_P4_R101)   48??, B0_P4_R65??) Digital MIC DIN
-            b0_p0_r81 = 0x00,  // Power up, Digital Mic Selection (B0_P0_R81)
-            b0_p0_r82 = 0x88;  // Unmute, Fine Gain (B0_P0_R82)
+            b0_p0_r81 = 0x00,   // Power down left and right ADC channel, clear Digital Mic config
+            b0_p0_r82 = 0x88,   // Mute ADC Fine Gain Volume
+            b0_p1_r51 = 0,      // Mic Bias OFF
+            b0_p1_r52 = 0,      // Left Mic PGA disconnected
+            b0_p1_r54 = 0,      // Left Mic PGA disconnected
+            b0_p1_r55 = 0,      // Right Mic PGA disconnected
+            b0_p1_r57 = 0,      // Right Mic PGA disconnected
+            b0_p1_r59 = 0x80,   // Mute Left MICPGA Volume
+            b0_p1_r60 = 0x80,   // Mute Right MICPGA Volume
+            b0_p4_r87 = 0,      // GPIO2 disabled
+            b0_p4_r91 = 0,      // GPI1 disabled
+            b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1 (B0_P4_R101)
 
+        // Left Mic
         if (left == Inputs::MIC)
         {
             // IN1L with 2.4V Mic Bias EXT
-            b0_p1_r51 |= 0b11011000; // Power up 2.4V MICBIAS_EXT
-            b0_p1_r52 |= 0b01000000; // IN1L to Left Mic PGA+ (RIN = 10K)
-            b0_p1_r54 |= 0b01000000; // CM1L to Left Mic PGA- (RIN = 10K)
+            b0_p1_r51 = 0b11011000; // Power up 2.4V MICBIAS_EXT
+            b0_p1_r52 = 0b01000000; // IN1L to Left Mic PGA+ (RIN = 10K)
+            b0_p1_r54 = 0b01000000; // CM1L to Left Mic PGA- (RIN = 10K)
             b0_p1_r59 = 0x00;        // Enable Left MICPGA Volume, 0.0dB
+
+            // Update ADC power and volume settings, to be written later
             b0_p0_r81 |= 0b10000000; // Power up left ADC
-            b0_p0_r82 &= 0x7F;       // Unmute Left ADC
+            b0_p0_r82 &= 0x7F;       // Unmute Left ADC, Fine Gain
         }
+
+        // Right Mic
         if (right == Inputs::MIC)
         {
             // IN1R with 2.4V Mic Bias EXT
-            b0_p1_r51 |= 0b11011000; // Power up 2.4V MICBIAS_EXT
-            b0_p1_r55 |= 0b01000000; // IN1R to Right Mic PGA+ (RIN = 10K)
-            b0_p1_r57 |= 0b01000000; // CM1R to Right Mic PGA- (RIN = 10K)
+            b0_p1_r51 = 0b11011000; // Power up 2.4V MICBIAS_EXT
+            b0_p1_r55 = 0b01000000; // IN1R to Right Mic PGA+ (RIN = 10K)
+            b0_p1_r57 = 0b01000000; // CM1R to Right Mic PGA- (RIN = 10K)
             b0_p1_r60 = 0x00;        // Enable Right MICPGA Volume, 0.0dB
+            
+            // Update ADC power and volume settings, to be written later
             b0_p0_r81 |= 0b01000000; // Power up right ADC
-            b0_p0_r82 &= 0xF7;       // Unmute Right ADC
-        }
-        if (left == Inputs::PDM)
-        {
-            // PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1 (Left)
-            b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics
-            b0_p4_r91 = 0b00000010;  // Set GPI1 to data input
-            b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1
-            b0_p0_r81 |= 0b10010000; // Power up left ADC, Configure left for digital mic
-            b0_p0_r82 &= 0x7F;       // Unmute Left ADC
-        }
-        if (right == Inputs::PDM)
-        {
-            // PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1 (Right)
-            b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics
-            b0_p4_r91 = 0b00000010;  // Set GPI1 to data input
-            b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1
-            b0_p0_r81 |= 0b01000100; // Power up Right ADC, Configure right for digital mic
-            b0_p0_r82 &= 0xF7;       // Unmute Right ADC
+            b0_p0_r82 &= 0xF7;       // Unmute Right ADC, Fine Gain
         }
 
-        aic_goToBook(0);
-        aic_writePage(1, 51, b0_p1_r51);   // Mic Bias (B0_P1_R51)
-        aic_writePage(1, 52, b0_p1_r52);   // Left ADC PGA+ (B0_P1_R52
-        aic_writePage(1, 53, b0_p1_r53);   //   & B0_P1_R53)
-        aic_writePage(1, 54, b0_p1_r54);   // Left ADC PGA- (B0_P1_R54)
-        aic_writePage(1, 55, b0_p1_r55);   // Right ADC PGA+ (B0_P1_R55
-        aic_writePage(1, 56, b0_p1_r56);   //   & B0_P1_R56)
-        aic_writePage(1, 57, b0_p1_r57);   // Right ADC PGA- (B0_P1_R57)
-        aic_writePage(1, 58, b0_p1_r58);   // Input Common Mode Control
-        aic_writePage(1, 59, b0_p1_r59);   // Left MIC PGA Volume (B0_P1_R59)
-        aic_writePage(1, 60, b0_p1_r60);   // Right MIC PGA Volume (B0_P1_R60)
-        aic_writePage(4, 87, b0_p4_r87);   // GPIO2 as Digital MIC ADC_MOD_CLK (B0_P4_R87)
-        aic_writePage(4, 91, b0_p4_r91);   // GPI1 as digital input (B0_P4_R92)
-        aic_writePage(4, 101, b0_p4_r101); // Digital MIC DIN Control (B0_P4_R101)
-        aic_writePage(0, 81, b0_p0_r81);   // Power up, Digital Mic Selection (B0_P0_R81)
-        aic_writePage(0, 82, b0_p0_r82);   // Unmute, Fine Gain (B0_P0_R82)
+        // PDM Mics
+        if ( (left == Inputs::PDM)||(right == Inputs::PDM) )
+        {
+            // Configure PDM Mic: PDM_CLK = GPIO2; PDM_DAT = GPI1
+            b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics (B0_P4_R87)
+            b0_p4_r91 = 0b00000010;  // Set GPI1 to digitial mic data input (B0_P4_R92)
+            b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1 (B0_P4_R101)
+
+            // Update ADC power and volume settings, to be written later
+            if (left == Inputs::PDM)
+            {
+                b0_p0_r81 |= 0b10010000; // Power up left ADC, Configure left for digital mic (B0_P0_R81)
+                b0_p0_r82 &= 0x7F;       // Unmute Left ADC, Fine Gain
+
+            }
+            if (right == Inputs::PDM)
+            {
+                b0_p0_r81 |= 0b01000100; // Power up Right ADC, Configure right for digital mic
+                b0_p0_r82 &= 0xF7;       // Unmute Right ADC, Fine Gain
+            }
+        }
+
+        // -- Write Registers --
+        aic_goToBook(0);                 // Set to book-0
+
+        // \todo Mute ADC before changing settings
+
+        // Write Left Mic Settings
+        aic_writePage(1, 51, b0_p1_r51);
+        aic_writePage(1, 52, b0_p1_r52);
+        aic_writePage(1, 54, b0_p1_r54);
+        aic_writePage(1, 59, b0_p1_r59);
+
+        // Write Right Mic Settings
+        aic_writePage(1, 51, b0_p1_r51);
+        aic_writePage(1, 55, b0_p1_r55);
+        aic_writePage(1, 57, b0_p1_r57);
+        aic_writePage(1, 60, b0_p1_r60);
+
+        // Write PDM Mic Setting
+        aic_writePage(4, 87, b0_p4_r87);
+        aic_writePage(4, 91, b0_p4_r91);  
+        aic_writePage(4, 101, b0_p4_r101); 
+
+        //  Power Up ADC and UnMute                   
+        aic_writePage(0, 81, b0_p0_r81);   //Power up ADC and set digital mic input (if selected)
+        aic_writePage(0, 82, b0_p0_r82);   //Unmute Fine Gain
 
         return success;
     }
@@ -667,6 +681,38 @@ namespace tlv320aic3212
         vol_dB = volume_dB(vol_dB, 1); // set right channel
         return volume_dB(vol_dB, 0);   // set left channel
     }
+    
+    /*
+    Note: Gain must be -6dB ~ +14dB
+    
+    */
+    void AudioControlAIC3212::setHeadphoneGain_dB(float gain_left_dB, float gain_right_dB)
+    {
+        unsigned int buff = 0;
+        int8_t left_dB_u8 = 0;
+        int8_t right_dB_u8 = 0;
+
+        // round to nearest dB and clamp limits
+        left_dB_u8 = (int)(gain_left_dB + 0.5); 
+        right_dB_u8 = (int)(gain_right_dB + 0.5); 
+
+        left_dB_u8 = constrain(left_dB_u8, AIC3212_HP_VOLUME_MIN, AIC3212_HP_VOLUME_MAX);
+        right_dB_u8 = constrain(gain_right_dB, AIC3212_HP_VOLUME_MIN, AIC3212_HP_VOLUME_MAX);
+
+        // Set Left Volume
+        aic_goToBook(0);
+        buff = aic_readPage(AIC3212_HP_VOLUME_PAGE, AIC3212_HPL_VOLUME_REG); //read existing register value
+        buff = (buff & (~AIC3212_HP_VOLUME_MASK)) | (left_dB_u8 & AIC3212_HP_VOLUME_MASK);
+
+        aic_writePage( AIC3212_HP_VOLUME_PAGE, AIC3212_HPL_VOLUME_REG, uint8_t(buff) );
+
+        // Set Right Volume
+        buff = aic_readPage(AIC3212_HP_VOLUME_PAGE, AIC3212_HPR_VOLUME_REG); //read existing register value
+        buff = (buff & (~AIC3212_HP_VOLUME_MASK)) | (right_dB_u8 & AIC3212_HP_VOLUME_MASK);
+
+        aic_writePage( AIC3212_HP_VOLUME_PAGE, AIC3212_HPR_VOLUME_REG, uint8_t(buff) );
+    }
+    
     float AudioControlAIC3212::setSpeakerVolume_dB(float target_vol_dB)
     {
         int int_targ_vol_dB = (int)(target_vol_dB + 0.5); // round to nearest dB
@@ -764,13 +810,13 @@ namespace tlv320aic3212
 
         // Audio Serial Interface Routing
         aic_goToPage(4);
-        aic_writePage(4, 0x01, 0x00);
-        aic_writePage(4, 0x07, 0x01);
-        aic_writePage(4, 0x0a, 0x00);
+        aic_writePage(4, 0x01, 0x00);   // ASI-1 set to I2S, 16-bit, not high impedance
+        aic_writePage(4, 0x07, 0x01);   // Source ASI-1 ADC from ADC Data Output
+        aic_writePage(4, 0x0a, 0x00);   // ASI#1 Set Word clock to WCLK1; bit-clock to BCLK
 
         // Signal Processing
         aic_goToPage(0);
-        aic_writePage(0, 0x3c, 0x01);
+        aic_writePage(0, 0x3c, 0x01);   // Set the DAC PRB Mode to PRB_P1 
         aic_writePage(0, 0x3d, 0x0d);
 
         // ADC Input Channel
@@ -806,7 +852,7 @@ namespace tlv320aic3212
         aic_writePage(4, 0x0a, 0x00);
         aic_writePage(4, 0x43, 0x02);
         aic_writePage(4, 0x44, 0x20);
-        aic_writePage(4, 0x76, 0x04);
+        aic_writePage(4, 0x76, 0x06);
 
         // // unmute ADC and DAC
         aic_goToPage(0);
@@ -1148,105 +1194,6 @@ namespace tlv320aic3212
         }
     }
 
-    void AudioControlAIC3212::aic_init_test()
-    {
-        if (debugToSerial)
-        {
-            Serial.println("# AudioControlAIC3212: Initializing AIC");
-        }
-
-        // Software Reset
-        aic_goToBook(0);
-        aic_goToPage(0);
-        aic_writeRegister(0x01, 0x01);
-
-        // Power and Analog Configuration
-        aic_goToPage(1);
-        aic_writePage(1, 0x01, 0x00); // Disable weak AVDD to DVDD connection and make analog supplies available
-        aic_writePage(1, 0x7a, 0x01); // REF charging time = 40ms
-        aic_writePage(1, 0x79, 0x33); // Set the quick charge of input coupling cap for analog inputs
-
-        // Clock Config
-        aic_goToPage(0);
-        aic_writePage(0, 0x04, 0x00);
-        // aic_writePage(0, 0x04, 0x33);
-        // aic_writePage(0, 0x05, 0x00);
-        aic_writePage(0, 0x06, 0x11);
-        // aic_writePage(0, 0x06, 0x91);
-        // aic_writePage(0, 0x07, 0x08);
-        // aic_writePage(0, 0x08, 0x00);
-        // aic_writePage(0, 0x09, 0x00);
-        // aic_writePage(0, 0x0a, 0x01);
-
-        // DAC Clock
-        aic_writePage(0, 0x0b, 0x81); // NDAC divider ON; Scaler NDAC = 1
-        aic_writePage(0, 0x0c, 0x88); // MDAC divider ON; Scaler MDAC = 8
-        // aic_writePage(0, 0x0b, 0x84);
-        // aic_writePage(0, 0x0c, 0x90);
-        aic_writePage(0, 0x0d, 0x00); // DOSR = 0 (MSB)
-        aic_writePage(0, 0x0e, 0x20); // DOSR = 32 (LSB)
-
-        // ADC Clock
-        aic_writePage(0, 0x12, 0x81); // NADC divider ON; Scaler NADC = 1
-        aic_writePage(0, 0x13, 0x88); // MADC divider ON; Scaler MADC = 8
-        // aic_writePage(0, 0x12, 0x84);
-        // aic_writePage(0, 0x13, 0x90);
-        aic_writePage(0, 0x14, 0x20);
-
-        // Audio Serial Interface Routing
-        aic_goToPage(4);
-        aic_writePage(4, 0x01, 0x00);
-        aic_writePage(4, 0x07, 0x01);
-        aic_writePage(4, 0x0a, 0x00);
-
-        // Signal Processing
-        aic_goToPage(0);
-        aic_writePage(0, 0x3c, 0x01);
-        aic_writePage(0, 0x3d, 0x0d);
-
-        // ADC Input Channel
-        aic_goToPage(4);
-        aic_writePage(4, 0x57, 0x28);
-        aic_writePage(4, 0x5B, 0x02);
-        aic_writePage(4, 0x65, 0x00);
-
-        aic_goToPage(0);
-        aic_writePage(0, 0x53, 0x14);
-        aic_writePage(0, 0x54, 0x14);
-
-        // Init codec
-        aic_goToPage(1);
-        aic_writePage(1, 0x01, 0x00);
-        aic_writePage(1, 0x7a, 0x01);
-
-        // Output channel config
-        aic_goToPage(1);
-        aic_writePage(1, 0x08, 0x00); // Common Mode Register
-        aic_writePage(1, 0x09, 0x00); // Headphone Output Driver Control
-
-        aic_writePage(1, 0x1f, 0x80); // HPL Driver Volume Control
-        aic_writePage(1, 0x20, 0x80); // HPR Driver Volume Control
-
-        aic_writePage(1, 0x21, 0x28); // Charge Pump Control 1
-        aic_writePage(1, 0x23, 0x10); // Charge Pump Control 3
-        aic_writePage(1, 0x1b, 0x33); // Headphone Amplifier Control 1
-
-        // ASI-1 Config
-        aic_goToPage(4);
-        aic_writePage(4, 0x08, 0x50);
-        aic_writePage(4, 0x0a, 0x00);
-        aic_writePage(4, 0x43, 0x02);
-        aic_writePage(4, 0x44, 0x20);
-        aic_writePage(4, 0x76, 0x04);
-
-        // unmute ADC and DAC
-        aic_goToPage(0);
-        aic_writePage(0, 0x51, 0xd4);
-        aic_writePage(0, 0x52, 0x00);
-        aic_writePage(0, 0x3f, 0xc0);
-        aic_writePage(0, 0x40, 0x00);
-    }
-
     void AudioControlAIC3212::aic_init()
     {
         if (debugToSerial)
@@ -1319,21 +1266,19 @@ namespace tlv320aic3212
         if (pConfig->i2s_clk_dir == I2S_Clock_Dir::AIC_INPUT)
         {
             // Configure WCLK1 and BCLK1 as inputs to ASI #1
-            aic_writePage(4, 0x0A, 0x00);
+            aic_writePage(4, 0x0A, 0x00);               // ASI#1 Set Word clock to WCLK1; bit-clock to BCLK
         }
         else
         {
             // Configure WCLK1 and BCLK1 as outputs of ASI #1
             aic_writePage(4, 0x0A, 0x24);
         }
-        aic_writePage(4, 0x41, 0x04); // WCLK1 Pin is ASI1 Word Clock I/O
+        aic_writePage(4, 0x41, 0x04); // WCLK1 pin is CLKOUT output.
         aic_writePage(4, 0x43, 0x02); // DOUT1 Pin is ASI1 Data Output
         aic_writePage(4, 0x44, 0x20); // Enable DIN1 Pin
         aic_writePage(4, 0x07, 0x01); // ASI1_DOUT is sourced from ADC
         aic_writePage(4, 0x08, 0x50); // Enable ASI1 to DAC datapath
-        aic_writePage(4, 0x76, 0x06); // DAC input data is sourced from ASI1_DIN
-
-        //??? B0_P4_R14???
+        aic_writePage(4, 0x76, 0x06); // DAC receives data from ASI1 output
 
         // ################################################################
         // # Signal Processing Settings

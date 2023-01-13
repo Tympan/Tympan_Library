@@ -219,7 +219,6 @@ namespace tlv320aic3212
         typedef tlv320aic3212::Inputs Inputs;
         typedef tlv320aic3212::Outputs Outputs;
         virtual bool enable(void);
-        virtual bool enable_test(void);
         virtual bool disable(void);
         void setConfig(const Config *_pConfig) { pConfig = _pConfig; };
 
@@ -234,6 +233,7 @@ namespace tlv320aic3212
         float volume_dB(float vol_dB);                          // set both channels to the same volume
         float volume_dB(float vol_left_dB, float vol_right_dB); // set both channels, but to their own values
         float volume_dB(float vol_left_dB, int chan);           // set each channel seperately (0 = left; 1 = right)
+        void setHeadphoneGain_dB(float vol_left_dB, float vol_right_dB); // set HP volume
         float setSpeakerVolume_dB(float target_vol_dB);         // sets the volume of both Class D Speaker Outputs
         bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
         bool inputSelect(int n);
@@ -280,7 +280,6 @@ namespace tlv320aic3212
         void setI2Cbus(int i2cBus);
         void aic_reset(void);
         void aic_init(void);
-        void aic_init_test();
         // void aic_initDAC(void);
         // void aic_initADC(void);
         void setResetPin(int pin) { resetPinAIC = pin; }
