@@ -219,7 +219,6 @@ namespace tlv320aic3212
         typedef tlv320aic3212::Inputs Inputs;
         typedef tlv320aic3212::Outputs Outputs;
         virtual bool enable(void);
-        virtual bool enable_test(void);
         virtual bool disable(void);
         void setConfig(const Config *_pConfig) { pConfig = _pConfig; };
 
@@ -281,7 +280,6 @@ namespace tlv320aic3212
         void setI2Cbus(int i2cBus);
         void aic_reset(void);
         void aic_init(void);
-        void aic_init_test();
         // void aic_initDAC(void);
         // void aic_initADC(void);
         void setResetPin(int pin) { resetPinAIC = pin; }

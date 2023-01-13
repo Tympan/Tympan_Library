@@ -306,31 +306,6 @@ namespace tlv320aic3212
         }
     }
 
-    bool AudioControlAIC3212::enable_test(void)
-    {
-        delay(10);
-        myWire->begin();
-        delay(5);
-
-        // Hard reset the AIC
-        if (debugToSerial)
-            Serial.println("# Hardware reset of AIC...");
-        pinMode(resetPinAIC, OUTPUT);
-        digitalWrite(resetPinAIC, HIGH);
-        delay(50); // not reset
-        digitalWrite(resetPinAIC, LOW);
-        delay(50); // reset
-        digitalWrite(resetPinAIC, HIGH);
-        delay(50); // not reset
-
-        // aic_reset(); // delay(50);  //soft reset
-        aic_init_test();
-
-        if (debugToSerial)
-            Serial.println("# AIC3212 enable test done");
-
-        return true;
-    }
 
     bool AudioControlAIC3212::enable(void)
     {
@@ -1217,105 +1192,6 @@ namespace tlv320aic3212
                 aic_writeRegister(19, curValR | 0b0100000000); // Page1, unmute LOR driver, same gain as before
             }
         }
-    }
-
-    void AudioControlAIC3212::aic_init_test()
-    {
-        if (debugToSerial)
-        {
-            Serial.println("# AudioControlAIC3212: Initializing AIC");
-        }
-
-        // Software Reset
-        aic_goToBook(0);
-        aic_goToPage(0);
-        aic_writeRegister(0x01, 0x01); // Software reset
-
-        // Power and Analog Configuration
-        aic_goToPage(1);
-        aic_writePage(1, 0x01, 0x00); // Disable weak AVDD to DVDD connection and make analog supplies available
-        aic_writePage(1, 0x7a, 0x01); // REF charging time = 40ms
-        aic_writePage(1, 0x79, 0x33); // Set the quick charge of input coupling cap for analog inputs
-
-        // Clock Config
-        aic_goToPage(0);
-        aic_writePage(0, 0x04, 0x00);
-        // aic_writePage(0, 0x04, 0x33);
-        // aic_writePage(0, 0x05, 0x00);
-        aic_writePage(0, 0x06, 0x11);
-        // aic_writePage(0, 0x06, 0x91);
-        // aic_writePage(0, 0x07, 0x08);
-        // aic_writePage(0, 0x08, 0x00);
-        // aic_writePage(0, 0x09, 0x00);
-        // aic_writePage(0, 0x0a, 0x01);
-
-        // DAC Clock
-        aic_writePage(0, 0x0b, 0x81); // NDAC divider ON; Scaler NDAC = 1
-        aic_writePage(0, 0x0c, 0x88); // MDAC divider ON; Scaler MDAC = 8
-        // aic_writePage(0, 0x0b, 0x84);
-        // aic_writePage(0, 0x0c, 0x90);
-        aic_writePage(0, 0x0d, 0x00); // DOSR = 0 (MSB)
-        aic_writePage(0, 0x0e, 0x20); // DOSR = 32 (LSB)
-
-        // ADC Clock
-        aic_writePage(0, 0x12, 0x81); // NADC divider ON; Scaler NADC = 1
-        aic_writePage(0, 0x13, 0x88); // MADC divider ON; Scaler MADC = 8
-        // aic_writePage(0, 0x12, 0x84);
-        // aic_writePage(0, 0x13, 0x90);
-        aic_writePage(0, 0x14, 0x20);
-
-        // Audio Serial Interface Routing
-        aic_goToPage(4);
-        aic_writePage(4, 0x01, 0x00);
-        aic_writePage(4, 0x07, 0x01);
-        aic_writePage(4, 0x0a, 0x00);
-
-        // Signal Processing
-        aic_goToPage(0);
-        aic_writePage(0, 0x3c, 0x01);
-        aic_writePage(0, 0x3d, 0x0d);
-
-        // ADC Input Channel
-        aic_goToPage(4);
-        aic_writePage(4, 0x57, 0x28);
-        aic_writePage(4, 0x5B, 0x02);
-        aic_writePage(4, 0x65, 0x00);
-
-        aic_goToPage(0);
-        aic_writePage(0, 0x53, 0x14);
-        aic_writePage(0, 0x54, 0x14);
-
-        // Init codec
-        aic_goToPage(1);
-        aic_writePage(1, 0x01, 0x00);
-        aic_writePage(1, 0x7a, 0x01);
-
-        // Output channel config
-        aic_goToPage(1);
-        aic_writePage(1, 0x08, 0x00); // Common Mode Register
-        aic_writePage(1, 0x09, 0x00); // Headphone Output Driver Control
-
-        aic_writePage(1, 0x1f, 0x80); // HPL Driver Volume Control
-        aic_writePage(1, 0x20, 0x80); // HPR Driver Volume Control
-
-        aic_writePage(1, 0x21, 0x28); // Charge Pump Control 1
-        aic_writePage(1, 0x23, 0x10); // Charge Pump Control 3
-        aic_writePage(1, 0x1b, 0x33); // Headphone Amplifier Control 1
-
-        // ASI-1 Config
-        aic_goToPage(4);
-        aic_writePage(4, 0x08, 0x50);
-        aic_writePage(4, 0x0a, 0x00);
-        aic_writePage(4, 0x43, 0x02);
-        aic_writePage(4, 0x44, 0x20);
-        aic_writePage(4, 0x76, 0x06);
-
-        // unmute ADC and DAC
-        aic_goToPage(0);
-        aic_writePage(0, 0x51, 0xd4);
-        aic_writePage(0, 0x52, 0x00);
-        aic_writePage(0, 0x3f, 0xc0);
-        aic_writePage(0, 0x40, 0x00);
     }
 
     void AudioControlAIC3212::aic_init()
