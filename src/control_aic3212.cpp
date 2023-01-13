@@ -256,7 +256,7 @@ namespace tlv320aic3212
     32X Decimation will take that down to 96kHz.
     */
     const Config DefaultConfig{
-        .i2s_bits = I2S_Word_Length::I2S_32_BITS,               //16-bit words      
+        .i2s_bits = I2S_Word_Length::I2S_20_BITS,               //16-bit words      
         .i2s_clk_dir = I2S_Clock_Dir::AIC_INPUT,
         .pll = {
             .range = PLL_Clock_Range::LOW_RANGE,
