@@ -67,8 +67,7 @@ AudioEffectCompWDRC_F32_UI	KEYWORD1
 
 AudioEffectDelay_F32	KEYWORD1
 
-AudioEffectGain_F32	KEYWORD1
-setGain_dB		KEYWORD2
+AudioEffectFade_F32	KEYWORD1
 
 AudioEffectFeedbackCancel_F32	KEYWORD1
 AudioEffectFeedbackCancel_LoopBack_F32	KEYWORD1
@@ -80,6 +79,9 @@ AudioEffectFreqShift_FD_F32	KEYWORD1
 setShift_bins			KEYWORD2
 getShift_bins			KEYWORD2
 getShift_Hz			KEYWORD2
+
+AudioEffectGain_F32	KEYWORD1
+setGain_dB		KEYWORD2
 
 AudioEffectMultiBandWDRC_F32_UI	KEYWORD1
 AudioEffectMultiBandWDRC_IIR_F32_UI	KEYWORD1
