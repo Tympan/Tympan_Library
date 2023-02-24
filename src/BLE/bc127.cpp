@@ -196,10 +196,10 @@ BC127::opResult BC127::stdCmd(String command)
     knownStart(); // Clear the serial buffer in the module and the Arduino.
 
     // maybe future me can figure out how to send bytes vs. chars
-    // char tmp[150];
-    // String(command + EOC).toCharArray(tmp, 150);
-    // _serialPort->write(tmp, 150);
-    _serialPort->print(command + EOC);
+	//for (unsigned int i=0;i < command.length(); i++) _serialPort->write((byte)(command.charAt(i)));
+	//for (unsigned int i=0;i < EOC.length(); i++) _serialPort->write((byte)(EOC.charAt(i)));
+	//Serial.println("BC12: stdCmd: sending command = " + command + EOC);
+	_serialPort->print(command + EOC); //original
     _serialPort->flush();
 
     return waitResponse();
@@ -354,12 +354,16 @@ BC127::opResult BC127::waitResponse(int time)
             // Is this the end of the command response?
             if (line.startsWith("OK") || line.startsWith("Ready"))
             {
+                //Serial.println("BC127: waitResponse: SUCCESS! text received = '" + line + "'");
                 return SUCCESS;
             }
             else if (line.startsWith("ERROR"))
             {
+				//Serial.println("BC127: waitResponse: ERROR! text received = '" + line + "'");
                 return MODULE_ERROR;
             }
+
+			//Serial.println("BC127: waitResponse: unknown line. text received = '" + line + "'");
 
             // move on to next line
             line = "";
@@ -399,4 +403,78 @@ int BC127::factoryResetViaPins(int pinPIO0, int pinRST) {
 	pinMode(pinPIO0,INPUT);    //go high-impedance to make irrelevant
 	
 	return 0;
+}
+
+bool BC127::isConnected(bool printResponse)
+{
+
+    //Ask the BC127 its advertising status.
+    //in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
+    //in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
+    //   followed by LINK 14 CONNECTED or something like that if the BLE is actually connected to something
+    if (status() > 0) //in bc127.cpp.  answer stored in cmdResponse.
+    {
+		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
+		if (printResponse) {
+			Serial.print("BC127: isConnected()   response: ");
+			Serial.print(s);
+			if (BC127_firmware_ver > 6) Serial.println();
+		}
+        
+		//if (s.indexOf("LINK 14 CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This version is prob better (more specific for BLE) but only would work for V6 and above
+		int ind = s.indexOf("CONNECTED");
+		if (ind == -1) { //if it returns -1, then it wasn't found.
+			if (printResponse) Serial.println("BC127: isConnected: not connected.");
+			return false;
+		} else {
+			//as of V6 (or so) it'll actually say "CONNECTED[0]" if not connected, which must be for BT Classic
+			//not BLE.  So, instead, let's search for "LINK 14 CONNECTED", which is maybe overly restrictive as
+			//it only looks for the first "1" of the possible BLE "4" connections.
+			if (BC127_firmware_ver >= 6) {
+				ind = s.indexOf("LINK 14 CONNECTED");
+				int ind2 = s.indexOf("LINK 24 CONNECTED");
+				int ind3 = s.indexOf("LINK 34 CONNECTED");
+				int ind4 = s.indexOf("BLE[CONNECTED]");
+				if ( (ind == -1) && (ind2 == -1) && (ind3 == -1) && (ind4 == -1) ) { //if none are found, we are not connected
+					//no BLE-specific connection message is found.
+					//if (printResponse) Serial.println("BC127 (v7): isConnected: not connected...");				
+					return false;
+				} else {
+					//if (printResponse) Serial.println("BC127: isConnected: yes is connected.");
+					return true;
+				}
+			} else {
+				//for V5.5, here are the kinds of lines that one can see:
+				//
+				// Here are lines with no connection...BLE is last keywoard: either "ADVERTISING" or "IDLE"
+				//  This line has no connections (but everyone is ready):  		STATE CONNECTABLE DISCOVERABLE ADVERTISING
+				//  This line has no connections (BLE advertising off):    		STATE CONNECTABLE DISCOVERABLE IDLE
+				//  This line has no connections (BT Classic off):         		STATE CONNECTABLE ADVERTISING
+				//
+				//  BT Classic is connected but BLE is not (nor advertising):	STATE CONNECTED IDLE
+				//  BT Classic is connected and BLE is not (but is advertising):STATE CONNECTED ADVERTISING
+				//
+				//  and here is BLE connected:                             		STATE CONNECTED CONNECTED
+				
+				//Serial.print("BC127 (v5x): ind of 'Connected' = ");
+				//Serial.println(ind);
+				
+				//if we got this far, then at least one CONNECTED is seen.  Let's look for IDLE or ADVERTISING, either of which
+				//indicate that it's not BLE that is connected
+				ind = s.indexOf("IDLE");
+				int ind2 = s.indexOf("ADVERTISING");
+				if ( (ind >= 0) || (ind2 >= 0) ) { //if either are found, we are not connected
+					//Serial.println("BC127: isConnected: found IDLE or ADVERTISING...so NOT connected.");
+					//there is IDLE...so, there is no connection
+					return false;
+				} else {
+					//if (printResponse) Serial.println("BC127: isConnected: yes is connected.");
+					return true;
+				}
+			}
+		}
+    }
+
+	//if we got this far, let's assume that we are not connected
+    return false;
 }

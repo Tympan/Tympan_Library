@@ -59,6 +59,7 @@ public:
     opResult writeConfig();                          // writes the current config to non-volatile memory
 	int set_BC127_firmware_ver(int val);             // user sets whether firmware is version 5, 6, or 7
 	int get_BC127_firmware_ver(void)    { return BC127_firmware_ver; }
+	bool isConnected(bool printResponse);                 // returns true if the BT is connected
 
 	void setPins(int pinPIO0, int pinRST) { pin_PIO0 = pinPIO0; pin_RST = pinRST; }
 
