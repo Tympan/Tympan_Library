@@ -135,16 +135,16 @@ namespace tlv320aic3212
 
 //******************* INPUT DEFINITIONS *****************************//
 // MIC routing registers
-#define AIC3212_MICPGA_PAGE 0x01
-#define AIC3212_MICPGA_LEFT_POSITIVE_REG 0x34  // page 1 register 52
-#define AIC3212_MICPGA_RIGHT_POSITIVE_REG 0x37 // page 1 register 55
+#define AIC3212_MICPGA_PAGE                             0x01
+#define AIC3212_MICPGA_LEFT_POSITIVE_REG                0x34  // page 1 register 52
+#define AIC3212_MICPGA_RIGHT_POSITIVE_REG               0x37 // page 1 register 55
 /* Possible settings for registers using 40kohm resistors:
         Left  Mic PGA P-Term (Reg 0x34)
         Right Mic PGA P-Term (Reg 0x37)*/
-#define AIC3212_MIC_ROUTING_POSITIVE_IN1 0b11000000     //
-#define AIC3212_MIC_ROUTING_POSITIVE_IN2 0b00110000     //
-#define AIC3212_MIC_ROUTING_POSITIVE_IN3 0b00001100     //
-#define AIC3212_MIC_ROUTING_POSITIVE_REVERSE 0b00000011 //
+#define AIC3212_MIC_ROUTING_POSITIVE_IN1                0b11000000     //
+#define AIC3212_MIC_ROUTING_POSITIVE_IN2                0b00110000     //
+#define AIC3212_MIC_ROUTING_POSITIVE_IN3                0b00001100     //
+#define AIC3212_MIC_ROUTING_POSITIVE_REVERSE            0b00000011 //
 
 #define AIC3212_MICPGA_LEFT_NEGATIVE_REG 0x36  // page 1 register 54
 #define AIC3212_MICPGA_RIGHT_NEGATIVE_REG 0x39 // page 1 register 57
@@ -169,25 +169,27 @@ namespace tlv320aic3212
 #define AIC3212_MICPGA_VOLUME_ENABLE 0b00000000 // default is 0b11000000 - clear to 0 to enable
 
 // Mic Bias
-#define AIC3212_MIC_BIAS_PAGE 0x01 // page 1 reg 0x33
-#define AIC3212_MIC_BIAS_REG 0x33  // page 1 reg 0x33
+#define AIC3212_MIC_BIAS_PAGE                       0x01 // page 1 reg 0x33
+#define AIC3212_MIC_BIAS_REG                        0x33  // page 1 reg 51
 /*Possible settings for Mic Bias EXT*/
-#define AIC3212_MIC_BIAS_EXT_MASK 0b11110000
-#define AIC3212_MIC_BIAS_EXT_POWER_ON 0b01000000 // only on if jack is inserted
-#define AIC3212_MIC_BIAS_EXT_POWER_OFF 0b00000000
-#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_1_62 0b00000000 // for CM = 0.9V
-#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_2_4 0b00010000  // for CM = 0.9V
-#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_0 0x00100000  // for CM = 0.9V
-#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_3 0x00110000  // regardless of CM
+#define AIC3212_MIC_BIAS_EXT_MASK                   0b11110000
+#define AIC3212_MIC_BIAS_EXT_MANUAL_POWER           0b10000000  // PWR On based on bit-6, regardless of mic detected
+#define AIC3212_MIC_BIAS_EXT_POWER_ON               0b01000000
+#define AIC3212_MIC_BIAS_EXT_POWER_OFF              0b00000000
+#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_1_62    0b00000000  // for CM = 0.9V
+#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_2_4     0b00010000  // for CM = 0.9V
+#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_0     0x00100000  // for CM = 0.9V
+#define AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_3     0x00110000  // regardless of CM
 
 /*Possible settings for Mic Bias*/
-#define AIC3212_MIC_BIAS_MASK 0b00001111
-#define AIC3212_MIC_BIAS_POWER_ON 0b00000100 // only on if jack is inserted
-#define AIC3212_MIC_BIAS_POWER_OFF 0b00000000
-#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_1_62 0b00000000 // for CM = 0.9V
-#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_2_4 0b00000001  // for CM = 0.9V
-#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_0 0x00000010  // for CM = 0.9V
-#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_3 0x00000011  // regradless of CM
+#define AIC3212_MIC_BIAS_MASK                       0b00001111
+#define AIC3212_MIC_BIAS_MANUAL_POWER               0b00001000  // PWR On based on bit-2, regardless of mic detected
+#define AIC3212_MIC_BIAS_POWER_ON                   0b00000100  // only on if jack is inserted
+#define AIC3212_MIC_BIAS_POWER_OFF                  0b00000000
+#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_1_62        0b00000000  // for CM = 0.9V
+#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_2_4         0b00000001  // for CM = 0.9V
+#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_0         0x00000010  // for CM = 0.9V
+#define AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_3         0x00000011  // regradless of CM
 
 // ADC Processing Block
 #define AIC3212_ADC_PROCESSING_BLOCK_PAGE 0x00
@@ -241,8 +243,15 @@ namespace tlv320aic3212
 #define AIC3212_DIN2_DISABLED 0b00000000
 #define AIC3212_DIN2_ENABLED 0b00100000
 
+#define AIC3212_GPI1_PIN_CTRL_PAGE              0x04
+#define AIC3212_GPI1_PIN_CTRL_REG               0x5B    // Reg 91
+
+
+#define AIC3212_GPIO2_PIN_CTRL_PAGE             0x04
+#define AIC3212_GPIO2_PIN_CTRL_REG              0x57    // Reg 87
+
 #define AIC3212_DIGITAL_MIC_SETTING_PAGE 0x04
-#define AIC3212_DIGITAL_MIC_SETTING_REG 0x65
+#define AIC3212_DIGITAL_MIC_SETTING_REG 0x65            // Reg 101
 #define AIC3212_DIGITAL_MIC_DIN2_LEFT_RIGHT 0b00000011 // Rising Edge: Left; Falling Edge Right
 
 #define AIC3212_ADC_POWERTUNE_PAGE 0x01
@@ -284,6 +293,47 @@ namespace tlv320aic3212
     // AIC3212_I2C_Address i2cAddress = AIC3212_I2C_Address::Bus_0;
 
     // ---------------------- Functions -------------------
+    
+    
+    uint8_t getAudioConnInput(InputChannel_s inputChan) 
+    {
+        uint8_t audioConn = 0;
+
+        if (inputChan.aicId == Aic_Id_2)
+        {
+            audioConn+= 2;
+        } 
+        //else no offset if Aic_Id_1
+
+        if (inputChan.sideChan == Right_Chan) 
+        {
+            audioConn+= 1;
+        } 
+        // else no offset if Left Side.  
+               
+        return (audioConn);
+    }
+
+
+    uint8_t getAudioConnOutput(OutputChannel_s outputChan) 
+    {
+        uint8_t audioConn = 0;
+
+        if (outputChan.aicId == Aic_Id_2){
+            audioConn+= 2;
+        }
+        //else no offset if Aic_Id_1
+
+        if (outputChan.sideChan == Right_Chan) {
+            audioConn+= 1;
+        }   
+        // else no offset if Left Side.  
+        
+        return (audioConn);
+    }
+
+    
+    
     /*Set I2C Bus based on two possible bus addresses.
      */
     void AudioControlAIC3212::setI2Cbus(int i2cBusIndex)
@@ -347,33 +397,19 @@ namespace tlv320aic3212
     {
         return false;
     }
+    
 
-    bool AudioControlAIC3212::inputSelect(int n)
-    {
-        bool success = true;
-        switch (n)
-        {
-        case AUDIO_INPUT_MIC:
-            success = inputSelect(Inputs::MIC, Inputs::MIC);
-            break;
-        default:
-            Serial.println("Selected input not implemented.");
-            break;
-        }
-        return success;
-    }
-
-    bool AudioControlAIC3212::inputSelect(Inputs left, Inputs right)
-    {
+    bool AudioControlAIC3212::inputSelect(AIC_Input left, AIC_Input right)
+    {     
         if (debugToSerial)
             Serial.println("# AudioControlAIC3212: inputSelect");
-        bool success = true;
+        
+        uint8_t errFlag = false;
         
         // Initialize ADC as muted and powered down
         uint8_t
             b0_p0_r81 = 0x00,   // Power down left and right ADC channel, clear Digital Mic config
             b0_p0_r82 = 0x88,   // Mute ADC Fine Gain Volume
-            b0_p1_r51 = 0,      // Mic Bias OFF
             b0_p1_r52 = 0,      // Left Mic PGA disconnected
             b0_p1_r54 = 0,      // Left Mic PGA disconnected
             b0_p1_r55 = 0,      // Right Mic PGA disconnected
@@ -384,26 +420,29 @@ namespace tlv320aic3212
             b0_p4_r91 = 0,      // GPI1 disabled
             b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1 (B0_P4_R101)
 
-        // Left Mic
-        if (left == Inputs::MIC)
-        {
-            // IN1L with 2.4V Mic Bias EXT
-            b0_p1_r51 = 0b11011000; // Power up 2.4V MICBIAS_EXT
-            b0_p1_r52 = 0b01000000; // IN1L to Left Mic PGA+ (RIN = 10K)
-            b0_p1_r54 = 0b01000000; // CM1L to Left Mic PGA- (RIN = 10K)
-            b0_p1_r59 = 0x00;        // Enable Left MICPGA Volume, 0.0dB
 
-            // Update ADC power and volume settings, to be written later
+        // LEFT: If using "In_", then set common mode reference, volume, and power up
+        if ( (left == Aic_Input_In1) ||  (left == Aic_Input_In2) || 
+                (left == Aic_Input_In3) || (left == Aic_Input_In4) )
+        {
+            b0_p1_r54 = 0b01000000; // CM1L to Left Mic PGA- (RIN = 10K)
+            b0_p1_r59 = 0x00;       // Enable Left MICPGA Volume, 0.0dB
             b0_p0_r81 |= 0b10000000; // Power up left ADC
             b0_p0_r82 &= 0x7F;       // Unmute Left ADC, Fine Gain
         }
+        else if (left == Aic_Input_Pdm)
+        {
+            b0_p0_r81 |= 0b10010000; // Power up left ADC, Configure left for digital mic (B0_P0_R81)
+            b0_p0_r82 &= 0x7F;       // Unmute Left ADC, Fine Gain
+        }
+        //Else Aic_Input_None; Leave as-is
 
-        // Right Mic
-        if (right == Inputs::MIC)
+
+        // RIGHT: If using "In_", then set common mode reference, volume, and power up
+        if ( (right == Aic_Input_In1) ||  (right == Aic_Input_In2) || 
+                (right == Aic_Input_In3) || (right == Aic_Input_In4) )
         {
             // IN1R with 2.4V Mic Bias EXT
-            b0_p1_r51 = 0b11011000; // Power up 2.4V MICBIAS_EXT
-            b0_p1_r55 = 0b01000000; // IN1R to Right Mic PGA+ (RIN = 10K)
             b0_p1_r57 = 0b01000000; // CM1R to Right Mic PGA- (RIN = 10K)
             b0_p1_r60 = 0x00;        // Enable Right MICPGA Volume, 0.0dB
             
@@ -411,91 +450,212 @@ namespace tlv320aic3212
             b0_p0_r81 |= 0b01000000; // Power up right ADC
             b0_p0_r82 &= 0xF7;       // Unmute Right ADC, Fine Gain
         }
-
-        // PDM Mics
-        if ( (left == Inputs::PDM)||(right == Inputs::PDM) )
+        else if (right == Aic_Input_Pdm)
         {
-            // Configure PDM Mic: PDM_CLK = GPIO2; PDM_DAT = GPI1
-            b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics (B0_P4_R87)
-            b0_p4_r91 = 0b00000010;  // Set GPI1 to digitial mic data input (B0_P4_R92)
-            b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1 (B0_P4_R101)
-
-            // Update ADC power and volume settings, to be written later
-            if (left == Inputs::PDM)
-            {
-                b0_p0_r81 |= 0b10010000; // Power up left ADC, Configure left for digital mic (B0_P0_R81)
-                b0_p0_r82 &= 0x7F;       // Unmute Left ADC, Fine Gain
-
-            }
-            if (right == Inputs::PDM)
-            {
                 b0_p0_r81 |= 0b01000100; // Power up Right ADC, Configure right for digital mic
                 b0_p0_r82 &= 0xF7;       // Unmute Right ADC, Fine Gain
-            }
         }
+        //Else Aic_Input_None; Leave as-is
+
+
+        // LEFT: Set input routing to PGA
+        switch(left)
+        {
+            case Aic_Input_In1:
+                b0_p1_r52 = (AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_10k); // IN1L to Left Mic PGA+ (RIN = 10K)
+                break;
+            case Aic_Input_In2:
+                b0_p1_r52 = (AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_10k);; // IN2L to Left Mic PGA+ (RIN = 10K)
+                break;
+            case Aic_Input_In3:
+                b0_p1_r52 = (AIC3212_MIC_ROUTING_POSITIVE_IN3 & AIC3212_MIC_ROUTING_RESISTANCE_10k);; // IN2L to Left Mic PGA+ (RIN = 10K)
+                break;
+            case Aic_Input_In4:
+                Serial.println("AudioControlAIC3212: ERROR: Code does not support IN4");
+                break;
+            case Aic_Input_Pdm:
+                // Configure PDM Mic: PDM_CLK = GPIO2; PDM_DAT = GPI1
+                b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics (B0_P4_R87)
+                b0_p4_r91 = 0b00000010;  // Set GPI1 to digitial mic data input (B0_P4_R92)
+                b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1 (B0_P4_R101)
+                break;
+            case Aic_Input_None:
+                // Do not set routing.
+                break;
+        }
+
+
+        // RIGHT: Set input routing to PGA
+        switch(right)
+        {
+            case Aic_Input_In1:
+                b0_p1_r55 = (AIC3212_MIC_ROUTING_POSITIVE_IN1 & AIC3212_MIC_ROUTING_RESISTANCE_10k); // IN1R to Right Mic PGA+ (RIN = 10K)
+                break;
+            case Aic_Input_In2:
+                b0_p1_r55 = (AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_10k); // IN2L to Right Mic PGA+ (RIN = 10K)
+                break;
+            case Aic_Input_In3:
+                b0_p1_r55 = (AIC3212_MIC_ROUTING_POSITIVE_IN2 & AIC3212_MIC_ROUTING_RESISTANCE_10k); // IN2L to Right Mic PGA+ (RIN = 10K)
+                break;
+            case Aic_Input_In4:
+                Serial.println("AudioControlAIC3212: ERROR: Code does not support IN4");
+                break;
+            case Aic_Input_Pdm:
+                // Configure PDM Mic: PDM_CLK = GPIO2; PDM_DAT = GPI1
+                b0_p4_r87 = 0b00101000;  // Set GPIO2 to ADC_MOD_CLK for digital mics (B0_P4_R87)
+                b0_p4_r91 = 0b00000010;  // Set GPI1 to digitial mic data input (B0_P4_R92)
+                b0_p4_r101 = 0b00000000; // Left and Right DIN Both on GPI1 (B0_P4_R101)
+            case Aic_Input_None:
+                // Do not set routing.
+                break;
+        }
+
 
         // -- Write Registers --
         aic_goToBook(0);                 // Set to book-0
-
         // \todo Mute ADC before changing settings
 
         // Write Left Mic Settings
-        aic_writePage(1, 51, b0_p1_r51);
-        aic_writePage(1, 52, b0_p1_r52);
-        aic_writePage(1, 54, b0_p1_r54);
-        aic_writePage(1, 59, b0_p1_r59);
+        errFlag &= aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_LEFT_POSITIVE_REG, b0_p1_r52);
+        errFlag &= aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_LEFT_NEGATIVE_REG, b0_p1_r54);
+        errFlag &= aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_LEFT_VOLUME_REG, b0_p1_r59);
 
         // Write Right Mic Settings
-        aic_writePage(1, 51, b0_p1_r51);
-        aic_writePage(1, 55, b0_p1_r55);
-        aic_writePage(1, 57, b0_p1_r57);
-        aic_writePage(1, 60, b0_p1_r60);
+        errFlag &= aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_RIGHT_POSITIVE_REG, b0_p1_r55);
+        errFlag &= aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_RIGHT_NEGATIVE_REG, b0_p1_r57);
+        errFlag &= aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_RIGHT_VOLUME_REG, b0_p1_r60);
 
         // Write PDM Mic Setting
-        aic_writePage(4, 87, b0_p4_r87);
-        aic_writePage(4, 91, b0_p4_r91);  
-        aic_writePage(4, 101, b0_p4_r101); 
+        errFlag &= aic_writePage(AIC3212_GPIO2_PIN_CTRL_PAGE, AIC3212_GPIO2_PIN_CTRL_REG, b0_p4_r87);
+        errFlag &= aic_writePage(AIC3212_GPI1_PIN_CTRL_PAGE, AIC3212_GPI1_PIN_CTRL_REG, b0_p4_r91);  
+        errFlag &= aic_writePage(AIC3212_DIGITAL_MIC_SETTING_PAGE, AIC3212_DIGITAL_MIC_SETTING_REG, b0_p4_r101); 
 
-        //  Power Up ADC and UnMute                   
-        aic_writePage(0, 81, b0_p0_r81);   //Power up ADC and set digital mic input (if selected)
-        aic_writePage(0, 82, b0_p0_r82);   //Unmute Fine Gain
+        // Power Up ADC and UnMute                   
+        errFlag &= aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_CHANNEL_POWER_REG, b0_p0_r81);   //Power up ADC and set digital mic input (if selected)
+        errFlag &= aic_writePage(AIC3212_ADC_CHANNEL_POWER_PAGE, AIC3212_ADC_MUTE_REG, b0_p0_r82);   //Unmute Fine Gain
 
-        return success;
+        if (errFlag == 0) {
+            return true;
+        } else {
+            Serial.println("AudioControlAIC3212: ERROR: Unable to write to Input Select Registers");
+            return false;
+        }
     }
 
-    bool AudioControlAIC3212::setMicBias(int n)
+
+    bool AudioControlAIC3212::setMicBias(Mic_Bias biasSetting)
     {
+        uint8_t buffer = 0;
+        bool errStatus = false;
+
         aic_goToPage(AIC3212_MIC_BIAS_PAGE);
 
-        if (n == AIC3212_MIC_BIAS_1_62)
+        // Read register as it shares values with Mic Bias
+        aic_readRegister(AIC3212_MIC_BIAS_REG, &buffer);
+
+        // Clear portion of register
+        buffer &= ~AIC3212_MIC_BIAS_MASK;
+        
+        // If Mic Bias needs off
+        if (biasSetting == Mic_Bias_Off)
         {
-            aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_1_62); // power up mic bias
-            return true;
+            buffer |= AIC3212_MIC_BIAS_POWER_OFF; 
         }
-        else if (n == AIC3212_MIC_BIAS_2_4)
+        else //Else Mic Bias needs turned on
         {
-            aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_2_4); // power up mic bias
-            return true;
+            buffer |= (AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_MANUAL_POWER);
+
+            if (biasSetting == Mic_Bias_1_62)
+            {
+                buffer |= AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_1_62; // power up mic bias
+            }
+            else if (biasSetting == Mic_Bias_2_4)
+            {
+                buffer |= AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_2_4; // power up mic bias
+            }
+            else if (biasSetting == Mic_Bias_3_0)
+            {
+                buffer |= AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_0; // power up mic bias
+            }
+            else if (biasSetting == Mic_Bias_3_3)
+            {
+                buffer |= AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_3; // power up mic bias
+            }
+            else
+            {
+                Serial.println("AudioControlAIC3212: ERROR: Unable to set MIC BIAS - Value not supported: ");
+            }
         }
-        else if (n == AIC3212_MIC_BIAS_3_0)
+
+        // Write to register
+        errStatus = aic_writeRegister(AIC3212_MIC_BIAS_REG, buffer);
+
+        if(errStatus==false)
         {
-            aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_0); // power up mic bias
-            return true;
+            Serial.println("AudioControlAIC3212: ERROR: Unable to write to Mic Bias Register");
         }
-        else if (n == AIC3212_MIC_BIAS_3_3)
-        {
-            aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_ON | AIC3212_MIC_BIAS_OUTPUT_VOLTAGE_3_3); // power up mic bias
-            return true;
-        }
-        else if (n == AIC3212_MIC_BIAS_OFF)
-        {
-            aic_writeRegister(AIC3212_MIC_BIAS_REG, AIC3212_MIC_BIAS_POWER_OFF); // power up mic bias
-            return true;
-        }
-        Serial.print("AudioControlAIC3212: ERROR: Unable to set MIC BIAS - Value not supported: ");
-        Serial.println(n);
-        return false;
+
+        return errStatus;
     }
+
+
+ bool AudioControlAIC3212::setMicBiasExt(Mic_Bias biasSetting)
+    {
+        uint8_t buffer = 0;
+        bool errStatus = false;
+
+        aic_goToPage(AIC3212_MIC_BIAS_PAGE);
+
+        // Read register as it shares values with Mic Bias
+        aic_readRegister(AIC3212_MIC_BIAS_REG, &buffer);
+
+        // Clear portion of register
+        buffer &= ~AIC3212_MIC_BIAS_EXT_MASK;
+
+        // If Mic Bias needs off
+        if (biasSetting == Mic_Bias_Off)
+        {
+            buffer |= AIC3212_MIC_BIAS_EXT_POWER_OFF; 
+        }
+        else //Else Mic Bias needs turned on
+        {
+            buffer |= (AIC3212_MIC_BIAS_EXT_POWER_ON | AIC3212_MIC_BIAS_EXT_MANUAL_POWER);
+            
+            // Set bias voltage
+            if (biasSetting == Mic_Bias_1_62)
+            {
+                buffer |= AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_1_62;
+            }
+            else if (biasSetting == Mic_Bias_2_4)
+            {
+                buffer |= AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_2_4; 
+            }
+            else if (biasSetting == Mic_Bias_3_0)
+            {
+                buffer |= AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_0; 
+            }
+            else if (biasSetting == Mic_Bias_3_3)
+            {
+                buffer |= AIC3212_MIC_BIAS_EXT_OUTPUT_VOLTAGE_3_3; 
+            }
+            else
+            {
+                Serial.println("AudioControlAIC3212: ERROR: Unable to set MIC BIAS Ext- Value not supported: ");
+            }
+        }
+        
+        // Write to register
+        errStatus = aic_writeRegister(AIC3212_MIC_BIAS_REG, buffer);
+
+        if(errStatus==false)
+        {
+            Serial.println("AudioControlAIC3212: ERROR: Unable to write to Mic Bias Ext Register");
+        }
+
+        return errStatus;
+    }
+
+
 
     bool AudioControlAIC3212::enableDigitalMicInputs(bool _enable)
     {
@@ -1018,7 +1178,7 @@ namespace tlv320aic3212
         return true;
     }
 
-    bool AudioControlAIC3212::outputSelect(Outputs left, Outputs right, bool flag_full)
+    bool AudioControlAIC3212::outputSelect(AIC_Output left, AIC_Output right, bool flag_full)
     {
         if (debugToSerial)
             Serial.println("# AudioControlAIC3212: outputSelect");
@@ -1068,19 +1228,19 @@ namespace tlv320aic3212
             p1_r1B_2 = 0x00,
             p1_r2D = 0x00;
 
-        if (left == Outputs::HP)
+        if (left == AIC_Output::Aic_Output_Hp)
         {
             p1_r1B |= 0x20;   // Left DAC is routed to HPL driver.
             p1_r1F = 0x80;    // Unmute HPL driver, set gain = 0dB
             p1_r1B_2 |= 0x22; // Left DAC is routed and HPL driver powered on.
         }
-        if (right == Outputs::HP)
+        if (right == AIC_Output::Aic_Output_Hp)
         {
             p1_r1B |= 0x10;   // Right DAC is routed to HPR driver.
             p1_r20 = 0x80;    // Unmute HPR driver, set gain = 0dB
             p1_r1B_2 |= 0x11; // Right DAC is routed and HPR driver powered on.
         }
-        if (left == Outputs::SPK)
+        if (left == AIC_Output::Aic_Output_Spk)
         {
             p1_r16 |= 0x80; // Left DAC M-terminal is routed to LOL driver.
                             //    p1_r2E = 0b0111100; // LOL Output Routed to SPKL Driver, Volume Control: 0dB
@@ -1089,7 +1249,7 @@ namespace tlv320aic3212
             p1_r30 |= 0x40;   // SPKL Driver Volume = 6 dB
             p1_r2D |= 0x02;   // SPKL Driver Power-Up
         }
-        if (right == Outputs::SPK)
+        if (right == AIC_Output::Aic_Output_Spk)
         {
             p1_r16 |= 0x40;   // Right DAC M-terminal is routed to LOR driver.
             p1_r2F = 0x00;    // LOR Output Routed to SPKR Driver, Volume Control: 0dB
@@ -1110,20 +1270,20 @@ namespace tlv320aic3212
 
         // Power up LDAC and RDAC
         aic_writePage(0, 0x3F,
-                      ((left == Outputs::NONE) ? 0x00 : 0x80)          // Left DAC channel
-                          | ((right == Outputs::NONE) ? 0x00 : 0x40)); // Right DAC channel
+                      ((left == AIC_Output::Aic_Output_None) ? 0x00 : 0x80)          // Left DAC channel
+                          | ((right == AIC_Output::Aic_Output_None) ? 0x00 : 0x40)); // Right DAC channel
 
         // Power up LOL and LOR
         aic_writePage(1, 0x16, p1_r16_2);
 
         // Unmute drivers
-        aic_writePage(1, 0x1F, p1_r1F); // Unmute HPL driver
-        aic_writePage(1, 0x20, p1_r20); // Unmute HPR driver
-        aic_writePage(1, 0x30, p1_r30); // Unmute SPKL & SPLR
+        aic_writePage(1, 0x1F, p1_r1F);                                             // Unmute HPL driver
+        aic_writePage(1, 0x20, p1_r20);                                             // Unmute HPR driver
+        aic_writePage(1, 0x30, p1_r30);                                             // Unmute SPKL & SPLR
 
         // Headphone power-up
-        aic_writePage(1, 0x09, 0x70);     // Headphone Driver Output Stage is 25%.
-        aic_writePage(1, 0x1B, p1_r1B_2); // Power up HP Drivers
+        aic_writePage(1, 0x09, 0x70);                                               // Headphone Driver Output Stage is 25%.
+        aic_writePage(1, 0x1B, p1_r1B_2);                                           // Power up HP Drivers
         // CAB TODO: Add delay?
         aic_writePage(1, 0x09, 0x10); // Headphone Driver Output Stage is 100%.
 
@@ -1132,9 +1292,8 @@ namespace tlv320aic3212
         // CAB TODO: Add delay?
 
         // Unmute LDAC and RDAC
-        aic_writePage(0, 0x40,
-                      ((left == Outputs::NONE) ? 0x08 : 0x00)          // Left DAC channel
-                          | ((right == Outputs::NONE) ? 0x04 : 0x00)); // Right DAC channel
+        aic_writePage(0, 0x40, ( (left == Aic_Output_None) ? 0x08 : 0x00)           // Left DAC channel
+                | ((right == Aic_Output_None) ? 0x04 : 0x00));                      // Right DAC channel
 
         return true;
     }
@@ -1703,17 +1862,17 @@ namespace tlv320aic3212
 
         switch (chanIndex)
         {
-        case BOTH_CHAN:
+        //case BOTH_CHAN:
+        //    chan_offset = 0;
+        //    writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex * rows_per_biquad * table_ncol, table_ncol);
+        //    chan_offset = 1;
+        //    writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex * rows_per_biquad * table_ncol, table_ncol);
+        //    break;
+        case Left_Chan:
             chan_offset = 0;
             writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex * rows_per_biquad * table_ncol, table_ncol);
-            chan_offset = 1;
-            writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex * rows_per_biquad * table_ncol, table_ncol);
             break;
-        case LEFT_CHAN:
-            chan_offset = 0;
-            writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex * rows_per_biquad * table_ncol, table_ncol);
-            break;
-        case RIGHT_CHAN:
+        case Right_Chan:
             chan_offset = 1;
             writeBiquadCoeff(coeff_uint32, page_reg_table + chan_offset + biquadIndex * rows_per_biquad * table_ncol, table_ncol);
             break;
@@ -1780,7 +1939,8 @@ namespace tlv320aic3212
             coeff[2] = 0;
         }
 
-        setHpfIIRCoeffOnADC(BOTH_CHAN, coeff); // needs twos-compliment
+        setHpfIIRCoeffOnADC(Left_Chan, coeff); // needs twos-compliment
+        setHpfIIRCoeffOnADC(Right_Chan, coeff); // needs twos-compliment
     }
 
     void AudioControlAIC3212::computeFirstOrderHPCoeff_f32(float cutoff_Hz, float fs_Hz, float *coeff)
@@ -1803,21 +1963,20 @@ namespace tlv320aic3212
     // set first-order IIR filter coefficients on ADC
     void AudioControlAIC3212::setHpfIIRCoeffOnADC(int chan, uint32_t *coeff)
     {
-
         // power down the AIC to allow change in coefficients
         uint32_t prev_state = aic_readPage(0x00, 0x51);
         aic_writePage(0x00, 0x51, prev_state & (0b00111111)); // clear first two bits
 
-        if (chan == BOTH_CHAN)
+        //if (chan == BOTH_CHAN)
+        //{
+        //    setHpfIIRCoeffOnADC_Left(coeff);
+        //    setHpfIIRCoeffOnADC_Right(coeff);
+        //}
+        if (chan == Left_Chan)
         {
             setHpfIIRCoeffOnADC_Left(coeff);
-            setHpfIIRCoeffOnADC_Right(coeff);
         }
-        else if (chan == LEFT_CHAN)
-        {
-            setHpfIIRCoeffOnADC_Left(coeff);
-        }
-        else
+        else if (chan == Right_Chan)
         {
             setHpfIIRCoeffOnADC_Right(coeff);
         }

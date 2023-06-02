@@ -10,57 +10,71 @@
 #ifndef control_aic3212_h_
 #define control_aic3212_h_
 
-#include "TeensyAudioControl.h"
+//#include "TeensyAudioControl.h"
 #include <Arduino.h>
 #include <Wire.h> //for using multiple Teensy I2C busses simultaneously
 
-namespace tlv320aic3212
-{
+    // define AIC3212_DEFAULT_I2C_BUS              0  // bus zero is &Wire
 
-    // //convenience names to use with inputSelect() to set whnch analog inputs to use
-    // #define AIC3212_INPUT_LINE_IN            (AudioControlAIC3212::IN1)   //uses IN1, on female Arduino-style headers (shared with BT Audio)
-    // #define AIC3212_INPUT_BT_AUDIO	         (AudioControlAIC3212::IN1)   //uses IN1, for Bluetooth Audio (ahred with LINE_IN)
-    // #define AIC3212_INPUT_ON_BOARD_MIC       (AudioControlAIC3212::IN2)   //uses IN2, for analog signals from microphones on PCB
-    // #define AIC3212_INPUT_JACK_AS_LINEIN     (AudioControlAIC3212::IN3)   //uses IN3, for analog signals from mic jack, no mic bias
-    // #define AIC3212_INPUT_JACK_AS_MIC        (AudioControlAIC3212::IN3_wBIAS)   //uses IN3, for analog signals from mic jack, with mic bias
+namespace tlv320aic3212 {
+    #define AIC3212_DEFAULT_RESET_PIN 24          // A10 on the Rev-E2
+    #define AIC3212_DEFAULT_I2C_ADDRESS 0b0011000 // 7-Bit address
 
-    enum class Inputs
+    enum AIC_ID 
     {
-        // LINE_IN = 0,
-        MIC = 1, // IN1L/IN1R with Mic Bias EXT
-        PDM,     // PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1
-        NONE
+        Aic_Id_1,
+        Aic_Id_2
     };
 
-    // //convenience names to use with outputSelect()
-    // #define AIC3212_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
-    // #define AIC3212_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
-    // #define AIC3212_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out
-    // #define AIC3212_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
-
-    enum class Outputs
+    enum AIC_Input 
     {
-        HP, // Headphone HPL/HPR
-        // LO,  // Line Out LOL/LOR
-        SPK, // Speakers (SPKLP-SPKLM)/(SPKRP-SPKRM)
-        NONE
+        Aic_Input_In1,
+        Aic_Input_In2,
+        Aic_Input_In3,
+        Aic_Input_In4,
+        Aic_Input_Pdm,     // PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1
+        Aic_Input_None
     };
 
-// names to use with setMicBias() to set the amount of bias voltage to use
-#define AIC3212_MIC_BIAS_OFF 0
-#define AIC3212_MIC_BIAS_1_62 1
-#define AIC3212_MIC_BIAS_2_4 2
-#define AIC3212_MIC_BIAS_3_0 3
-#define AIC3212_MIC_BIAS_3_3 4
-#define AIC3212_DEFAULT_MIC_BIAS AIC3212_MIC_BIAS_2_4
+    enum AIC_Output
+    {
+        Aic_Output_Hp,         // Headphone HPL/HPR
+        Aic_Output_Spk,        // Speakers (SPKLP-SPKLM)/(SPKRP-SPKRM)
+     // LO,         // Line Out LOL/LOR (Not implemented)
+        Aic_Output_None
+    };
 
-#define BOTH_CHAN 0
-#define LEFT_CHAN 1
-#define RIGHT_CHAN 2
+    enum AIC_Side 
+    {
+        Left_Chan               = 0,
+        Right_Chan              = 1
+    };
 
-// define AIC3212_DEFAULT_I2C_BUS              0  // bus zero is &Wire
-#define AIC3212_DEFAULT_RESET_PIN 24          // A10 on the Rev-E2
-#define AIC3212_DEFAULT_I2C_ADDRESS 0b0011000 // 7-Bit address
+    // names to use with setMicBias() to set the amount of bias voltage to use
+    enum Mic_Bias 
+    {
+        Mic_Bias_Off            = 0x00,
+        Mic_Bias_1_62           = 0x01,
+        Mic_Bias_2_4            = 0x02,
+        Mic_Bias_3_0            = 0x03,
+        Mic_Bias_3_3            = 0x04
+    };
+
+    struct InputChannel_s 
+    {
+        AIC_ID      aicId;
+        AIC_Input   inputChan;
+        AIC_Side    sideChan;
+        Mic_Bias    micBias;
+    };
+
+    struct OutputChannel_s 
+    {
+        AIC_ID      aicId;
+        AIC_Output  outputChan;
+        AIC_Side    sideChan;
+    };
+
 
     // Link I2C Address to the AIC bus that is used.
     /*I2C address is set by GPI3 & GPI4 (active high) on the AIC:
@@ -184,7 +198,10 @@ namespace tlv320aic3212
 
     //***************************  AudioControl Class  ***************************//
 
-    class AudioControlAIC3212 final : public TeensyAudioControl
+    uint8_t getAudioConnInput(InputChannel_s inputChan);
+    uint8_t getAudioConnOutput(OutputChannel_s outputChan);
+
+    class AudioControlAIC3212 //final : public TeensyAudioControl
     {
     public:
         // GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
@@ -215,16 +232,14 @@ namespace tlv320aic3212
             i2cAddress = _i2cAddress;
             debugToSerial = _debugToSerial;
         }
-        // enum INPUTS {IN1 = 0, IN2, IN3, IN3_wBIAS};
-        typedef tlv320aic3212::Inputs Inputs;
-        typedef tlv320aic3212::Outputs Outputs;
+        
         virtual bool enable(void);
         virtual bool disable(void);
         void setConfig(const Config *_pConfig) { pConfig = _pConfig; };
 
         // bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster.
-        bool outputSelect(Outputs both, bool flag_full = true) { return outputSelect(both, both, flag_full); };
-        bool outputSelect(Outputs left, Outputs right, bool flag_full = true);
+        bool outputSelect(AIC_Output both, bool flag_full = true) { return outputSelect(both, both, flag_full); };
+        bool outputSelect(AIC_Output left, AIC_Output right, bool flag_full = true);
 
         bool outputSelectTest();
 
@@ -236,13 +251,13 @@ namespace tlv320aic3212
         void setHeadphoneGain_dB(float vol_left_dB, float vol_right_dB); // set HP volume
         float setSpeakerVolume_dB(float target_vol_dB);         // sets the volume of both Class D Speaker Outputs
         bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
-        bool inputSelect(int n);
-        bool inputSelect(Inputs both) { return inputSelect(both, both); };
-        bool inputSelect(Inputs left, Inputs right);
+        bool inputSelect(AIC_Input both) { return inputSelect(both, both); };
+        bool inputSelect(AIC_Input left, AIC_Input right);
         float applyLimitsOnInputGainSetting(float gain_dB);
         float setInputGain_dB(float gain_dB);           // set both channels to the same gain
         float setInputGain_dB(float gain_dB, int chan); // set each channel seperately (0 = left; 1 = right)
-        bool setMicBias(int n);
+        bool setMicBias(Mic_Bias biasSetting);
+        bool setMicBiasExt(Mic_Bias biasSetting);
         // bool updateInputBasedOnMicDetect(int setting = AIC3212_INPUT_JACK_AS_MIC);
         // bool enableMicDetect(bool);
         // int  readMicDetect(void);
@@ -300,4 +315,4 @@ namespace tlv320aic3212
 
 } // namespace tlv320aic3212
 
-#endif
+#endif  //control_aic3212_h_
