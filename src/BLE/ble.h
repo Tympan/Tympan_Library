@@ -17,7 +17,7 @@ public:
     void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
 	void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset);  //to be called from the Arduino sketch's setup() routine.  Must define all params
 	size_t sendByte(char c);
-    size_t sendString(const String &s);
+    size_t sendString(const String &s, bool print_debug = false);
     size_t sendMessage(const String &s);
 	//size_t sendMessage(const char* c_str, const int len); //use this if you need to send super long strings (more than 1797 characters)
     size_t recvMessage(String *s);

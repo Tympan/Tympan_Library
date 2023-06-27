@@ -20,6 +20,7 @@
 #include "AudioEffectCompBankWDRC_F32.h"
 #include "AudioEffectCompDecWDRC_F32.h"
 #include "AudioEffectEmpty_F32.h"
+#include "AudioEffectFade_F32.h"
 #include "AudioEffectGain_F32.h"
 #include "AudioEffectCompressor_F32.h"
 #include "AudioEffectDelay_f32.h"

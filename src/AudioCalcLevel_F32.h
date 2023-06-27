@@ -5,7 +5,18 @@
 #include <Arduino.h>
 #include "AudioFilterTimeWeighting_F32.h"
 
-//Exponential time weighting for sound level meter.  Defaults to SLOW
+/*
+ AudioCalcLeq_F32.h
+ 
+ Chip Audette, OpenAudio, Updated Comments Jan 2023
+ 
+ Exponential time weighting for sound level meter.  Defaults to SLOW
+	* Squares the incoming signal
+    * Applies a low-pass filter to the squared signal (via the time constant that you specify)
+    * The output of the low-pass filter is the estimated level of the signal
+	
+  MIT License,  Use at your own risk.	
+*/
 class AudioCalcLevel_F32 : public AudioFilterTimeWeighting_F32 
 {
 	public:

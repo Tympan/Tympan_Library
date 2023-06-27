@@ -8,22 +8,25 @@
 
 
 /*
- * AudioCalcLeq_F32.h
- *
- * Chip Audette, OpenAudio, May 2020
- *
- * MIT License,  Use at your own risk.
- *
-*/
+ AudioCalcLeq_F32.h
 
-//Windowed time averaging for Leq calculations for sound level meter
-//  This routine calculates a new value every time the calculation window has
-//  been complted.  So, if the time window is 0.125 sec, it calculates an updated
-//  value every 0.125 seconds.  In other words, it does NOT do a rolling average
-//  of the last 0.125 seconds of data for every audio sample.  That would be too
-//  many calculations!
-//
-//  The default calculation window is 0.125 seconds.
+ Chip Audette, OpenAudio, May 2020
+ 
+ Windowed time averaging Leq for sound level meter.  Defaults to SLOW
+	* Squares the incoming signal
+    * Compute average value of the squared signal [see note]
+    * The output of the low-pass filter is the estimated level of the signal
+ 
+ Note: This routine calculates a new value every time the calculation window has
+   been complted.  So, if the time window is 0.125 sec, it calculates an updated
+   value every 0.125 seconds.  In other words, it does NOT do a rolling average
+   of the last 0.125 seconds of data for every audio sample.  That would be too
+   many calculations!
+
+  The default calculation window is 0.125 seconds.
+  
+  MIT License,  Use at your own risk.
+*/
 #define CALC_LEQ_DEFAULT_SEC  (0.125)
 class AudioCalcLeq_F32 : public AudioStream_F32 
 {

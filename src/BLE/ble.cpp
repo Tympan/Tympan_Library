@@ -207,12 +207,15 @@ size_t BLE::sendByte(char c)
     return 0;
 }
 
-size_t BLE::sendString(const String &s)
+size_t BLE::sendString(const String &s, bool print_debug)
 {
-    //Serial.print("BLE: sendString: "); Serial.println(s);
-    if (send(s)) return s.length();
-
-    return 0;
+    int ret_code = send(s);
+	if (ret_code == SUCCESS) {
+		return s.length();  //if send() returns non-zero, send the length of the transmission
+	} else {
+		if (print_debug) Serial.println("BLE: sendString: ERROR sending!  code = " + String(ret_code) + ", string = " + s);
+	}
+    return 0;   //otherwise return zero (as a form of error?)
 }
 
 size_t BLE::sendMessage(const String &orig_s)
@@ -250,14 +253,19 @@ size_t BLE::sendMessage(const String &orig_s)
     //Serial.println("BLE: Message: '" + s + "'");
 
     //send the packet with the header information
+	//Question: is "buf" actually used?  It doesn't look like it.  It looks like only "header" is used.
     char buf[16];
     sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
-    //Serial.println(buf);
-    int a = sendString(header);
-    if (a != 7)  {
-		//only print if V5 or, if it is V7, if there is a valid connection (noted by a valid BLE_id_num)
-		if ((BC127_firmware_ver < 6) || (BLE_id_num > 0)) {
-			Serial.println("BLE: sendMessage: Error in sending header... Sent: '" + String(a) + "'");
+    int a = sendString(header); //for V5.5, this will return an error if there is no active BT connection
+	if (a != 7)  {
+		//With v5, it returns an error if there is no BT connection.
+		//Checking if there is a BT connection really slows down this transaction.
+		//So, let's just suppress this error message for V5 and only allow for V7.
+		//Then, for V7, it automatically tracks the connection status via having a
+		//valid BLE_id_num.  So, only print an error message for V7 if there is indeed
+		//a valid BLE_id_num.
+		if ((BC127_firmware_ver > 6) && (BLE_id_num > 0)) {
+			Serial.println("BLE: sendMessage: Error in sending message: " + String(header));	
 		}	
 		//if we really do get an error, should we really try to transmit all the packets below?  Seems like we shouldn't.
 	}
@@ -268,7 +276,7 @@ size_t BLE::sendMessage(const String &orig_s)
     for (int i = 0; i < numPackets; i++)  {
         String bu = (char)(0xF0 | lowByte(i));
         bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
-        sentBytes += (sendString(bu) - 1);
+        sentBytes += (sendString(bu) - 1); 
         delay(4); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
     }
 
@@ -293,6 +301,7 @@ size_t BLE::recvMessage(String *s)
                 msgSize = word(s->charAt(5), s->charAt(6));
                 Serial.println("BLE: recvMessage: Length of message: '" + String(msgSize) + "'");
 
+				//is "buf" actually used?  It doesn't look like it.  It looks like only "s" is used.
                 char buf[16];
                 sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", s->charAt(0), s->charAt(1), s->charAt(2), s->charAt(3), s->charAt(4), s->charAt(5), s->charAt(6));
                 Serial.println(buf);
@@ -429,75 +438,7 @@ bool BLE::isAdvertising(bool printResponse)
 }
 bool BLE::isConnected(bool printResponse)
 {
-    //Ask the BC127 its advertising status.
-    //in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
-    //in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
-    //   followed by LINK 14 CONNECTED or something like that if the BLE is actually connected to something
-    if (status() > 0) //in bc127.cpp.  answer stored in cmdResponse.
-    {
-		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
-		if (printResponse) {
-			Serial.print("BLE: isConnected()   response: ");
-			Serial.print(s);
-			if (BC127_firmware_ver > 6) Serial.println();
-		}
-        
-		//if (s.indexOf("LINK 14 CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This version is prob better (more specific for BLE) but only would work for V6 and above
-		int ind = s.indexOf("CONNECTED");
-		if (ind == -1) { //if it returns -1, then it wasn't found.
-			if (printResponse) Serial.println("BLE: isConnected: not connected.");
-			return false;
-		} else {
-			//as of V6 (or so) it'll actually say "CONNECTED[0]" if not connected, which must be for BT Classic
-			//not BLE.  So, instead, let's search for "LINK 14 CONNECTED", which is maybe overly restrictive as
-			//it only looks for the first "1" of the possible BLE "4" connections.
-			if (BC127_firmware_ver >= 6) {
-				ind = s.indexOf("LINK 14 CONNECTED");
-				int ind2 = s.indexOf("LINK 24 CONNECTED");
-				int ind3 = s.indexOf("LINK 34 CONNECTED");
-				int ind4 = s.indexOf("BLE[CONNECTED]");
-				if ( (ind == -1) && (ind2 == -1) && (ind3 == -1) && (ind4 == -1) ) { //if none are found, we are not connected
-					//no BLE-specific connection message is found.
-					//if (printResponse) Serial.println("BLE (v7): isConnected: not connected...");				
-					return false;
-				} else {
-					//if (printResponse) Serial.println("BLE: isConnected: yes is connected.");
-					return true;
-				}
-			} else {
-				//for V5.5, here are the kinds of lines that one can see:
-				//
-				// Here are lines with no connection...BLE is last keywoard: either "ADVERTISING" or "IDLE"
-				//  This line has no connections (but everyone is ready):  		STATE CONNECTABLE DISCOVERABLE ADVERTISING
-				//  This line has no connections (BLE advertising off):    		STATE CONNECTABLE DISCOVERABLE IDLE
-				//  This line has no connections (BT Classic off):         		STATE CONNECTABLE ADVERTISING
-				//
-				//  BT Classic is connected but BLE is not (nor advertising):	STATE CONNECTED IDLE
-				//  BT Classic is connected and BLE is not (but is advertising):STATE CONNECTED ADVERTISING
-				//
-				//  and here is BLE connected:                             		STATE CONNECTED CONNECTED
-				
-				//Serial.print("BLE (v5x): ind of 'Connected' = ");
-				//Serial.println(ind);
-				
-				//if we got this far, then at least one CONNECTED is seen.  Let's look for IDLE or ADVERTISING, either of which
-				//indicate that it's not BLE that is connected
-				ind = s.indexOf("IDLE");
-				int ind2 = s.indexOf("ADVERTISING");
-				if ( (ind >= 0) || (ind2 >= 0) ) { //if either are found, we are not connected
-					//Serial.println("BLE: isConnected: found IDLE or ADVERTISING...so NOT connected.");
-					//there is IDLE...so, there is no connection
-					return false;
-				} else {
-					//if (printResponse) Serial.println("BLE: isConnected: yes is connected.");
-					return true;
-				}
-			}
-		}
-    }
-
-	//if we got this far, let's assume that we are not connected
-    return false;
+	return BC127::isConnected(printResponse);
 }
 
 bool BLE::waitConnect(int time)
