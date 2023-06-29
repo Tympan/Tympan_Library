@@ -211,6 +211,12 @@ namespace tlv320aic3212
 #define AIC3212_ADC_UNMUTE 0b00000000
 #define AIC3212_ADC_MUTE 0b10001000 // Mute both channels
 
+// ADC Filter Coefficients
+#define AIC3212_ADC_IIR_FILTER_BOOK 0x28 //Book-40
+#define AIC3212_ADC_IIR_FILTER_LEFT_PAGE 0x01
+#define AIC3212_ADC_IIR_FILTER_RIGHT_PAGE 0x02
+
+
 // DAC Processing Block
 #define AIC3212_DAC_PROCESSING_BLOCK_PAGE 0x00 // page 0 register 60
 #define AIC3212_DAC_PROCESSING_BLOCK_REG 0x3c  // page 0 register 60
@@ -1987,57 +1993,59 @@ namespace tlv320aic3212
 
     void AudioControlAIC3212::setHpfIIRCoeffOnADC_Left(uint32_t *coeff)
     {
-        int page;
         uint32_t c;
 
-        // See TI AIC3212 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+        /* See TI AIC3212 Application Guide, Table 2-17 */
+        aic_goToBook(AIC3212_ADC_IIR_FILTER_BOOK);
 
         // Coeff N0, Coeff C4
-        page = 8;
         c = coeff[0];
-        aic_writePage(page, 24, (uint8_t)(c >> 24));
-        aic_writePage(page, 25, (uint8_t)(c >> 16));
-        aic_writePage(page, 26, (uint8_t)(c >> 8));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 24, (uint8_t)(c >> 24));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 25, (uint8_t)(c >> 16));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 26, (uint8_t)(c >> 8));
         // int foo  = aic_readPage(page,24);	Serial.print("setIIRCoeffOnADC: first coefficient: ");  Serial.println(foo);
 
         // Coeff N1, Coeff C5
         c = coeff[1];
-        aic_writePage(page, 28, (uint8_t)(c >> 24));
-        aic_writePage(page, 29, (uint8_t)(c >> 16));
-        aic_writePage(page, 30, (uint8_t)(c >> 8));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 28, (uint8_t)(c >> 24));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 29, (uint8_t)(c >> 16));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 30, (uint8_t)(c >> 8));
 
         // Coeff N2, Coeff C6
         c = coeff[2];
-        aic_writePage(page, 32, (uint8_t)(c >> 24));
-        aic_writePage(page, 33, (uint8_t)(c >> 16));
-        aic_writePage(page, 34, (uint8_t)(c >> 8));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 32, (uint8_t)(c >> 24));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 33, (uint8_t)(c >> 16));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_LEFT_PAGE, 34, (uint8_t)(c >> 8));
+
+        //Return to book-0
+        aic_goToBook(0);
     }
+
     void AudioControlAIC3212::setHpfIIRCoeffOnADC_Right(uint32_t *coeff)
     {
-        int page;
         uint32_t c;
 
-        // See TI AIC3212 Application Guide, Table 2-13: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+        // See TI AIC3212 Application Guide, Table 2-17
+        aic_goToBook(AIC3212_ADC_IIR_FILTER_BOOK);
 
         // Coeff N0, Coeff C36
-        page = 9;
         c = coeff[0];
-        aic_writePage(page, 32, (uint8_t)(c >> 24));
-        aic_writePage(page, 33, (uint8_t)(c >> 16));
-        aic_writePage(page, 34, (uint8_t)(c >> 8));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 32, (uint8_t)(c >> 24));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 33, (uint8_t)(c >> 16));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 34, (uint8_t)(c >> 8));
 
         // Coeff N1, Coeff C37
         c = coeff[1];
-        aic_writePage(page, 36, (uint8_t)(c >> 24));
-        aic_writePage(page, 37, (uint8_t)(c >> 16));
-        aic_writePage(page, 38, (uint8_t)(c >> 8));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 36, (uint8_t)(c >> 24));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 37, (uint8_t)(c >> 16));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 38, (uint8_t)(c >> 8));
 
         // Coeff N2, Coeff C39
         c = coeff[2];
         ;
-        aic_writePage(page, 40, (uint8_t)(c >> 24));
-        aic_writePage(page, 41, (uint8_t)(c >> 16));
-        aic_writePage(page, 42, (uint8_t)(c >> 8));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 40, (uint8_t)(c >> 24));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 41, (uint8_t)(c >> 16));
+        aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 42, (uint8_t)(c >> 8));
     }
 
     bool AudioControlAIC3212::mixInput1toHPout(bool state)
