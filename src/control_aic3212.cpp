@@ -2046,6 +2046,9 @@ namespace tlv320aic3212
         aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 40, (uint8_t)(c >> 24));
         aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 41, (uint8_t)(c >> 16));
         aic_writePage(AIC3212_ADC_IIR_FILTER_RIGHT_PAGE, 42, (uint8_t)(c >> 8));
+
+        //Return to book-0
+        aic_goToBook(0);
     }
 
     bool AudioControlAIC3212::mixInput1toHPout(bool state)
