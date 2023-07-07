@@ -216,6 +216,14 @@ namespace tlv320aic3212
 #define AIC3212_ADC_IIR_FILTER_LEFT_PAGE 0x01
 #define AIC3212_ADC_IIR_FILTER_RIGHT_PAGE 0x02
 
+// ADC Digital Volume Control
+#define AIC3212_ADC_VOLUME_BOOK 0x00
+#define AIC3212_ADC_VOLUME_PAGE 0x00
+#define AIC3212_ADC_VOLUME_LEFT_REGISTER 0x53    //reg 83
+#define AIC3212_ADC_VOLUME_RIGHT_REGISTER 0x54    //reg 84
+#define AIC3212_ADC_VOLUME_MIN ( (int8_t) -12 )
+#define AIC3212_ADC_VOLUME_MAX ( (int8_t) 20 )
+#define AIC3212_ADC_VOLUME_MASK 0x7F
 
 // DAC Processing Block
 #define AIC3212_DAC_PROCESSING_BLOCK_PAGE 0x00 // page 0 register 60
@@ -759,6 +767,30 @@ namespace tlv320aic3212
         gain_dB = setInputGain_dB(gain_dB, 0); // left channel
         return setInputGain_dB(gain_dB, 1);    // right channel
     }
+
+
+    //Sets digital volume within the ADC processing block; accepts -12~20dB in steps of 0.5
+    float AudioControlAIC3212::setAdcVolume_dB(float vol_dB)
+    {
+        // Contrain to limits
+        vol_dB = constrain(vol_dB, AIC3212_ADC_VOLUME_MIN, AIC3212_ADC_VOLUME_MAX);
+
+        // Round to halves
+        vol_dB = roundf(2*vol_dB);
+
+        aic_goToBook(AIC3212_ADC_VOLUME_BOOK);
+
+        // Convert to halfs, then Set left volume
+        aic_writePage( AIC3212_ADC_VOLUME_PAGE, AIC3212_ADC_VOLUME_LEFT_REGISTER, AIC3212_ADC_VOLUME_MASK & (int8_t)vol_dB );
+
+        // Set right volume
+        aic_writePage( AIC3212_ADC_VOLUME_PAGE, AIC3212_ADC_VOLUME_RIGHT_REGISTER, AIC3212_ADC_VOLUME_MASK & (int8_t)vol_dB );
+
+        // Return actual volume (converting from halves back to whole numbers)
+        return (vol_dB/2.0f);
+    }
+
+
 
     //******************* OUTPUT  *****************************//
     // volume control, similar to Teensy Audio Board
@@ -1910,7 +1942,7 @@ namespace tlv320aic3212
 
     void AudioControlAIC3212::setHPFonADC(bool enable, float cutoff_Hz, float fs_Hz)
     { // fs_Hz is sample rate
-        // see TI application guide Section 2.3.3.1.10.1: http://www.ti.com/lit/an/slaa463b/slaa463b.pdf
+        // see TI application guide Section 2.3.3.1.10.1: sla360.pdf
         uint32_t coeff[3];
         if (enable)
         {
@@ -1926,13 +1958,17 @@ namespace tlv320aic3212
             convertCoeff_f32_to_i32(coeff_f32, (int32_t *)coeff, 3);
 #endif
 
-            // Serial.print("enableHPFonADC: coefficients, Hex: ");
-            // Serial.print(coeff[0],HEX);
-            // Serial.print(", ");
-            // Serial.print(coeff[1],HEX);
-            // Serial.print(", ");
-            // Serial.print(coeff[2],HEX);
-            // Serial.println();
+            // Print Coefficients
+            if(0)
+            {            
+                Serial.print("enableHPFonADC: coefficients, Hex: ");
+                Serial.print(coeff[0],HEX);
+                Serial.print(", ");
+                Serial.print(coeff[1],HEX);
+                Serial.print(", ");
+                Serial.print(coeff[2],HEX);
+                Serial.println();
+            }
         }
         else
         {
@@ -1956,6 +1992,24 @@ namespace tlv320aic3212
 
         // First-order Butterworth IIR
         // From https://www.dsprelated.com/showcode/199.php
+
+        /*******How to Check Coef's on MATLAB 
+         * 1. Negate n1 & d1, as required by the AIC
+         * myString = strcat('FF', myString);
+         * 
+         * 2. Convert from HEX to 2's complement
+         * typecast( uint32( hex2dec(MyString) ), 'int32');
+         * 
+         * 3. Assign d0 = 2^23,     According to the 24-bit range
+         * 
+         * 4. Plot Frequency Response
+         * fvtool(n,d,'FrequencyScale','log');
+         * 
+         * For example of fc_Hz = 60; fs_Hz = 95680;
+         * [n0,n1] = 8372114    -8372114     
+         * [d0,d1] = 8388608    -8355621
+        */
+
         const float pi = 3.141592653589793;
         float T = 1.0f / fs_Hz; // sample period
         float w = cutoff_Hz * 2.0 * pi;

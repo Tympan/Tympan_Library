@@ -243,6 +243,7 @@ namespace tlv320aic3212 {
 
         bool outputSelectTest();
 
+        float setAdcVolume_dB(float vol_dB);
         bool volume(float n);
         static float applyLimitsOnVolumeSetting(float vol_dB);
         float volume_dB(float vol_dB);                          // set both channels to the same volume
