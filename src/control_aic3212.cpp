@@ -884,7 +884,7 @@ namespace tlv320aic3212
     Note: Gain must be -6dB ~ +14dB
     
     */
-    void AudioControlAIC3212::setHeadphoneGain_dB(float gain_left_dB, float gain_right_dB)
+    float AudioControlAIC3212::setHeadphoneGain_dB(float gain_left_dB, float gain_right_dB)
     {
         unsigned int buff = 0;
         int8_t left_dB_u8 = 0;
@@ -909,6 +909,8 @@ namespace tlv320aic3212
         buff = (buff & (~AIC3212_HP_VOLUME_MASK)) | (right_dB_u8 & AIC3212_HP_VOLUME_MASK);
 
         aic_writePage( AIC3212_HP_VOLUME_PAGE, AIC3212_HPR_VOLUME_REG, uint8_t(buff) );
+		
+		return left_dB_u8;
     }
     
     float AudioControlAIC3212::setSpeakerVolume_dB(float target_vol_dB)
