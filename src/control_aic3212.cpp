@@ -226,8 +226,8 @@ namespace tlv320aic3212
 #define AIC3212_ADC_VOLUME_MASK 0x7F
 
 // DAC Processing Block
-#define AIC3212_DAC_PROCESSING_BLOCK_PAGE 0x00 // page 0 register 60
-#define AIC3212_DAC_PROCESSING_BLOCK_REG 0x3c  // page 0 register 60
+//#define AIC3212_DAC_PROCESSING_BLOCK_PAGE 0x00 // page 0 register 60
+//#define AIC3212_DAC_PROCESSING_BLOCK_REG 0x3c  // page 0 register 60
 
 // DAC Volume (Digital Volume Control)
 #define AIC3212_DAC_VOLUME_PAGE 0x00      // page 0
@@ -1036,8 +1036,8 @@ namespace tlv320aic3212
 
         // // Output channel config
         // aic_goToPage(1);
-        // aic_writePage(1, 0x08, 0x00); // Common Mode Register
-        // aic_writePage(1, 0x09, 0x00); // Headphone Output Driver Control
+        // aic_writePage(1, 0x08, 0x00); // Common Mode Register (Defaults to 0x00 upon reset)
+        // aic_writePage(1, 0x09, 0x00); // Headphone Output Driver Control (Defaults to 0b00010000 upon reset) 
 
         // aic_writePage(1, 0x1f, 0x80); // HPL Driver Volume Control
         // aic_writePage(1, 0x20, 0x80); // HPR Driver Volume Control
@@ -1221,7 +1221,7 @@ namespace tlv320aic3212
     bool AudioControlAIC3212::outputSelect(AIC_Output left, AIC_Output right, bool flag_full)
     {
         if (debugToSerial)
-            Serial.println("# AudioControlAIC3212: outputSelect");
+            Serial.println("# AudioControlAIC3212: outputSelect " + String(left) + ", " + String(right) + ", " + String(flag_full));
         static bool firstTime = true;
         if (firstTime)
         {
@@ -1299,6 +1299,7 @@ namespace tlv320aic3212
         }
 
         // Set DAC PowerTune Mode
+		//Serial.println("control_AIC3212: Left and right DAC PTM = " + String(static_cast<uint8_t>(pConfig->dac.ptm_p) << 2));
         aic_writePage(1, 0x03, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Left DAC PTM
         aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Right DAC PTM
 
@@ -1322,13 +1323,14 @@ namespace tlv320aic3212
         aic_writePage(1, 0x30, p1_r30);                                             // Unmute SPKL & SPLR
 
         // Headphone power-up
-        aic_writePage(1, 0x09, 0x70);                                               // Headphone Driver Output Stage is 25%.
-        aic_writePage(1, 0x1B, p1_r1B_2);                                           // Power up HP Drivers
+        //aic_writePage(1, 0x09, 0x70);     // Headphone Driver Output Stage is 25%.   WEA commented this.  2023-07-17
+        aic_writePage(1, 0x09, 0x10);       // Headphone Driver Output Stage is 100%.  WEA moved to here.  2023-07-17
+        aic_writePage(1, 0x1B, p1_r1B_2);   // Power up HP Drivers
         // CAB TODO: Add delay?
-        aic_writePage(1, 0x09, 0x10); // Headphone Driver Output Stage is 100%.
+        //aic_writePage(1, 0x09, 0x10); // Headphone Driver Output Stage is 100%.  WEA commented this and moved it earlier.  2023-07-17
 
         // Power up Speaker Drivers
-        aic_writePage(1, 0x2D, p1_r2D);
+        aic_writePage(1, 0x2D, p1_r2D);  //Commented out by WEA  2023-07-17
         // CAB TODO: Add delay?
 
         // Unmute LDAC and RDAC
@@ -1443,9 +1445,13 @@ namespace tlv320aic3212
         //  MDAC divider ON, Scaler MDAC
         aic_writePage(0, 0x0C, (pConfig->dac.mdac != 0 ? 0x80 : 0x00) | (pConfig->dac.mdac & 0x7F));
         //  DOSR (MSB)
+		//Serial.println("control_aic3212: P0, Reg 0x0D, value = " + String((pConfig->dac.dosr >> 8) & 0x03));
         aic_writePage(0, 0x0D, (pConfig->dac.dosr >> 8) & 0x03);
         //  DOSR (LSB)
-        aic_writePage(0, 0x0E, pConfig->dac.dosr & 0xFF);
+		//Serial.println("control_aic3212: P0, Reg 0x0E, value = " + String(pConfig->dac.dosr & 0xFF));
+        aic_writePage(0, 0x0E, pConfig->dac.dosr & 0xFF); 
+	
+		
 
         // Set up ADC Clock
         //  NADC divider ON, Scaler NADC
@@ -1484,13 +1490,17 @@ namespace tlv320aic3212
         // ################################################################
 
         // Processing Blocks (PRB)
+		//Serial.println("Control_AIC3212: P0 R 0x3C = " + String(pConfig->dac.prb_p & 0x1F));
         aic_writePage(0, 0x3C, pConfig->dac.prb_p & 0x1F); // Set DAC PRB_P
         aic_writePage(0, 0x3D, pConfig->adc.prb_r & 0x1F); // Set ADC PRB_R
 
         // PowerTune Modes (PTM)
+		
+		//Serial.println("Control_AIC3212: P1 R 0x03 = " + String(static_cast<uint8_t>(pConfig->dac.ptm_p) << 2));
         aic_writePage(1, 0x03, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Set Left DAC PTM_P
-        aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Set Right DAC PTM_P
-        aic_writePage(1, 0x3D, static_cast<uint8_t>(pConfig->adc.ptm_r) << 6); // Set ADC PTM_R
+		aic_writePage(1, 0x04, static_cast<uint8_t>(pConfig->dac.ptm_p) << 2); // Set Right DAC PTM_P
+        //Serial.println("Control_AIC3212: P1 R 0x3D = " + String(static_cast<uint8_t>(pConfig->adc.ptm_r) << 6));
+		aic_writePage(1, 0x3D, static_cast<uint8_t>(pConfig->adc.ptm_r) << 6); // Set ADC PTM_R
 
         Serial.println("# CAB: TODO ");
 
