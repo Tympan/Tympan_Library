@@ -73,9 +73,12 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
     void frequency(float32_t freq) {
         float32_t nyquist = sample_rate_Hz/2.f;
 
-        if (freq < 0.0) freq = 0.0f;
-        else if (freq > nyquist) freq = nyquist;
-
+        if (freq < 0.0) {
+			freq = 0.0f;
+        } else if (freq > nyquist) {
+			freq = nyquist;
+		}
+		
         if (_PortamentoSamples > 0 && _NotesPlaying > 0) {
           _PortamentoIncrement = (freq - _Frequency) / (float32_t)_PortamentoSamples;
           _CurrentPortamentoSample = 0;
