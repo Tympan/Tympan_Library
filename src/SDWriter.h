@@ -54,13 +54,17 @@ class SDWriter : public Print
       setSerial(_serial_ptr);
     };
     virtual ~SDWriter() {
-      if (isFileOpen()) close();
+      end();
     }
 
     void setup(void) { init(); }
     virtual void init() {
       if (!sd->begin(SD_CONFIG)) sd->errorHalt(serial_ptr, "SDWriter: begin failed");
     }
+	virtual void end() {
+		if (isFileOpen()) close();
+		sd->end();
+	}
 
     bool openAsWAV(char *fname) {
       bool returnVal = open(fname);

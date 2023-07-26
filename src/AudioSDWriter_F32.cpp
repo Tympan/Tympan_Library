@@ -51,6 +51,12 @@ void AudioSDWriter_F32::prepareSDforRecording(void) {
   }
 }
 
+void AudioSDWriter_F32::end(void) {
+	stopRecording();
+	sd->end();
+	current_SD_state = STATE::UNPREPARED;
+}
+
 int AudioSDWriter_F32::deleteAllRecordings(void) {
 	//loop through all file names and erase if existing
 	int return_val = 0;

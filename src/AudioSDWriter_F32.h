@@ -55,6 +55,7 @@ class AudioSDWriter {
     virtual int startRecording(char *) = 0;
 	//virtual int startRecording_noOverwrite(void) = 0;
     virtual void stopRecording(void) = 0;
+	virtual void end(void) = 0;
 
   protected:
 	SdFs * sd;
@@ -126,7 +127,8 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
       setSampleRate_Hz(settings.sample_rate_Hz); 
     }
     ~AudioSDWriter_F32(void) {
-      stopRecording();
+	  end();
+      //stopRecording();
       delete buffSDWriter;
     }
 
@@ -178,6 +180,8 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
     }
 
     void prepareSDforRecording(void); //you can call this explicitly, or startRecording() will call it automatcally
+	void end(void);
+	
     int startRecording(void);    //call this to start a WAV recording...automatically generates a filename
     int startRecording(char* fname); //or call this to specify your own filename.
 	//int startRecording_noOverwrite(void);
