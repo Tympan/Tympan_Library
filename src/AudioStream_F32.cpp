@@ -16,6 +16,8 @@ int AudioStream_F32::numInstances = 0;
 AudioStream_F32* AudioStream_F32::allInstances[AudioStream_F32::maxInstanceCounting];
 bool AudioStream_F32::isAudioProcessing = false;
 
+uint32_t AudioStream_F32::update_counter = 0;
+
 audio_block_f32_t* allocate_f32_memory(const int num) {
 	static bool firstTime=true;
 	static audio_block_f32_t *data_f32;

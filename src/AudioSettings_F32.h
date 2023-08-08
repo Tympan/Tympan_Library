@@ -21,6 +21,7 @@ class AudioSettings_F32 {
 		float processorUsage(void);
 		float processorUsageMax(void);
 		void processorUsageMaxReset(void);
+		unsigned long millis(void); //return milliseconds as counted by the number of calls to AudioStream_F32::update_all() instead of the regular millis() that is based on the CPU clock
 };
 
 #endif
