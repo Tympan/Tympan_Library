@@ -108,6 +108,9 @@ class AudioStream_F32 : public AudioStream {
 	static void printAllInstances(void);
 	String instanceName = String("NotNamed");
 	
+	static void reset_update_counter(void) { update_counter = 0; }
+	static uint32_t update_counter;
+	
   protected:
     //bool active_f32;
     unsigned char num_inputs_f32;
@@ -117,6 +120,7 @@ class AudioStream_F32 : public AudioStream {
     friend class AudioConnection_F32;
 	static bool update_setup(void) { return isAudioProcessing = AudioStream::update_setup(); }
 	static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }
+	static void update_all(void) { update_counter++; AudioStream::update_all(); }
 	static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
 	
   private:
