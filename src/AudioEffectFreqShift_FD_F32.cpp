@@ -1,6 +1,64 @@
 
 #include "AudioEffectFreqShift_FD_F32.h"
 
+int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT) {
+	sample_rate_Hz = settings.sample_rate_Hz;
+
+	//setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
+	N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
+	if (N_FFT < 1) return N_FFT;
+	N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
+	if (N_FFT < 1) return N_FFT;
+
+	//decide windowing
+	//Serial.println("AudioEffectFreqShift_FD_F32: setting myFFT to use hanning...");
+	(myFFT.getFFTObject())->useHanningWindow(); //applied prior to FFT
+	#if 1
+	if (myIFFT.getNBuffBlocks() > 3) {
+	  //Serial.println("AudioEffectFormantShiftFD_F32: setting myIFFT to use hanning...");
+	  (myIFFT.getIFFTObject())->useHanningWindow(); //window again after IFFT
+	}
+	#endif
+
+	//decide how much overlap is happening
+	switch (myIFFT.getNBuffBlocks()) {
+	  case 0:
+		//should never happen
+		break;
+	  case 1:
+		overlap_amount = NONE;
+		break;
+	  case 2:
+		overlap_amount = HALF;
+		break;
+	  case 3:
+		//to do...need to add phase shifting logic to the update() function to support this case
+		break;
+	  case 4:
+		overlap_amount = THREE_QUARTERS;
+		//to do...need to add phase shifting logic to the update() function to support this case
+		break;
+	}
+		
+
+	#if 0
+	//print info about setup
+	Serial.println("AudioEffectFreqShift_FD_F32: FFT parameters...");
+	Serial.print("    : N_FFT = "); Serial.println(N_FFT);
+	Serial.print("    : audio_block_samples = "); Serial.println(settings.audio_block_samples);
+	Serial.print("    : FFT N_BUFF_BLOCKS = "); Serial.println(myFFT.getNBuffBlocks());
+	Serial.print("    : IFFT N_BUFF_BLOCKS = "); Serial.println(myIFFT.getNBuffBlocks());
+	Serial.print("    : FFT use window = "); Serial.println(myFFT.getFFTObject()->get_flagUseWindow());
+	Serial.print("    : IFFT use window = "); Serial.println((myIFFT.getIFFTObject())->get_flagUseWindow());
+	#endif
+
+	//allocate memory to hold frequency domain data
+	complex_2N_buffer = new float32_t[2 * N_FFT];
+
+	//we're done.  return!
+	enabled = 1;
+	return N_FFT;
+}
 
 void AudioEffectFreqShift_FD_F32::update(void)
 {
@@ -67,11 +125,11 @@ void AudioEffectFreqShift_FD_F32::update(void)
 			//we only need to adjust the phase if we're shifting by an odd number of bins
 			if ((abs(shift_bins) % 2) == 1) {
 				//Alternate between adding no phase shift and adding 180 deg phase shift.
-				//Adding 180 is the same as flipping the sign of both the real and imaginary components
 				overlap_block_counter++; 
 				if (overlap_block_counter == 2){
 					overlap_block_counter = 0;
 					for (int i=0; i < N_2; i++) {
+						//Adding 180 is the same as flipping the sign of both the real and imaginary components
 						complex_2N_buffer[2*i] = -complex_2N_buffer[2*i];
 						complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i+1];
 					}
@@ -98,26 +156,26 @@ void AudioEffectFreqShift_FD_F32::update(void)
 					//no rotation
 					break;
 				case 1:
-					//90 deg rotation (swap real and imaginary and flip the sign when moving the real to imaginary)
+					//90 deg rotation (swap real and imaginary and flip the sign when moving the imaginary to the real)
 					for (int i=0; i < N_2; i++) {
-						foo = complex_2N_buffer[2*i+1];
-						complex_2N_buffer[2*i+1] = complex_2N_buffer[2*i];
-						complex_2N_buffer[2*i] = -foo;
+						foo = complex_2N_buffer[2*i+1]; // hold onto the original imaginary value
+						complex_2N_buffer[2*i+1] = complex_2N_buffer[2*i]; //put the real value into the imaginary
+						complex_2N_buffer[2*i] = -foo;  //put the imaginary value into the real and flip sign
 					}
 					break;
 				case 2:
 					//180 deg...flip the sign of both real and imaginary
 					for (int i=0; i < N_2; i++) {
-						complex_2N_buffer[2*i] = -complex_2N_buffer[2*i];
-						complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i+1];
+						complex_2N_buffer[2*i] = -complex_2N_buffer[2*i];  //real into real, but flip sign
+						complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i+1]; //imaginary into imaginary but flip sign
 					}
 					break;
 				case 3:
-					//270 deg rotation (swap the real and imaginary and flip the sign when moving the imaginary to the real)
+					//270 deg rotation (swap the real and imaginary and flip the sign when moving the real to the imaginary)
 					for (int i=0; i < N_2; i++) {
-						foo = complex_2N_buffer[2*i+1];
-						complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i];
-						complex_2N_buffer[2*i] = foo;
+						foo = complex_2N_buffer[2*i+1];  //hold onto the original imaginary value
+						complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i]; //put the real into the imaginary, but flip the sign
+						complex_2N_buffer[2*i] = foo;  //put the imaginary into the real
 					}
 					break;	
 			}
