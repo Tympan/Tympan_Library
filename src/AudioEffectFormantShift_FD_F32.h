@@ -45,6 +45,7 @@ class AudioEffectFormantShift_FD_F32 : public AudioStream_F32
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
+	int N_FFT;
 
     float shift_scale_fac = 1.0; //how much to shift formants (frequency multiplier).  1.0 is no shift
 };
