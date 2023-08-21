@@ -57,6 +57,7 @@ void AudioFreqDomainBase_FD_F32::update(void)
 
   //convert to frequency domain
   myFFT.execute(in_audio_block, complex_2N_buffer);
+  unsigned long incoming_id = in_audio_block->id;  //save for use later
   AudioStream_F32::release(in_audio_block);  //We just passed ownership to myFFT, so release it here.
 
   // ////////////// Do your processing here!!!
@@ -70,11 +71,17 @@ void AudioFreqDomainBase_FD_F32::update(void)
   // ///////////// End do your processing here
 
   //call the IFFT
-  audio_block_f32_t *out_audio_block = myIFFT.execute(complex_2N_buffer); //out_block is pre-allocated in here.
+	audio_block_f32_t *out_audio_block = AudioStream_F32::allocate_f32();
+	if (out_audio_block == NULL) {AudioStream_F32::release(out_audio_block); return; }//out of memory!
+	myIFFT.execute(complex_2N_buffer, out_audio_block); //output is via out_audio_block
 
+	//update the block number to match the incoming one
+	out_audio_block->id = incoming_id;
 
-  //send the returned audio block.  Don't issue the release command here because myIFFT will re-use it
-  AudioStream_F32::transmit(out_audio_block); //don't release this buffer because myIFFT re-uses it within its own code
+	//send the output
+	AudioStream_F32::transmit(out_audio_block);
+	AudioStream_F32::release(out_audio_block);
+	
   return;
 };
 
