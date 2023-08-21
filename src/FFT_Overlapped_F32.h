@@ -65,10 +65,10 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
     ~FFT_Overlapped_Base_F32(void) {
       if (N_BUFF_BLOCKS > 0) {
         for (int i = 0; i < N_BUFF_BLOCKS; i++) {
-          if (buff_blocks[i] != NULL) AudioStream_F32::release(buff_blocks[i]);
+          //if (buff_blocks[i] != NULL) AudioStream_F32::release(buff_blocks[i]);
+		  if (buff_blocks[i] != NULL) delete buff_blocks[i];
         }
       }
-      if (complex_buffer != NULL) delete complex_buffer;
     }
 
     virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
@@ -90,16 +90,19 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
 
       //what does the fft length actually end up being?
       N_FFT = N_BUFF_BLOCKS * audio_block_samples;
-
-      //allocate memory for buffers...this is dynamic allocation.  Always dangerous.
-      complex_buffer = new float32_t[2*N_FFT]; //should I check to see if it was successfully allcoated?
       
       //initialize the blocks for holding the previous data
       for (int i = 0; i < N_BUFF_BLOCKS; i++) {
-        buff_blocks[i] = AudioStream_F32::allocate_f32();
-        clear_audio_block(buff_blocks[i]);
-      }
-      
+		  //audio_block_f32_t *block = AudioStream_F32::allocate_f32();
+		  //if (block == NULL) {
+			//  Serial.println("FFT_Overlapped: setup(): *** ERROR ***: failed to allocate audio memory!");
+		  //} else {
+			//buff_blocks[i] = block;
+			//Serial.println("FFT_Overlapped: setup: creating buff_block, length = " + String(audio_block_samples));
+			buff_blocks[i] = new float32_t[audio_block_samples];
+			clear_audio_block(buff_blocks[i]);
+		  //}
+      } 
       return N_FFT;
     }
     virtual int getNFFT(void) = 0;
@@ -109,11 +112,15 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
     int N_BUFF_BLOCKS = 0;
     int audio_block_samples;
     
-    audio_block_f32_t *buff_blocks[MAX_N_BUFF_BLOCKS];
-    float32_t *complex_buffer;
-
-    void clear_audio_block(audio_block_f32_t *block) {
-      for (int i = 0; i < block->length; i++) block->data[i] = 0.f;
+    //audio_block_f32_t *buff_blocks[MAX_N_BUFF_BLOCKS];
+	float32_t *buff_blocks[MAX_N_BUFF_BLOCKS];
+    //void clear_audio_block(audio_block_f32_t *block) {
+	//  if (block == NULL) return;
+	//	for (int i = 0; i < block->length; i++) block->data[i] = 0.f;
+	//
+	void clear_audio_block(float32_t *block) {
+		if (block == NULL) return;
+		for (int i = 0; i < audio_block_samples; i++) block[i] = 0.f;
     }  
 };
 
@@ -135,7 +142,7 @@ class FFT_Overlapped_F32: public FFT_Overlapped_Base_F32
       return N_FFT;
     }
     
-    virtual void execute(audio_block_f32_t *block, float *complex_2N_buffer);
+    virtual void execute(audio_block_f32_t *block, float *complex_2N_buffer); //output is via complex_2N_buffer (complex_2N_buffer must already be fully allocated!)
     virtual int getNFFT(void) { return myFFT.getNFFT(); };
     FFT_F32* getFFTObject(void) { return &myFFT; };
     virtual void rebuildNegativeFrequencySpace(float *complex_2N_buffer) { myFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); }
@@ -163,9 +170,8 @@ class IFFT_Overlapped_F32: public FFT_Overlapped_Base_F32
       return N_FFT;
     }
     
-    virtual audio_block_f32_t* execute(float *complex_2N_buffer);
+    virtual void execute(float *complex_2N_buffer, audio_block_f32_t *out_block); //output is via out_block (out_block must be allocated and writable!)
     virtual int getNFFT(void) { return myIFFT.getNFFT(); };
-    IFFT_F32* getFFTObject(void) { return &myIFFT; };
     IFFT_F32* getIFFTObject(void) { return &myIFFT; };
   private:
     IFFT_F32 myIFFT;
