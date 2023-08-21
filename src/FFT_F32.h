@@ -48,13 +48,14 @@ class FFT_F32
       is_IFFT = _is_IFFT;
 
       if ((N_FFT == 16) || (N_FFT == 64) || (N_FFT == 256) || (N_FFT == 1024)) {
-        arm_cfft_radix4_init_f32(&fft_inst_r4, N_FFT, is_IFFT, 1); //FFT
+        arm_cfft_radix4_init_f32(&fft_inst_r4, N_FFT, is_IFFT, 1); //set up the FFT (or IFFT)
         is_rad4 = 1;
       } else {
-        arm_cfft_radix2_init_f32(&fft_inst_r2, N_FFT, is_IFFT, 1); //FFT
+        arm_cfft_radix2_init_f32(&fft_inst_r2, N_FFT, is_IFFT, 1); //setup up the FFT (or IFFT)
       }
 
       //allocate window
+	  if (window != NULL) delete window;
       window = new float[N_FFT];
       if (is_IFFT) {
         useRectangularWindow(); //default to no windowing for IFFT
@@ -73,54 +74,46 @@ class FFT_F32
     }
 
     virtual void useRectangularWindow(void) {
-      flag__useWindow = 0;
+      flag__useWindow = 0; //set to zero to actually skip the multiplications (saves CPU)
       if (window != NULL) {
         for (int i=0; i < N_FFT; i++) window[i] = 1.0; 
-      }
-      //if (Serial) { Serial.print("FFT_F32: useRectangularWindow.  flag__useWindow = "); Serial.println(flag__useWindow); }
+      } else {
+		  Serial.println("FFT_F32: useRectangularWindow: *** ERROR ***: memory for 'window' has not been allocated.");
+		  flag__useWindow = 0;
+	  }
     }
     virtual void useHanningWindow(void) {
       flag__useWindow = 1;
       if (window != NULL) {
-        //Serial.print("FFT_F32: useHanningWindow, N=");
-		//Serial.print(N_FFT); Serial.print(": ");
-        for (int i=0; i < N_FFT; i++) { 
-          window[i] = 0.5*(1.0 - cosf(2.0*M_PI*(float)i/((float)(N_FFT-1))));
-          //Serial.print(window[i]);
-          //Serial.print(" ");
-        }
-        //Serial.println();
-      }
-      //if (Serial) { Serial.print("FFT_F32: useHanningWindow.  flag__useWindow = "); Serial.println(flag__useWindow); }
+        for (int i=0; i < N_FFT; i++) window[i] = 0.5*(1.0 - cos(2.0*M_PI*(float)i/((float)N_FFT)));
+      } else {
+		  Serial.println("FFT_F32: useHanningWindow: *** ERROR ***: memory for 'window' has not been allocated.");
+		  flag__useWindow = 0;
+	  }
     }
     
     virtual void applyWindowToRealPartOfComplexVector(float32_t *complex_2N_buffer) {
-      for (int i=0; i < N_FFT; i++) {
-        complex_2N_buffer[2*i] *= window[i];
-      }
+	  for (int i=0; i < N_FFT; i++) complex_2N_buffer[2*i] *= window[i];
     }
     virtual void applyWindowToRealVector(float32_t *real_N_buffer) {
-      for (int i=0; i < N_FFT; i++) {
-        real_N_buffer[i] *= window[i];
-      }
+	  for (int i=0; i < N_FFT; i++) real_N_buffer[i] *= window[i];
     }
+	
+	virtual void execute(float32_t *complex_2N_buffer) { //interleaved [real,imaginary], total length is 2*N_FFT
+	  if (N_FFT == 0) return;
 
-    virtual void execute(float32_t *complex_2N_buffer) { //interleaved [real,imaginary], total length is 2*N_FFT
-      if (N_FFT == 0) return;
-
-      //apply window before FFT (if it is an FFT and not IFFT)
-      if ((!is_IFFT) && (flag__useWindow)) applyWindowToRealPartOfComplexVector(complex_2N_buffer);
+      //if it is an FFT, apply the window before taking the FFT
+      if ((!is_IFFT) && (flag__useWindow)) applyWindowToRealPartOfComplexVector(complex_2N_buffer);	 
 	  
-      //do the FFT
-      if (is_rad4) {
-        arm_cfft_radix4_f32(&fft_inst_r4, complex_2N_buffer);
-      } else {
-        arm_cfft_radix2_f32(&fft_inst_r2, complex_2N_buffer);
-      }
+      //do the FFT (or IFFT)
+	  if (is_rad4) {
+		arm_cfft_radix4_f32(&fft_inst_r4, complex_2N_buffer);
+	  } else {
+		arm_cfft_radix2_f32(&fft_inst_r2, complex_2N_buffer);
+	  }
 
-      //apply window after FFT (if it is an IFFT and not FFT)
-      if ((is_IFFT) && (flag__useWindow)) applyWindowToRealPartOfComplexVector(complex_2N_buffer);
-
+      //If it is an IFFT, apply the window after doing the IFFT
+      if ((is_IFFT) && (flag__useWindow))  applyWindowToRealPartOfComplexVector(complex_2N_buffer);
 	}
     
     virtual void rebuildNegativeFrequencySpace(float *complex_2N_buffer) {
@@ -145,7 +138,7 @@ class FFT_F32
     virtual int getNFFT(void) { return N_FFT; };
     int get_flagUseWindow(void) { return flag__useWindow; };
 
-  private:
+  protected:
     int N_FFT=0;
     int is_IFFT=0;
     int is_rad4=0;
