@@ -57,6 +57,8 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
 	
     virtual void update(void);
 	bool enable(bool state = true) { enabled = state; return enabled;}
+	FFT_Overlapped_F32* getFFTobj(void) { return &myFFT; }
+	IFFT_Overlapped_F32* getIFFTobj(void) { return &myIFFT; }
 
   private:
     int enabled = 0;
