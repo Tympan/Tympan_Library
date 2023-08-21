@@ -10,6 +10,8 @@ AudioMemory_F32_wSettings	KEYWORD1
 AudioMemoryUsage_F32	KEYWORD1
 AudioMemoryUsageMax_F32	KEYWORD1
 AudioMemoryUsageMaxReset_F32	KEYWORD1
+transmit		KEYWORD2
+release			KEYWORD2
 
 AudioConnection_F32	KEYWORD1
 
