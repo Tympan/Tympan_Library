@@ -447,9 +447,15 @@ float AudioControlAIC3206::setInputGain_dB(float gain_dB) {
 }
 
 //******************* OUTPUT DEFINITIONS *****************************//
-#define TYMPAN_DAC_PROCESSING_BLOCK_REG 0x003c // page 0 register 60
-#define TYMPAN_DAC_VOLUME_LEFT_REG 0x0041 // page 0 reg 65
-#define TYMPAN_DAC_VOLUME_RIGHT_REG 0x0042 // page 0 reg 66
+#define TYMPAN_HP_DRIVER_GAIN_PAGE 1
+#define TYMPAN_HPL_DRIVER_GAIN_REG 0x10  //page 1, register 16
+#define TYMPAN_HPR_DRIVER_GAIN_REG 0x11  //page 1, register 17
+
+#define TYMPAN_DAC_SETTINGS_PAGE 0
+#define TYMPAN_DAC_PROCESSING_BLOCK_REG 0x3c // page 0 register 60
+#define TYMPAN_DAC_CHANNEL_SETUP_REG  0x40 //page 0 register 64
+#define TYMPAN_DAC_VOLUME_LEFT_REG 0x41 // page 0 reg 65
+#define TYMPAN_DAC_VOLUME_RIGHT_REG 0x42 // page 0 reg 66
 
 
 //volume control, similar to Teensy Audio Board
@@ -501,6 +507,7 @@ float AudioControlAIC3206::volume_dB(float orig_vol_dB, int Ichan) {  // 0 = Lef
 		Serial.print(".  Converted to volume map => "); Serial.println(volume_int);
 	}
 
+	aic_goToPage(TYMPAN_DAC_SETTINGS_PAGE);  //switch page
 	if (Ichan == 0) {
 		aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG, volume_int);
 	} else {
@@ -517,16 +524,101 @@ float AudioControlAIC3206::volume_dB(float vol_dB) {
 	return volume_dB(vol_dB, 0);    //set left channel
 }
 
+int AudioControlAIC3206::unmuteDAC(int chan) {
+	int ret_val = -1;
+	uint8_t val = aic_readPage(TYMPAN_DAC_SETTINGS_PAGE, TYMPAN_DAC_CHANNEL_SETUP_REG);
+	switch (chan) {
+		case BOTH_CHAN:
+			val = val & 0b11110011; //clear the two bits
+			ret_val = BOTH_CHAN;
+			break;
+		case LEFT_CHAN:
+			val = val & 0b11110111; //clear the one bit
+			ret_val = LEFT_CHAN;
+			break;
+		case RIGHT_CHAN:
+			val = val & 0b11111011; //clear the other bit
+			ret_val = RIGHT_CHAN;
+			break;
+	}
+	aic_writePage(TYMPAN_DAC_SETTINGS_PAGE, TYMPAN_DAC_CHANNEL_SETUP_REG, val);
+	return ret_val;
+}
+int AudioControlAIC3206::muteDAC(int chan) {
+	int ret_val = -1;
+	uint8_t val = aic_readPage(TYMPAN_DAC_SETTINGS_PAGE, TYMPAN_DAC_CHANNEL_SETUP_REG);
+	switch (chan) {
+		case BOTH_CHAN:
+			val = val | 0b00001100; //set the two bits
+			ret_val = BOTH_CHAN;
+			break;
+		case LEFT_CHAN:
+			val = val | 0b00001000; //set the one bit
+			ret_val = LEFT_CHAN;
+			break;
+		case RIGHT_CHAN:
+			val = val | 0b00000100; //set the other bit
+			ret_val = RIGHT_CHAN;
+			break;
+	}
+	aic_writePage(TYMPAN_DAC_SETTINGS_PAGE, TYMPAN_DAC_CHANNEL_SETUP_REG, val);
+	return ret_val;	
+}
+
+#define TYMPAN_HPL_DRIVER_GAIN_PAGE 1
+#define TYMPAN_HPL_DRIVER_GAIN_REG 0x10  //page 1, register 16
+#define TYMPAN_HPR_DRIVER_GAIN_REG 0x11  //page 1, register 17
+
+
+int AudioControlAIC3206::unmuteHeadphone(int chan) {
+	int ret_val = -1;
+	uint8_t val;
+	if ( (chan == BOTH_CHAN) || (chan == LEFT_CHAN) ) {
+		//set the left side
+		val = aic_readPage(TYMPAN_HPL_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG);
+		val = val & 0b10111111; //clear the bit to unmute
+		aic_writePage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG, val);
+		ret_val = chan;
+	}
+	if ( (chan == BOTH_CHAN) || (chan == RIGHT_CHAN) ) {
+		//set the right side
+		val = aic_readPage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG);
+		val = val & 0b10111111; //clear the bit to unmute
+		aic_writePage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG, val);
+		ret_val = chan;
+	}	
+	return ret_val;
+}
+int AudioControlAIC3206::muteHeadphone(int chan) {
+	int ret_val = -1;
+	uint8_t val;
+	if ( (chan == BOTH_CHAN) || (chan == LEFT_CHAN) ) {
+		//set the left side
+		val = aic_readPage(TYMPAN_HPL_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG);
+		val = val | 0b01000000; //set the bit to mute
+		aic_writePage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG, val);
+		ret_val = chan;
+	}
+	if ( (chan == BOTH_CHAN) || (chan == RIGHT_CHAN) ) {
+		//set the right side
+		val = aic_readPage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG);
+		val = val | 0b01000000; //set the bit to mute
+		aic_writePage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG, val);
+		ret_val = chan;
+	}	
+	return ret_val;	
+}
+
 void AudioControlAIC3206::aic_initDAC() {
 	if (debugToSerial) Serial.println("AudioControlAIC3206: Initializing AIC DAC");
 	outputSelect(TYMPAN_OUTPUT_HEADPHONE_JACK_OUT); //default
 }
 
 bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
-	static bool firstTime = true;
-	if (firstTime) {
+	//static bool firstTime = true;
+	if (outputSelect_firstTime) {
 		flag_full = true;  //always do a full reconfiguration the first time through.
-		firstTime = false;
+		outputSelect_firstTime = false;
 	}
 
 	// PLAYBACK SETUP:
@@ -571,6 +663,7 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		if (flag_full) {
 			aic_writePage(1, 9, 0x30); // Page 1,  Power up HPL/HPR drivers  0b00110000
 			delay(50);
+			aic_goToPage(TYMPAN_DAC_SETTINGS_PAGE);  //switch page
 			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -591,6 +684,7 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 		if (flag_full) {
 			aic_writePage(1, 9, 0b00001100); // Power up LOL/LOR drivers
 			delay(50);
+			aic_goToPage(TYMPAN_DAC_SETTINGS_PAGE);  //switch page
 			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -617,6 +711,7 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers
 
 			delay(50);
+			aic_goToPage(TYMPAN_DAC_SETTINGS_PAGE);  //switch page
 			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
 			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
@@ -644,14 +739,16 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 			aic_writePage(1, 9, 0b00111100);       // Power up both the HPL/HPR and the LOL/LOR drivers
 
 			delay(50);
+			aic_goToPage(TYMPAN_DAC_SETTINGS_PAGE);  //switch page
 			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
 			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
-			aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+			aic_writeAddress(64,0);  // 0x40 // Unmute LDAC/RDAC
+			//aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
 		}
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Diff Headphone Jack and Line out");
 		return true;
-  }
+  } 
   Serial.print("AudioControlAIC3206: ERROR: Unable to Select Output - Value not supported: ");
   Serial.println(n);
   return false;

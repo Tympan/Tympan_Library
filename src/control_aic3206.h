@@ -82,6 +82,10 @@ public:
 	float volume_dB(float vol_dB);  //set both channels to the same volume
 	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels, but to their own values
 	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
+	int muteDAC(int chan = BOTH_CHAN);  //mutes the output DAC
+	int unmuteDAC(int chan = BOTH_CHAN); //unmutes the output DAC
+	int muteHeadphone(int chan = BOTH_CHAN);   //mutes the headphone driver
+	int unmuteHeadphone(int chan = BOTH_CHAN); //unmutes the headphone driver
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
 	bool inputSelect(int n);
 	float applyLimitsOnInputGainSetting(float gain_dB);
@@ -134,6 +138,7 @@ protected:
   void computeBiquadCoeff_HP_f32(float cutoff_Hz, float sampleRate_Hz, float q, float *coeff);
   void convertCoeff_f32_to_i32(float *coeff_f32, int32_t *coeff_i32, int ncoeff);
 
+  bool outputSelect_firstTime = true;
 
 };
 
