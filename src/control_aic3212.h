@@ -200,6 +200,10 @@ namespace tlv320aic3212 {
 
     uint8_t getAudioConnInput(InputChannel_s inputChan);
     uint8_t getAudioConnOutput(OutputChannel_s outputChan);
+	
+	#define AIC3212_LEFT_CHAN 1
+	#define AIC3212_RIGHT_CHAN 2
+	#define AIC3212_BOTH_CHAN 0
 
     class AudioControlAIC3212 //final : public TeensyAudioControl
     {
@@ -251,7 +255,13 @@ namespace tlv320aic3212 {
         float volume_dB(float vol_left_dB, int chan);           // set each channel seperately (0 = left; 1 = right)
         float setHeadphoneGain_dB(float vol_left_dB, float vol_right_dB); // set HP volume
         float setSpeakerVolume_dB(float target_vol_dB);         // sets the volume of both Class D Speaker Outputs
-        bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
+		//int muteDAC(int chan = BOTH_CHAN);  //mutes the output DAC
+		//int unmuteDAC(int chan = BOTH_CHAN); //unmutes the output DAC
+		//int muteHeadphone(int chan = BOTH_CHAN);   //mutes the headphone driver
+		//int unmuteHeadphone(int chan = BOTH_CHAN); //unmutes the headphone driver
+		int enableHeadphonePower(int chan, bool enable = true); //use AIC_BOTH_CHAN, AIC_LEFT_CHAN, AIC_RIGHT_CHAN
+ 
+ bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
         bool inputSelect(AIC_Input both) { return inputSelect(both, both); };
         bool inputSelect(AIC_Input left, AIC_Input right);
         float applyLimitsOnInputGainSetting(float gain_dB);

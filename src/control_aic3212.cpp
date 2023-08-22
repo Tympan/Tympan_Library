@@ -897,6 +897,11 @@ namespace tlv320aic3212
         left_dB_u8 = constrain(left_dB_u8, AIC3212_HP_VOLUME_MIN, AIC3212_HP_VOLUME_MAX);
         right_dB_u8 = constrain(gain_right_dB, AIC3212_HP_VOLUME_MIN, AIC3212_HP_VOLUME_MAX);
 
+		//check to see if they want it muted
+		if (gain_left_dB < -90.0) left_dB_u8 = 0b00111001; //mute it
+		if (gain_right_dB < -90.0) right_dB_u8 = 0b00111001; //mute it
+		
+
         // Set Left Volume
         aic_goToBook(0);
         buff = aic_readPage(AIC3212_HP_VOLUME_PAGE, AIC3212_HPL_VOLUME_REG); //read existing register value
@@ -952,6 +957,41 @@ namespace tlv320aic3212
         aic_writePage(AIC3212_SPKR_VOLUME_PAGE, AIC3212_SPKR_VOLUME_REG, val);
         return (float)int_targ_vol_dB;
     }
+	
+	int AudioControlAIC3212::enableHeadphonePower(int chan, bool enable) {
+		int ret_val = -1;
+		
+		//get the current value
+		aic_goToBook(0); //settings are in book zero
+		uint8_t cur_val = aic_readPage(1,27); //page 1, register 31 (0x15)
+		
+		//modify the value
+		if ((chan == AIC3212_BOTH_CHAN) || (chan == AIC3212_LEFT_CHAN)) {
+			if (enable) {
+				cur_val = cur_val | 0b00000010;  //set this one bit
+			} else {
+				cur_val = cur_val & 0b11111101;  //clear this one bit
+			}
+			ret_val = chan;
+		}
+		if ((chan == AIC3212_BOTH_CHAN) || (chan == AIC3212_RIGHT_CHAN)) {
+			if (enable) {
+				cur_val = cur_val | 0b00000001;  //set this one bit
+			} else {
+				cur_val = cur_val & 0b11111110;  //clear this one bit
+			}
+			ret_val = chan;
+		}
+		
+		//send the value
+		Serial.print("Control_AIC3212: enableHeadphonePower: sending ");
+		Serial.println(cur_val,BIN);
+		aic_writePage(1,27,cur_val);
+		cur_val = aic_readPage(1,27); //page 1, register 31 (0x15)
+		Serial.print("Control_AIC3212: enableHeadphonePower: confirming, received ");
+		Serial.println(cur_val,BIN);
+		return ret_val;
+	}
 
     bool AudioControlAIC3212::outputSelectTest()
     {
