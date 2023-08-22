@@ -40,6 +40,7 @@
 #include "AudioMathMultiply_F32.h"
 #include "AudioMathOffset_F32.h"
 #include "AudioMathScale_F32.h"
+#include "AudioPlayMemory_F32.h"
 #include "AudioRateDecimator_F32.h"
 #include "AudioRateInterpolator_F32.h"
 #include "AudioSettings_F32.h"
