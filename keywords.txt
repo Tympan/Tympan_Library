@@ -130,6 +130,7 @@ getScale		KEYWORD2
 AudioOutputI2S_F32	KEYWORD1
 AudioOutputI2SQuad_F32	KEYWORD1
 AudioOutputUSB_F32	KEYWORD1
+AudioPlayMemoryI16_F32  KEYWORD1
 AudioPlayQueue_F32	KEYWORD1
 
 AudioRateDecimator_F32	KEYWORD1
