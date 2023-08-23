@@ -271,6 +271,7 @@ void iirfb_zp(float *z, float *p, float *g, float *cf, const float fs, const int
  
   // compute cross-over-spread factors
   //Serial.print("BTNRH_iir_filterbank: iirfb_zp: compute cross-over spread factors, nb = "); Serial.println(nb);Serial.flush();
+  sp[0] = 1.0; //initialize just to avoid a complier warning (a few lines down) about sp[0] possibly beig not-initialized
   for (j = 0; j < (nb - 1); j++) {
 	  //Serial.print("    : j, c_o_s, cf[j] = "); Serial.print(j);Serial.print(", ");Serial.print(c_o_s);Serial.print(", ");Serial.println(cf[j]);Serial.flush();
       sp[j] = 1.0 + c_o_s / cf[j];

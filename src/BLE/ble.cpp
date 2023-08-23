@@ -254,7 +254,7 @@ size_t BLE::sendMessage(const String &orig_s)
 
     //send the packet with the header information
 	//Question: is "buf" actually used?  It doesn't look like it.  It looks like only "header" is used.
-    char buf[16];
+    char buf[21];  //was 16, which was too small for the 21 bytes that seem to be provided below
     sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
     int a = sendString(header); //for V5.5, this will return an error if there is no active BT connection
 	if (a != 7)  {
@@ -302,7 +302,7 @@ size_t BLE::recvMessage(String *s)
                 Serial.println("BLE: recvMessage: Length of message: '" + String(msgSize) + "'");
 
 				//is "buf" actually used?  It doesn't look like it.  It looks like only "s" is used.
-                char buf[16];
+                char buf[21];  //was 16, which was too small for the 21 bytes that seem to be provided below
                 sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", s->charAt(0), s->charAt(1), s->charAt(2), s->charAt(3), s->charAt(4), s->charAt(5), s->charAt(6));
                 Serial.println(buf);
 
