@@ -236,6 +236,8 @@ namespace tlv320aic3212 {
             i2cAddress = _i2cAddress;
             debugToSerial = _debugToSerial;
         }
+		virtual ~AudioControlAIC3212(void) { };
+		
         
         virtual bool enable(void);
         virtual bool disable(void);
