@@ -46,7 +46,7 @@ void setup() {
   Serial.println("Setup complete.");
 }
 
-int which_sound = 0, n_sounds = 2; //variables to keep track of which audio samples to play
+int which_sound = 0, n_sounds = 3; //variables to keep track of which audio samples to play
 void loop() {
 
   //start an audio sample?
@@ -61,6 +61,15 @@ void loop() {
       case 1:
         Serial.println("Starting sample 'NO'...len = " + String(sample_NO_len) + " samples");
         audioPlayMemory.play(sample_NO, sample_NO_len, sample_NO_sample_rate_Hz);
+        break;
+      case 2:
+        {
+        Serial.println("Starting combination of 'YES'/'NO' using a queue...");
+        AudioPlayMemoryQueue queue;
+        queue.addSample(sample_YES, sample_YES_len, sample_YES_sample_rate_Hz);
+        queue.addSample(sample_NO, sample_NO_len, sample_NO_sample_rate_Hz);
+        audioPlayMemory.play(queue);
+        }
         break;
     }
     which_sound = (which_sound+1) % n_sounds; //increment to the next sound
