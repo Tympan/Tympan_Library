@@ -12,7 +12,7 @@ int AudioPlayMemoryQueue::addSample(SampleInfo sample) {
 		all_sampleInfo[cur_write_ind] = sample; //I want this to make a local copy.  Hopefully it does!
 		queue_len++;  //queue is now one longer
 	}
-	Serial.println("AudioPlayMemoryQueue:addSample: queue length = " + String(queue_len)); 
+	//Serial.println("AudioPlayMemoryQueue:addSample: queue length = " + String(queue_len)); 
 	return queue_len;
 }
 
@@ -32,10 +32,10 @@ int AudioPlayMemoryI16_F32::setCurrentSampleFromQueue(int ind) {
 	data_ind = 0;
 	data_phase = 0.0f;
 	
-	Serial.println("AudioPlayMemoryI16_F32: setCurrentSampleFromQueue: queue ind = " + String(queue_ind)
-	    + ", data_ptr = " + String((int)data_ptr) 
-		+ ", data_len = " + String(data_len)
-		+ ", sample_rate = " + String(sample_rate_Hz));
+	//Serial.println("AudioPlayMemoryI16_F32: setCurrentSampleFromQueue: queue ind = " + String(queue_ind)
+	//    + ", data_ptr = " + String((int)data_ptr) 
+	//	+ ", data_len = " + String(data_len)
+	//	+ ", sample_rate = " + String(sample_rate_Hz));
 	return queue_ind;
 }
 		
