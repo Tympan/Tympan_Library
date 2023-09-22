@@ -1,6 +1,6 @@
 // FreqShifter_FD
 //
-// Demonstrate frequency shifting via frequency domain processin.
+// Demonstrate frequency shifting via frequency domain processing.
 //
 // Created: Chip Audette (OpenAudio) Aug 2019
 //
