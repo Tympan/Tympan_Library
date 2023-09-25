@@ -88,19 +88,29 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
       setSampleRate_Hz(settings.sample_rate_Hz);
     }
 
-    virtual void begin(const float32_t *cp, int n_stages = 1) {
+    virtual void begin(const float32_t *cp, int _n_stages = 1) {
       coeff_p = cp;
+	  n_stages = _n_stages;
       // Initialize Biquad instance (ARM DSP Math Library)
-      if (coeff_p && (coeff_p != IIR_F32_PASSTHRU) && n_stages <= IIR_MAX_STAGES) {
-        //https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html
-        arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, (float32_t *)coeff_p,  &StateF32[0]);
-        is_armed = true; enable(true);
-      }
+	  bool is_ok = initFilter();  //all inputs (such as coeff_p) are passed through the class's data members
+	  if (is_ok) { is_armed = true; enable(true); }
     }
     virtual void end(void) {
       coeff_p = NULL;
       enable(false);
     }
+	virtual bool resetState(void) { return initFilter();}  //returns is_ok
+	virtual bool initFilter(void) 
+	{
+		bool is_ok = false;
+		if (coeff_p && (coeff_p != IIR_F32_PASSTHRU) && n_stages <= IIR_MAX_STAGES) {
+			//https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html
+			arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, (float32_t *)coeff_p,  &StateF32[0]);
+			is_ok = true;
+		}
+		return is_ok;
+    }
+			
 
     virtual void clearCoeffArray(void) {
       for (int i = 0; i < IIR_MAX_STAGES * 5; i++) coeff[i] = 0.0;
@@ -240,7 +250,7 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
     float32_t cutoff_Hz = -999;
     float32_t q = -1;
     int cur_type_ind = -1;
-    int cur_filt_stage = 0;
+    int cur_filt_stage = 0; //this is tracked, but doesn't do anything?
     float cur_gain_for_shelf = 1.0;
 
     //functions with no bounds checking
@@ -249,6 +259,7 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
 
     // pointer to current coefficients or NULL or FIR_PASSTHRU
     const float32_t *coeff_p;
+	int n_stages = 1;
 
     // ARM DSP Math library filter instance
     arm_biquad_casd_df1_inst_f32 iir_inst;
