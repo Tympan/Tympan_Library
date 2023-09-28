@@ -62,16 +62,16 @@ uint32_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
 //q15_t AudioOutputI2SQuad_F32::tmp_src4[AUDIO_BLOCK_SAMPLES/2];
 
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
 //DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*4];  //pack 1 int32 into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples)
 DMAChannel AudioOutputI2SQuad_F32::dma(false);
 
 //static const uint32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0}; //original from Teensy Audio Library
-static const float32_t zerodata[AUDIO_BLOCK_SAMPLES/2] = {0}; //modified for F32.  Need zeros for half an audio block
+static const float32_t zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32/2] = {0}; //modified for F32.  Need zeros for half an audio block
 
 //initialize some static variables.  Likely get overwritten by constructor.
 float AudioOutputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioOutputI2SQuad_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
+int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 //for 16-bit transfers (into a 32-bit data type) multiplied by 4 channels
 #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0])/2)

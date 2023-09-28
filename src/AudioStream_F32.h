@@ -28,6 +28,8 @@ extern volatile uint32_t F_CPU_ACTUAL;
 class AudioStream_F32;
 class AudioConnection_F32;
 
+define MAX_AUDIO_BLOCK_SAMPLES_F32  (AUDIO_BLOCK_SAMPLES)
+//#define MAX_AUDIO_BLOCK_SAMPLES_F32  (1024)
 
 // ///////////// class definitions
 
@@ -36,21 +38,34 @@ class AudioConnection_F32;
 //https://github.com/PaulStoffregen/cores/blob/268848cdb0121f26b7ef6b82b4fb54abbe465427/teensy3/AudioStream.h
 class audio_block_f32_t {
 	public:
-		audio_block_f32_t(void) {};
-		audio_block_f32_t(const AudioSettings_F32 &settings) {
-			fs_Hz = settings.sample_rate_Hz;
-			length = settings.audio_block_samples;
+		audio_block_f32_t(void) : full_length(MAX_AUDIO_BLOCK_SAMPLES_F32) 
+		{
+			data = new float32_t[full_length];
+			length = full_length;
 		};
+		audio_block_f32_t(const AudioSettings_F32 &settings) : full_length(settings.audio_block_samples) 
+		{
+			data = new float32_t[full_length];
+			length = full_length;
+			fs_Hz = settings.sample_rate_Hz;
+			length = full_length;
+		};
+		~audio_block_f32_t(void) 
+		{
+			if (data != NULL) delete data;
+		}
+		
 		
 		unsigned char ref_count;
 		unsigned char memory_pool_index;
 		unsigned char reserved1;
 		unsigned char reserved2;
-		float32_t data[AUDIO_BLOCK_SAMPLES]; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
-		const int full_length = AUDIO_BLOCK_SAMPLES;
-		int length = AUDIO_BLOCK_SAMPLES; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
+		float32_t *data; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
+		const int full_length; //MAX_AUDIO_BLOCK_SAMPLES_F32
+		int length = MAX_AUDIO_BLOCK_SAMPLES_F32; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
 		float fs_Hz = AUDIO_SAMPLE_RATE; // AUDIO_SAMPLE_RATE is 44117.64706 from AudioStream.h
 		unsigned long id;
+	private:
 };
 
 class AudioConnection_F32

@@ -36,7 +36,7 @@
 #include "output_i2s_quad_f32.h"
 #include "output_i2s_f32.h"
 
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*2]; //Teensy Audio original
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*2]; //Teensy Audio original
 //DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2*4];
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch1 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch2 = NULL;
@@ -48,7 +48,7 @@ DMAChannel AudioInputI2SQuad_F32::dma(false);
 int AudioInputI2SQuad_F32::flag_out_of_memory = 0;
 
 float AudioInputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioInputI2SQuad_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
+int AudioInputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 //for 16-bit transfers?
 #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*(sizeof(i2s_rx_buffer[0])/2))

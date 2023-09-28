@@ -193,12 +193,12 @@ uint16_t  AudioOutputI2S_F32::block_left_offset = 0;
 uint16_t  AudioOutputI2S_F32::block_right_offset = 0;
 bool AudioOutputI2S_F32::update_responsibility = false;
 DMAChannel AudioOutputI2S_F32::dma(false);
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
 //DMAMEM static int32_t i2s_tx_buffer[2*AUDIO_BLOCK_SAMPLES]; //2 channels at 32-bits per sample.  Local "audio_block_samples" should be no larger than global "AUDIO_BLOCK_SAMPLES"
 
 
 float AudioOutputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioOutputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
+int AudioOutputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 #if defined(__IMXRT1062__)
 #include <utility/imxrt_hw.h>   //from Teensy Audio library.  For set_audioClock()
