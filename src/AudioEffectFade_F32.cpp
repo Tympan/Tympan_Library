@@ -30,7 +30,7 @@ int AudioEffectFade_F32::processAudioBlock(audio_block_f32_t *block, audio_block
   float up_lim = 1.0 - 0.5*step_size_amp;
 
   //loop over each sample
-  for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
+  for (int i = 0; i < block->length; i++) {
 
 	//apply the fade
 	out_block->data[i] = cur_amp * (block->data[i]);
