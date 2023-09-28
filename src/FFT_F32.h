@@ -66,7 +66,7 @@ class FFT_F32
     }
     static int is_valid_N_FFT(const int N) {
        if ((N == 16) || (N == 32) || (N == 64) || (N == 128) || 
-        (N == 256) || (N == 512) || (N==1024) || (N==2048)) {
+        (N == 256) || (N == 512) || (N==1024) || (N==2048) || (N==4096)) {
           return 1;
         } else {
           return 0;

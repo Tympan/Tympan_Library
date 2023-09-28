@@ -77,8 +77,7 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
       ///choose valid _N_FFT
       if (!FFT_F32::is_valid_N_FFT(_N_FFT)) {
           Serial.println(F("FFT_Overlapped_Base_F32: *** ERROR ***"));
-          Serial.print(F("  : N_FFT ")); Serial.print(_N_FFT); 
-          Serial.print(F(" is not allowed.  Try a power of 2 between 16 and 2048"));
+          Serial.print(F("  : N_FFT ") + String(_N_FFT) + F(" is not allowed.  Try a power of 2 between 16 and 2048"));
           N_FFT = -1;
           return N_FFT;
       }
