@@ -36,7 +36,8 @@
 #include "output_i2s_quad_f32.h"
 #include "output_i2s_f32.h"
 
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*2]; //Teensy Audio original
+//DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*2]; //Teensy Audio original
+DMAMEM __attribute__((aligned(32))) static uint32_t *i2s_rx_buffer = NULL;
 //DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2*4];
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch1 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch2 = NULL;
@@ -55,6 +56,10 @@ int AudioInputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
+
+void AudioInputI2SQuad_F32::allocate_buffer(unsigned int audio_block_samps) {
+	if (i2s_rx_buffer == NULL) i2s_rx_buffer = new uint32_t[2*audio_block_samps];
+}
 
 void AudioInputI2SQuad_F32::begin(void)
 {
@@ -234,7 +239,7 @@ void AudioInputI2SQuad_F32::isr(void)
 	#endif
 }
 
-#define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
+/* #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
 void AudioInputI2SQuad_F32::scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i16++) * I16_TO_F32_NORM_FACTOR); }
 }
@@ -245,14 +250,14 @@ void AudioInputI2SQuad_F32::scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32
 #define I32_TO_F32_NORM_FACTOR (4.656612875245797e-10)   //which is 1/(2^31 - 1)
 void AudioInputI2SQuad_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
 	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
-}
+} */
 
 void AudioInputI2SQuad_F32::update_1chan(int chan, unsigned long counter, audio_block_f32_t *&out_block) {
 	if (!out_block) return;
 		
 	//incoming data is still scaled like int16 (so, +/-32767.).  Here we need to re-scale
 	//the values so that the maximum possible audio values spans the F32 stadard of +/-1.0
-	scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples);
+	AudioInputI2S_F32::scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples);
 	
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_block->id = counter;

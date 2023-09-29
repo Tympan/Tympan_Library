@@ -194,6 +194,8 @@ uint16_t  AudioOutputI2S_F32::block_right_offset = 0;
 bool AudioOutputI2S_F32::update_responsibility = false;
 DMAChannel AudioOutputI2S_F32::dma(false);
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
+//static uint32_t *i2s_tx_buffer = NULL;
+//static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
 //DMAMEM static int32_t i2s_tx_buffer[2*AUDIO_BLOCK_SAMPLES]; //2 channels at 32-bits per sample.  Local "audio_block_samples" should be no larger than global "AUDIO_BLOCK_SAMPLES"
 
 
@@ -210,6 +212,12 @@ int AudioOutputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 //#for 32-bit transfers
 //#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_tx_buffer[0]))
 
+
+void AudioOutputI2S_F32::allocate_buffer(unsigned int audio_block_samps) {
+	Serial.println("AudioOutputI2S_F32: allocate_buffer: N = " + String(audio_block_samps));
+	//if (i2s_tx_buffer == NULL) i2s_tx_buffer = new uint32_t[audio_block_samps]; 
+	Serial.println("AudioInputI2S_F32: allocate_buffer: i2s_tx_buffer = " + String((int)i2s_tx_buffer));
+}
 
 void AudioOutputI2S_F32::begin(void)
 {
@@ -338,7 +346,9 @@ void AudioOutputI2S_F32::isr(void)
 	}
 	
 	
-	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
+	//arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 ); //original
+	arm_dcache_flush_delete(dest, I2S_BUFFER_TO_USE_BYTES / 2 ); //version to use  now that we have variable sizing
+
 
 	//if (offsetL < AUDIO_BLOCK_SAMPLES) { //orig Teensy Audio
 	if (offsetL < (uint16_t)audio_block_samples) {
@@ -672,7 +682,6 @@ void AudioOutputI2S_F32::scale_f32_to_i24( float32_t *p_f32, float32_t *p_i24, i
 	for (int i=0; i<len; i++) { *p_i24++ = max(-F32_TO_I24_NORM_FACTOR,min(F32_TO_I24_NORM_FACTOR,(*p_f32++) * F32_TO_I24_NORM_FACTOR)); }
 }
 #define F32_TO_I32_NORM_FACTOR (2147483647)   //which is 2^31-1
-//define F32_TO_I32_NORM_FACTOR (8388607)   //which is 2^23-1
 void AudioOutputI2S_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) {
 	for (int i=0; i<len; i++) { *p_i32++ = max(-F32_TO_I32_NORM_FACTOR,min(F32_TO_I32_NORM_FACTOR,(*p_f32++) * F32_TO_I32_NORM_FACTOR)); }
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
@@ -946,10 +955,11 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 
 /******************************************************************/
 
-// From Chip: The I2SSlave functionality has NOT been extended to allow for different block sizes or sample rates (2020-10-31)
+// From Chip: The I2SSlave functionality has **NOT** been extended to allow for different block sizes or sample rates (2020-10-31)
 
 void AudioOutputI2Sslave_F32::begin(void)  
 {
+	
 
 	dma.begin(true); // Allocate the DMA channel first
 

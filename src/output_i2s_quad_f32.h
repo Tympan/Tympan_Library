@@ -39,24 +39,31 @@
 //include "AudioStream.h"
 #include "DMAChannel.h"
 #include <arm_math.h>
+#include "output_i2s_quad_f32.h" //for AudioInputI2SQuad_F32()
+#include "output_i2s_f32.h"  //for scale_f32_to_i16()
 
 
 class AudioOutputI2SQuad_F32 : public AudioStream_F32
 {
 public:
-	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { begin(); }
+	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { 
+		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use default
+		allocate_buffer(audio_block_samples);
+		begin(); 
+	}
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(4, inputQueueArray)
 	{ 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
+		allocate_buffer(audio_block_samples);
 		begin(); 	
 	}
 	virtual void update(void);
 	void begin(void);
 	friend class AudioInputI2SQuad_F32;
-	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
-	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
-	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
+	//static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
+	//static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
+	//static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
 protected: 
 	static void config_i2s(void);
 	static audio_block_f32_t *block_ch1_1st;
@@ -81,6 +88,7 @@ private:
 	static float sample_rate_Hz;
 	static int audio_block_samples;
 	volatile uint8_t enabled = 1;
+	static void allocate_buffer(unsigned int audio_block_samps);
 };
 
 #endif

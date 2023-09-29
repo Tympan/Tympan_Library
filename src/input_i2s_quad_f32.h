@@ -37,23 +37,29 @@
 #include <Arduino.h>
 #include <arm_math.h>
 #include "AudioStream_F32.h"
-#include "AudioStream.h"  //do we really need this? (Chip 2020-10-31)
+#include "AudioStream.h"   //do we really need this? (Chip 2020-10-31)
 #include "DMAChannel.h"
+#include "input_i2s_f32.h" //for scale_i16_to_f32()
 
 class AudioInputI2SQuad_F32 : public AudioStream_F32
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
-	AudioInputI2SQuad_F32(void) : AudioStream_F32(0, NULL) { begin(); }
+	AudioInputI2SQuad_F32(void) : AudioStream_F32(0, NULL) { 
+		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
+		allocate_buffer(audio_block_samples);
+		begin(); 
+	}
 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
+		allocate_buffer(audio_block_samples);
 		begin(); 
 	}
 	virtual void update(void);
-	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
-	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
-	static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
+	//static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
+	//static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
+	//static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void);
 	//void begin(bool);
 	int get_isOutOfMemory(void) { return flag_out_of_memory; }
@@ -73,6 +79,7 @@ private:
 	static uint32_t block_offset;
 	static int flag_out_of_memory;
 	unsigned long update_counter=0;
+	static void allocate_buffer(unsigned int audio_block_samps);
 };
 
 

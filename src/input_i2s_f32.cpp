@@ -36,7 +36,9 @@
 #include <arm_math.h>
 
 //DMAMEM __attribute__((aligned(32))) 
-static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32]; //good for 16-bit audio samples coming in from teh AIC.  32-bit transfers will need this to be bigger.
+//static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32]; //good for 16-bit audio samples coming in from teh AIC.  32-bit transfers will need this to be bigger.
+//uint32_t * AudioInputI2S_F32::i2s_rx_buffer = NULL;
+uint32_t AudioInputI2S_F32::i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
 audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_right_f32 = NULL;
 uint16_t AudioInputI2S_F32::block_offset = 0;
@@ -47,7 +49,7 @@ int AudioInputI2S_F32::flag_out_of_memory = 0;
 unsigned long AudioInputI2S_F32::update_counter = 0;
 
 float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioInputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
+int AudioInputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //set to default, gets set again later during initialization
 
 
 //#for 16-bit transfers
@@ -56,7 +58,12 @@ int AudioInputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 //#for 32-bit transfers
 //#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_rx_buffer[0]))
 
-
+void AudioInputI2S_F32::allocate_buffer(unsigned int audio_block_samps) {
+	delay(250);
+	Serial.println("AudioInputI2S_F32: allocate_buffer: N = " + String(audio_block_samps));
+    //if (i2s_rx_buffer == NULL) i2s_rx_buffer = new uint32_t[audio_block_samps];
+	Serial.println("AudioInputI2S_F32: allocate_buffer: i2s_rx_buffer = " + String((int)i2s_rx_buffer));
+}	
 
 void AudioInputI2S_F32::begin(void) {
 	bool transferUsing32bit = false;
@@ -352,8 +359,8 @@ void AudioInputI2S_F32::isr(void)
 		// need to remove data from the first half
 		//src = (int32_t *)&i2s_rx_buffer_32[0];
 		//end = (int32_t *)&i2s_rx_buffer_32[AUDIO_BLOCK_SAMPLES];		
-		src_i32 = (int32_t *)&i2s_rx_buffer[0];
 		end_i32 = (int32_t *)&i2s_rx_buffer[audio_block_samples];		
+		src_i32 = (int32_t *)&i2s_rx_buffer[0];
 	}
 	
 	// OLD COMMENT: extract 16 but from 32 bit I2S buffer but shift to right first

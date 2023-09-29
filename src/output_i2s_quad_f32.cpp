@@ -62,7 +62,8 @@ uint32_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
 //q15_t AudioOutputI2SQuad_F32::tmp_src4[AUDIO_BLOCK_SAMPLES/2];
 
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+//DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+DMAMEM __attribute__((aligned(32))) static uint32_t *i2s_tx_buffer = NULL; 
 //DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*4];  //pack 1 int32 into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples)
 DMAChannel AudioOutputI2SQuad_F32::dma(false);
 
@@ -79,6 +80,12 @@ int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 //for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels
 //#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]))
+
+
+void AudioOutputI2SQuad_F32::allocate_buffer(unsigned int audio_block_samps) {
+	if (i2s_tx_buffer == NULL) i2s_tx_buffer = new uint32_t[audio_block_samps/2*4]{};  //allocate the array.  the {} initializes the elements to zero
+	//explantion: //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+}
 
 void AudioOutputI2SQuad_F32::begin(void)
 {
@@ -124,7 +131,7 @@ void AudioOutputI2SQuad_F32::begin(void)
 	#elif defined(__IMXRT1062__) //this is for Teensy 4
 	
 		const int pinoffset = 0; // TODO: make this configurable...
-		memset(i2s_tx_buffer, 0, sizeof(i2s_tx_buffer));
+		//memset(i2s_tx_buffer, 0, sizeof(i2s_tx_buffer)); //WEA 2023-09-28: commented out because we've already initialized the array to zero when we created the array 
 		bool transferUsing32bit = false;  //32 bit from AIC doesn't work with quad?  so don't change this?
 		AudioOutputI2S_F32::config_i2s(transferUsing32bit,AudioOutputI2SQuad_F32::sample_rate_Hz);
 		I2S1_TCR3 = I2S_TCR3_TCE_2CH << pinoffset;
@@ -272,7 +279,7 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 
 
 //scale with saturation
-#define F32_TO_I16_NORM_FACTOR (32767)   //which is 2^15-1
+/* #define F32_TO_I16_NORM_FACTOR (32767)   //which is 2^15-1
 void AudioOutputI2SQuad_F32::scale_f32_to_i16(float32_t *p_f32, float32_t *p_i16, int len) {
 	for (int i=0; i<len; i++) { *p_i16++ = max(-F32_TO_I16_NORM_FACTOR,min(F32_TO_I16_NORM_FACTOR,(*p_f32++) * F32_TO_I16_NORM_FACTOR)); }
 }
@@ -285,7 +292,7 @@ void AudioOutputI2SQuad_F32::scale_f32_to_i24( float32_t *p_f32, float32_t *p_i2
 void AudioOutputI2SQuad_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) {
 	for (int i=0; i<len; i++) { *p_i32++ = max(-F32_TO_I32_NORM_FACTOR,min(F32_TO_I32_NORM_FACTOR,(*p_f32++) * F32_TO_I32_NORM_FACTOR)); }
 	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
-}
+} */
 
  
 void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed upon return
@@ -318,7 +325,7 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 		} 
 		
 		//scale the F32 data (+/- 1.0) to fit within Int16 (+/- 32767.0), though we're still float32 data type
-		scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		AudioOutputI2S_F32::scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
 		block_f32_scaled->length = block_f32->length;
 		block_f32_scaled->id = block_f32->id;
 		block_f32_scaled->fs_Hz  = block_f32->fs_Hz;

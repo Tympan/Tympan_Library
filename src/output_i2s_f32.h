@@ -38,17 +38,23 @@
 #include "AudioStream_F32.h"
 //include "AudioStream.h"
 #include "DMAChannel.h"
+#include "input_i2s_f32.h" //for AudioInputI2S_F32
 
 
 class AudioOutputI2S_F32 : public AudioStream_F32
 {
 //GUI: inputs:2, outputs:0  //this line used for automatic generation of GUI node
 public:
-	AudioOutputI2S_F32(void) : AudioStream_F32(2, inputQueueArray)	{ begin();} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
+	AudioOutputI2S_F32(void) : AudioStream_F32(2, inputQueueArray)	{ 
+		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //set size to default
+		allocate_buffer(audio_block_samples);
+		begin();
+	} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
 	AudioOutputI2S_F32(const AudioSettings_F32 &settings) : AudioStream_F32(2, inputQueueArray)
 	{ 
 		sample_rate_Hz = settings.sample_rate_Hz;
-		audio_block_samples = settings.audio_block_samples;
+		audio_block_samples = settings.audio_block_samples; //set size to given value
+		allocate_buffer(audio_block_samples);
 		begin(); 	
 	}
 	virtual void update(void);
@@ -72,8 +78,6 @@ public:
 	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
 	static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
 	static float setI2SFreq_T3(const float);
-
-
 
 protected:
 	AudioOutputI2S_F32(int dummy): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
@@ -99,6 +103,7 @@ private:
 	static float sample_rate_Hz;
 	static int audio_block_samples;
 	volatile uint8_t enabled = 1;
+	static void allocate_buffer(unsigned int audio_block_samps);
 };
 
 
