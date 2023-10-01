@@ -71,8 +71,6 @@ AudioEffectDelay_F32	KEYWORD1
 
 AudioEffectFade_F32	KEYWORD1
 
-AudioEffectFeedbackCancel_F32	KEYWORD1
-AudioEffectFeedbackCancel_LoopBack_F32	KEYWORD1
 AudioEffectFormantShift_FD_F32	KEYWORD1
 setScaleFactor		KEYWORD2
 getScaleFactor		KEYWORD2	
@@ -88,6 +86,8 @@ setGain_dB		KEYWORD2
 AudioEffectMultiBandWDRC_F32_UI	KEYWORD1
 AudioEffectMultiBandWDRC_IIR_F32_UI	KEYWORD1
 StereoContainerWDRC_UI		KEYWORD1
+
+AudioFeedbackCancelNLMS_F32	KEYWORD1
 
 AudioFilterbankBase_F32		KEYWORD1
 AudioFilterbankBiquad_F32	KEYWORD1
@@ -112,6 +112,7 @@ AudioFreqDomainBase_FD_F32	KEYWORD1
 AudioInputI2S_F32	KEYWORD1
 AudioInputI2SQuad_F32	KEYWORD1
 AudioInputUSB_F32	KEYWORD1
+AudioLoopBack_F32	KEYWORD1
 AudioMixer4_F32		KEYWORD1
 gain			KEYWORD2
 mute			KEYWORD2

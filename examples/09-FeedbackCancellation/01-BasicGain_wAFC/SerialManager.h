@@ -4,7 +4,7 @@
 
 #include <Tympan_Library.h>
 extern Tympan myTympan;               
-extern AudioEffectFeedbackCancel_F32 afc;
+extern AudioFeedbackCancelNLMS_F32 afc;
 
 extern float incrementDigitalGain(float);
 extern void printGainSettings(void);

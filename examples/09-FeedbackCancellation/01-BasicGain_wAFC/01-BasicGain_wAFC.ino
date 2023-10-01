@@ -1,9 +1,9 @@
 /*
-*   BasicGain_wAFC
+*   BasicGain_wAFC (NLMS algorithm)
 *
 *   CREATED: Chip Audette, OpenAudio, Sept 2023
 *   PURPOSE: Process audio by applying gain to the audio.  The processing is then
-*      wrapped in an adaptive feedback cancellation algorithm (AFC).
+*      wrapped in an adaptive feedback cancellation (AFC), the NLMS algorithm.
 *      
 *      * The AFC algorithm is from Boys Town National Research Hospital (BTNRH) via 
 *        their CHAPRO library of hearing aid algorithms.  See their documentation in
@@ -41,12 +41,12 @@ const int audio_block_samples = 32;     //Shorter results in less latency.  Long
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E,audio_settings);   //only tested on Tympan RevE
-AudioInputI2S_F32         i2s_in(audio_settings);                  //Digital audio *from* the Tympan AIC. 
-AudioEffectFeedbackCancel_F32 afc(audio_settings);                 //adaptive feedback cancelation (AFC)
-AudioEffectGain_F32       gain1(audio_settings);                   //Applies digital gain to audio data.
-AudioOutputI2S_F32        i2s_out(audio_settings);                 //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
-AudioEffectFeedbackCancel_LoopBack_F32 afc_loopback(audio_settings);  //here's how we close the loop on the AFC
+Tympan                      myTympan(TympanRev::E,audio_settings);   //only tested on Tympan RevE
+AudioInputI2S_F32           i2s_in(audio_settings);                  //Digital audio *from* the Tympan AIC. 
+AudioFeedbackCancelNLMS_F32 afc(audio_settings);                     //adaptive feedback cancelation (AFC), NLMS method
+AudioEffectGain_F32         gain1(audio_settings);                   //Applies digital gain to audio data.
+AudioOutputI2S_F32          i2s_out(audio_settings);                 //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
+AudioLoopBack_F32           afc_loopback(audio_settings);            //here's how we close the loop on the AFC
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord10(i2s_in, 0, afc, 0);          //connect the left input straight to the afc
@@ -81,7 +81,7 @@ void setup() {
   AudioMemory_F32(20,audio_settings); 
 
   //connect the afc_loopback to the afc (do this before audio starts flowing (ie before myTympan.enable() ??)
-  afc_loopback.setTargetAFC(&afc);
+  afc_loopback.setTarget(&afc);
 
   //Enable the Tympan to start the audio flowing!
   myTympan.enable(); // activate AIC
