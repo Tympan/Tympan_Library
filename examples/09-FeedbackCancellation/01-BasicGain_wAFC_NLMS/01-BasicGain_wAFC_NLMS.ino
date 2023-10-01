@@ -1,5 +1,5 @@
 /*
-*   BasicGain_wAFC (NLMS algorithm)
+*   BasicGain_wAFC_NLMS
 *
 *   CREATED: Chip Audette, OpenAudio, Sept 2023
 *   PURPOSE: Process audio by applying gain to the audio.  The processing is then
@@ -37,7 +37,7 @@
 
 //set the sample rate and block size
 const float sample_rate_Hz = 24000.0f ; //Choose any sample rate that you would like, though the AFC length is suitable for 24kHz
-const int audio_block_samples = 32;     //Shorter results in less latency.  Longer is more CPU efficient (but no bigger than 128)
+const int audio_block_samples = 16;     //Shorter results in less latency.  Longer is more CPU efficient (but no bigger than 128)
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio

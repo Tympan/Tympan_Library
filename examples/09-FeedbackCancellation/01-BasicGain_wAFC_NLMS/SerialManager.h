@@ -32,6 +32,7 @@ void SerialManager::printHelp(void) {
   Serial.println("   r,R: Increase or Decrease AFC rho (currently  " + String(afc.getRho(),6) + ")");
   Serial.println("   e,E: Increase or Decrease AFC eps (currently " + String(afc.getEps(),6) + ")");
   Serial.println("   x,X: Increase or Decrease AFC filter length (currently " + String(afc.getAfl()) + ")");
+  Serial.println("   i: Print settings of the current AFC algorithm");
   Serial.println("   z: Re-initialize the AFC states");
   Serial.println();
 }
@@ -98,7 +99,10 @@ bool SerialManager::processCharacter(char c) {
       old_val = afc.getAfl(); new_val = old_val - 5;
       Serial.print("Command received: decreasing AFC filter length to "); Serial.println(afc.setAfl(new_val));
       break;  
-    case 'z':
+    case 'i':
+      afc.printAlgorithmInfo();
+      break;
+	case 'z':
       Serial.print("Command received: re-initializing the AFC states...");
       afc.setEnable(false);
       afc.initializeStates();
