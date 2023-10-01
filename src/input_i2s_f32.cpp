@@ -36,7 +36,7 @@
 #include <arm_math.h>
 
 //DMAMEM __attribute__((aligned(32))) 
-static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES]; //good for 16-bit audio samples coming in from teh AIC.  32-bit transfers will need this to be bigger.
+static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32]; //good for 16-bit audio samples coming in from teh AIC.  32-bit transfers will need this to be bigger.
 audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
 audio_block_f32_t * AudioInputI2S_F32::block_right_f32 = NULL;
 uint16_t AudioInputI2S_F32::block_offset = 0;
@@ -47,7 +47,7 @@ int AudioInputI2S_F32::flag_out_of_memory = 0;
 unsigned long AudioInputI2S_F32::update_counter = 0;
 
 float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioInputI2S_F32::audio_block_samples = AUDIO_BLOCK_SAMPLES;
+int AudioInputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 
 //#for 16-bit transfers

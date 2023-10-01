@@ -24,6 +24,8 @@
 extern volatile uint32_t F_CPU_ACTUAL;  
 #endif
 
+#define MAX_AUDIO_BLOCK_SAMPLES_F32  AUDIO_BLOCK_SAMPLES     //AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
+
 // /////////////// class prototypes
 class AudioStream_F32;
 class AudioConnection_F32;
@@ -46,10 +48,10 @@ class audio_block_f32_t {
 		unsigned char memory_pool_index;
 		unsigned char reserved1;
 		unsigned char reserved2;
-		float32_t data[AUDIO_BLOCK_SAMPLES]; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
-		const int full_length = AUDIO_BLOCK_SAMPLES;
-		int length = AUDIO_BLOCK_SAMPLES; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
-		float fs_Hz = AUDIO_SAMPLE_RATE; // AUDIO_SAMPLE_RATE is 44117.64706 from AudioStream.h
+		float32_t data[MAX_AUDIO_BLOCK_SAMPLES_F32];
+		const int full_length = MAX_AUDIO_BLOCK_SAMPLES_F32;
+		int length = MAX_AUDIO_BLOCK_SAMPLES_F32; 
+		float fs_Hz = AUDIO_SAMPLE_RATE; // AUDIO_SAMPLE_RATE is ~44100.0 Hz, from AudioStream.h
 		unsigned long id;
 };
 
