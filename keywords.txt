@@ -88,6 +88,8 @@ AudioEffectMultiBandWDRC_IIR_F32_UI	KEYWORD1
 StereoContainerWDRC_UI		KEYWORD1
 
 AudioFeedbackCancelNLMS_F32	KEYWORD1
+AudioFeedbackCancelNFXLMS_F32	KEYWORD1
+settings_AFC_NFXLMS	KEYWORD1
 
 AudioFilterbankBase_F32		KEYWORD1
 AudioFilterbankBiquad_F32	KEYWORD1

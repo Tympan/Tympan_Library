@@ -160,6 +160,16 @@ class AudioFeedbackCancelNLMS_F32 : public AudioStream_F32, public AudioLoopBack
     }
 
 
+
+    virtual void printAlgorithmInfo(void) {
+      Serial.println("AudioFeedbackCancelNLMS_F32: parameter values...");
+      Serial.println("    rho = " + String(rho,6));
+      Serial.println("    eps = " + String(eps,6));
+      Serial.println("    mu = " + String(mu,6));
+      Serial.println("    afl = " + String(afl));
+      Serial.println("    pwr = " + String(pwr,6));
+    }
+
   protected:
     //state-related variables
     audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
