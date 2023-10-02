@@ -122,6 +122,7 @@ class AudioFeedbackCancelNLMS_F32 : public AudioStream_F32, public AudioLoopBack
     virtual void initializeStates(void) {
       pwr = 0.0;
       for (int i = 0; i < MAX_AFC_NLMS_FILT_LEN; i++) efbp[i] = 0.0;
+	  initializeRingBuffer();
     }
 
 	virtual void update(void);

@@ -1,5 +1,6 @@
 
 #include "AudioFeedbackCancelNLMS_F32.h"
+#include <cfloat> //for "isfinite()"
 
 
 //here's the method that is called automatically by the Teensy Audio Library
@@ -109,6 +110,18 @@ void AudioFeedbackCancelNLMS_F32::receiveLoopBackAudio(float *x, //input audio b
 			int cs)   //number of samples in this audio block
 {
   int Isrc, Idst;
+
+  //Check to see if the in-coming values are valid floats (ie, not NaN or Inf).
+  //If the system is overloading, this could happen, which would lock-up this
+  //feedback cancelation algorithm.
+  for (int i=0; i<cs; i++) { 
+	if (!std::isfinite(x[i])) {
+		//bad data found!  reset the states and return early
+		initializeStates();
+		return;
+	}
+  }
+  
   //we're going to store the audio data in reverse order so that
   //the newest is at index 0 and the oldest is at the end
   //the only part of the buffer that we're using is [0 afl+cs-1]
@@ -118,6 +131,7 @@ void AudioFeedbackCancelNLMS_F32::receiveLoopBackAudio(float *x, //input audio b
   for (int Isrc = (afl-1); Isrc > -1; Isrc--) {
 	ring[Idst]=ring[Isrc]; 
 	Idst--;
+
   }
 
   //add new data to front (we're also reversing it)

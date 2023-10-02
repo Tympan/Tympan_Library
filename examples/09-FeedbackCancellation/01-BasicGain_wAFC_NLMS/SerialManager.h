@@ -103,7 +103,7 @@ bool SerialManager::processCharacter(char c) {
       afc.printAlgorithmInfo();
       break;
 	case 'z':
-      Serial.print("Command received: re-initializing the AFC states...");
+      Serial.println("Command received: re-initializing the AFC states...");
       afc.setEnable(false);
       afc.initializeStates();
       afc.setEnable(true);
