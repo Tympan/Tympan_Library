@@ -1,7 +1,7 @@
 
 #include "AudioFeedbackCancelNFXLMS_F32.h"
 
-// iltass.h - inverted long-term average speech spectrum
+// iltass.h - inverted long-term average speech spectrum...used for whitening filter
 #include "utility/iltass.h"  //part of Tympan_Library (in the "hutility" directory).  Includes iltass[] and WFSZ
 
 

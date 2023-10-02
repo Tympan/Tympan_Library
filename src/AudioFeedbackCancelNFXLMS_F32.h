@@ -18,7 +18,7 @@
 #include <arm_math.h> //ARM DSP extensions.  https://www.keil.com/pack/doc/CMSIS/DSP/html/index.html
 #include "AudioStream_F32.h"  //for MAX_AUDIO_BLOCK_SAMPLES_F32
 //include "BTNRH_WDRC_Types.h" //from Tympan_Library
-#include "AudioLoopback_F32.h"
+#include "AudioLoopBack_F32.h"
 
 
 #ifndef MAX_AFC_NXFXLMS_FILT_LEN
