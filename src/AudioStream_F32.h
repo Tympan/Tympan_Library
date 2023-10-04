@@ -24,6 +24,8 @@
 extern volatile uint32_t F_CPU_ACTUAL;  
 #endif
 
+#define MAX_AUDIO_BLOCK_SAMPLES_F32  AUDIO_BLOCK_SAMPLES     //AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
+
 // /////////////// class prototypes
 class AudioStream_F32;
 class AudioConnection_F32;
