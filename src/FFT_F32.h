@@ -47,13 +47,13 @@ class FFT_F32
       N_FFT = _N_FFT;
       is_IFFT = _is_IFFT;
 
-      if ((N_FFT == 16) || (N_FFT == 64) || (N_FFT == 256) || (N_FFT == 1024)) {
-        arm_cfft_radix4_init_f32(&fft_inst_r4, N_FFT, is_IFFT, 1); //set up the FFT (or IFFT)
+	  if ((N_FFT == 16) || (N_FFT == 64) || (N_FFT == 256) || (N_FFT == 1024) || (N_FFT == 4096)) {
+        arm_cfft_radix4_init_f32(&fft_inst_r4, N_FFT, is_IFFT, 1); //set up the FFT (or IFFT) 
         is_rad4 = 1;
       } else {
         arm_cfft_radix2_init_f32(&fft_inst_r2, N_FFT, is_IFFT, 1); //setup up the FFT (or IFFT)
       }
-
+	  
       //allocate window
 	  if (window != NULL) delete window;
       window = new float[N_FFT];
@@ -66,7 +66,7 @@ class FFT_F32
     }
     static int is_valid_N_FFT(const int N) {
        if ((N == 16) || (N == 32) || (N == 64) || (N == 128) || 
-        (N == 256) || (N == 512) || (N==1024) || (N==2048) || (N==4096)) {
+        (N == 256) || (N == 512) || (N==1024) || (N==2048) || (N==4096)) {  //larger than 4096 not supported by ARM FFT functions
           return 1;
         } else {
           return 0;
