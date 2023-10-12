@@ -27,6 +27,7 @@
 #include "AudioEffectFormantShift_FD_F32.h"
 #include "AudioEffectFreqShift_FD_F32.h"
 #include "AudioEffectMultiBandWDRC_F32.h"
+#include "AudioEffectPitchShift_FD_F32.h"
 #include "AudioFeedbackCancelNLMS_F32.h"
 #include "AudioFeedbackCancelNFXLMS_F32.h"
 #include "AudioFilterbank_F32.h"
