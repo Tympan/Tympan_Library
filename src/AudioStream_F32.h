@@ -19,19 +19,19 @@
 #include <AudioStream.h> 
 #include "AudioSettings_F32.h"
 #include <Arduino.h>
+#include <vector>
 
 #if defined(__IMXRT1062__)   //for Teensy 4...this shouldn't be necessary
 extern volatile uint32_t F_CPU_ACTUAL;  
 #endif
 
-#define MAX_AUDIO_BLOCK_SAMPLES_F32  AUDIO_BLOCK_SAMPLES     //AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
-
 // /////////////// class prototypes
 class AudioStream_F32;
 class AudioConnection_F32;
 
-#define MAX_AUDIO_BLOCK_SAMPLES_F32  (AUDIO_BLOCK_SAMPLES)
+#define MAX_AUDIO_BLOCK_SAMPLES_F32  (AUDIO_BLOCK_SAMPLES) //hopefully, this macro is obsolete, but if not, you can set this bigger
 //#define MAX_AUDIO_BLOCK_SAMPLES_F32  (1024)
+#define MIN_AUDIO_BLOCK_SAMPLES_F32  (AUDIO_BLOCK_SAMPLES) //never go smaller than this (for historical reasons...classes might have been written assuming that this was the smallest length of audio_block->data[]
 
 // ///////////// class definitions
 
@@ -40,18 +40,19 @@ class AudioConnection_F32;
 //https://github.com/PaulStoffregen/cores/blob/268848cdb0121f26b7ef6b82b4fb54abbe465427/teensy3/AudioStream.h
 class audio_block_f32_t {
 	public:
-		audio_block_f32_t(void) : full_length(MAX_AUDIO_BLOCK_SAMPLES_F32) 
+		audio_block_f32_t(void)
 		{
+			full_length = max(MIN_AUDIO_BLOCK_SAMPLES_F32, MAX_AUDIO_BLOCK_SAMPLES_F32);
 			data = new float32_t[full_length];
 			length = full_length;
-		};
-		audio_block_f32_t(const AudioSettings_F32 &settings) : full_length(settings.audio_block_samples) 
+		}
+		audio_block_f32_t(const AudioSettings_F32 &settings)
 		{
+			full_length = max(MIN_AUDIO_BLOCK_SAMPLES_F32, settings.audio_block_samples);
 			data = new float32_t[full_length];
-			length = full_length;
 			fs_Hz = settings.sample_rate_Hz;
-			length = full_length;
-		};
+			length = settings.audio_block_samples;
+		}
 		~audio_block_f32_t(void) 
 		{
 			if (data != NULL) delete data;
@@ -63,7 +64,7 @@ class audio_block_f32_t {
 		unsigned char reserved1;
 		unsigned char reserved2;
 		float32_t *data; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
-		const int full_length; //MAX_AUDIO_BLOCK_SAMPLES_F32
+		int full_length = MAX_AUDIO_BLOCK_SAMPLES_F32; //MAX_AUDIO_BLOCK_SAMPLES_F32
 		int length = MAX_AUDIO_BLOCK_SAMPLES_F32; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
 		float fs_Hz = AUDIO_SAMPLE_RATE; // AUDIO_SAMPLE_RATE is 44117.64706 from AudioStream.h
 		unsigned long id;
@@ -105,8 +106,11 @@ class AudioStream_F32 : public AudioStream {
       }
 	  if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
     };
-    static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
-    static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
+    //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
+    //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
+    static void initialize_f32_memory(const unsigned int num);
+	static void initialize_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
+	
     //virtual void update(audio_block_f32_t *) = 0; 
     static uint8_t f32_memory_used;
     static uint8_t f32_memory_used_max;
@@ -145,8 +149,11 @@ class AudioStream_F32 : public AudioStream {
     audio_block_f32_t **inputQueue_f32;
     virtual void update(void) = 0;
     audio_block_t *inputQueueArray_i16[1];  //two for stereo
-    static audio_block_f32_t *f32_memory_pool;
+    //static audio_block_f32_t *f32_memory_pool;
+    static std::vector<audio_block_f32_t *> f32_memory_pool;
     static uint32_t f32_memory_pool_available_mask[6];
+	static void allocate_f32_memory(const unsigned int num);
+	static void allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
 };
 
 /*
@@ -158,6 +165,8 @@ class AudioStream_F32 : public AudioStream {
 
 void AudioMemory_F32(const int num);
 void AudioMemory_F32(const int num, const AudioSettings_F32 &settings);
+void AudioMemory_F32(const unsigned int num);
+void AudioMemory_F32(const unsigned int num, const AudioSettings_F32 &settings);
 #define AudioMemory_F32_wSettings(num,settings) (AudioMemory_F32(num,settings))   //for historical compatibility
 
 

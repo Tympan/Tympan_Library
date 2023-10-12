@@ -2,7 +2,8 @@
 #include "AudioStream_F32.h"
 #include <arm_math.h> //ARM DSP extensions.  for speed!
 
-audio_block_f32_t * AudioStream_F32::f32_memory_pool;
+//audio_block_f32_t * AudioStream_F32::f32_memory_pool;
+std::vector<audio_block_f32_t *> AudioStream_F32::f32_memory_pool;
 uint32_t AudioStream_F32::f32_memory_pool_available_mask[6];
 
 uint8_t AudioStream_F32::f32_memory_used = 0;
@@ -18,55 +19,84 @@ bool AudioStream_F32::isAudioProcessing = false;
 
 uint32_t AudioStream_F32::update_counter = 0;
 
-audio_block_f32_t* allocate_f32_memory(const int num) {
-	static bool firstTime=true;
-	static audio_block_f32_t *data_f32;
-	if (firstTime == true) {
-		firstTime = false;
-		data_f32 = new audio_block_f32_t[num];
+
+
+void AudioMemory_F32(const unsigned int num) {
+	//audio_block_f32_t *data_f32 = allocate_f32_memory(num);
+	//if (data_f32 != NULL) AudioStream_F32::initialize_f32_memory(data_f32, num);
+	AudioStream_F32::initialize_f32_memory(num);
+}
+void AudioMemory_F32(const unsigned int num, const AudioSettings_F32 &settings) {
+	//audio_block_f32_t *data_f32 = allocate_f32_memory(num, settings);
+	//if (data_f32 != NULL) AudioStream_F32::initialize_f32_memory(data_f32, num, settings);
+	AudioStream_F32::initialize_f32_memory(num, settings);
+}
+void AudioMemory_F32(const int num) { 
+	if (num < 0) return; 
+	AudioMemory_F32( (unsigned int) num); 
+}
+void AudioMemory_F32(const int num, const AudioSettings_F32 &settings) { 
+	if (num < 0) return; 
+	AudioMemory_F32( (unsigned int) num, settings); 
+}
+
+
+void AudioStream_F32::allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings) {
+
+	int fail_count = 0;
+	for (unsigned int i=0; i < num; i++) {
+		if (i < f32_memory_pool.size()) {
+			//there is already a memory block in the vector
+			if (f32_memory_pool[i]->full_length >= settings.audio_block_samples) {
+				//the existing block is not big enough, so delete and then re-allocate
+				delete f32_memory_pool[i]; //delete the audio_block_f32_t that was here
+				f32_memory_pool[i] = new audio_block_f32_t(settings); //create a new one
+				if (f32_memory_pool[i]->data == NULL) fail_count++;
+			} else {
+				//the existing block is big enough, so there is nothing to do
+			}
+		} else {	
+			//there is no existing memory block, so allocate a new one
+			f32_memory_pool.push_back(new audio_block_f32_t(settings));
+			if (f32_memory_pool[f32_memory_pool.size()-1]->data == NULL) fail_count++;
+		}
 	}
-	return data_f32;
-}
-void AudioMemory_F32(const int num) {
-	audio_block_f32_t *data_f32 = allocate_f32_memory(num);
-	if (data_f32 != NULL) AudioStream_F32::initialize_f32_memory(data_f32, num);
-}
-void AudioMemory_F32(const int num, const AudioSettings_F32 &settings) {
-	audio_block_f32_t *data_f32 = allocate_f32_memory(num);
-	if (data_f32 != NULL) AudioStream_F32::initialize_f32_memory(data_f32, num, settings);
+	if (fail_count>0) Serial.println("AudioStream_F32::allocate_f32_memory: *** ERROR ***: Failed to allocate " + String(fail_count) + " blocks of audio memory (out of " + String(num) + ").");
 }
 
-// Set up the pool of audio data blocks
+// Allocate and set up the pool of audio data blocks
 // placing them all onto the free list
-void AudioStream_F32::initialize_f32_memory(audio_block_f32_t *data, unsigned int num)
+//void AudioStream_F32::initialize_f32_memory(audio_block_f32_t *data, unsigned int num)
+void AudioStream_F32::initialize_f32_memory(const unsigned int num)
 {
-  unsigned int i;
-
-  //Serial.println("AudioStream_F32 initialize_memory");
-  //delay(10);
-  if (num > 192) num = 192;
-  __disable_irq();
-  f32_memory_pool = data;
-  for (i=0; i < 6; i++) {
-    f32_memory_pool_available_mask[i] = 0;
-  }
-  for (i=0; i < num; i++) {
-    f32_memory_pool_available_mask[i >> 5] |= (1 << (i & 0x1F));
-  }
-  for (i=0; i < num; i++) {
-    data[i].memory_pool_index = i;
-  }
-  __enable_irq();
-
-} // end initialize_memory
-void AudioStream_F32::initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings)
+	AudioSettings_F32 foo_settings;
+	AudioStream_F32::initialize_f32_memory(num, foo_settings);
+}
+void AudioStream_F32::initialize_f32_memory(const unsigned int _num, const AudioSettings_F32 &settings)
 {
- initialize_f32_memory(data,num);
- for (unsigned int i=0; i < num; i++) {
-	 data[i].fs_Hz = settings.sample_rate_Hz;
-	 data[i].length = settings.audio_block_samples;
- }
-} // end initialize_memory
+	unsigned int num = _num;
+	if (num > 192) num = 192;
+	__disable_irq();
+	
+	allocate_f32_memory(num, settings);
+  
+	unsigned int i;
+
+	//f32_memory_pool = data;  //already dealt with via allocated_f32_memory() method
+	for (i=0; i < 6; i++) {
+		f32_memory_pool_available_mask[i] = 0;
+	}
+	for (i=0; i < num; i++) {
+		f32_memory_pool_available_mask[i >> 5] |= (1 << (i & 0x1F));
+	}
+	for (i=0; i < num; i++) {
+		//data[i].memory_pool_index = i;
+		f32_memory_pool[i]->memory_pool_index = i;
+	}
+	__enable_irq();
+}
+
+
 
 // Allocate 1 audio data block.  If successful
 // the caller is the only owner of this new block
@@ -96,7 +126,8 @@ audio_block_f32_t * AudioStream_F32::allocate_f32(void)
   f32_memory_used = used;
   __enable_irq();
   index = p - f32_memory_pool_available_mask;
-  block = f32_memory_pool + ((index << 5) + (31 - n));
+  //block = f32_memory_pool + ((index << 5) + (31 - n));
+  block = f32_memory_pool[(index << 5) + (31 - n)];
   block->ref_count = 1;
   if (used > f32_memory_used_max) f32_memory_used_max = used;
   //Serial.print("alloc_f32:");
