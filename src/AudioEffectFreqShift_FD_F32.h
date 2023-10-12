@@ -2,10 +2,28 @@
 /*
  * AudioEffectFreqShift_FD_F32
  * 
- * Created: Chip Audette, Aug 2019
- * Purpose: Shift the frequency content of the audio up or down.  Performed in the frequency domain
- *          
- * This processes a single stream of audio data (ie, it is mono)       
+ * CREATED: Chip Audette, Aug 2019
+ * PURPOSE: Shift the frequency content of the audio up or down.  Performed in the frequency domain
+ *     
+ * This processes a single stream of audio data (ie, it is mono)   
+ *
+ * Note that this is a *frequency* shifter.  For example, if you ask it to shift the audio by 250 Hz,
+ *     It will shift all of the frequency content by 250 Hz.  This is straight-forward and easy.  But,
+ *     as a human being listening to the audio, it will sound strange because adding a fixed number
+ *     Hz will break all of the harmonic relationships within the audio.  Breaking the harmonic
+ *     relationships is a big deal to a human listener.  
+ *
+ *     For example, a tone at 400 Hz, might have its harmonics at 2x, 3x, 4x...so, 800 Hz, 1200 Hz,
+ *     and 1600 Hz.  This sounds natural and right.  But, after using this frequency shifter to add
+ *     250 Hz, the tones are now at [400, 800, 1200, 1600] Hz + 250 Hz = [650, 1050, 1650, 1850] Hz.
+ *     No longer are those upper frequencies integer multiples of the fundamental; they are no longer
+ *     harmonics.  It will sound strage.
+ *
+ *     For human listening, what you might prefer is a Pitch Shifter.  A pitch shifter *multiplies*
+ *     all of the frequencies by a user-requested scale factor.  By multiplying the frequency values,
+ *     it maintains the harmonic relationships and can sound more natural.  Be aware, however, that
+ *     pitch shifting is much more difficult from a signal processing perspective; so it will have
+ *     its own audio processing artifacts that might be objectionable.
  *          
  * MIT License.  use at your own risk.
 */
