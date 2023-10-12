@@ -34,6 +34,8 @@ class AudioEffectFormantShift_FD_F32 : public AudioStream_F32
     float getScaleFactor(void) {
       return shift_scale_fac;
     }
+	float setScaleFac(float scale_fac) { return setScaleFactor(scale_fac); }
+	float getScaleFac(void) { return getScaleFactor(); }
 
     virtual void update(void);
 	bool enable(bool state = true) { enabled = state; return enabled;}	
