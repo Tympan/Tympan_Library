@@ -63,12 +63,15 @@ uint32_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
 
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
 //DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
-DMAMEM __attribute__((aligned(32))) static uint32_t *i2s_tx_buffer = NULL; 
 //DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*4];  //pack 1 int32 into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples)
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+uint32_t * AudioOutputI2SQuad_F32::i2s_tx_buffer = i2s_default_tx_buffer;
 DMAChannel AudioOutputI2SQuad_F32::dma(false);
 
 //static const uint32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0}; //original from Teensy Audio Library
-static const float32_t zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32/2] = {0}; //modified for F32.  Need zeros for half an audio block
+//static const float32_t zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32/2] = {0}; //modified for F32.  Need zeros for half an audio block
+static float32_t default_zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32/2] = {0}; //modified for F32.  Need zeros for half an audio block
+float32_t * AudioOutputI2SQuad_F32::zerodata = default_zerodata;
 
 //initialize some static variables.  Likely get overwritten by constructor.
 float AudioOutputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
@@ -80,12 +83,6 @@ int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 //for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels
 //#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]))
-
-
-void AudioOutputI2SQuad_F32::allocate_buffer(unsigned int audio_block_samps) {
-	if (i2s_tx_buffer == NULL) i2s_tx_buffer = new uint32_t[audio_block_samps/2*4]{};  //allocate the array.  the {} initializes the elements to zero
-	//explantion: //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
-}
 
 void AudioOutputI2SQuad_F32::begin(void)
 {

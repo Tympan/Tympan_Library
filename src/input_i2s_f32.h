@@ -46,16 +46,20 @@ public:
 	AudioInputI2S_F32(void) : AudioStream_F32(0, NULL) { 
 		Serial.println("AudioInputI2S_F32: constructor 1...");
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use the default size
-		allocate_buffer(audio_block_samples);  
 		begin(); 
 	} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
 	AudioInputI2S_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { 
 		Serial.println("AudioInputI2S_F32: constructor 2...");
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
-		allocate_buffer(audio_block_samples);  //set to be the size requested
 		begin(); 
 	}
+ 	AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) : AudioStream_F32(0, NULL) { 
+		sample_rate_Hz = settings.sample_rate_Hz;
+		audio_block_samples = settings.audio_block_samples;
+		i2s_rx_buffer = rx_buff;
+		begin(); 
+	} 	
 	
 	virtual void update(void);
 	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
@@ -67,6 +71,7 @@ public:
 	//void sub_begin_i16(void);
 	int get_isOutOfMemory(void) { return flag_out_of_memory; }
 	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
+	static uint32_t *i2s_rx_buffer; 
 	//friend class AudioOutputI2S_F32;
 protected:	
 	AudioInputI2S_F32(int dummy): AudioStream_F32(0, NULL) {} // to be used only inside AudioInputI2Sslave !!
@@ -83,9 +88,6 @@ private:
 	static uint16_t block_offset;
 	static int flag_out_of_memory;
 	static unsigned long update_counter;
-	static void allocate_buffer(unsigned int audio_block_samps);
-	static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
-	//static uint32_t *i2s_rx_buffer;
 };
 
 class AudioInputI2Sslave_F32 : public AudioInputI2S_F32

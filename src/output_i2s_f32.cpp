@@ -193,8 +193,9 @@ uint16_t  AudioOutputI2S_F32::block_left_offset = 0;
 uint16_t  AudioOutputI2S_F32::block_right_offset = 0;
 bool AudioOutputI2S_F32::update_responsibility = false;
 DMAChannel AudioOutputI2S_F32::dma(false);
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
-//static uint32_t *i2s_tx_buffer = NULL;
+//DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
+uint32_t i2s_default_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
+uint32_t * AudioOutputI2S_F32::i2s_tx_buffer = i2s_default_tx_buffer;
 //static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32];
 //DMAMEM static int32_t i2s_tx_buffer[2*AUDIO_BLOCK_SAMPLES]; //2 channels at 32-bits per sample.  Local "audio_block_samples" should be no larger than global "AUDIO_BLOCK_SAMPLES"
 
@@ -212,12 +213,6 @@ int AudioOutputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 //#for 32-bit transfers
 //#define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*2*sizeof(i2s_tx_buffer[0]))
 
-
-void AudioOutputI2S_F32::allocate_buffer(unsigned int audio_block_samps) {
-	Serial.println("AudioOutputI2S_F32: allocate_buffer: N = " + String(audio_block_samps));
-	//if (i2s_tx_buffer == NULL) i2s_tx_buffer = new uint32_t[audio_block_samps]; 
-	Serial.println("AudioInputI2S_F32: allocate_buffer: i2s_tx_buffer = " + String((int)i2s_tx_buffer));
-}
 
 void AudioOutputI2S_F32::begin(void)
 {

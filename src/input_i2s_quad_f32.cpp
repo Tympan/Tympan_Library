@@ -37,7 +37,8 @@
 #include "output_i2s_f32.h"
 
 //DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*2]; //Teensy Audio original
-DMAMEM __attribute__((aligned(32))) static uint32_t *i2s_rx_buffer = NULL;
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4]; //Teensy Audio original
+uint32_t *AudioInputI2SQuad_F32::i2s_rx_buffer = i2s_default_rx_buffer;
 //DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2*4];
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch1 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch2 = NULL;
@@ -57,9 +58,6 @@ int AudioInputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
 
-void AudioInputI2SQuad_F32::allocate_buffer(unsigned int audio_block_samps) {
-	if (i2s_rx_buffer == NULL) i2s_rx_buffer = new uint32_t[2*audio_block_samps];
-}
 
 void AudioInputI2SQuad_F32::begin(void)
 {
