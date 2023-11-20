@@ -1,6 +1,7 @@
 
 #include "AudioFeedbackCancelNLMS_F32.h"
 #include <cfloat> //for "isfinite()"
+#include <cmath>  //actually, this one is for "isfinite()" ?
 
 
 //here's the method that is called automatically by the Teensy Audio Library
