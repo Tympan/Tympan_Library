@@ -6,13 +6,15 @@ void AudioSummer4_F32::update(void) {
   //get the first available channel
   int channel = 0;
   while  (channel < 4) {
-	  out = receiveWritable_f32(channel);
-	  if (out && flag_useChan[channel]) {
-		  //yes, this is an audio block and use it
-		  break;
-	  } else {
-		  //this may or may not be an audio block, but don't use it
-		  if (out) AudioStream_F32::release(out);	  
+	  if (flag_useChan[channel]) {
+		  out = receiveWritable_f32(channel);
+		  if (out) {
+			  //yes, this is an audio block and use it
+			  break;
+		  } else {
+			  //this may or may not be an audio block, but don't use it
+			  if (out) AudioStream_F32::release(out);	  
+		  }
 	  }
 	  channel++;
   }
