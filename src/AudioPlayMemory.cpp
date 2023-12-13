@@ -39,7 +39,10 @@ int AudioPlayMemoryI16_F32::setCurrentSampleFromQueue(int ind) {
 	return queue_ind;
 }
 		
-#define CONVERT_I16_TO_F32(x) (((float32_t)x)/(16384.0f))
+//define CONVERT_I16_TO_F32(x) (((float32_t)x)/(16384.0f))
+//define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
+#define I16_TO_F32_NORM_FACTOR (3.0517578125e-05) //which is 1/32768
+#define CONVERT_I16_TO_F32(x) (x*I16_TO_F32_NORM_FACTOR)
 
 void AudioPlayMemoryI16_F32::update(void) {
   if (state != PLAYING) return;
@@ -81,12 +84,20 @@ float32_t AudioPlayMemoryI16_F32::getNextAudioValue(void) {
 	//let's just issue a zero and return, without changing the play state.  The next time
 	//this function gets called, it'll try to increment the buffers, or it'll stop playing.
 	//It would have been great to do that incrementing now, but I don't have time.  Sorry.
-	if (data_ind >= data_len) return 0.0;
+	if (data_ind >= data_len) {
+		Serial.println("AudioPlayMemory: getNextAudioValue: *** WARNING ***: degenerate case...returning early...");
+		return 0.0;
+	}
 	
 	//if we're here, we should have data to work with.  So, let's go!
 	
 	// get the current data value from the buffer
-	float ret_val = CONVERT_I16_TO_F32(data_ptr[data_ind]);   //get the next piece of data
+	float32_t ret_val = CONVERT_I16_TO_F32(data_ptr[data_ind]);   //get the next piece of data
+	if (abs(ret_val) > 1.0f) {
+		Serial.println("AudioPlayMemory: getNextAudioValue: *** WARNING ***: sample is beyond full-scale.");
+		Serial.println("    : val = " + String(ret_val,6) + " for data value " + String(data_ptr[data_ind]) + " at sample index = " + String(data_ind));
+		Serial.println("    : continuing anyway...");
+	}
 
 	//compute the data index for next time this gets called
 	data_phase += data_phase_incr;                  //increment the phase
