@@ -129,12 +129,12 @@ class AudioPlayMemoryI16_F32 : public AudioStream_F32
       uint32_t data_len = 0;
       float32_t data_sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
       float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
-      //int audio_block_samples = AUDIO_BLOCK_SAMPLES;
 	  
 	  //related to the queue of audio samples
 	  AudioPlayMemoryQueue playQueue;
 	  float32_t getNextAudioValue(void);
 	  int queue_ind;
+
 };
 
 

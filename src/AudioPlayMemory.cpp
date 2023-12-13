@@ -41,9 +41,9 @@ int AudioPlayMemoryI16_F32::setCurrentSampleFromQueue(int ind) {
 		
 //define CONVERT_I16_TO_F32(x) (((float32_t)x)/(16384.0f))
 //define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
-#define I16_TO_F32_NORM_FACTOR (3.0517578125e-05) //which is 1/32768
-#define CONVERT_I16_TO_F32(x) (x*I16_TO_F32_NORM_FACTOR)
-
+//#define I16_TO_F32_NORM_FACTOR (3.0517578125e-05) //which is 1/32768
+#define I16_TO_F32_NORM_FACTOR (1.0f/32768.0f)
+#define CONVERT_I16_TO_F32(x) ( ((float)x) * ((float)I16_TO_F32_NORM_FACTOR) )
 void AudioPlayMemoryI16_F32::update(void) {
   if (state != PLAYING) return;
 
@@ -63,7 +63,6 @@ void AudioPlayMemoryI16_F32::update(void) {
 
 float32_t AudioPlayMemoryI16_F32::getNextAudioValue(void) {
 	//Serial.println("AudioPlayMemoryI16_F32: update: data_phase = " + String(data_phase) + ", data_ind = " + String(data_ind));
-	
 	
 	if (data_ind >= data_len) { //have we reached the end of the current data buffer?
 		//yes, we've reached the end of the current buffer. 
@@ -101,10 +100,12 @@ float32_t AudioPlayMemoryI16_F32::getNextAudioValue(void) {
 
 	//compute the data index for next time this gets called
 	data_phase += data_phase_incr;                  //increment the phase
-	uint32_t whole_step = (unsigned int)data_phase; //have we increased a whole step yet?
-	data_ind += whole_step;                         //increment the data index by any whole steps
-	data_phase -= (float32_t)whole_step;            //remove the whole step from the data_phase to keep it well bounded
-	
+	unsigned int whole_step = (unsigned int)data_phase; //have we increased a whole step yet?
+	if (whole_step > 0) {
+		data_ind += whole_step;                         //increment the data index by any whole steps
+		data_phase -= (float32_t)whole_step;            //remove the whole step from the data_phase to keep it well bounded
+	}
+
 	return ret_val;
   }
 	
