@@ -389,10 +389,12 @@ namespace tlv320aic3212
         delay(50); // not reset
 
         aic_reset(); // delay(50);  //soft reset
+		delay(3);  //TI App Guide shows a 1 msec delay
         aic_init();  // delay(10);
         // aic_initADC(); //delay(10);
         // aic_initDAC(); //delay(10);
 
+		aic_goToBook(0);
         aic_readPage(0, 27); // check a specific register - a register read test
 
         if (debugToSerial)
@@ -402,7 +404,8 @@ namespace tlv320aic3212
     }
 
     bool AudioControlAIC3212::disable(void)
-    {
+    {	
+		Serial.println("AudioControlAIC3212: disable: *** WARNING***: disable() does nothing...");
         return true;
     }
 
@@ -561,7 +564,8 @@ namespace tlv320aic3212
     {
         uint8_t buffer = 0;
         bool errStatus = false;
-
+		
+		aic_goToBook(0);
         aic_goToPage(AIC3212_MIC_BIAS_PAGE);
 
         // Read register as it shares values with Mic Bias
@@ -618,6 +622,7 @@ namespace tlv320aic3212
         uint8_t buffer = 0;
         bool errStatus = false;
 
+		aic_goToBook(0);
         aic_goToPage(AIC3212_MIC_BIAS_PAGE);
 
         // Read register as it shares values with Mic Bias
@@ -673,9 +678,10 @@ namespace tlv320aic3212
 
     bool AudioControlAIC3212::enableDigitalMicInputs(bool _enable)
     {
+		aic_goToBook(0);
+					
         if (_enable == true)
         {
-            aic_goToBook(0);
             // Set GPIO2 to ADC_MOD_CLK for digital mics
             aic_writePage(4, 0x57, 0b00101000);
             // Set GPI1 to data input
@@ -688,7 +694,6 @@ namespace tlv320aic3212
         }
         else
         {
-            aic_goToBook(0);
             // Disable ADC; Configure Left and Right channels as not Digital Mics
             aic_writePage(0, 0x51, 0x00);
             // Disable GPI1 as digital mic input
@@ -733,6 +738,7 @@ namespace tlv320aic3212
 
     float AudioControlAIC3212::setInputGain_dB(float orig_gain_dB, int Ichan)
     {
+		
         float gain_dB = applyLimitsOnInputGainSetting(orig_gain_dB);
         if (abs(gain_dB - orig_gain_dB) > 0.01)
         {
@@ -751,12 +757,10 @@ namespace tlv320aic3212
             Serial.println(volume_int);
         }
 
-        if (Ichan == 0)
-        {
+		aic_goToBook(0);
+        if (Ichan == 0) {
             aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_LEFT_VOLUME_REG, AIC3212_MICPGA_VOLUME_ENABLE | volume_int); // enable Left MicPGA
-        }
-        else
-        {
+        } else {
             aic_writePage(AIC3212_MICPGA_PAGE, AIC3212_MICPGA_RIGHT_VOLUME_REG, AIC3212_MICPGA_VOLUME_ENABLE | volume_int); // enable Right MicPGA
         }
         return gain_dB;
@@ -815,6 +819,7 @@ namespace tlv320aic3212
         {
             mute_delay_code = 0; // this disables the auto mute
         }
+		aic_goToBook(0);
         uint8_t val = aic_readPage(0, 64);
         val = val & 0b10001111;             // clear these bits
         val = val | (mute_delay_code << 4); // set these bits
@@ -857,12 +862,10 @@ namespace tlv320aic3212
             Serial.println(volume_int);
         }
 
-        if (Ichan == 0)
-        {
+		aic_goToBook(0);
+        if (Ichan == 0) {
             aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_LEFT_REG, volume_int);
-        }
-        else
-        {
+        } else {
             aic_writePage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_RIGHT_REG, volume_int);
         }
         return vol_dB;
@@ -1003,6 +1006,7 @@ namespace tlv320aic3212
         return true;
     }
 
+/*
     bool AudioControlAIC3212::inputPdm(void)
     {
         if (debugToSerial)
@@ -1016,17 +1020,18 @@ namespace tlv320aic3212
         // aic_writeRegister(0x01, 0x01);
 
         // Power and Analog Configuration
-        aic_goToPage(1);
+		aic_goToBook(0); 
+        aic_goToPage(1); //not needed because we're doing full "writePage" calls below?
         aic_writePage(1, 0x01, 0x00); // Disable weak AVDD to DVDD connection and make analog supplies available
         aic_writePage(1, 0x7a, 0x01); // REF charging time = 40ms
         aic_writePage(1, 0x79, 0x33); // Set the quick charge of input coupling cap for analog inputs
 
         // Clock Config
-        aic_goToPage(0);
-        aic_writePage(0, 0x04, 0x00);
+        aic_goToPage(0); //not needed because we're doing full "writePage" calls below?
+        aic_writePage(0, 0x04, 0x00);     //clock register (0x00 is default)...0000: DAC_CLKIN = MCLK1 (Device Pin), 0000: ADC_CLKIN = MCLK1 (Device Pin)
         // aic_writePage(0, 0x04, 0x33);
         // aic_writePage(0, 0x05, 0x00);
-        aic_writePage(0, 0x06, 0x11);
+        aic_writePage(0, 0x06, 0x11);  //Clock Control Register 3, 0b00010001:  0 = PLL Power Down, 001 = PLL Divider P = 1, 0001 = PLL Multiplier R = 1
         // aic_writePage(0, 0x06, 0x91);
         // aic_writePage(0, 0x07, 0x08);
         // aic_writePage(0, 0x08, 0x00);
@@ -1049,28 +1054,28 @@ namespace tlv320aic3212
         aic_writePage(0, 0x14, 0x20);
 
         // Audio Serial Interface Routing
-        aic_goToPage(4);
+        aic_goToPage(4);  //not needed because we're doing full "writePage" calls below?
         aic_writePage(4, 0x01, 0x00);   // ASI-1 set to I2S, 16-bit, not high impedance
         aic_writePage(4, 0x07, 0x01);   // Source ASI-1 ADC from ADC Data Output
         aic_writePage(4, 0x0a, 0x00);   // ASI#1 Set Word clock to WCLK1; bit-clock to BCLK
 
         // Signal Processing
-        aic_goToPage(0);
+        aic_goToPage(0);  //not needed because we're doing full "writePage" calls below?
         aic_writePage(0, 0x3c, 0x01);   // Set the DAC PRB Mode to PRB_P1 
         aic_writePage(0, 0x3d, 0x0d);
 
         // ADC Input Channel
-        aic_goToPage(4);
+        aic_goToPage(4);  //not needed because we're doing full "writePage" calls below?
         aic_writePage(4, 0x57, 0x28);
         aic_writePage(4, 0x5B, 0x02);
         aic_writePage(4, 0x65, 0x00);
 
-        aic_goToPage(0);
+        aic_goToPage(0); //not needed because we're doing full "writePage" calls below?
         aic_writePage(0, 0x53, 0x14);
         aic_writePage(0, 0x54, 0x14);
 
         // Init codec
-        aic_goToPage(1);
+        aic_goToPage(1);  //not needed because we're doing full "writePage" calls below?
         aic_writePage(1, 0x01, 0x00);
         aic_writePage(1, 0x7a, 0x01);
 
@@ -1086,8 +1091,8 @@ namespace tlv320aic3212
         // aic_writePage(1, 0x23, 0x10); // Charge Pump Control 3
         // aic_writePage(1, 0x1b, 0x33); // Headphone Amplifier Control 1
 
-        // ASI-1 Config
-        aic_goToPage(4);
+        // ASI-1 Config 
+        aic_goToPage(4);  //not needed because we're doing full "writePage" calls below?
         aic_writePage(4, 0x08, 0x50);
         aic_writePage(4, 0x0a, 0x00);
         aic_writePage(4, 0x43, 0x02);
@@ -1095,7 +1100,7 @@ namespace tlv320aic3212
         aic_writePage(4, 0x76, 0x06);
 
         // // unmute ADC and DAC
-        aic_goToPage(0);
+        aic_goToPage(0);  //not needed because we're doing full "writePage" calls below?
         aic_writePage(0, 0x51, 0xd4);
         aic_writePage(0, 0x52, 0x00);
         // aic_writePage(0, 0x3f, 0xc0);
@@ -1103,7 +1108,9 @@ namespace tlv320aic3212
 
         return true;
     }
+	*/
 
+/*
     bool AudioControlAIC3212::outputHp(void)
     {
         if (debugToSerial)
@@ -1176,6 +1183,7 @@ namespace tlv320aic3212
 
         return true;
     }
+*/
 
     bool AudioControlAIC3212::outputSpk()
     {
@@ -1260,13 +1268,13 @@ namespace tlv320aic3212
 
     bool AudioControlAIC3212::outputSelect(AIC_Output left, AIC_Output right, bool flag_full)
     {
-        if (debugToSerial)
-            Serial.println("# AudioControlAIC3212: outputSelect " + String(left) + ", " + String(right) + ", " + String(flag_full));
-        static bool firstTime = true;
-        if (firstTime)
+        if (debugToSerial) Serial.println("# AudioControlAIC3212: outputSelect " + String(left) + ", " + String(right) + ", " + String(flag_full));
+        
+		//static bool firstTime = true;
+        if (firstTime_outputSelect)
         {
             flag_full = true; // always do a full reconfiguration the first time through.
-            firstTime = false;
+            firstTime_outputSelect = false;
         }
 
         aic_goToBook(0);
@@ -1289,7 +1297,7 @@ namespace tlv320aic3212
             // Reset charge pump control
             aic_writePage(1, 0x21, 0x28); // Charge Pump Clock Divide = 4 (Default)
             aic_writePage(1, 0x22, 0x3E); // Headphone output offset correction (Default)
-            aic_writePage(1, 0x23, 0x30); // Enable dynamic offset calibration
+			aic_writePage(1, 0x23, 0x30); // Enable dynamic offset calibration...00 = reserved, 1 = dynamic offset cal, 100 = reserved, 00 = Charge-Pump auto-power-up when ground-centered headphone is powered-up
 
             // TODO: Enable pop reduction?
             // 	//set the pop reduction settings, Page 1 Register 20 "Headphone Driver Startup Control"
@@ -1353,14 +1361,15 @@ namespace tlv320aic3212
         aic_writePage(0, 0x3F,
                       ((left == AIC_Output::Aic_Output_None) ? 0x00 : 0x80)          // Left DAC channel
                           | ((right == AIC_Output::Aic_Output_None) ? 0x00 : 0x40)); // Right DAC channel
+		//aic_writePage(0, 0x3F, 0b11000000); //enable left and right
 
         // Power up LOL and LOR
         aic_writePage(1, 0x16, p1_r16_2);
 
         // Unmute drivers
-        aic_writePage(1, 0x1F, p1_r1F);                                             // Unmute HPL driver
-        aic_writePage(1, 0x20, p1_r20);                                             // Unmute HPR driver
-        aic_writePage(1, 0x30, p1_r30);                                             // Unmute SPKL & SPLR
+        aic_writePage(1, 0x1F, p1_r1F);           // Unmute HPL driver
+        aic_writePage(1, 0x20, p1_r20);           // Unmute HPR driver
+        //aic_writePage(1, 0x30, p1_r30);           // Unmute SPKL & SPLR...unneeded.  Commented WEA 2023-12-11
 
         // Headphone power-up
         //aic_writePage(1, 0x09, 0x70);     // Headphone Driver Output Stage is 25%.   WEA commented this.  2023-07-17
@@ -1370,12 +1379,14 @@ namespace tlv320aic3212
         //aic_writePage(1, 0x09, 0x10); // Headphone Driver Output Stage is 100%.  WEA commented this and moved it earlier.  2023-07-17
 
         // Power up Speaker Drivers
-        aic_writePage(1, 0x2D, p1_r2D);  //Commented out by WEA  2023-07-17
-        // CAB TODO: Add delay?
+        //aic_writePage(1, 0x2D, p1_r2D);  //Commented out by WEA  2023-07-17
+        
+		// CAB TODO: Add delay?
 
         // Unmute LDAC and RDAC
         aic_writePage(0, 0x40, ( (left == Aic_Output_None) ? 0x08 : 0x00)           // Left DAC channel
                 | ((right == Aic_Output_None) ? 0x04 : 0x00));                      // Right DAC channel
+		//aic_writePage(0, 0x3F, 0x00); //unmute left and right
 
         return true;
     }
@@ -1383,6 +1394,7 @@ namespace tlv320aic3212
     void AudioControlAIC3212::muteLineOut(bool flag)
     {
 
+		aic_goToBook(0);
         byte curValL = aic_readPage(1, 18);
         byte curValR = aic_readPage(1, 19);
 
@@ -1437,10 +1449,8 @@ namespace tlv320aic3212
 
     void AudioControlAIC3212::aic_init()
     {
-        if (debugToSerial)
-        {
-            Serial.println("# AudioControlAIC3212: Initializing AIC");
-        }
+        if (debugToSerial) Serial.println("# AudioControlAIC3212: Initializing AIC");
+  
 
         // ################################################################
         // # Power and Analog Configuration
@@ -1449,6 +1459,9 @@ namespace tlv320aic3212
         aic_goToBook(0);
         aic_writePage(1, 0x01, 0x00); // Disable weak AVDD to DVDD connection and make analog supplies available
         aic_writePage(1, 0x7a, 0x01); // REF charging time = 40ms
+		//aic_writePage(1, 0x21, 0x28); // WEA added 2023-12-11...blindly adding from TI App Guide...is it appropriate?? # CP divider = 4, 500kHz, Runs off 8MHz oscillator
+		//aic_writePage(1, 0x23, 0x30); //WEA added 2023-12-11...do dynamic offset...from TI App Guide...Charge pump power-up, but doing dynamic offset instead of fixed
+        //aic_writePage(1, 0x08, 0x00); //WEA added 2023-12-11...blindly adding from TI App Guide...is it appropriate?? # Full chip CM = 0.9V (Setup A)
         aic_writePage(1, 0x79, 0x33); // Set the quick charge of input coupling cap for analog inputs
 
         // ################################################################
@@ -1542,12 +1555,11 @@ namespace tlv320aic3212
         //Serial.println("Control_AIC3212: P1 R 0x3D = " + String(static_cast<uint8_t>(pConfig->adc.ptm_r) << 6));
 		aic_writePage(1, 0x3D, static_cast<uint8_t>(pConfig->adc.ptm_r) << 6); // Set ADC PTM_R
 
-        Serial.println("# CAB: TODO ");
-
+        //Serial.println("# CAB: TODO ");
         // // CAB TODO: Move power control to input and output selection blocks
         // // POWER
-        // aic_goToPage(1);
-        // aic_writeRegister(0x01, 8); //Page 1, Reg 1, Val = 8 = 0b00001000 = disable weak connection AVDD to DVDD.	Keep headphone charge pump disabled.
+		// 2023-12-11 Re-enabled some of these lines to try fighting the hum issue
+		// aic_writeRegister(0x01, 8); //Page 1, Reg 1, Val = 8 = 0b00001000 = disable weak connection AVDD to DVDD.	Keep headphone charge pump disabled.
         // aic_writeRegister(0x02, 0); //Page 1,  Reg 2, Val = 0 = 0b00000000 = Enable Master Analog Power Control
         // aic_writeRegister(0x7B, 1); //Page 1,  Reg 123, Val = 1 = 0b00000001 = Set reference to power up in 40ms when analog blocks are powered up
         // aic_writeRegister(0x7C, 6); //Page 1,  Reg 124, Val = 6 = 0b00000110 = Charge Pump, full peak current (000), clock divider (110) to Div 6 = 333 kHz
@@ -1915,6 +1927,7 @@ namespace tlv320aic3212
         // See section 2.3.3.1.10.2
 
         // power down the AIC to allow change in coefficients
+		aic_goToBook(0);
         uint32_t prev_state = aic_readPage(0x00, 0x51);
         aic_writePage(0x00, 0x51, prev_state & (0b00111111)); // clear first two bits
 
@@ -2076,6 +2089,7 @@ namespace tlv320aic3212
     void AudioControlAIC3212::setHpfIIRCoeffOnADC(int chan, uint32_t *coeff)
     {
         // power down the AIC to allow change in coefficients
+		aic_goToBook(0);
         uint32_t prev_state = aic_readPage(0x00, 0x51);
         aic_writePage(0x00, 0x51, prev_state & (0b00111111)); // clear first two bits
 
@@ -2164,6 +2178,7 @@ namespace tlv320aic3212
         uint8_t val;
 
         // loop over both channels
+		aic_goToBook(0);
         for (reg = 12; reg <= 13; reg++)
         { // reg 12 is Left, reg 13 is right
             val = aic_readPage(page, reg);

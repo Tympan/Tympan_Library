@@ -263,7 +263,7 @@ namespace tlv320aic3212 {
 		//int unmuteHeadphone(int chan = BOTH_CHAN); //unmutes the headphone driver
 		int enableHeadphonePower(int chan, bool enable = true); //use AIC_BOTH_CHAN, AIC_LEFT_CHAN, AIC_RIGHT_CHAN
  
- bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
+		bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
         bool inputSelect(AIC_Input both) { return inputSelect(both, both); };
         bool inputSelect(AIC_Input left, AIC_Input right);
         float applyLimitsOnInputGainSetting(float gain_dB);
@@ -298,8 +298,8 @@ namespace tlv320aic3212 {
         unsigned int aic_readRegister(uint8_t reg, uint8_t *pVal); // Assumes page has already been set
         bool aic_writeRegister(uint8_t reg, uint8_t val);          // assumes page has already been set
         bool outputSpk(void);
-        bool outputHp(void);
-        bool inputPdm(void);
+        //bool outputHp(void);
+        //bool inputPdm(void);
 
     protected:
         const Config *pConfig = &DefaultConfig;
@@ -311,6 +311,7 @@ namespace tlv320aic3212 {
         // void aic_initDAC(void);
         // void aic_initADC(void);
         void setResetPin(int pin) { resetPinAIC = pin; }
+		bool firstTime_outputSelect = true;
 
         int prevMicDetVal = -1;
         int resetPinAIC = AIC3212_DEFAULT_RESET_PIN; // AIC reset pin, Rev C
