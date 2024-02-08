@@ -201,6 +201,7 @@ phase	KEYWORD2
 amplitude	KEYWORD2
 
 AudioSynthToneSweep_F32	KEYWORD1
+AudioSynthToneSweepExp_F32	KEYWORD1
 play	KEYWORD2
 isPlaying	KEYWORD2
 

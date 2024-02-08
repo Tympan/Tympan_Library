@@ -161,8 +161,8 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 	ModMode _ModMode;
     float32_t _Frequency;
     float32_t _Phase;
-    float32_t _PhaseIncrement;
-    float32_t _magnitude;
+    volatile float32_t _PhaseIncrement;
+    volatile float32_t _magnitude;
     float32_t _PitchModAmt;
     float32_t _PortamentoTime;
     float32_t _PortamentoIncrement;
