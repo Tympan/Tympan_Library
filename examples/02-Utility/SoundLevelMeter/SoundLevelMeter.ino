@@ -38,7 +38,7 @@ BLE ble(&myTympan); //&Serial1 is the serial connected to the Bluetooth module
 SerialManager serialManager(&ble);
 State myState(&audio_settings, &myTympan);
 
-//calibraiton information for the microphone being used
+//calibration information for the microphone being used
 float32_t mic_cal_dBFS_at94dBSPL_at_0dB_gain = -47.4f + 9.2175;  //PCB Mic baseline with manually tested adjustment.   Baseline:  http://openaudio.blogspot.com/search/label/Microphone
 
 //control display and serial interaction

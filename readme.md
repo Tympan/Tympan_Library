@@ -12,7 +12,7 @@ Requirements
 
 **Hardware**: All versions of the Tympan are, at their heart, compatible with the Teensy brand of microcontrollers.  Hence, many of the instructions below relate to Teensy.  For reference, Tympan RevD is Teensy 3.6 whereas the Tympan RevE is Teensy 4.1.
 
-**Arduino IDE (Windows/Linux)**:  To program the Tympan, you need to download and install the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Download the actual Arduino IDE, don't use the online web-based editor.  After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
+**Arduino IDE (Windows/Linux)**:  To program the Tympan, you need to download and install the 1.8.x version of the [Arduino IDE](https://www.arduino.cc/en/Main/Software).  Scroll down and download the 1.8.x version, do not use the newer 2.x version nor the web-based editor. After installing the Arduino IDE, open the shortcut so that it fully initializes.  Then, you can close it down and move to the next step, which is...
 
 **Teensyduino Add-On (Windows/Linux, MASTER branch)**:  After installing the Arduino IDE, you need to download and install the [Teensyduino Add-On](https://www.pjrc.com/teensy/td_download.html), which allows you to program Teensy devices (including Tympan) using the Arduino IDE. It'll ask you whether you want to install a bunch of libraries.  You can say "yes" to them all, or you can say "yes" to these few: Audio, Bounce2, FreqCount, FreqMeasure, i2c_t3, SerialFlash, Snooze, and SPIFlash.  
 
