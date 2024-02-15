@@ -21,9 +21,10 @@ void AudioFeedbackCancelNFXLMS_F32::update(void) {
   //check to see if we're outpacing our feedback data
   if (newest_ring_audio_block_id != 999999) { //999999 is the default startup number, so ignore it
 	if ((in_block->id > 100) && (newest_ring_audio_block_id > 0)) { //ignore startup period
-	  if (abs(in_block->id - newest_ring_audio_block_id) > 1) {  //is the difference more than one block counter?
-		//the data in the ring buffer is older than expected!
-		Serial.print("AudioFeedbackCancelNFXLMS_F32: falling behind?  in_block = ");
+	  //if (abs(in_block->id - newest_ring_audio_block_id) > 1) {  //is the difference more than one block counter?
+	  if ((in_block->id != 0) && ((in_block->id - newest_ring_audio_block_id) > 0)) {
+	    //the data in the ring buffer is older than expected!
+	    Serial.print("AudioFeedbackCancelNFXLMS_F32: falling behind?  in_block = ");
 		Serial.print(in_block->id); Serial.print(", ring block = "); Serial.println(newest_ring_audio_block_id);
 	  }
 	}

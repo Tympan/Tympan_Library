@@ -28,7 +28,8 @@ namespace BTNRH_FFT {
 	static __inline int
 	bitrev(int ii, int m)
 	{
-		register int jj;
+		//register int jj;
+		int jj;
 	
 		jj = ii & 1;
 		--m;
