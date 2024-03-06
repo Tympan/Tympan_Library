@@ -119,7 +119,7 @@ class SDWriter : public Print
       size_t return_val = 0;
       if (file.isOpen()) {
 
-        // write all audio bytes (512 bytes is most efficient)
+        // write one audio byte.  Very inefficient.
         if (flagPrintElapsedWriteTime) { usec = 0; }
         file.write((byte *) (&foo), 1); //write one value
         return_val = 1;
@@ -239,15 +239,12 @@ class BufferedSDWriter : public SDWriter
       delete write_buffer;
     }
 	bool sync() {
-		if (isFileOpen())
-		{
+		if (isFileOpen()) {
 			file.FsBaseFile::flush();
 			return file.sync();
+		} else {
+		  return false;
 		}
-    else
-    {
-      return false;
-    }
 	}
 
     //how many bytes should each write event be?  Set it here
@@ -317,7 +314,13 @@ class BufferedSDWriter : public SDWriter
       for (int Isamp = 0; Isamp < nsamps; Isamp++) {
         for (int Ichan = 0; Ichan < numChan; Ichan++) {
             //convert the F32 to Int16 and interleave
-            write_buffer[bufferWriteInd++] = (int16_t)(ptr_audio[Ichan][Isamp]*32767.0);
+			float32_t val_f32 = ptr_audio[Ichan][Isamp];  //float value, scaled -1.0 to +1.0
+			
+			//add dithering, if desired
+			if (0) val_f32 += generateDitherNoise(Ichan,1);
+			
+            write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
+            //write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
         }
       }
 
@@ -389,6 +392,39 @@ class BufferedSDWriter : public SDWriter
       }
       return return_val;
     }
+
+	virtual float32_t generateDitherNoise(const int &Ichan, const int &method) {
+		//do dithering to spread out quantization noise (avoid spurious harmonics of pure tones)
+		float32_t rand_f32 = ((float32_t)random(65534))/65534.0f; //uniform distribution, scaled for 0-1.0
+		switch (method) {
+			case 0:
+				//do nothing.  leave as uniform distribution
+				rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
+				break;
+			case 1:
+				//change uniform to triangular distribution, midpoint at 0.5...I think that this works right (WEA Mar 6, 2024)
+				if (rand_f32 <= 0.5f) {
+					rand_f32 = sqrtf(rand_f32*0.5f);
+				} else {
+					rand_f32 = 1.0f - sqrtf( (1.0f - rand_f32)*0.5f);
+				}
+				rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
+				break;
+			case 2:
+				//make it gaussian(ish).  There's surely a better way
+				{
+					rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
+					float32_t rand2_f32 = ((float32_t)random(65534))/65534.0f; //uniform distribution, scaled for 0-1.0
+					rand2_f32 = 2.0f*(rand2_f32-0.5f);  //scale for -1.0 to +1.0
+					rand_f32 *= rand2_f32; 
+				}
+				break;
+		}
+		rand_f32 /= 32767.0f;    //scaled to be size of last bit of int16 (but as a float where full scale is -1.0 to +1.0)
+		rand_f32 *= 10.0f;  //scale it to the desired effect
+		
+		return rand_f32;
+	}
 
 //    virtual int interleaveAndWrite(int16_t *chan1, int16_t *chan2, int nsamps) {
 //      //Serial.println("BuffSDI16: interleaveAndWrite given I16...");
