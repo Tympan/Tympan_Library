@@ -317,7 +317,7 @@ class BufferedSDWriter : public SDWriter
 			float32_t val_f32 = ptr_audio[Ichan][Isamp];  //float value, scaled -1.0 to +1.0
 			
 			//add dithering, if desired
-			if (0) val_f32 += generateDitherNoise(Ichan,1);
+			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod);
 			
             write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
             //write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
@@ -394,34 +394,40 @@ class BufferedSDWriter : public SDWriter
     }
 
 	virtual float32_t generateDitherNoise(const int &Ichan, const int &method) {
+		static bool firstTime=true;
+	
 		//do dithering to spread out quantization noise (avoid spurious harmonics of pure tones)
 		float32_t rand_f32 = ((float32_t)random(65534))/65534.0f; //uniform distribution, scaled for 0-1.0
 		switch (method) {
-			case 0:
-				//do nothing.  leave as uniform distribution
+			case 1:
+				//do nothing special.  leave as uniform distribution
 				rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
 				break;
-			case 1:
-				//change uniform to triangular distribution, midpoint at 0.5...I think that this works right (WEA Mar 6, 2024)
+/* 			case 1:
+				//try to smartly change uniform to triangular distribution, midpoint at 0.5...I think that this works right (WEA Mar 6, 2024)
 				if (rand_f32 <= 0.5f) {
 					rand_f32 = sqrtf(rand_f32*0.5f);
 				} else {
 					rand_f32 = 1.0f - sqrtf( (1.0f - rand_f32)*0.5f);
 				}
 				rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
-				break;
+				break; */
 			case 2:
-				//make it gaussian(ish).  There's surely a better way
+				//make it 2DOF random (triangle?).  There's surely a better way
 				{
-					rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
+					//make a 2nd random signal
 					float32_t rand2_f32 = ((float32_t)random(65534))/65534.0f; //uniform distribution, scaled for 0-1.0
-					rand2_f32 = 2.0f*(rand2_f32-0.5f);  //scale for -1.0 to +1.0
+									
+					//join the two random values
 					rand_f32 *= rand2_f32; 
+					
+					//make zero mean
+					rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
 				}
 				break;
 		}
 		rand_f32 /= 32767.0f;    //scaled to be size of last bit of int16 (but as a float where full scale is -1.0 to +1.0)
-		rand_f32 *= 10.0f;  //scale it to the desired effect
+		rand_f32 *= 2.0f;  //scale it to the desired effect
 		
 		return rand_f32;
 	}
@@ -529,6 +535,10 @@ class BufferedSDWriter : public SDWriter
 //      return return_val;
 //    }
 
+	int enableDithering(bool enable) { if (enable) { return setDitheringMethod(0); } else { return setDitheringMethod(2); } }
+	int setDitheringMethod(int val) { return ditheringMethod = val; }
+	int getDitheringMethod(void) { return ditheringMethod; }
+	
   protected:
     int writeSizeSamples = 0;
     int16_t* write_buffer = 0;
@@ -538,6 +548,7 @@ class BufferedSDWriter : public SDWriter
     int32_t bufferLengthSamples = maxBufferLengthBytes / nBytesPerSample;
     int32_t bufferEndInd = maxBufferLengthBytes / nBytesPerSample;
     float32_t *ptr_zeros;
+	int ditheringMethod = 0;  //default 0 is off
 };
 
 
