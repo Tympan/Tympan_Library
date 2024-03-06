@@ -78,9 +78,9 @@ public:
 	virtual bool disable(void);
 	bool outputSelect(int n, bool flag_full = true); //flag_full is whether to do a full reconfiguration.  True is more complete but false is faster.
 	bool volume(float n);
-	static float applyLimitsOnVolumeSetting(float vol_dB);
-	float volume_dB(float vol_dB);  //set both channels to the same volume
-	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels, but to their own values
+	static float applyLimitsOnVolumeSetting(float vol_dB);  //uses limits (using the limits on the DAC gain in the AIC)
+	float volume_dB(float vol_dB);  //set both channels to the same volume (via the DAC output volume)
+	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels (via the DAC output volume), but to their own values
 	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
 	int muteDAC(int chan = BOTH_CHAN);  //mutes the output DAC
 	int unmuteDAC(int chan = BOTH_CHAN); //unmutes the output DAC

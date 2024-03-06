@@ -844,6 +844,8 @@ void AudioOutputI2S_F32::config_i2s(float fs_Hz) { config_i2s(false, fs_Hz); }
 void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 {
 #if defined(KINETISK) || defined(KINETISL)
+	//Tympan Revs A-D will be here (based on Teensy 3.6, which is Kinetis K)
+	
 	SIM_SCGC6 |= SIM_SCGC6_I2S;
 	SIM_SCGC7 |= SIM_SCGC7_DMA;
 	SIM_SCGC6 |= SIM_SCGC6_DMAMUX;
@@ -887,7 +889,8 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 
 
 #elif defined(__IMXRT1062__)
-
+	//Tympan Revs E-F will be here (based on Teensy 4.1, which is IMXRT1062)
+	
 	CCM_CCGR5 |= CCM_CCGR5_SAI1(CCM_CCGR_ON);
 
 	// if either transmitter or receiver is enabled, do nothing

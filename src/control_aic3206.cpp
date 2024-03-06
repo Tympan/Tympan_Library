@@ -481,7 +481,7 @@ bool AudioControlAIC3206::enableAutoMuteDAC(bool enable, uint8_t mute_delay_code
 	return enable;
 }
 
-// -63.6 to +24 dB in 0.5dB steps.  uses signed 8-bit
+// Changes the DAC ouput volume from -63.6 dB to +24 dB in 0.5dB steps.  uses signed 8-bit
 float AudioControlAIC3206::applyLimitsOnVolumeSetting(float vol_dB) {
 	// Constrain to limits
 	if (vol_dB > 24.0) {
@@ -494,6 +494,7 @@ float AudioControlAIC3206::applyLimitsOnVolumeSetting(float vol_dB) {
 	}
 	return vol_dB;
 }
+// Changes the DAC ouput volume from -63.6 dB to +24 dB in 0.5dB steps.  
 float AudioControlAIC3206::volume_dB(float orig_vol_dB, int Ichan) {  // 0 = Left; 1 = right;
 	float vol_dB = applyLimitsOnVolumeSetting(orig_vol_dB);
 	if (abs(vol_dB - orig_vol_dB) > 0.01) {
