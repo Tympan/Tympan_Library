@@ -394,8 +394,8 @@ class BufferedSDWriter : public SDWriter
     }
 
 	virtual float32_t generateDitherNoise(const int &Ichan, const int &method) {
-		static bool firstTime=true;
-	
+		//see http://www.robertwannamaker.com/writings/rw_phd.pdf
+		
 		//do dithering to spread out quantization noise (avoid spurious harmonics of pure tones)
 		float32_t rand_f32 = ((float32_t)random(65534))/65534.0f; //uniform distribution, scaled for 0-1.0
 		switch (method) {
@@ -417,17 +417,19 @@ class BufferedSDWriter : public SDWriter
 				{
 					//make a 2nd random signal
 					float32_t rand2_f32 = ((float32_t)random(65534))/65534.0f; //uniform distribution, scaled for 0-1.0
-									
-					//join the two random values
-					rand_f32 *= rand2_f32; 
 					
 					//make zero mean
 					rand_f32 = 2.0f*(rand_f32-0.5f);  //scale for -1.0 to +1.0
+					rand2_f32 = 2.0f*(rand2_f32-0.5f);  //scale for -1.0 to +1.0
+					
+					//join the two random values
+					rand_f32 *= rand2_f32; //should now be triangular, psanning -1.0 to +1.0?
+
 				}
 				break;
 		}
-		rand_f32 /= 32767.0f;    //scaled to be size of last bit of int16 (but as a float where full scale is -1.0 to +1.0)
-		rand_f32 *= 2.0f;  //scale it to the desired effect
+		rand_f32 /= 65534.0f;  //scaled to be size of last bit of int16 (but as a float where full scale is -1.0 to +1.0)
+		rand_f32 *= 2.0f;      //scale it to the desired effect
 		
 		return rand_f32;
 	}
