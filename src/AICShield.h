@@ -99,16 +99,45 @@ class AICShieldPins {
 							resetAIC = 31;
 							i2cBus = 2;
 							enableStereoExtMicBias =29;
-							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)...NEED TO UPDATE!!!
-							CCP_atten2 = 51;  //enable attenuator #2.  Same as MISO_2 (alt)...NEED TO UPDATE!!!
-							CCP_bigLED =  53;    //same as SCK_2 (alt)...NEED TO UPDATE!!!
-							CCP_littleLED_1 = 41;    //same as AIC_Shield_enableStereoExtMicBias...NEED TO UPDATE!!!
-							CCP_littleLED_2 = 8;     //prototype board variant uses TX_3 pin
-							CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2...NEED TO UPDATE!!!
+							CCP_atten1 = 11;      //enable attenuator #1.  On CCP Schem as "MOSI_2" -> On Tympan as "MOSI" 
+							CCP_atten2 = 12;      //enable attenuator #2.   On CCP Schem as "MISO_2" -> On Tympan as "MISO" 
+							CCP_bigLED =  13;     //On CCP Schem as "SCK_2" -> on Tympan as "SCK"
+							CCP_littleLED_1 = 30; //On CCP Schem as "M_BIAS_1" -> on Tympan as "M_BIAS_1"
+							CCP_littleLED_2 = NOT_A_FEATURE;  //Can't find (years-ago prototype board variant uses TX_3 pin)
+							CCP_enable28V = 10; //enable the 28V power supply.  On CCP Schem as "SS_2" -> on Tympan as "SS"
 							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
 							break;
 					}
 					break;
+
+				case  (TympanRev::F) : //we're connecting to a Rev F tympan, so the pin numbers below are correct for the TympanF
+
+					switch (AICRev) {  //which AIC_shield are we connecting to?
+
+						case (AICShieldRev::A) :    //Basic AIC shield (2019 and 2020)
+							//Teensy 4.1 Pin Numbering
+							resetAIC = 31;
+							i2cBus = 2;
+							enableStereoExtMicBias = 30; //this moved on Rev F
+							defaultInput = AudioControlAIC3206::IN3;  //IN3 is the pink mic/line jack
+							break;
+
+						case (AICShieldRev::CCP):  case (AICShieldRev::CCP_A): //First generation CCP shield (May 2020)
+							//Teensy 4.1 Pin Numbering
+							resetAIC = 31;
+							i2cBus = 2;
+							enableStereoExtMicBias =30; //this moved on Rev F
+							CCP_atten1 = 11;      //enable attenuator #1.  On CCP Schem as "MOSI_2" -> On Tympan as "MOSI" 
+							CCP_atten2 = 12;      //enable attenuator #2.   On CCP Schem as "MISO_2" -> On Tympan as "MISO" 
+							CCP_bigLED =  13;     //On CCP Schem as "SCK_2" -> on Tympan as "SCK"
+							CCP_littleLED_1 = 30; //On CCP Schem as "M_BIAS_1" -> on Tympan as "M_BIAS_1"
+							CCP_littleLED_2 = NOT_A_FEATURE;  //Can't find (years-ago prototype board variant uses TX_3 pin)
+							CCP_enable28V = 10; //enable the 28V power supply.  On CCP Schem as "SS_2" -> on Tympan as "CS"
+							defaultInput = AudioControlAIC3206::IN3;  //IN3 are the screw jacks
+							break;
+					}
+					break;
+
 
 				default:
 					Serial.println("AICSheildPins: *** WARNING *** This Teensy Rev is not supported.");

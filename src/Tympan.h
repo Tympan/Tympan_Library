@@ -10,7 +10,7 @@
 #ifndef _Tympan_h
 #define _Tympan_h
 
-enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1 };
+enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1, F };
 
 //constants to help define which version of Tympan is being used
 #define TYMPAN_REV_A (TympanRev::A)
@@ -24,6 +24,7 @@ enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1 };
 #define TYMPAN_REV_E (TympanRev::E)
 #define TYMPAN_REV_E1 (TympanRev::E1)
 //define TYMPAN_REV_D_CCP (TympanRev::D_CCP)
+#define TYMPAN_REV_F (TympanRev::F)
 
 //the Tympan is a Teensy audio library "control" object
 //include <usb_desc.h>  //to know if we're using native or emulated USB serial
@@ -135,7 +136,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 
 					break;
 				case  (TympanRev::E) : case (TympanRev::E1) :    //Earliest trials with Tympan 4 with Rev A
-					//Teensy 4.0 Pin Numbering
+					//Teensy 4.1 Pin Numbering
 					resetAIC = 26;  //Teensy pin that goes to the reset pin of the audio AIC
 					potentiometer = 17;  //Teensy pin to potentiometer that is often used as a volume control
 					amberLED = 15;  // Teensy pin to the amber LED
@@ -173,6 +174,24 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					CCP_littleLED = 41;    //same as AIC_Shield_enableStereoExtMicBias
 					CCP_enable28V = 5; //enable the 28V power supply.  Same as SS_2 
 */
+				case (TympanRev::F):
+					//Teensy 4.1 Pin Numbering...same as Rev E?
+					BT_Serial = &Serial7;  //pins 28 and 29
+					resetAIC = 40;  //Teensy pin that goes to the reset pin of the audio AIC
+					potentiometer = 17;  //Teensy pin to potentiometer that is often used as a volume control
+					amberLED = 15;  // Teensy pin to the amber LED
+					redLED = 16;  // Teensy pin to the red LED
+					BT_nReset = 9; //
+					BT_REGEN = NOT_A_FEATURE;
+					//BT_PIO4 = NOT_A_FEATURE;
+					BT_PIO0 = NOT_A_FEATURE;
+					BT_PIO5 = NOT_A_FEATURE;  //This is actually PIO5 but we don't have a name for this.  We don't really use this anyway, so whatever.  (WEA 10/24/2020)
+					reversePot = true;  //need to check this.  Is the pot really wired backwards like the old RevA???  Since it worked correctly (not reversed) on Rev D, I bet that it's correct on RevE, too.
+					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
+					BT_serial_speed = 115200;
+					Rev_Test = 22;  //same as RevE...we probably should have changed this
+					assumed_BT_firmware = NOT_A_FEATURE;
+					break;					
 			}
 		}
 		//#if defined(SEREMU_INTERFACE)
@@ -209,7 +228,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 		//#else
 			usb_serial_class *USB_Serial = &Serial; //true for Rev_A/C/D
 		//#endif
-		HardwareSerial *BT_Serial = &Serial1; //true for Rev_A/C/D
+		HardwareSerial *BT_Serial = &Serial1; //true for Rev_A/C/D/E but not for RevF
 		int BT_serial_speed = 115200; //true for Rev_A/C
 };
 
