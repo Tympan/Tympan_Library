@@ -22,12 +22,18 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
+ *
  */
 
 /* 
  *  Extended by Chip Audette, OpenAudio, Dec 2019
  *  Converted to F32 and to variable audio block length
  *  The F32 conversion is under the MIT License.  Use at your own risk.
+ *
+ * Heaviy refactored to remove SD reading from interupts.
+ * Chip Audette (Open Audio), March 2024, 
+ * All changes are MIT License, Use at your own risk.
+ * 
 */
 
 #ifndef AudioSDPlayer_F32_h_
@@ -41,78 +47,90 @@
 
 class AudioSDPlayer_F32 : public AudioStream_F32
 {
-//GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes  
-  public:
-    AudioSDPlayer_F32(void) : AudioStream_F32(0, NULL), sd_ptr(NULL)
-	{ 
-      init();
-    }
-    AudioSDPlayer_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(NULL)
-      { 
-        init();
-        setSampleRate_Hz(settings.sample_rate_Hz);
-        setBlockSize(settings.audio_block_samples);
-      }
-    AudioSDPlayer_F32(SdFs * _sd,const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(_sd)
-    { 	 
-        init();
-        setSampleRate_Hz(settings.sample_rate_Hz);
-        setBlockSize(settings.audio_block_samples);
-	}
-	
-	//~AudioSDPlayer_F32(void) {
-	//	delete sd_ptr;
-	//}
-	
-    void init(void);
-    void begin(void);  //begins SD card
-    bool play(const String &filename) { return play(filename.c_str()); }
-    bool play(const char *filename);
-    void stop(void);
-    bool isPlaying(void);
-    uint32_t positionMillis(void);
-    uint32_t lengthMillis(void);
-    virtual void update(void);
-    float setSampleRate_Hz(float fs_Hz) { 
-      sample_rate_Hz = fs_Hz; 
-      updateBytes2Millis();
-      return sample_rate_Hz;
-    }
-    int setBlockSize(int block_size) { return audio_block_samples = block_size; };
-    bool isFileOpen(void) {
-      if (file.isOpen()) return true;
-      return false;
-    }  
-	void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
-  
-  private:
-    //SdFs sd;
-	SdFs *sd_ptr;
-	SdFile file;
-    bool consume(uint32_t size);
-    bool parse_format(void);
-    uint32_t header[10];    // temporary storage of wav header data
-    uint32_t data_length;   // number of bytes remaining in current section
-    uint32_t total_length;    // number of audio data bytes in file
-    uint16_t channels = 1; //number of audio channels
-    uint16_t bits = 16;  // number of bits per sample
-    uint32_t bytes2millis;
-    audio_block_f32_t *block_left_f32 = NULL;
-    audio_block_f32_t *block_right_f32 = NULL;
-    uint16_t block_offset;    // how much data is in block_left & block_right
-    uint8_t buffer[512];    // buffer one block of data
-    uint16_t buffer_offset;   // where we're at consuming "buffer"
-    uint16_t buffer_length;   // how much data is in "buffer" (512 until last read)
-    uint8_t header_offset;    // number of bytes in header[]
-    uint8_t state;
-    uint8_t state_play;
-    uint8_t leftover_bytes;
-    static unsigned long update_counter;
-    float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
-    int audio_block_samples = AUDIO_BLOCK_SAMPLES;
-    
+	//GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes  
+	public:
+		AudioSDPlayer_F32(void) : AudioStream_F32(0, NULL), sd_ptr(NULL) { 
+			init();
+		}
+		AudioSDPlayer_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(NULL) { 
+			init();
+			setSampleRate_Hz(settings.sample_rate_Hz);
+			setBlockSize(settings.audio_block_samples);
+		}
+		AudioSDPlayer_F32(SdFs * _sd,const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(_sd) { 	 
+			init();
+			setSampleRate_Hz(settings.sample_rate_Hz);
+			setBlockSize(settings.audio_block_samples);
+		}
 
-    uint32_t updateBytes2Millis(void);
+		//~AudioSDPlayer_F32(void) {
+		//	delete sd_ptr;
+		//}
+
+		void init(void);
+		void begin(void);  //begins SD card
+		bool play(const String &filename) { return play(filename.c_str()); }
+		bool play(const char *filename);
+		void stop(void);
+		bool isPlaying(void);
+		uint32_t positionMillis(void);
+		uint32_t lengthMillis(void);
+		virtual void update(void);
+		float setSampleRate_Hz(float fs_Hz) { 
+			sample_rate_Hz = fs_Hz; 
+			updateBytes2Millis();
+			return sample_rate_Hz;
+		}
+		int setBlockSize(int block_size) { return audio_block_samples = block_size; };
+		bool isFileOpen(void) {
+			if (file.isOpen()) return true;
+			return false;
+		}  
+		void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
+
+		int serviceSD(void);
+		int getNumBuffBytes(void);
+  
+	private:
+		//SdFs sd;
+		SdFs *sd_ptr;
+		SdFile file;
+		bool consume(uint32_t size);
+		bool parse_format(void);
+		uint32_t header[10];    // temporary storage of wav header data
+		uint32_t data_length;   // number of bytes remaining in current section
+		uint32_t total_length;    // number of audio data bytes in file
+		uint16_t channels = 1; //number of audio channels
+		uint16_t bits = 16;  // number of bits per sample
+		uint32_t bytes2millis;
+		//audio_block_f32_t *block_left_f32 = NULL;
+		//audio_block_f32_t *block_right_f32 = NULL;
+		uint16_t block_offset;    // how much data is in block_left & block_right
+
+		const uint16_t READ_SIZE_BYTES = 512;
+		uint8_t temp_buffer[512];  //make same size as the above
+		const uint16_t N_BUFFER = 32*512;  //should be multiple of READ_SIZE_BYTES
+		uint8_t buffer[32*512];       // buffer X blocks of data
+		uint16_t buffer_write = 0;
+		uint16_t buffer_read = 0;
+		//uint16_t buffer_offset;   // where we're at consuming "buffer"
+		//uint16_t buffer_length;   // how much data is in "buffer" (512 until last read)
+		uint8_t header_offset;    // number of bytes in header[]
+		uint8_t state;
+		uint8_t state_play;
+		uint8_t state_read;
+		uint8_t leftover_bytes;
+		static unsigned long update_counter;
+		float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
+		int audio_block_samples = AUDIO_BLOCK_SAMPLES;
+
+		uint32_t updateBytes2Millis(void);
+
+		uint16_t readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps);
+		uint16_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
+		uint16_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps, int n_chan);
+		int  readFromSDtoBuffer(const uint16_t n_bytes_to_read);
+		bool readHeader(void);
 };
 
 #endif
