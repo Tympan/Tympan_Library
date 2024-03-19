@@ -82,7 +82,9 @@ class SDWriter : public Print
         //a new recording, the old file must be deleted before new data is written.
         sd->remove(fname);
       }
+	  __disable_irq();
       file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+	  __enable_irq();
       //file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
       return isFileOpen();
     }
