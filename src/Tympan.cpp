@@ -225,7 +225,7 @@ void TympanBase::clearAndConfigureBTSerialRevD(void) {
 
 void TympanBase::setBTAudioVolume(int vol) {  //only works when you are connected via Bluetooth!!!!
 	//vol is 0 (min) to 15 (max)
-	if (pins.tympanRev >= TYMPAN_REV_D0) {   //This is only for the BC127 BT module
+	if ((pins.tympanRev >= TYMPAN_REV_D0) && (pins.tympanRev < TYMPAN_REV_F))  {   //This is only for the BC127 BT module
 		//get into command mode
 		USB_Serial->println("*** Changing BT into command mode...");
 		forceBTtoDataMode(false); //un-forcing (via hardware pin) the BT device to be in data mode
@@ -617,6 +617,7 @@ void TympanBase::shutdownBT(void) {
 	if (true) {
 		//Setting DEEP_SLEEP seems to be the right command, but it only takes place after
 		//the discoverable period has expired, which for us is actually an infinite time.
+		//This is only for BC127??
 		
 		USB_Serial->println("Tympan: shutdownBT: asking for discoverable period");
 		BT_Serial->print("GET DISCOVERABLE"); BT_Serial->print('\r'); delay(400); 
