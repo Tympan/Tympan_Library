@@ -159,8 +159,8 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 int AudioSDWriter_F32::startRecording(char* fname) {
   int return_val = 0;
   
-  	//check to see if the SD has been initialized
-	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+  //check to see if the SD has been initialized
+  if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
   
   if (current_SD_state == STATE::STOPPED) {
 	//try to open the file on the SD card
@@ -192,11 +192,14 @@ int AudioSDWriter_F32::startRecording(char* fname) {
 }
 
 void AudioSDWriter_F32::stopRecording(void) {
+  __disable_irq();
   if (current_SD_state == STATE::RECORDING) {
-	//if (serial_ptr) serial_ptr->println("stopRecording: Closing SD File...");
-
+	current_SD_state = STATE::STOPPED;
+	__enable_irq();
+	
 	//close the file
-	close(); current_SD_state = STATE::STOPPED;
+	//if (serial_ptr) serial_ptr->println("stopRecording: Closing SD File...");
+	close(); 
 	current_filename = String("Not Recording");
 
 	//clear the buffer
@@ -279,9 +282,9 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
   for (int Ichan = 0; Ichan < numChan; Ichan++) {
 	if (audio_blocks[Ichan] != NULL) {
 	  if (((audio_blocks[Ichan]->id - last_audio_block_id[Ichan]) != 1) && (last_audio_block_id[Ichan] != 0)) {
-		Serial.print("AudioSDWriter: chan "); Serial.print(Ichan);
-		Serial.print(", data skip? This ID = "); Serial.print(audio_blocks[Ichan]->id);
-		Serial.print(", Previous ID = "); Serial.println(last_audio_block_id[Ichan]);
+		//Serial.print("AudioSDWriter: chan "); Serial.print(Ichan);
+		//Serial.print(", data skip? This ID = "); Serial.print(audio_blocks[Ichan]->id);
+		//Serial.print(", Previous ID = "); Serial.println(last_audio_block_id[Ichan]);
 	  }
 	  last_audio_block_id[Ichan] = audio_blocks[Ichan]->id;
 	}
