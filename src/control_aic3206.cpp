@@ -593,6 +593,8 @@ int AudioControlAIC3206::unmuteHeadphone(int chan) {
 int AudioControlAIC3206::muteHeadphone(int chan) {
 	int ret_val = -1;
 	uint8_t val;
+	uint8_t power_val = aic_readPage(1, 9);
+	aic_writePage(1, 9, 0);  //power down both left and right HP (and DAC)
 	if ( (chan == BOTH_CHAN) || (chan == LEFT_CHAN) ) {
 		//set the left side
 		val = aic_readPage(TYMPAN_HPL_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG);
@@ -606,7 +608,8 @@ int AudioControlAIC3206::muteHeadphone(int chan) {
 		val = val | 0b01000000; //set the bit to mute
 		aic_writePage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG, val);
 		ret_val = chan;
-	}	
+	}
+	aic_writePage(1, 9, power_val);  //return to original power state
 	return ret_val;	
 }
 
@@ -828,6 +831,7 @@ void AudioControlAIC3206::aic_init() {
   aic_writeRegister(0x0A, 0); //Page 1,  Reg 10, Val = 0 = common mode 0.9 for full chip, HP, LO  // from WHF/CHA
   aic_writeRegister(0x47, 0x31); //Page 1,  Reg 71, val = 0x31 = 0b00110001 = Set input power-up time to 3.1ms (for ADC)
   aic_writeRegister(0x7D, 0x53); //Page 1,  Reg 125, Val = 0x53 = 0b01010011 = 0 10 1 00 11: HPL is master gain, Enable ground-centered mode, 100% output power, DC offset correction  // from WHF/CHA
+  //aic_writeRegister(0x7D, 0b00010011); //Page 1,  Reg 125, Val = 0b01010011 = 0 00 1 00 11: Independent L/R gain, Enable ground-centered mode, 100% output power, DC offset correction  // from WHF/CHA
 
   // !!!!!!!!! The below writes are from WHF/CHA - probably don't need?
   // aic_writePage(1, 1, 10); // 10 = 0b00001010 // weakly connect AVDD to DVDD.  Activate charge pump
