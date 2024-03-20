@@ -49,10 +49,10 @@ void setup() {
 }
 
 unsigned long end_millis = 0;
-String filename = "SDTEST1.WAV";// filenames are always uppercase 8.3 format
+String filename = "SDTEST1.WAV"; //this file needs to be on your SD card!
 void loop() {
 
-  //service the audio player
+  //start the SD player if it is not playing
   if (!audioSDPlayer.isPlaying()) { //wait until previous play is done
     //start playing audio
     myTympan.print("Starting audio player: ");
