@@ -204,6 +204,7 @@ uint16_t AudioSDPlayer_F32::readFromBuffer(float32_t *left_f32, float32_t *right
 }
 
 uint16_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps_wanted, int n_chan) {
+	if (n_chan < 1) return 0;
 	uint16_t n_samples_read = 0;
 	const uint16_t bytes_perSamp_allChans = 2 * n_chan; //mono will need 2 bytes (16 bits) per sample and stereo will need 2*2 bytes (32 bits) per sample
 	const int bytes_total = bytes_perSamp_allChans*n_chan;
@@ -212,7 +213,7 @@ uint16_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32
 	float32_t val_f32;
 	
 	//check to see if we have enough data in the main buffer.  If not, try to load some, if possible
-	while ((state_read == READ_STATE_NORMAL) && ( (getNumBuffBytes() < bytes_total) || (data_length < bytes_total) ) )
+	while ((state_read == READ_STATE_NORMAL) && ( (getNumBuffBytes() < bytes_total) || (data_length < (uint32_t)bytes_total) ) )
 	{
 		readFromSDtoBuffer(READ_SIZE_BYTES);
 	}		
