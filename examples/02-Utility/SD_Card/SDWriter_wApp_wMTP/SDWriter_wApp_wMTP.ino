@@ -30,8 +30,18 @@
    Symptom: Tympan does not appear as a drive in your operating system.
      * Be aware that you cannot record (or play) from SD and then activate MTP. If you've used the SD card
        at all, the MTP doesn't seem to work. Sorry.  The MTP only works if nothing else has used the SD card.  
-     * The easiest way to get around this problem is to (1) Turn off the Tympan, (2) unplug from USB, 
-       (3) wait 5 seconds, (4) reconnect to USB, (5) power up the Tympan.
+     * But of course you need to use the SD card to record or play!  Why else would you want MTP? You want
+	   MTP so that you can get files that you've recorded (or are going to play)!  What do you do??
+	 * The easiest solution is to record and play from the SD as you desire.  Then, when you go to connect
+	   to the PC, simply cycle the power on teh Tympan.  
+	 * That way, it starts fresh.  The "first" time it goes to access the SD card will be for MTP.  Easy.
+	 
+   Symptom: The Tympan still does not appear as a drive in your operating system. 
+     * This is most likely to happen immediately after you've first programmed a non-MTP Tympan
+	   to use MTP.  I think that the PC (Windows, at least) gets confused as to what kind of device
+	   is attached.  The way to get around this problem is to give Windows a chance to forget the device.
+     * A solution seems to be to (1) turn off the Tympan, (2) unplug from USB, (3) wait 5 seconds,
+	   (4) reconnect to USB, (5) power up the Tympan.
      * When the Tympan boots up and appears in the SerialMonitor again, go ahead and send the '>' character.
        It should show up as a drive on your PC!
 
