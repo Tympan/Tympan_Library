@@ -176,7 +176,11 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 */
 				case (TympanRev::F):
 					//Teensy 4.1 Pin Numbering...same as Rev E?
-					BT_Serial = &Serial7;  //pins 28 and 29
+					#if defined(KINETISK)   //for Teensy 3.x only!  which should never happen for RevF
+						BT_Serial = &Serial1;  //dummy value.  This branch should never happen.  This value is here just to avoid a compiler warning
+					#else
+						BT_Serial = &Serial7;  //pins 28 and 29
+					#endif
 					resetAIC = 40;  //Teensy pin that goes to the reset pin of the audio AIC
 					potentiometer = 17;  //Teensy pin to potentiometer that is often used as a volume control
 					amberLED = 15;  // Teensy pin to the amber LED
