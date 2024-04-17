@@ -164,7 +164,7 @@ void TympanBase::forceBTtoDataMode(bool state) {
 			digitalWrite(pins.BT_PIO5,LOW);
 		}
 	} else {
-		Serial.println("Tympan: forceBTtoDataMode: No PIO5 specified. Cannot force DATA MODE.");
+		//Serial.println("Tympan: forceBTtoDataMode: No PIO5 specified. Cannot force DATA MODE.");
 	}
 }
 
