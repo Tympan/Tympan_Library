@@ -38,7 +38,7 @@
 #include "AudioStream_F32.h"
 //include "AudioStream.h"
 #include "DMAChannel.h"
-#include "input_i2s_f32.h" //for AudioInputI2S_F32
+#include "input_i2s_F32.h" //for AudioInputI2S_F32
 
 
 class AudioOutputI2S_F32 : public AudioStream_F32

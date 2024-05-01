@@ -5,9 +5,9 @@
 //include <Tympan_Library.h>
 #include <Arduino.h>  //for print()
 #include "AudioStream_F32.h"
-#include "synth_sine_f32.h"
+#include "synth_sine_F32.h"
 #include "AudioEffectGain_F32.h"
-#include "record_queue_f32.h"
+#include "record_queue_F32.h"
 
 
 

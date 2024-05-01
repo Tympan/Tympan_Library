@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "record_queue_f32.h"
+#include "record_queue_F32.h"
 #include "utility/dspinst.h"
 
 

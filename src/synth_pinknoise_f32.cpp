@@ -42,7 +42,7 @@
 // Use for any purpose. If used in a commercial product, you should give me one.  
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#include "synth_pinknoise_f32.h"
+#include "synth_pinknoise_F32.h"
 
 int16_t AudioSynthNoisePink_F32::instance_cnt = 0;
 

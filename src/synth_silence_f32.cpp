@@ -10,7 +10,7 @@
  *
  */
 
-#include "synth_silence_f32.h"
+#include "synth_silence_F32.h"
 
 
 void AudioSynthSilence_F32::update(void)

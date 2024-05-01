@@ -31,10 +31,10 @@
  */
 
 #include <Arduino.h>
-#include "output_i2s_quad_f32.h"
+#include "output_i2s_quad_F32.h"
 #include "memcpy_audio.h"
 #include <arm_math.h>
-#include "output_i2s_f32.h"  //for config_i2s() and setI2Sfreq_T3()
+#include "output_i2s_F32.h"  //for config_i2s() and setI2Sfreq_T3()
 
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)

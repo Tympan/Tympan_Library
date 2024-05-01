@@ -30,8 +30,8 @@
  *	The F32 conversion is under the MIT License.  Use at your own risk.
  */
  
-#include "output_i2s_f32.h"
-//#include "input_i2s_f32.h"
+#include "output_i2s_F32.h"
+//#include "input_i2s_F32.h"
 //include "memcpy_audio.h"
 //#include "memcpy_interleave.h"
 #include <arm_math.h>

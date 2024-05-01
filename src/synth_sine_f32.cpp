@@ -10,7 +10,7 @@
  *
  */
 
-#include "synth_sine_f32.h"
+#include "synth_sine_F32.h"
 #include "utility/dspinst.h"
 #include "utility/data_waveforms.c"
 

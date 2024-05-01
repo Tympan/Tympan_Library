@@ -15,8 +15,8 @@
 #include <Arduino.h>  //for Serial
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
-#include "input_i2s_f32.h"
-#include "input_i2s_quad_f32.h"
+#include "input_i2s_F32.h"
+#include "input_i2s_quad_F32.h"
 #include "SDWriter.h"
 #include "SerialManager_UI.h"
 #include "TympanRemoteFormatter.h"

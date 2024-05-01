@@ -26,7 +26,7 @@
  */
 
 #include <Arduino.h>
-#include "AudioEffectDelay_f32.h"
+#include "AudioEffectDelay_F32.h"
 
 void AudioEffectDelay_F32::update(void)
 {	

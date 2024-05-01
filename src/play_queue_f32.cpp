@@ -7,7 +7,7 @@
 *	License: MIT License.  Use at your own risk.
 */
 
-#include "play_queue_f32.h"
+#include "play_queue_F32.h"
 #include "utility/dspinst.h"
 
 bool AudioPlayQueue_F32::available(void)

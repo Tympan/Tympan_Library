@@ -32,9 +32,9 @@
  
 
 #include <Arduino.h>
-#include "input_i2s_quad_f32.h"
-#include "output_i2s_quad_f32.h"
-#include "output_i2s_f32.h"
+#include "input_i2s_quad_F32.h"
+#include "output_i2s_quad_F32.h"
+#include "output_i2s_F32.h"
 
 //DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*2]; //Teensy Audio original
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4]; //Teensy Audio original

@@ -39,7 +39,7 @@
 #include "AudioStream_F32.h"
 #include "AudioStream.h"   //do we really need this? (Chip 2020-10-31)
 #include "DMAChannel.h"
-#include "input_i2s_f32.h" //for scale_i16_to_f32()
+#include "input_i2s_F32.h" //for scale_i16_to_f32()
 
 class AudioInputI2SQuad_F32 : public AudioStream_F32
 {

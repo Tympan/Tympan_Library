@@ -31,7 +31,7 @@
  * THE SOFTWARE.
  */
 
-#include "synth_whitenoise_f32.h"
+#include "synth_whitenoise_F32.h"
 
 
 
