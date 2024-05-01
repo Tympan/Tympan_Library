@@ -31,8 +31,8 @@
  */
  
 #include <Arduino.h>  //do we really need this? (Chip: 2020-10-31)
-#include "input_i2s_f32.h"
-#include "output_i2s_f32.h"
+#include "input_i2s_F32.h"
+#include "output_i2s_F32.h"
 #include <arm_math.h>
 
 
