@@ -9,9 +9,9 @@ int TympanBase::testTympanRev(TympanRev tympanRev) {
 		//Serial.println("testTympanRev: compiled for RevE, given TympanRev is " + String(static_cast<int>(tympanRev)));
 		if (static_cast<int>(tympanRev) < static_cast<int>(TympanRev::E)) {
 			Serial.println("TympanBase: testTympanRev: *** WARNING ***: You specified the wrong Tympan revision?");
-			Serial.println("   : This code was compiled for Tympan Rev E");
-			Serial.println("   : Yet your code said that it was for Tympan Rev C or D.");
-			Serial.println("   : This is unlikely to work.  In your code, change to 'TympanRev::E'.");
+			Serial.println("   : The Arduino IDE was set to compile for Teensy 4.1 (which is Tympan Rev E or F");
+			Serial.println("   : Yet your code said that it was for Tympan Rev D or below (tympanRev = " + String(static_cast<int>(tympanRev)) + ")");
+			Serial.println("   : This is unlikely to work.  In your code, change to 'TympanRev::F' (or E).");
 			return -1;
 		}
 	#endif
@@ -19,8 +19,8 @@ int TympanBase::testTympanRev(TympanRev tympanRev) {
 		//Serial.println("testTympanRev: compiled for RevD, given TympanRev is " + String(static_cast<int>(tympanRev)));
 		if (static_cast<int>(tympanRev) >= static_cast<int>(TympanRev::E)) {
 			Serial.println("TympanBase: testTympanRev: *** WARNING ***: You specified the wrong Tympan revision?");
-			Serial.println("   : TThis code was compiled for Tympan Rev D (or C)");
-			Serial.println("   : Yet your code said that it was for Tympan Rev E.");
+			Serial.println("   : The Arduino IDE was set to compile for Teensy 3.6 (which is Tympan Rev C or D)");
+			Serial.println("   : Yet your code said that it was for Tympan Rev E or above (tympanRev = " + String(static_cast<int>(tympanRev)) + ")");
 			Serial.println("   : This is unlikely to work.  In your code, change to 'TympanRev::D' (or C)");
 			return -1;
 		}
