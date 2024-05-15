@@ -161,11 +161,6 @@ void BLE_BC127::switchToNewBaudRate(int new_baudrate) {
 	echoBTreply(printDebug); //should cause response of "ERROR"
 }
 
-void BLE_BC127::setupBLE(int BT_firmware, bool printDebug) 
-{  
-	int doFactoryReset = 1;
-	setupBLE(BT_firmware, printDebug, doFactoryReset);
-}
 
 void BLE_BC127::setupBLE_noFactoryReset(int BT_firmware, bool printDebug)
 {

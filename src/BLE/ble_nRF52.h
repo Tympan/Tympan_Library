@@ -13,20 +13,20 @@ public:
 	BLE_nRF52(HardwareSerial *sp) : serialToBLE(sp), serialFromBLE(sp) {};
 	BLE_nRF52(TympanBase *_tympan) : serialToBLE(_tympan->BT_Serial), serialFromBLE(_tympan->BT_Serial) {};
 	BLE_nRF52(void) {} //uses default serial ports set down in the protected section
-	virtual int begin(void) { 
+	virtual int begin(void) {  return begin(false); }
+	virtual int begin(int doFactoryReset) {
+		while (serialFromBLE->available()) serialFromBLE->read(); //clear the incoming Serial buffer		
+		return 0;
+	}
+	virtual void setupBLE(void) { setupBLE(10); } //default to firmware 10
+	virtual void setupBLE(int BT_firmware) { setupBLE(BT_firmware,false); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+	virtual void setupBLE(int BT_firmware, bool printDebug) { setupBLE(BT_firmware, printDebug, false); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+	//virtual void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true) { setupBLE(BT_firmware,printDebug, false);};  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
+	virtual void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset) {
 		//Serial.println("ble_nRF52: begin: PIN_IS_CONNECTED = " + String(PIN_IS_CONNECTED)); 
-		if (PIN_IS_CONNECTED >= 0) { 
-			pinMode(PIN_IS_CONNECTED, INPUT); 
-		}; 
-		return 0; 
-	}; 
-	
-	//These don't do anything
-	virtual void setupBLE(int BT_firmware = 7, bool printDebug = true) {};            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
-	virtual void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true) {};  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
-	virtual void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset) {};  //to be called from the Arduino sketch's setup() routine.  Must define all params
-               //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
-  //end: these don't do anything
+		if (PIN_IS_CONNECTED >= 0) pinMode(PIN_IS_CONNECTED, INPUT); 
+		begin(doFactoryReset);
+	};  //to be called from the Arduino sketch's setup() routine
 	
 	//send strings
 	size_t send(const String &str);  //the main way to send a string 

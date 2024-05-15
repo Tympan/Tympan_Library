@@ -71,7 +71,7 @@ void setup() {
 
   //setup BLE
   //while (Serial1.available()) Serial1.read();
-  ble->begin();
+  ble->setupBLE(myTympan.getBTFirmwareRev());
   while ((myTympan.BT_Serial)->available()) (myTympan.BT_Serial)->read(); //clear the incoming Serial1 (BT) buffer
 
   Serial.println("Setup complete.");

@@ -14,8 +14,10 @@ public:
 	BLE_BC127(HardwareSerial *sp) : BC127(sp) {}
 	BLE_BC127(TympanBase *tympan) : BC127(tympan->BT_Serial) { setPins(tympan->getPin_BT_PIO0(),tympan->getPin_BT_RST()); };
   virtual int begin(void) { return begin(true); }
-	virtual int begin(int doFactoryReset); 
-	virtual void setupBLE(int BT_firmware = 7, bool printDebug = true);            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+	virtual int begin(int doFactoryReset);
+	virtual void setupBLE() { setupBLE(7); } //default to firmware 7
+	virtual void setupBLE(int BT_firmware) { setupBLE(BT_firmware, true); }           //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+  virtual void setupBLE(int BT_firmware, bool printDebug) { setupBLE(BT_firmware, printDebug, true); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
   void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
 	void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset);  //to be called from the Arduino sketch's setup() routine.  Must define all params
 	size_t sendByte(char c);

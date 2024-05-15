@@ -206,7 +206,7 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 					enableStereoExtMicBias = 36; //This variable holds the pin # that turns on the mic bias for 2nd channel on the stereo pink jack (WEA 10/24/2020)
 					BT_serial_speed = 115200;
 					Rev_Test = 22;  //same as RevE...we probably should have changed this
-					assumed_BT_firmware = NOT_A_FEATURE;
+					assumed_BT_firmware = 10;  //arbitrary choice that is bigger than the BC127 firmware will ever be
 					break;					
 			}
 		}

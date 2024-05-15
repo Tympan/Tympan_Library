@@ -10,7 +10,8 @@ class BLE
 public:
 	virtual int begin() = 0; 
 	//virtual int begin(int doFactoryReset) = 0; 
-	virtual void setupBLE(int, bool) = 0;            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+	virtual void setupBLE(int) = 0;            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+  virtual void setupBLE(int, bool) = 0;            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
   virtual size_t sendMessage(const String &s) = 0;
 	//virtual size_t recvMessage(String *s) = 0;
   //virtual size_t recvBLE(String *s, bool printResponse = false) = 0;
