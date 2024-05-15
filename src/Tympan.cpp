@@ -1,5 +1,9 @@
 
 #include "Tympan.h"
+#include "ble/BLE.h"
+#include "ble/BLE_BC127.h"
+#include "ble/BLE_nRF52.h"
+
 
 const int TympanBase::BT_uint8_buff_len;
 
@@ -655,4 +659,35 @@ void TympanBase::shutdownBT(void) {
 			delay(400);
 		}
 	}
+}
+
+//return the BLE class appropriate for this Tympan Revision
+BLE* TympanBase::getBLE(void) { 
+	return getBLE_UI();
+}
+
+BLE_UI* TympanBase::getBLE_UI(void) { 
+	if (pins.tympanRev < TympanRev::F) { 
+		return getBLE_BC127_UI(); 
+	}
+	return getBLE_nRF52_UI();
+}
+
+//get (and instantiate, if not already created) the requested BLE class
+BLE_BC127* TympanBase::getBLE_BC127(void) { 
+	return getBLE_BC127_UI(); 
+}
+
+BLE_BC127_UI* TympanBase::getBLE_BC127_UI(void) { 
+	if (ble_BC127_UI == NULL) ble_BC127_UI = new BLE_BC127_UI(this);
+	return ble_BC127_UI;
+}
+
+BLE_nRF52* TympanBase::getBLE_nRF52(void) { 
+	return getBLE_nRF52_UI();
+}
+
+BLE_nRF52_UI* TympanBase::getBLE_nRF52_UI(void) { 
+	if (ble_nRF52_UI == NULL) ble_nRF52_UI = new BLE_nRF52_UI(this); 
+	return ble_nRF52_UI; 
 }

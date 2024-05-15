@@ -34,6 +34,18 @@ enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1, F };
 #include "AudioStream_F32.h"
 #include "AudioSettings_F32.h"
 
+//#include "ble/BLE.h"
+//#include "ble/BLE_BC127.h"
+//#include "ble/BLE_nRF52.h"
+// Forward declare these classes
+class BLE;
+class BLE_UI;
+class BLE_BC127;
+class BLE_BC127_UI;
+class BLE_nRF52;
+class BLE_nRF52_UI;
+
+
 #ifndef NOT_A_FEATURE
 #define NOT_A_FEATURE (-9999)
 #endif
@@ -240,7 +252,8 @@ class TympanPins { //Teensy 3.6 Pin Numbering
 extern "C" char* sbrk(int incr);
 //End of code specific to Teensy 3.x
 
-class TympanBase : public AudioControlAIC3206, public Print
+
+class TympanBase : public AudioControlAIC3206, virtual public Print
 {
 	public:
 		TympanBase(void) : AudioControlAIC3206() {}
@@ -400,6 +413,16 @@ class TympanBase : public AudioControlAIC3206, public Print
 				return &top - reinterpret_cast<char*>(sbrk(0));
 			#endif
 		}
+		
+		//return the BLE class appropriate for this Tympan revision (instantiating the BLE, if needed)
+		BLE* getBLE(void);
+		BLE_UI* getBLE_UI(void);
+		BLE_BC127* getBLE_BC127(void);
+		BLE_BC127_UI* getBLE_BC127_UI(void);
+		BLE_nRF52* getBLE_nRF52(void);
+		BLE_nRF52_UI* getBLE_nRF52_UI(void);
+		
+			
 		void printCPUandMemoryMessage(void) {
 		  print("CPU Cur/Pk: ");
 		  print(audio_settings.processorUsage(), 1);
@@ -436,6 +459,8 @@ class TympanBase : public AudioControlAIC3206, public Print
 		virtual size_t write_BC127_V7_command_mode(const uint8_t *buffer, size_t size);
 		virtual void read_BC127_V7_command_mode(void);
 		static int interpret2DigitHexAscii(char *str);
+		BLE_BC127_UI *ble_BC127_UI = NULL;
+		BLE_nRF52_UI *ble_nRF52_UI = NULL;
 
 }; //close the class TympanBase
 
