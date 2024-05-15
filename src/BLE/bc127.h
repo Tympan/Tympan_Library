@@ -17,7 +17,7 @@
 
 class BC127
 {
-public:
+	public:
     // data type for function results
     enum opResult
     {
@@ -31,16 +31,17 @@ public:
         _cmdResponse = String("");
     };
 
-    int available();                                 // returns number of bytes available on internal stream
-    int read();                                      // read a byte from internal stream
-    size_t print(char c);                            // print a byte to internal stream
+    virtual int available(void);                                 // returns number of bytes available on internal stream
+    virtual int read(void);                                      // read a byte from internal stream
+		virtual int peek(void);
+    virtual size_t print(char c);                            // print a byte to internal stream
     String readString(size_t max = 120);             // read a string from internal stream
     size_t printString(const String &s);             // print a string to internal stream
     void setTimeout(unsigned long timeout);          // set read timeout
     opResult advertise(bool mode = true);            // starts | stops BLE advertising
     opResult close(int linkid = -1);                 // closes Bluetooth connection
     opResult discoverable(bool mode = true);         // puts device in discoverable mode
-	opResult discoverableConnectableV7(bool mode = true);  //sets BT Classic discoverable and connectable...V7 firmware
+		opResult discoverableConnectableV7(bool mode = true);  //sets BT Classic discoverable and connectable...V7 firmware
     opResult enterDataMode();                        // enters Data mode, does not work in BLE
     opResult exitDataMode(int guardDelay);           // exits Data mode
     opResult getConfig(String config = "");          // returns all or specific config options
@@ -56,41 +57,44 @@ public:
     opResult stdCmd(String cmd);                     // executes a standard command option
     opResult setConfig(String config, String param); // sets a configuration register
     opResult version(bool printResponse = false);    // returns the version info in _cmdResponse
+		virtual int version(String &reply);
     opResult writeConfig();                          // writes the current config to non-volatile memory
-	int set_BC127_firmware_ver(int val);             // user sets whether firmware is version 5, 6, or 7
-	int get_BC127_firmware_ver(void)    { return BC127_firmware_ver; }
-	bool isConnected(bool printResponse);                 // returns true if the BT is connected
+		int set_BC127_firmware_ver(int val);             // user sets whether firmware is version 5, 6, or 7
+		int get_BC127_firmware_ver(void)    { return BC127_firmware_ver; }
+		virtual int isConnected(bool printResponse);                 // returns true if the BT is connected
+		virtual int isConnected(void) { return isConnected(false); } 
+		virtual void setPins(int pinPIO0, int pinRST) { pin_PIO0 = pinPIO0; pin_RST = pinRST; }
 
-	void setPins(int pinPIO0, int pinRST) { pin_PIO0 = pinPIO0; pin_RST = pinRST; }
+		int factoryResetViaPins(void) { return factoryResetViaPins(pin_PIO0, pin_RST) ; }
+		static int factoryResetViaPins(int pinPIO0, int pinRST);
+		
+		virtual int getBleName(String &reply) { reply.remove(0,reply.length()); reply += String("(Not Implemented)"); return 0; }
 
-	int factoryResetViaPins(void) { return factoryResetViaPins(pin_PIO0, pin_RST) ; }
-	static int factoryResetViaPins(int pinPIO0, int pinRST);
-
-protected:
+	protected:
     // end-of-line delimiter
     const String EOC = String('\r');
     // end-of-command delimiter
-	String EOL = String('\r');  //this is changed by set_BC127_firmware_ver()
+		String EOL = String('\r');  //this is changed by set_BC127_firmware_ver()
 
-    HardwareSerial *_serialPort;    // port to talk on
+    HardwareSerial *_serialPort = &Serial1;    // port to talk on
     String _cmdResponse;    // response from commands
-    unsigned long _timeout; // timeout for command wait
+		unsigned long _timeout; // timeout for command wait
 
-	int BC127_firmware_ver = 7;  //can be 5, 6, 7
-	int BLE_id_num=-1; //can be 14, 24, 34? 
-	
-	//To do a hardware reset of the module, we need to know the pin numbers from the Tympan/Teensy that go to
-	//certain pins on the BC127.  You really should provide those pins through the setPins() method.  But, to avoid
-	//catastrophe, I also do the hack below to try to use the correct values.  This is cheating.
-	#ifdef KINETISK //this is set by the Arduino IDE when you choose Teensy 3.6...ie Tympan RevD
-		int pin_PIO0 = 56;   //set to -1 to defeat unless set manually. //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
-		int pin_RST = 34;    //set to -1 to defeat unless set manually. //RevD = 34, RevE = 9   // Pin # for connection to BC127 RST pin
-	#else //otherwise, assume RevE
-		int pin_PIO0 = 5;   //set to -1 to defeat unless set manually. //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
-		int pin_RST = 9;    //set to -1 to defeat unless set manually. //RevD = 34, RevE = 9   // Pin # for connection to BC127 RST pin
-	#endif
-	
-private:
+		int BC127_firmware_ver = 7;  //can be 5, 6, 7
+		int BLE_id_num=-1; //can be 14, 24, 34? 
+		
+		//To do a hardware reset of the module, we need to know the pin numbers from the Tympan/Teensy that go to
+		//certain pins on the BC127.  You really should provide those pins through the setPins() method.  But, to avoid
+		//catastrophe, I also do the hack below to try to use the correct values.  This is cheating.
+		#ifdef KINETISK //this is set by the Arduino IDE when you choose Teensy 3.6...ie Tympan RevD
+			int pin_PIO0 = 56;   //set to -1 to defeat unless set manually. //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
+			int pin_RST = 34;    //set to -1 to defeat unless set manually. //RevD = 34, RevE = 9   // Pin # for connection to BC127 RST pin
+		#else //otherwise, assume RevE
+			int pin_PIO0 = 5;   //set to -1 to defeat unless set manually. //RevD = 56, RevE = 5   // Pin # for connection to BC127 PIO0 pin
+			int pin_RST = 9;    //set to -1 to defeat unless set manually. //RevD = 34, RevE = 9   // Pin # for connection to BC127 RST pin
+		#endif
+		
+	private:
     opResult knownStart();                   // baseline starting function
     opResult waitResponse(int timeout = -1); // wait for a full response
 };

@@ -3,18 +3,10 @@
 #include <Arduino.h>
 
 // Wraps internal stream port
-// Returns: int, number of available bytes
-int BC127::available()
-{
-    return _serialPort->available();
-}
+int BC127::available(void) { return _serialPort->available(); } // Returns: int, number of available bytes
+int BC127::read(void) { return _serialPort->read(); } // Returns int, first byte read or -1 if no data available
+int BC127::peek(void) { return _serialPort->peek(); } // Returns int without popping it off the stack, first byte read or -1 if no data available
 
-// Wraps internal stream read
-// Returns int, first byte read or -1 if no data available
-int BC127::read()
-{
-    return _serialPort->read();
-}
 
 // Wraps internal stream readString
 // Returns: String, the string that was read
@@ -226,6 +218,17 @@ BC127::opResult BC127::version(bool printResponse)
 	return ret_val;
 }
 
+int BC127::version(String &reply) {
+	reply.remove(0,reply.length()); //make sure reply is empy
+  BC127::opResult ret_val = stdCmd("VERSION");
+	if (ret_val == BC127::SUCCESS) {
+		reply += getCmdResponse();
+	} else {
+		reply += "FAIL";
+	}
+	return (int)ret_val;
+}
+
 // Retrieves the embedded help menu
 // Returns: SUCCESS | MODULE_ERROR | TIMEOUT_ERROR
 //          _cmdResponse will contain the data on SUCCESS
@@ -405,22 +408,22 @@ int BC127::factoryResetViaPins(int pinPIO0, int pinRST) {
 	return 0;
 }
 
-bool BC127::isConnected(bool printResponse)
+int BC127::isConnected(bool printResponse)
 {
 
-    //Ask the BC127 its advertising status.
-    //in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
-    //in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
-    //   followed by LINK 14 CONNECTED or something like that if the BLE is actually connected to something
-    if (status() > 0) //in bc127.cpp.  answer stored in cmdResponse.
-    {
+	//Ask the BC127 its advertising status.
+	//in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
+	//in V7: the reply will be something like: STATE CONNECTED[0] CONNECTABLE[OFF] DISCOVERABLE[OFF] BLE[ADVERTISING]
+	//   followed by LINK 14 CONNECTED or something like that if the BLE is actually connected to something
+	if (status() > 0) //in bc127.cpp.  answer stored in cmdResponse.
+	{
 		String s = getCmdResponse();  //gets the text reply from the BC127 due to the status() call above
 		if (printResponse) {
 			Serial.print("BC127: isConnected()   response: ");
 			Serial.print(s);
 			if (BC127_firmware_ver > 6) Serial.println();
 		}
-        
+				
 		//if (s.indexOf("LINK 14 CONNECTED") == -1) { //if it returns -1, then it wasn't found.  This version is prob better (more specific for BLE) but only would work for V6 and above
 		int ind = s.indexOf("CONNECTED");
 		if (ind == -1) { //if it returns -1, then it wasn't found.
@@ -473,8 +476,8 @@ bool BC127::isConnected(bool printResponse)
 				}
 			}
 		}
-    }
+	}
 
 	//if we got this far, let's assume that we are not connected
-    return false;
+	return false;
 }

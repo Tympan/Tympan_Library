@@ -1,10 +1,10 @@
-#include "ble.h"
+#include "ble/ble_BC127.h"
 
 const int factory_baudrate = 9600;   //here is one possible starting baudrate for the BLE module
 const int faster_baudrate = 115200; //here is the other possible starting baudrate for the BLE module
 
 
-int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
+int BLE_BC127::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 {
 	int ret_val = 0;
 	
@@ -14,7 +14,7 @@ int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 
 	//do a factory reset
 	if (doFactoryReset == 1) {
-		Serial.println("BLE: begin: doing factory reset via hardware pins.");
+		Serial.println("BLE_BC127: begin: doing factory reset via hardware pins.");
 		hardwareFactoryReset(); //this also automatically changes the serial baudrate of the Tympan itself
 
 	} else {
@@ -24,30 +24,30 @@ int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 	
 	//switch BC127 to listen to the serial link from the Tympan to a faster baud rate
 	if (useFasterBaudRateUponBegin) {
-		Serial.println("BLE: begin: setting BC127 baudrate to " + String(faster_baudrate) + ".");
+		Serial.println("BLE_BC127: begin: setting BC127 baudrate to " + String(faster_baudrate) + ".");
 		switchToNewBaudRate(faster_baudrate);
 	} else {
-		Serial.println("BLE: begin: keeping baudrate at default.");
+		Serial.println("BLE_BC127: begin: keeping baudrate at default.");
 	}
 		
 	//enable BT_Classic connectable and discoverable, always
 	if (BC127_firmware_ver >= 7) {
 		ret_val = setConfig("BT_STATE_CONFIG", "1 1");
 		if (ret_val != BC127::SUCCESS) {
-			Serial.println(F("BLE: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
+			Serial.println(F("BLE_BC127: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
 			
 			//try a different baud rate
-			Serial.println("BLE: begin: switching baudrate to BT module to " + String(faster_baudrate));
+			Serial.println("BLE_BC127: begin: switching baudrate to BT module to " + String(faster_baudrate));
 			setSerialBaudRate(faster_baudrate);
 			delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
 			
 			//try BT_Classic again
 			ret_val = setConfig("BT_STATE_CONFIG", "1 1");
 			if (ret_val != BC127::SUCCESS) {
-				Serial.println(F("BLE: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
+				Serial.println(F("BLE_BC127: begin: set BT_STATE_CONFIG returned error ") + String(ret_val));
 				
 				//switch back to the factory baud rate
-				Serial.println("BLE: begin: switching baudrate to BT module back to " + String(factory_baudrate));
+				Serial.println("BLE_BC127: begin: switching baudrate to BT module back to " + String(factory_baudrate));
 				setSerialBaudRate(factory_baudrate);
 				delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
 			}
@@ -57,19 +57,19 @@ int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 	//write the new configuration so that it exists on startup (such as an unexpected restart of the module)
     ret_val = writeConfig();
 	if (ret_val != BC127::SUCCESS) {
-		Serial.println(F("BLE: begin: writeConfig() returned error ") + String(ret_val));
+		Serial.println(F("BLE_BC127: begin: writeConfig() returned error ") + String(ret_val));
 		
 		//try a different baud rate
-		Serial.println("BLE: begin: switching baudrate to BT module to " + String(faster_baudrate));
+		Serial.println("BLE_BC127: begin: switching baudrate to BT module to " + String(faster_baudrate));
 		setSerialBaudRate(faster_baudrate);
 		delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
 		
 	    ret_val = writeConfig();
 		if (ret_val != BC127::SUCCESS) {
-			Serial.println(F("BLE: begin: writeConfig() returned error ") + String(ret_val));
+			Serial.println(F("BLE_BC127: begin: writeConfig() returned error ") + String(ret_val));
 		
 			//switch back to the factory baud rate
-			Serial.println("BLE: begin: switching baudrate to BT module back to " + String(factory_baudrate));
+			Serial.println("BLE_BC127: begin: switching baudrate to BT module back to " + String(factory_baudrate));
 			setSerialBaudRate(factory_baudrate);
 			delay(100); _serialPort->print(EOC); delay(100); echoBTreply();
 		}
@@ -78,20 +78,20 @@ int BLE::begin(int doFactoryReset)  //0 is no, 1 = hardware reset
 	
 	//reset
     ret_val = reset();
-	if (ret_val != BC127::SUCCESS)	Serial.println(F("BLE: begin: reset() returned error ") + String(ret_val));
+	if (ret_val != BC127::SUCCESS)	Serial.println(F("BLE_BC127: begin: reset() returned error ") + String(ret_val));
 
 	return ret_val;
 }
 
-void BLE::setSerialBaudRate(int new_baud) {
+void BLE_BC127::setSerialBaudRate(int new_baud) {
 	_serialPort->flush();
 	_serialPort->end();
 	_serialPort->begin(new_baud);
 	delay(100);
 }
 
-int BLE::hardwareFactoryReset(bool printDebug) {
-	if (printDebug) Serial.println("BLE: hardwareFactoryReset: starting hardware-induced reset...");
+int BLE_BC127::hardwareFactoryReset(bool printDebug) {
+	if (printDebug) Serial.println("BLE_BC127: hardwareFactoryReset: starting hardware-induced reset...");
 	
 	//before the hardware reset, change the serial baudrate to the expected new value
 	setSerialBaudRate(factory_baudrate);
@@ -99,7 +99,7 @@ int BLE::hardwareFactoryReset(bool printDebug) {
 	//do the hardware reset
 	int ret_val = factoryResetViaPins();
 	if (ret_val < 0) { //factoryResetViaPins is in BC127
-		Serial.println("BLE: hardwareFactoryReset: *** ERROR ***: could not do factory reset.");
+		Serial.println("BLE_BC127: hardwareFactoryReset: *** ERROR ***: could not do factory reset.");
 		return -1;  //error!
 	}
 	
@@ -109,14 +109,14 @@ int BLE::hardwareFactoryReset(bool printDebug) {
 
 	//check communication ability
 	if (printDebug) {
-		Serial.println("BLE: hardwareFactoryReset: asking BC127 Status: ");
+		Serial.println("BLE_BC127: hardwareFactoryReset: asking BC127 Status: ");
 		status(true); //print version info again.
 	}
 	
 	return 0;  //OK!
 }
 
-void BLE::echoBTreply(const bool printDebug) {
+void BLE_BC127::echoBTreply(const bool printDebug) {
 	bool if_any_received = false;
 	while (_serialPort->available()) { 
 		if_any_received = true;
@@ -127,7 +127,7 @@ void BLE::echoBTreply(const bool printDebug) {
 	if (printDebug && if_any_received) { if (BC127_firmware_ver >= 7) Serial.println(); }
 }
 
-void BLE::switchToNewBaudRate(int new_baudrate) {
+void BLE_BC127::switchToNewBaudRate(int new_baudrate) {
 	const bool printDebug = false;
 
 	//Send the command to increase the baud rate.  Takes effect immediately
@@ -137,54 +137,54 @@ void BLE::switchToNewBaudRate(int new_baudrate) {
 	//to match.  So, we need to manually send the command, then swap the Tympan's baud rate, then listen
 	//new replies.
 	if (BC127_firmware_ver >= 7) {
-		if (printDebug) Serial.println("BLE: switchToNewBaudRate: V7: changing BC127 to " + String(new_baudrate));
+		if (printDebug) Serial.println("BLE_BC127: switchToNewBaudRate: V7: changing BC127 to " + String(new_baudrate));
 		_serialPort->print("SET UART_CONFIG=" + String(new_baudrate) + " OFF 0" + EOC);
 	} else {
-		if (printDebug) Serial.println("BLE: switchToNewBaudRate: V5: changing BC127 to " + String(new_baudrate));
+		if (printDebug) Serial.println("BLE_BC127: switchToNewBaudRate: V5: changing BC127 to " + String(new_baudrate));
 		_serialPort->print("SET BAUD=" + String(new_baudrate) + EOC); 
 	}
 	
 	//Switch the serial link to the BC127 to the faster baud rate
 	setSerialBaudRate(new_baudrate);
-	if (printDebug) Serial.println("BLE: switchToNewBaudRate: setting Serial link to BC127 to " + String(new_baudrate));
+	if (printDebug) Serial.println("BLE_BC127: switchToNewBaudRate: setting Serial link to BC127 to " + String(new_baudrate));
 	
 	
 	//give time for any replies from the module
 	delay(500);   //500 seems to work on V5
-	if (printDebug) Serial.println("BLE: switchToNewBaudRate: Reply from BC127 (if any)...");
+	if (printDebug) Serial.println("BLE_BC127: switchToNewBaudRate: Reply from BC127 (if any)...");
 	echoBTreply(printDebug);
 	
 	//clear the serial link by sending a CR...will return an error
-	if (printDebug) Serial.println("BLE: switchToNewBaudRate: Confirming asking status");	
+	if (printDebug) Serial.println("BLE_BC127: switchToNewBaudRate: Confirming asking status");	
 	_serialPort->print("STATUS" + EOC);  
 	delay(100);	
 	echoBTreply(printDebug); //should cause response of "ERROR"
 }
 
-void BLE::setupBLE(int BT_firmware, bool printDebug) 
+void BLE_BC127::setupBLE(int BT_firmware, bool printDebug) 
 {  
 	int doFactoryReset = 1;
 	setupBLE(BT_firmware, printDebug, doFactoryReset);
 }
 
-void BLE::setupBLE_noFactoryReset(int BT_firmware, bool printDebug)
+void BLE_BC127::setupBLE_noFactoryReset(int BT_firmware, bool printDebug)
 {
 	int doFactoryReset = 0;
 	setupBLE(BT_firmware, printDebug, doFactoryReset);	
 }
 
-void BLE::setupBLE(int BT_firmware, bool printDebug, int doFactoryReset)
+void BLE_BC127::setupBLE(int BT_firmware, bool printDebug, int doFactoryReset)
 {
     int ret_val;
     ret_val = set_BC127_firmware_ver(BT_firmware);
     if (ret_val != BT_firmware) {
-        Serial.println("BLE: setupBLE: *** WARNING ***: given BT_firmware (" + String(BT_firmware) + ") not allowed.");
+        Serial.println("BLE_BC127: setupBLE_BC127: *** WARNING ***: given BT_firmware (" + String(BT_firmware) + ") not allowed.");
         Serial.println("   : assuming firmware " + String(ret_val) + " instead. Continuing...");
     }
 	
     ret_val = begin(doFactoryReset); //via BC127.h, success is a value of 1
     if (ret_val != 1) { 
-        Serial.println("BLE: setupBLE: ble did not begin correctly.  error = " + String(ret_val));
+        Serial.println("BLE_BC127: setupBLE_BC127: ble did not begin correctly.  error = " + String(ret_val));
         Serial.println("    : -1 = TIMEOUT ERROR");
         Serial.println("    :  0 = GENERIC MODULE ERROR");
     }
@@ -193,32 +193,34 @@ void BLE::setupBLE(int BT_firmware, bool printDebug, int doFactoryReset)
 	advertise(true);
 
 	//print version information...this is for debugging only
-	if (printDebug) Serial.println("BLE: setupBLE: assuming BC127 firmware: " + String(BC127_firmware_ver) + ", Actual is:");
-	version(printDebug);
+	if (printDebug) {
+		Serial.println("BLE_BC127: setupBLE_BC127: assuming BC127 firmware: " + String(BC127_firmware_ver) + ", Actual is:");
+		BC127::version(printDebug);
+	}
 }
 
 
-size_t BLE::sendByte(char c)
+size_t BLE_BC127::sendByte(char c)
 {
-    //Serial.print("BLE: sendBytle: "); Serial.println(c);
+    //Serial.print("BLE_BC127: sendBytle: "); Serial.println(c);
     String s = String("").concat(c);
     if (send(s)) return 1;
 
     return 0;
 }
 
-size_t BLE::sendString(const String &s, bool print_debug)
+size_t BLE_BC127::sendString(const String &s, bool print_debug)
 {
     int ret_code = send(s);
 	if (ret_code == SUCCESS) {
 		return s.length();  //if send() returns non-zero, send the length of the transmission
 	} else {
-		if (print_debug) Serial.println("BLE: sendString: ERROR sending!  code = " + String(ret_code) + ", string = " + s);
+		if (print_debug) Serial.println("BLE_BC127: sendString: ERROR sending!  code = " + String(ret_code) + ", string = " + s);
 	}
     return 0;   //otherwise return zero (as a form of error?)
 }
 
-size_t BLE::sendMessage(const String &orig_s)
+size_t BLE_BC127::sendMessage(const String &orig_s)
 {
     String s = orig_s;
     const int payloadLen = 19;
@@ -230,7 +232,7 @@ size_t BLE::sendMessage(const String &orig_s)
 
     // message length
     if (s.length() >= (0x4000 - 1))  { //we might have to add a byte later, so call subtract one from the actual limit
-        Serial.println("BLE: Message is too long!!! Aborting.");
+        Serial.println("BLE_BC127: Message is too long!!! Aborting.");
         return 0;
     }
     int lenBytes = (s.length() << 1) | 0x8001; //the 0x8001 is avoid the first message having the 2nd-to-last byte being NULL
@@ -240,7 +242,7 @@ size_t BLE::sendMessage(const String &orig_s)
     //check to ensure that there isn't a NULL or a CR in this header
     if ((header[6] == '\r') || (header[6] == '\0')) {
         //add a character to the end to avoid an unallowed hex code code in the header
-        //Serial.println("BLE: sendMessage: ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
+        //Serial.println("BLE_BC127: sendMessage: ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
         s.concat(' '); //append a space character
 
         //regenerate the size-related information for the header
@@ -249,8 +251,8 @@ size_t BLE::sendMessage(const String &orig_s)
         header[6] = ((char)lowByte(lenBytes));
     }
 
-    //Serial.println("BLE: sendMessage: Header (" + String(header.length()) + " bytes): '" + header + "'");
-    //Serial.println("BLE: Message: '" + s + "'");
+    //Serial.println("BLE_BC127: sendMessage: Header (" + String(header.length()) + " bytes): '" + header + "'");
+    //Serial.println("BLE_BC127: Message: '" + s + "'");
 
     //send the packet with the header information
 	//Question: is "buf" actually used?  It doesn't look like it.  It looks like only "header" is used.
@@ -265,7 +267,7 @@ size_t BLE::sendMessage(const String &orig_s)
 		//valid BLE_id_num.  So, only print an error message for V7 if there is indeed
 		//a valid BLE_id_num.
 		if ((BC127_firmware_ver > 6) && (BLE_id_num > 0)) {
-			Serial.println("BLE: sendMessage: Error in sending message: " + String(header));	
+			Serial.println("BLE_BC127: sendMessage: Error in sending message: " + String(header));	
 		}	
 		//if we really do get an error, should we really try to transmit all the packets below?  Seems like we shouldn't.
 	}
@@ -280,26 +282,26 @@ size_t BLE::sendMessage(const String &orig_s)
         delay(4); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
     }
 
-    //Serial.print("BLE: sendMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);
+    //Serial.print("BLE_BC127: sendMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);
     if (s.length() == sentBytes)
         return sentBytes;
 
     return 0;
 }
 
-size_t BLE::recvMessage(String *s)
+size_t BLE_BC127::recvMessage(String *s)
 {
     int msgSize = 0;
     int bytesRecvd = 0;
 
-    while (available() > 0) {
+    while (_serialPort->available() > 0) {
 
         if (recvBLE(s) > 0) {
 
             if (s->startsWith("\xab\xad\xc0\xde\xff")) {
 
                 msgSize = word(s->charAt(5), s->charAt(6));
-                Serial.println("BLE: recvMessage: Length of message: '" + String(msgSize) + "'");
+                Serial.println("BLE_BC127: recvMessage: Length of message: '" + String(msgSize) + "'");
 
 				//is "buf" actually used?  It doesn't look like it.  It looks like only "s" is used.
                 char buf[21];  //was 16, which was too small for the 21 bytes that seem to be provided below
@@ -319,7 +321,7 @@ size_t BLE::recvMessage(String *s)
     return 0;
 }
 
-/* size_t BLE::maintainBLE(void) {
+/* size_t BLE_BC127::maintainBLE(void) {
 	if isConnected() {
 		//do nothing
 	} else {
@@ -329,7 +331,7 @@ size_t BLE::recvMessage(String *s)
 	}
 } */
 
-size_t BLE::recvBLE(String *s, bool printResponse)
+size_t BLE_BC127::recvBLE(String *s, bool printResponse)
 {
     String tmp = String("");
 
@@ -339,7 +341,7 @@ size_t BLE::recvBLE(String *s, bool printResponse)
     // as long as we have time
     while ((startTime + _timeout) > millis())  {
         if (recv(&tmp) > 0)    {
-			if (printResponse) Serial.println("BLE: recvBLE: received = " + tmp);
+			if (printResponse) Serial.println("BLE_BC127: recvBLE: received = " + tmp);
 			
 			if (BC127_firmware_ver < 7) {
 				if (tmp.startsWith("RECV BLE ")) //for V5 firmware for BC127
@@ -353,7 +355,7 @@ size_t BLE::recvBLE(String *s, bool printResponse)
 				{
 					int new_link_id = (tmp.substring(5,7)).toInt();
 					if (new_link_id != BLE_id_num) {
-						Serial.println(F("BLE: recvBLE: received 'RECV ") + String(new_link_id) + F("' so we now assume our BLE Link is ") + String(new_link_id));
+						Serial.println(F("BLE_BC127: recvBLE: received 'RECV ") + String(new_link_id) + F("' so we now assume our BLE Link is ") + String(new_link_id));
 						BLE_id_num = new_link_id;
 					}
 					
@@ -378,23 +380,23 @@ size_t BLE::recvBLE(String *s, bool printResponse)
 }
 
 //returns true if an open or closed message is found
-bool BLE::interpretAnyOpenOrClosedMsg(String tmp, bool printDebug) {
+bool BLE_BC127::interpretAnyOpenOrClosedMsg(String tmp, bool printDebug) {
 	bool ret_val = true;
 	
 	if (tmp.startsWith("OPEN_OK 14")) {
 		BLE_id_num = 14;
-		Serial.println(F("BLE: lookForOpenOrClosedMsg: received OPEN_OK for BLE Link ") + String(BLE_id_num));
+		Serial.println(F("BLE_BC127: lookForOpenOrClosedMsg: received OPEN_OK for BLE Link ") + String(BLE_id_num));
 		
 	} else if (tmp.startsWith("OPEN_OK 24")) {
 		BLE_id_num = 24;
-		Serial.println(F("BLE: lookForOpenOrClosedMsg: received OPEN_OK for BLE Link ") + String(BLE_id_num));
+		Serial.println(F("BLE_BC127: lookForOpenOrClosedMsg: received OPEN_OK for BLE Link ") + String(BLE_id_num));
 		
 	} else if (tmp.startsWith("OPEN_OK 34")) {
 		BLE_id_num = 34;
-		Serial.println(F("BLE: lookForOpenOrClosedMsg: received OPEN_OK for BLE Link ") + String(BLE_id_num));
+		Serial.println(F("BLE_BC127: lookForOpenOrClosedMsg: received OPEN_OK for BLE Link ") + String(BLE_id_num));
 		
 	} else if (tmp.startsWith("CLOSE_OK " + String(BLE_id_num))) {
-		Serial.println(F("BLE: lookForOpenOrClosedMsg: received CLOSE_OK for BLE Link ") + String(BLE_id_num));
+		Serial.println(F("BLE_BC127: lookForOpenOrClosedMsg: received CLOSE_OK for BLE Link ") + String(BLE_id_num));
 		BLE_id_num = -1;
 		
 	} else {
@@ -406,7 +408,7 @@ bool BLE::interpretAnyOpenOrClosedMsg(String tmp, bool printDebug) {
 }
 
 
-bool BLE::isAdvertising(bool printResponse)
+int BLE_BC127::isAdvertising(bool printResponse)
 {
     //Ask the BC127 its advertising status.
     //in V5: the reply will be something like: STATE CONNECTED or STATE ADVERTISING
@@ -419,29 +421,25 @@ bool BLE::isAdvertising(bool printResponse)
 
 
 		if (printResponse) {
-			Serial.print("BLE: isAdvertising() response: ");
+			Serial.print("BLE_BC127: isAdvertising() response: ");
 			Serial.print(s);
 			if (BC127_firmware_ver > 6) Serial.println();
 		}
         //return s.startsWith("STATE CONNECTED"); //original
 		if (s.indexOf("ADVERTISING") == -1) { //if it finds -1, then it wasn't found
-			//Serial.println("BLE: isAdvertising: not advertising.");
+			//Serial.println("BLE_BC127: isAdvertising: not advertising.");
 			return false;
 		} else {
 			
-			//Serial.println("BLE: isAdvertising: yes is advertising.");
+			//Serial.println("BLE_BC127: isAdvertising: yes is advertising.");
 			return true;
 		}
     }
 
     return false;
 }
-bool BLE::isConnected(bool printResponse)
-{
-	return BC127::isConnected(printResponse);
-}
 
-bool BLE::waitConnect(int time)
+bool BLE_BC127::waitConnect(int time)
 {
     // some output has multiple lines
     String line = String("");
@@ -479,16 +477,16 @@ bool BLE::waitConnect(int time)
     return false;
 }
 
-void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) {
+void BLE_BC127::updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) {
   static unsigned long lastUpdate_millis = 0;
 
 	if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
 
 	//has enough time passed to update everything?
 	if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
-		if (isConnected(printDebugMsgs) == false) { //the true tells it to print the full reply to the serial monitor
-			if (isAdvertising(printDebugMsgs) == false) {//the true tells it to print the full reply to the serial monitor
-				Serial.println("BLE: updateAvertising: activating BLE advertising");
+		if (BC127::isConnected(printDebugMsgs) == false) { //the true tells it to print the full reply to the serial monitor
+			if (BLE_BC127::isAdvertising(printDebugMsgs) == false) {//the true tells it to print the full reply to the serial monitor
+				Serial.println("BLE_BC127: updateAvertising: activating BLE advertising");
 				advertise(true);  //not connected, ensure that we are advertising
 			}
 		}
@@ -506,9 +504,9 @@ void BLE::updateAdvertising(unsigned long curTime_millis, unsigned long updatePe
 // 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void BLE_UI::printHelp(void) {
+void BLE_BC127_UI::printHelp(void) {
 	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
-	Serial.println(F(" BLE: Prefix = ") + prefix);
+	Serial.println(F(" BLE_BC127: Prefix = ") + prefix);
 	Serial.println(F("   s:   Print Bluetooth status"));
 	Serial.println(F("   v:   Print Bluetooth Firmware version info"));
 	Serial.println(F("   d/D: Activate/Deactivate BT Classic discoverable connectable"));
@@ -516,7 +514,7 @@ void BLE_UI::printHelp(void) {
 }
 
 
-bool BLE_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
+bool BLE_BC127_UI::processCharacterTriple(char mode_char, char chan_char, char data_char) {
 	//check the mode_char to see if it corresponds with this instance of this class.  If not, return with no action.
 	if (mode_char != ID_char) return false;  //ID_char is from SerialManager_UI.h
 	
@@ -524,20 +522,20 @@ bool BLE_UI::processCharacterTriple(char mode_char, char chan_char, char data_ch
 }
 
 //respond to serial commands
-bool BLE_UI::processSingleCharacter(char c) {
+bool BLE_BC127_UI::processSingleCharacter(char c) {
   
 	bool ret_val = true;
 	switch (c) {
 		case 'a':
-			Serial.println("BLE: activating BLE advertising...");
+			Serial.println("BLE_BC127: activating BLE advertising...");
 			advertise(true);
 			break;
 		case 'A':
-			Serial.println("BLE: de-activating BLE advertising...");
+			Serial.println("BLE_BC127: de-activating BLE advertising...");
 			advertise(false);
 			break;
 		case 'd':
-			Serial.println("BLE: activating BT Classic discoverable...");
+			Serial.println("BLE_BC127: activating BT Classic discoverable...");
 			if (get_BC127_firmware_ver() >= 7)  {
 				discoverableConnectableV7(true);
 			} else {
@@ -545,7 +543,7 @@ bool BLE_UI::processSingleCharacter(char c) {
 			}
 			break;
 		case 'D':
-			Serial.println("BLE: de-activating BT Classic discoverable...");
+			Serial.println("BLE_BC127: de-activating BT Classic discoverable...");
 			if (get_BC127_firmware_ver() >= 7)  {
 				discoverableConnectableV7(false);
 			} else {
@@ -553,12 +551,20 @@ bool BLE_UI::processSingleCharacter(char c) {
 			}
 			break;     
 		case 's':
-			Serial.println("BLE: printing Bluetooth status...");
+			Serial.println("BLE_BC127: printing Bluetooth status...");
 			status(true);
 			break;     
 		case 'v':
-			Serial.println("BLE: printing Bluetooth firmware version info...");
-			version(true);
+			Serial.println("BLE_BC127: printing Bluetooth firmware version info...");
+			{
+				String reply; 
+				int comm_success = BC127::version(reply);
+				if (comm_success == BC127::SUCCESS) {
+					Serial.println("BLE_BC127: version: " + reply);
+				} else {
+					Serial.println("BLE_BC127: version (failed): reply = " + reply);
+				}
+			}
 			break;
 		default:
 			ret_val = false;
