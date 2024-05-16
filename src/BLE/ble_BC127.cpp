@@ -326,7 +326,10 @@ size_t BLE_BC127::recvMessage(String *s)
 	}
 } */
 
-size_t BLE_BC127::recvBLE(String *s, bool printResponse)
+// Receive message over BLE, stripping out special messages created by
+// the BC127 module (status messages and whatnot) and only passing those
+// messages that were originally created by the sender
+size_t BLE::recvBLE(String *s, bool printResponse)
 {
     String tmp = String("");
 

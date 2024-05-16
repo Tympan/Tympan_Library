@@ -83,10 +83,12 @@ void setup() {
   gain2.setGain_dB(digital_gain_dB);       //set the digital gainof the Right-channel gain processor  
 
   //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
+  //while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
   ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
-
-  Serial.println("Setup complete.");
+  
+	//finish
+	Serial.println("Setup complete.");
+	printHelp();
 } //end setup()
 
 
@@ -109,16 +111,25 @@ void loop() {
 
 
 // ///////////////// Servicing routines
+void printHelp(void) {  //not required for the App. But, is helpful for debugging via USB Serial
+	Serial.println("BasicGain_wApp: Available Commands:");
+  Serial.println(" h  : Print this help");
+  Serial.println(" k/K: Incr/Decrease gain");
+	Serial.println(" J  : Print Tympan GUI for Tympan Remote App");
+	Serial.println();
+}
 
 //respond to serial commands
 void respondToByte(char c) {
-  Serial.print("Received character "); Serial.println(c);
-  
+  if ((c != ' ') && (c != '\n') && (c != '\r')) { Serial.print("Received character "); Serial.println(c);}
   switch (c) {
     case 'J': case 'j':           //The TympanRemote app sends a 'J' to the Tympan when it connects
       printTympanRemoteLayout();  //in resonse, the Tympan sends the definition of the GUI that we'd like
       break;
-    case 'k':
+    case 'h':
+			printHelp();  //not required for the App. But, is helpful for debugging via USB Serial
+			break;
+		case 'k':
       changeGain(3.0);
       printGainLevels();
       setButtonText("gainIndicator", String(digital_gain_dB));
