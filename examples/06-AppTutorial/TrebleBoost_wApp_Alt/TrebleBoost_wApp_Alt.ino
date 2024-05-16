@@ -2,7 +2,8 @@
 *   TrebleBoost_wApp_Alt
 *
 *   Created: Chip Audette, OpenAudio, August 2021
-*   Purpose: Process audio by applying a high-pass filter followed by gain.  Includes App interaction.
+*   Purpose: Process audio by applying a high-pass filter followed by gain.  
+*            Includes App interaction.
 *
 *   TympanRemote App: https://play.google.com/store/apps/details?id=com.creare.tympanRemote
 *
@@ -40,7 +41,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E,audio_settings);     //do TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
 AudioFilterBiquad_F32     hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
@@ -59,7 +60,7 @@ AudioConnection_F32       patchCord6(gain2, 0, i2s_out, 1);     //connect the Ri
 // Create classes for controlling the system
 #include      "SerialManager.h"
 #include      "State.h"                            
-BLE           ble(&myTympan);                       //create bluetooth BLE
+BLE&          ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
 SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
@@ -86,8 +87,7 @@ void setup() {
   myTympan.setInputGain_dB(myState.input_gain_dB);     // set input volume, 0-47.5dB in 0.5dB setps
 
   //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
+  myTympan.setupBLE();  //this uses the default firmware assumption. You can override!
 
   //Set the cutoff frequency for the highpassfilter
   setHighpassFilters_Hz(myState.cutoff_Hz);   //function defined near the bottom of this file

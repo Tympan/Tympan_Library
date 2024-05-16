@@ -2,7 +2,8 @@
 *   TrebleBoost_wApp
 *
 *   Created: Chip Audette, OpenAudio, August 2021
-*   Purpose: Process audio by applying a high-pass filter followed by gain.  Includes App interaction.
+*   Purpose: Process audio by applying a high-pass filter followed by gain.  
+*            Includes App interaction.
 *
 *   TympanRemote App: https://play.google.com/store/apps/details?id=com.creare.tympanRemote
 *
@@ -35,7 +36,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E,audio_settings); //do TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //IIR filter doing a highpass filter.  Left.
 AudioFilterBiquad_F32     hp_filt2(audio_settings);   //IIR filter doing a highpass filter.  Right.
@@ -55,7 +56,7 @@ AudioConnection_F32       patchCord6(gain2, 0, i2s_out, 1);     //connect the Ri
 TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
 
 //Create BLE
-BLE ble(&myTympan);
+BLE& ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
 
 // define the setup() function, the function that is called once when the device is booting
 const float input_gain_dB = 10.0f;    //gain on the microphone
@@ -85,10 +86,9 @@ void setup() {
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
 
   //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
-
-  //Set the cutoff frequency for the highpassfilter
+	myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
+  
+	//Set the cutoff frequency for the highpassfilter
   cutoff_Hz = 1000.f;  
   setHighpassFilters_Hz(cutoff_Hz);   //function defined near the bottom of this file
   printHighpassCutoff();

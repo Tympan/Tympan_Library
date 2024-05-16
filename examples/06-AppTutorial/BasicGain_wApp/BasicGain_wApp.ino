@@ -1,7 +1,7 @@
 /*
 *   BasicGain_wApp
 *
-*   Created: Chip Audette, June 2020 (updated June 2021 for BLE)
+*   Created: Chip Audette, June 2020 (updated June 2021 for BLE, May 2024 for RevF)
 *   Purpose: Process audio using Tympan by applying gain.
 *      Also, illustrate how to change Tympan setting via the TympanRemote App.
 *
@@ -37,7 +37,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E, audio_settings);     //do TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioInputI2S_F32         i2s_in;                     //Digital audio in *from* the Teensy Audio Board ADC.
 AudioEffectGain_F32       gain1;                      //Applies digital gain to audio data.  Left.
 AudioEffectGain_F32       gain2;                      //Applies digital gain to audio data.  Right.
@@ -53,7 +53,7 @@ AudioConnection_F32       patchCord12(gain2, 0, i2s_out, 1);  //connect the Righ
 TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
 
 //Create BLE
-BLE ble(&myTympan);
+BLE& ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
 
 
 // define the setup() function, the function that is called once when the device is booting
@@ -83,9 +83,8 @@ void setup() {
   gain2.setGain_dB(digital_gain_dB);       //set the digital gainof the Right-channel gain processor  
 
   //setup BLE
-  //while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
-  
+	myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override! 
+	
 	//finish
 	Serial.println("Setup complete.");
 	printHelp();
