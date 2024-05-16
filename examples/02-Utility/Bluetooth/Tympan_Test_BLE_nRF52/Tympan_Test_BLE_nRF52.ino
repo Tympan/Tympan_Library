@@ -1,5 +1,5 @@
 /*
-*   Tympan_Test_nRF52
+*   Tympan_Test_BLE_nRF52
 *
 *   Created: Chip Audette, OpenAudio, April 2024
 *            Updated May 2024 for updated BLE_nRF52 in Tympan_Library
@@ -21,7 +21,7 @@
 
 //set the sample rate and block size
 const float sample_rate_Hz = 44100.0f ; //24000 or 44100 (or 44117, or other frequencies in the table in AudioOutputI2S_F32)
-const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
+const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
@@ -48,10 +48,9 @@ State         myState; //keeping one's state is useful for the App's GUI
 void setup() {
   //begin the serial comms (for debugging)
   //Serial.begin(115200);  //USB Serial.  This begin() isn't really needed on Teensy. 
-  (myTympan.BT_Serial)->begin(115200); //UART to BLE module.  For the nRF52840, we're having the nRF assume 115200.
-  //Serial1.begin(115200);
+  myTympan.beginBluetoothSerial(); //should use the correct Serial port and the correct baud rate
   delay(1000);
-  Serial.println("Tympan_Test_nRF52840: Starting setup()...");
+  Serial.println("Tympan_Test_BLE_nRF52: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10,audio_settings); 
@@ -69,9 +68,7 @@ void setup() {
   myTympan.setInputGain_dB(myState.input_gain_dB);     // set input volume, 0-47.5dB in 0.5dB setps
 
   //setup BLE
-  //while (Serial1.available()) Serial1.read();
-  ble->begin();
-  while ((myTympan.BT_Serial)->available()) (myTympan.BT_Serial)->read(); //clear the incoming Serial1 (BT) buffer
+  myTympan.setupBLE();
 
   Serial.println("Setup complete.");
   serialManager.printHelp();
@@ -86,18 +83,12 @@ void loop() {
 
   //respond to in coming serial messages via BLE
   if (ble->available() > 0) {
-    char c = (char)ble->read();
-    if (c == ' ') {
-      Serial.print("Received from BLE: char = (space), which is HEX = " );Serial.println(c,HEX);
-    } else if (c == (char)0x0A) {
-      //Serial.print("Received from BLE: char = (line feed), which is HEX = " );Serial.println(c,HEX);
-    }  else if (c == (char)0x0D) {    
-      //Serial.print("Received from BLE: char = (carriage return), which is HEX = " );Serial.println(c,HEX);
-    } else {
-      Serial.print("Received from BLE: char = " + String(c) + ", which is HEX = " );Serial.println(c,HEX);
-    }
-    serialManager.respondToByte(c); //for the Tympan simulation, service any messages received form the BLE module
+    String msgFromBle; ble->recvBLE(&msgFromBle);    //get BLE messages (removing non-payload messages)
+    for (unsigned int i=0; i < msgFromBle.length(); i++) serialManager.respondToByte(msgFromBle[i]); //interpet each character of the message
   }
+
+  //service the BLE advertising state
+  //ble->updateAdvertising(millis(),5000); //if not connected, ensure it's advertising (this line only needed for Tympan RevD and RevE)
 
 
   //periodically print the CPU and Memory Usage
@@ -143,16 +134,5 @@ void printGainLevels(void) {
   Serial.println(myState.input_gain_dB); //print text to Serial port for debugging
   Serial.print("Digital Gain (dB) = "); 
   Serial.println(myState.digital_gain_dB); //print text to Serial port for debugging
-}
-
-void printBleName(void) {
-  String name;
-  int ret_val = ble->getBleName(name);
-  Serial.println("printBleName: ret_val = " + String(ret_val) + ", name = " + name);
-}
-
-void setBleName(const String &name) {
-  int ret_val = ble->setBleName(name);
-  Serial.println("setBleName: ret_val = " + String(ret_val) + " for name = " + name);
 }
 

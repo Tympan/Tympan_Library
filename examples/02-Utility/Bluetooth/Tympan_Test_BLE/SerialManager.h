@@ -118,7 +118,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'n':
       {
         String name = String("");
-        int err_code = ble->getBleName(name);
+        int err_code = ble->getBleName(&name);
         Serial.println("serialManager: BLE: Name from module = " + name);
         if (err_code != 0) Serial.println("serialManager:  ble->getBleName returned error code " + String(err_code));
         setButtonText("bleName",name);
@@ -159,12 +159,12 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'v':
       {
         String version;
-        err_code = ble->version(version);
+        err_code = ble->version(&version);
         if (err_code < 0) {
           Serial.println("serialManager: BLE: version returned err_code " + String(err_code));
         } else {
           Serial.println("serialManager: BLE module firmware: " + version);
-          setButtonText("version",version);
+          setButtonText("version",version.substring(0,min(version.length(),27)));
         }
       }
       break; 
