@@ -28,10 +28,10 @@
 // Define the digital audio parameters
 const float sample_rate_Hz = 24000.0f ; //24000 or 44117.64706f (or other frequencies in the table in AudioOutputI2S_F32
 const int audio_block_samples = 32;  //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)
-AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
+AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                      myTympan(TympanRev::E, audio_settings);  //do TympanRev::D or TympanRev::E
+Tympan                      myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioSynthWaveformSine_F32  testSignal(audio_settings);          //use to generate test tone as input
 AudioInputI2S_F32           i2s_in(audio_settings);          //Digital audio *from* the Teensy Audio Board ADC.  Sends Int16.  Stereo.
 AudioOutputI2S_F32          i2s_out(audio_settings);        //Digital audio *to* the Teensy Audio Board DAC.  Expects Int16.  Stereo

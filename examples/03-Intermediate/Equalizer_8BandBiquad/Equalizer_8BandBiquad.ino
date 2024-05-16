@@ -29,7 +29,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 int n_eq_bands = N_EQ_BANDS;
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E, audio_settings); //do TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio in *from* the Tympan's Audio Codec
 AudioFilterbankBiquad_F32 filterbank(audio_settings); //this is a parallel set of filters to break up one audio stream into many
 AudioEffectGain_F32       gainBlocks[N_EQ_BANDS];     //one gain block for each EQ band
