@@ -69,7 +69,7 @@ const int FFT_overlap_factor = 4;         //2 is 50% overlap, 4 is 75% overlap
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                       myTympan(TympanRev::E, audio_settings);   //use TympanRev::C or TympanRev::D or TympanRev::E
+Tympan                       myTympan(TympanRev::F, audio_settings); //do TympanRev::D or E or F
 //AICShield                  earpieceShield(TympanRev::E, AICShieldRev::A);
 AudioInputI2S_F32            i2s_in(audio_settings);          //Digital audio *from* the Tympan AIC.
 AudioEffectFreqComp_FD_F32   freqShift_L(audio_settings);     //create the frequency-domain processing block
@@ -87,7 +87,7 @@ AudioConnection_F32       patchCord30(gain_L, 0, i2s_out, 0);      //connect to 
 AudioConnection_F32       patchCord41(gain_R, 0, i2s_out, 1);      //connect to the right output
 
 //Create BLE
-BLE ble(&myTympan);
+BLE& ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
 
 //control display and serial interaction
 SerialManager serialManager(&ble);
@@ -164,8 +164,7 @@ void setup() {
   setOutputGain_dB(myState.output_gain_dB);    // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
 
    //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  ble.setupBLE(myTympan.getBTFirmwareRev());
+	myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware.
 
   //finish the setup by printing the help menu to the serial connections
   setupSerialManager();

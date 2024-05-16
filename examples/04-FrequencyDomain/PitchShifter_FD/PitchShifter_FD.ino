@@ -62,7 +62,6 @@
 //
 
 #include <Tympan_Library.h>
-//#include "AudioEffectPitchShift_FD_F32.h"
 #include "SerialManager.h"
 #include "sample_MUSIC.h"
 
@@ -80,7 +79,7 @@ uint32_t i2s_tx_buffer[audio_block_samples/2*n_chan]; //allocate the buffer for 
 // /////////////// Create the audio objects and connect them together
 
 //create audio library objects for handling the audio
-Tympan                        audioHardware(TympanRev::E);            //TympanRev::E
+Tympan                        myTympan(TympanRev::F, audio_settings); //do TympanRev::D or E or F
 AudioInputI2S_F32             i2s_in(audio_settings, i2s_rx_buffer);  //Source of live audio (PCB mic or line-in jack)
 AudioPlayMemoryI16_F32        audioPlayMemory(audio_settings);        //pre-recorded example audio included here in sample_MUSIC.h
 AudioEffectPitchShift_FD_F32  pitchShift(audio_settings);             //Freq domain processing!  https://github.com/Tympan/Tympan_Library/blob/master/src/AudioEffectpitchShiftFD_F32.h
