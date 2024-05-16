@@ -61,9 +61,13 @@ public:
 	virtual int isConnected(int method);
 	virtual int isAdvertising(void);
 	int enableAdvertising(bool);
+	
+	// These do nothing but are needed for compatibility with ble.h
 	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
 	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) {}; //do nothing, already auto-advertises after disconnect
-
+	virtual bool setUseFasterBaudRateUponBegin(bool enable = true) { return enable; };
+	//end do-nothing methods
+	
 	int setLedMode(int val);
 	int getLedMode(void);
 
