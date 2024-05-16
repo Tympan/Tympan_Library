@@ -18,7 +18,8 @@ public:
 	virtual int isAdvertising(void)=0;
   virtual int isConnected(void)=0;
   //virtual bool waitConnect(int time = -1);
-	//virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs)=0;
+	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis)=0;
+	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs)=0;
 	//virtual void echoBTreply(bool printDebug = false);
 	//virtual bool setUseFasterBaudRateUponBegin(bool enable = true) { return useFasterBaudRateUponBegin = enable; }
 	

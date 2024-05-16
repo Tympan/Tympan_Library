@@ -32,7 +32,8 @@ public:
   //virtual int isConnected(bool printResponse);
 	virtual int isConnected(void) { return BC127::isConnected(false); }
   bool waitConnect(int time = -1);
-	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000, bool printDebugMsgs=false);
+	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
+	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs);
 	
 	void echoBTreply(bool printDebug = false);
 	bool setUseFasterBaudRateUponBegin(bool enable = true) { return useFasterBaudRateUponBegin = enable; }

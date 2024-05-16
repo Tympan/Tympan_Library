@@ -54,6 +54,9 @@ public:
 	virtual int isConnected(int method);
 	virtual int isAdvertising(void);
 	int enableAdvertising(bool);
+	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
+	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) {}; //do nothing, already auto-advertises after disconnect
+
 	int setLedMode(int val);
 	int getLedMode(void);
 
