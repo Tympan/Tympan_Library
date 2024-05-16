@@ -15,10 +15,10 @@
 #include <Tympan_Library.h>  //include the Tympan Library
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E);  //do TympanRev::D or TympanRev::E
-AudioInputI2S_F32         i2s_in;        //Digital audio *from* the Tympan AIC.
-AudioEffectGain_F32       gain1, gain2;  //Applies digital gain to audio data.
-AudioOutputI2S_F32        i2s_out;       //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
+Tympan                    myTympan(TympanRev::F); //do TympanRev::D or E or F
+AudioInputI2S_F32         i2s_in;                 //Digital audio *from* the Tympan AIC.
+AudioEffectGain_F32       gain1, gain2;           //Applies digital gain to audio data.
+AudioOutputI2S_F32        i2s_out;                //Digital audio *to* the Tympan AIC.  Always list last to minimize latency
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, gain1, 0);    //connect the Left input

@@ -18,7 +18,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E,audio_settings);     //do TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioInputI2S_F32         i2s_in(audio_settings);     //Digital audio *from* the Tympan AIC. 
 AudioFilterBiquad_F32     hp_filt1(audio_settings);   //Biquad (IIR) filter doing a highpass filter.  Left.
 AudioFilterBiquad_F32     hp_filt2(audio_settings);   //Biquad (IIR) filter doing a highpass filter.  Right.
