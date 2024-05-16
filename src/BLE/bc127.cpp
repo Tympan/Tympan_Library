@@ -209,7 +209,7 @@ BC127::opResult BC127::setConfig(String config, String param)
 //          _cmdResponse will contain the data on SUCCESS
 BC127::opResult BC127::version(bool printResponse)
 {
-    BC127::opResult ret_val = stdCmd("VERSION");
+  BC127::opResult ret_val = stdCmd("VERSION");
 	if (printResponse) {
 		Serial.print("BC127: version response: ");
 		Serial.print(getCmdResponse());  //this should be CR terminated
@@ -218,13 +218,13 @@ BC127::opResult BC127::version(bool printResponse)
 	return ret_val;
 }
 
-int BC127::version(String &reply) {
-	reply.remove(0,reply.length()); //make sure reply is empy
+int BC127::version(String *reply_ptr) {
+	reply_ptr->remove(0,reply_ptr->length()); //make sure reply is empy
   BC127::opResult ret_val = stdCmd("VERSION");
 	if (ret_val == BC127::SUCCESS) {
-		reply += getCmdResponse();
+		reply_ptr->concat(getCmdResponse());
 	} else {
-		reply += "FAIL";
+		reply_ptr->concat("FAIL");
 	}
 	return (int)ret_val;
 }

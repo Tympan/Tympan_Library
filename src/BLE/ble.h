@@ -14,7 +14,8 @@ public:
   virtual void setupBLE(int, bool) = 0;            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
   virtual size_t sendMessage(const String &s) = 0;
 	//virtual size_t recvMessage(String *s) = 0;
-  //virtual size_t recvBLE(String *s, bool printResponse = false) = 0;
+	virtual size_t recvBLE(String *s)=0;
+  virtual size_t recvBLE(String *s, bool printResponse) = 0;
 	virtual int isAdvertising(void)=0;
   virtual int isConnected(void)=0;
   //virtual bool waitConnect(int time = -1);
@@ -27,9 +28,9 @@ public:
 	virtual int available(void)=0;
 	virtual int read(void)=0;
 	virtual int peek(void)=0;
-	virtual int version(String &reply)=0;
+	virtual int version(String *reply_ptr)=0;
 	
-	virtual int getBleName(String &reply)=0;
+	virtual int getBleName(String *reply_ptr)=0;
 	
 protected:
 	//virtual bool useFasterBaudRateUponBegin = false; //default as to whether to use faster baud rate or not

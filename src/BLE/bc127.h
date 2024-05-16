@@ -57,7 +57,7 @@ class BC127
     opResult stdCmd(String cmd);                     // executes a standard command option
     opResult setConfig(String config, String param); // sets a configuration register
     opResult version(bool printResponse = false);    // returns the version info in _cmdResponse
-		virtual int version(String &reply);
+		virtual int version(String *reply_ptr);
     opResult writeConfig();                          // writes the current config to non-volatile memory
 		int set_BC127_firmware_ver(int val);             // user sets whether firmware is version 5, 6, or 7
 		int get_BC127_firmware_ver(void)    { return BC127_firmware_ver; }
@@ -68,7 +68,7 @@ class BC127
 		int factoryResetViaPins(void) { return factoryResetViaPins(pin_PIO0, pin_RST) ; }
 		static int factoryResetViaPins(int pinPIO0, int pinRST);
 		
-		virtual int getBleName(String &reply) { reply.remove(0,reply.length()); reply += String("(Not Implemented)"); return 0; }
+		virtual int getBleName(String *reply_ptr) { reply_ptr->remove(0,reply_ptr->length()); reply_ptr->concat("(Not Implemented)"); return 0; }
 
 	protected:
     // end-of-line delimiter

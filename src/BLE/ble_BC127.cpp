@@ -329,25 +329,27 @@ size_t BLE_BC127::recvMessage(String *s)
 // Receive message over BLE, stripping out special messages created by
 // the BC127 module (status messages and whatnot) and only passing those
 // messages that were originally created by the sender
-size_t BLE::recvBLE(String *s, bool printResponse)
+size_t BLE_BC127::recvBLE(String *s, bool printResponse)
 {
-    String tmp = String("");
+	String tmp = String("");
 
-    // get our start time
-    unsigned long startTime = millis();
+	// get our start time
+	unsigned long startTime = millis();
 
-    // as long as we have time
-    while ((startTime + _timeout) > millis())  {
-        if (recv(&tmp) > 0)    {
+	// as long as we have time
+	while ((startTime + _timeout) > millis())  {
+		if (recv(&tmp) > 0) {
 			if (printResponse) Serial.println("BLE_BC127: recvBLE: received = " + tmp);
 			
 			if (BC127_firmware_ver < 7) {
-				if (tmp.startsWith("RECV BLE ")) //for V5 firmware for BC127
-				{
+				
+				if (tmp.startsWith("RECV BLE ")) {  //for V5 firmware for BC127
 					s->concat(tmp.substring(9).trim());
 					return tmp.substring(9).length();
 				}
+				
 			} else {
+				
 				//if (tmp.startsWith("RECV " + String(BLE_id_num) + " ")) //for V6 and newer...assumes first ("1") BLE link ("4")
 				if ( tmp.startsWith("RECV 14 ") || tmp.startsWith("RECV 24 ") | tmp.startsWith("RECV 34 ") ) //for V6 and newer...assumes first ("1") BLE link ("4")
 				{
@@ -365,16 +367,16 @@ size_t BLE::recvBLE(String *s, bool printResponse)
 						s->concat(tmp); //what's left is the message
 					}
 					return tmp.length();
-				}
-				else {
+				}	else {
 					interpretAnyOpenOrClosedMsg(tmp,printResponse);
 				}
+				
 			}
-            tmp = "";
-        }
-    }
+			tmp = "";
+		} //end of "if (recv(&tmp) > 0)"
+	} // end of while loop
 
-    return 0;
+	return 0;
 }
 
 //returns true if an open or closed message is found

@@ -34,22 +34,29 @@ public:
 	size_t sendString(const String &s, bool print_debug);
 	size_t sendString(const String &s) { return sendString(s,false);}
 	size_t sendCommand(const String &cmd,const String &data);
-	virtual size_t recvReply(String &s, unsigned long timeout_mills);
-	virtual size_t recvReply(String &s) { return recvReply(s, rx_timeout_millis); }
 
 	//send strings, but add formatting for TympanRemote App
 	virtual size_t sendMessage(const String &s);
 	virtual size_t sendMessage(char c) { return sendMessage(String(c)); }
+	
+	//receive reply from BLE unit (formatted with "OK" or "FAIL")
+	virtual size_t recvReply(String *s_ptr, unsigned long timeout_mills);
+	virtual size_t recvReply(String *s_ptr) { return recvReply(s_ptr, rx_timeout_millis); }
 
 	//receive message, from Tympan Remote App (or otherwise)
 	virtual int available(void) { return serialFromBLE->available(); }
 	virtual int read(void) { return serialFromBLE->read(); };
 	virtual int peek(void) { return serialFromBLE->peek(); }
-	//virtual size_t recvMessage(String *s);
+	//virtual size_t recvMessage(String *s_ptr);
+
+	//receive methods required by BLE interface
+	virtual int recv(String *s_ptr);                      // grab serial response, by line
+	virtual size_t recvBLE(String *s_ptr) { return recvBLE(s_ptr, false); };
+  virtual size_t recvBLE(String *s_ptr, bool printResponse);
 
 	int setBleName(const String &s);
-	virtual int getBleName(String &reply);
-	virtual int version(String &reply);
+	virtual int getBleName(String *reply_ptr);
+	virtual int version(String *reply_ptr);
 	virtual int isConnected(void) { return isConnected(GET_AUTO); }
 	virtual int isConnected(int method);
 	virtual int isAdvertising(void);
@@ -79,6 +86,8 @@ protected:
 	static bool doesStartWithOK(const String &s);
 	int isConnected_getViaSoftware(void);
 	int isConnected_getViaGPIO(void);
+	
+	unsigned long _timeout = 2000; // timeout for recv
 };
 
 //class BLE_UI : public BLE, public SerialManager_UI

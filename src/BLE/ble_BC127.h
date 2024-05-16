@@ -8,7 +8,7 @@
 #include <Tympan.h>
 #include <SerialManager_UI.h>
 
-class BLE_BC127 : virtual public BLE, public BC127
+class BLE_BC127 : public BC127, virtual public BLE
 {
 public:
 	BLE_BC127(HardwareSerial *sp) : BC127(sp) {}
@@ -25,7 +25,8 @@ public:
   virtual size_t sendMessage(const String &s);
 	//size_t sendMessage(const char* c_str, const int len); //use this if you need to send super long strings (more than 1797 characters)
   virtual size_t recvMessage(String *s);
-  virtual size_t recvBLE(String *s, bool printResponse = false);
+	virtual size_t recvBLE(String *s) { return recvBLE(s, false); };
+  virtual size_t recvBLE(String *s, bool printResponse);
 	bool interpretAnyOpenOrClosedMsg(String tmp, bool printDebug=false);
 	virtual int isAdvertising(bool printResponse);
 	virtual int isAdvertising(void) { return isAdvertising(false); };
@@ -41,8 +42,8 @@ public:
 	virtual int available(void) { return BC127::available(); }
 	virtual int read(void) { return BC127::read(); }
 	virtual int peek(void) { return BC127::peek(); }
-	virtual int version(String &reply) { return BC127::version(reply); }
-	virtual int getBleName(String &reply) { return BC127::getBleName(reply); }
+	virtual int version(String *reply) { return BC127::version(reply); }
+	virtual int getBleName(String *reply) { return BC127::getBleName(reply); }
 protected:
 	bool useFasterBaudRateUponBegin = false; //default as to whether to use faster baud rate or not
 	void setSerialBaudRate(int new_baud);
