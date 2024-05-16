@@ -419,12 +419,12 @@ class TympanBase : public AudioControlAIC3206, virtual public Print
 		}
 		
 		//return the BLE class appropriate for this Tympan revision (instantiating the BLE, if needed)
-		BLE* getBLE(void);
-		BLE_UI* getBLE_UI(void);
-		BLE_BC127* getBLE_BC127(void);
-		BLE_BC127_UI* getBLE_BC127_UI(void);
-		BLE_nRF52* getBLE_nRF52(void);
-		BLE_nRF52_UI* getBLE_nRF52_UI(void);
+		BLE& getBLE(void);
+		BLE_UI& getBLE_UI(void);
+		BLE_BC127& getBLE_BC127(void);
+		BLE_BC127_UI& getBLE_BC127_UI(void);
+		BLE_nRF52& getBLE_nRF52(void);
+		BLE_nRF52_UI& getBLE_nRF52_UI(void);
 		virtual void setupBLE(void);
 			
 		void printCPUandMemoryMessage(void) {
