@@ -91,11 +91,13 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
     case 'g': case 'G':
       printGainSettings(); break;
     case 'k':
-      incrementDigitalGain(gainIncrement); break;
+      incrementDigitalGain(gainIncrement);
       setGainButtons();
+      break;
     case 'K':   //which is "shift k"
-      incrementDigitalGain(-gainIncrement);  break;
+      incrementDigitalGain(-gainIncrement);
       setGainButtons();
+      break;
     case 'p':
       switchToPCBMics(); break;
     case 'm':
@@ -220,19 +222,19 @@ void SerialManager::createTympanRemoteLayout(void) {
       card_h->addButton("+", "a", "",          4);  //label, command, id, width
 
     card_h = page_h->addCard("NR: SNR for Max Atten (dB)");  
-      card_h->addButton("-", "v", "",          4);  //label, command, id, width
+      card_h->addButton("-", "V", "",          4);  //label, command, id, width
       card_h->addButton("",  "",  "NRthresh",  4);  //label, command, id, width //display the formant shift value
-      card_h->addButton("+", "V", "",          4);  //label, command, id, width
+      card_h->addButton("+", "v", "",          4);  //label, command, id, width
 
     card_h = page_h->addCard("NR: Transition Width (dB)");  
-      card_h->addButton("-", "y", "",          4);  //label, command, id, width
+      card_h->addButton("-", "Y", "",          4);  //label, command, id, width
       card_h->addButton("",  "",  "NRtrans",  4);  //label, command, id, width //display the formant shift value
-      card_h->addButton("+", "Y", "",          4);  //label, command, id, width
+      card_h->addButton("+", "y", "",          4);  //label, command, id, width
 
     card_h = page_h->addCard("NR: Gain Smoothing (sec)");  
-      card_h->addButton("-", "i", "",          4);  //label, command, id, width
+      card_h->addButton("-", "I", "",          4);  //label, command, id, width
       card_h->addButton("",  "",  "NRsmooth",  4);  //label, command, id, width //display the formant shift value
-      card_h->addButton("+", "I", "",          4);  //label, command, id, width
+      card_h->addButton("+", "i", "",          4);  //label, command, id, width
 
         
 
@@ -259,14 +261,14 @@ void SerialManager::createTympanRemoteLayout(void) {
     card_h = myState.addCard_cpuReporting(page_h);
 
     card_h = page_h->addCard("Input Gain (dB)");
-      card_h->addButton("-", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
+      card_h->addButton("", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
       card_h->addButton("",  "", "inGain",  4);   //displayed string (blank for now), command (blank), button ID, button width (out of 12)
-      card_h->addButton("+", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
+      card_h->addButton("", "", "",        4);   //displayed string, command, button ID, button width (out of 12)
 
-    card_h = page_h->addCard("Volume Wheel(dB)");
-      card_h->addButton("-", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
+    card_h = page_h->addCard("Volume Wheel (dB)");
+      card_h->addButton("", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
       card_h->addButton("",  "", "outGain", 4);  //displayed string (blank for now), command (blank), button ID, button width (out of 12)
-      card_h->addButton("+", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
+      card_h->addButton("", "", "",        4);  //displayed string, command, button ID, button width (out of 12)
 
   //myGUI.addPredefinedPage("serialMonitor");
 }

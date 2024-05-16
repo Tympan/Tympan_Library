@@ -29,7 +29,7 @@ const int FFT_overlap_factor = 4;         //2 is 50% overlap, 4 is 75% overlap
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                       myTympan(TympanRev::E);                //do TympanRev::D or TympanRev::E
+Tympan                       myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioInputI2S_F32            i2s_in(audio_settings);                //Digital audio *from* the Tympan AIC.
 AudioEffectNoiseReduction_FD_F32    noiseReduction(audio_settings); //create an example frequency-domain processing block
 AudioEffectGain_F32          gain_L(audio_settings);                //Applies digital gain to audio data.
@@ -42,9 +42,9 @@ AudioConnection_F32       patchCord11(gain_L, 0, i2s_out, 0);         //connect 
 AudioConnection_F32       patchCord12(gain_L, 0, i2s_out, 1);         //connect the gain to the right output
 
 //Create BLE
-#define USE_BLE (false)
+#define USE_BLE (true)
 const bool use_ble = USE_BLE;
-BLE ble(&myTympan);
+BLE& ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
 
 //control display and serial interaction
 SerialManager serialManager(&ble);
@@ -126,8 +126,7 @@ void setup() {
 
   //setup BLE
   #if USE_BLE
-    while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-    ble.setupBLE(myTympan.getBTFirmwareRev());
+		myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
   #endif
 
   //finish the setup by printing the help menu to the serial connections
@@ -228,11 +227,15 @@ bool set_NR_enable(bool val) {
 }
 float increment_NR_attack_sec(float incr_fac) { return set_NR_attack_sec(myState.NR_attack_sec * incr_fac); }
 float set_NR_attack_sec(float val_sec) { 
-  return myState.NR_attack_sec = noiseReduction.setAttack_sec(myState.NR_attack_sec);
+  myState.NR_attack_sec = noiseReduction.setAttack_sec(val_sec);
+  //Serial.println("set_NR_attack_sec: given = " + String(val_sec) ", final = " + String(myState.NR_attack_sec))
+  return myState.NR_attack_sec;
 }
 float increment_NR_release_sec(float incr_fac) { return set_NR_release_sec(myState.NR_release_sec * incr_fac); }
 float set_NR_release_sec(float val_sec) { 
-  return myState.NR_release_sec = noiseReduction.setRelease_sec(myState.NR_release_sec); 
+  myState.NR_release_sec = noiseReduction.setRelease_sec(val_sec); 
+  //Serial.println("set_NR_attack_sec: given = " + String(val_sec) ", final = " + String(myState.NR_attack_sec))
+  return myState.NR_release_sec;
 }
 float increment_NR_max_atten_dB(float incr_dB) { return set_NR_max_atten_dB(myState.NR_max_atten_dB + incr_dB); }
 float set_NR_max_atten_dB(float val_dB) { 
