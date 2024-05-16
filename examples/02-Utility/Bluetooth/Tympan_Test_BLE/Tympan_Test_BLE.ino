@@ -26,7 +26,7 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::F,audio_settings);          //only TympanRev::F has the nRF52480
+Tympan                    myTympan(TympanRev::E,audio_settings);          //only TympanRev::F or TympanRev:E or TympanRev:D
 AudioInputI2S_F32         i2s_in(audio_settings);                         //Digital audio in *from* the Teensy Audio Board ADC.
 AudioEffectGain_F32       gain1(audio_settings), gain2(audio_settings);   //Applies digital gain to audio data.  Left and right.
 AudioOutputI2S_F32        i2s_out(audio_settings);                        //Digital audio out *to* the Teensy Audio Board DAC.
@@ -50,7 +50,6 @@ void setup() {
   //begin the serial comms (for debugging)
   //Serial.begin(115200);  //USB Serial.  This begin() isn't really needed on Teensy. 
   (myTympan.BT_Serial)->begin(115200); //UART to BLE module.  For the nRF52840, we're having the nRF assume 115200.
-  //Serial1.begin(115200);
   delay(1000);
   Serial.println("Tympan_Test_BLE: Starting setup()...");
 
@@ -70,10 +69,9 @@ void setup() {
   myTympan.setInputGain_dB(myState.input_gain_dB);     // set input volume, 0-47.5dB in 0.5dB setps
 
   //setup BLE
-  //while (Serial1.available()) Serial1.read();
-  ble->setupBLE(myTympan.getBTFirmwareRev());
-  while ((myTympan.BT_Serial)->available()) (myTympan.BT_Serial)->read(); //clear the incoming Serial1 (BT) buffer
+  myTympan.setupBLE();
 
+  //setup complete!
   Serial.println("Setup complete.");
   serialManager.printHelp();
 } //end setup()
@@ -99,6 +97,9 @@ void loop() {
     }
     serialManager.respondToByte(c); //for the Tympan simulation, service any messages received form the BLE module
   }
+
+  //service the BLE advertising state
+  ble->updateAdvertising(millis(),5000); //if not connected, ensure it's advertising (this line only needed for Tympan RevD and RevE)
 
   //periodically print the CPU and Memory Usage
   if (myState.printCPUtoGUI) {

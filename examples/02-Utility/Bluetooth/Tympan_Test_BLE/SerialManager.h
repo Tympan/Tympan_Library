@@ -73,7 +73,7 @@ void SerialManager::printHelp(void) {
   Serial.println(" c/C: SYSTEM: Enable/Disable printing of CPU and Memory usage");
   Serial.println(" v:   BLE: Get 'Version of firmware from module");
   Serial.println(" n:   BLE: Get 'Name' from module");
-  Serial.println(" t:   BLE: Get 'Advertising' status via software");
+  Serial.println(" t:   BLE: Get 'Advertising' statu");
   //Serial.println(" f/F: BLE: Set 'Advertising' to ON (f) or OFF (F)");
   Serial.println(" g  : BLE: Get 'Connected' status");
   Serial.println(" J:   Send JSON for the GUI for the Tympan Remote App");
@@ -119,7 +119,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       {
         String name = String("");
         int err_code = ble->getBleName(name);
-        Serial.println("serialManager: BLE: Get 'Name' from module: " + name);
+        Serial.println("serialManager: BLE: Name from module = " + name);
         if (err_code != 0) Serial.println("serialManager:  ble->getBleName returned error code " + String(err_code));
         setButtonText("bleName",name);
       }
@@ -134,7 +134,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       break;
     case 't':
       val = ble->isAdvertising();
-      Serial.println("serialManager: BLE: Get 'Advertising' = " + String(val));
+      Serial.println("serialManager: BLE: Advertising = " + String(val));
       setButtonText("isAdvert", String(val ? "ON" : "OFF"));
       break;
 //    case 'f':
@@ -150,9 +150,9 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'g':
       val = ble->isConnected();
       if (val < 0) {
-        Serial.println("SerialManager: ble->isConnected() returned err_code = " + String(val));
+        Serial.println("SerialManager: BLE: isConnected() returned err_code = " + String(val));
       } else {
-        Serial.println("serialManager: ble->isConnected = " + String(val));
+        Serial.println("serialManager: BLE: Connected = " + String(val));
         setButtonText("isConn_s", String(val ? "YES" : "NO"));
       }
       break;
@@ -184,7 +184,7 @@ void SerialManager::createTympanRemoteLayout(void) {
   TR_Card *card_h;  //dummy handle for a card
 
   //Add first page to GUI  (the indentation doesn't matter; it is only to help us see it better)
-  page_h = myGUI.addPage("nRF52840 BLE Testing");
+  page_h = myGUI.addPage("Tympan BLE Testing");
       //Add a card to this page
       card_h = page_h->addCard("BLE Name");
           card_h->addButton("Get Name","n",""     , 12);
