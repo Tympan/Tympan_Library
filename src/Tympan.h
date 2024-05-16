@@ -34,11 +34,15 @@ enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1, F };
 #include "AudioStream_F32.h"
 #include "AudioSettings_F32.h"
 
+// // Include BLE classes
 //#include "ble/BLE.h"
 //#include "ble/BLE_BC127.h"
 //#include "ble/BLE_nRF52.h"
-// Forward declare these classes
-class BLE;
+//
+// Ooops...these classes (Tympan and BLE_xx) interdepend an each other too much
+// to include the real header files (due to looping back on itself). So, instead,
+// let's forward declare the BLE classes. 
+class BLE; 
 class BLE_UI;
 class BLE_BC127;
 class BLE_BC127_UI;
@@ -421,7 +425,7 @@ class TympanBase : public AudioControlAIC3206, virtual public Print
 		BLE_BC127_UI* getBLE_BC127_UI(void);
 		BLE_nRF52* getBLE_nRF52(void);
 		BLE_nRF52_UI* getBLE_nRF52_UI(void);
-		
+		virtual void setupBLE(void);
 			
 		void printCPUandMemoryMessage(void) {
 		  print("CPU Cur/Pk: ");

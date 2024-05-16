@@ -691,3 +691,5 @@ BLE_nRF52_UI* TympanBase::getBLE_nRF52_UI(void) {
 	if (ble_nRF52_UI == NULL) ble_nRF52_UI = new BLE_nRF52_UI(this); 
 	return ble_nRF52_UI; 
 }
+
+void TympanBase::setupBLE(void) { getBLE()->setupBLE(getBTFirmwareRev()); }
