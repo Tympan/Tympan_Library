@@ -47,8 +47,8 @@ const int audio_block_samples = 128;     //do not make bigger than audio_block_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // define classes to control the Tympan and the AIC_Shield
-Tympan           myTympan(TympanRev::E, audio_settings);         //choose TympanRev::D or TympanRev::E
-EarpieceShield   earpieceShield(TympanRev::E, AICShieldRev::A);  //Note that EarpieceShield is defined in the Tympan_Libarary in AICShield.h 
+Tympan   				 myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
+EarpieceShield   earpieceShield(TympanRev::F, AICShieldRev::A);  //Note that EarpieceShield is defined in the Tympan_Libarary in AICShield.h 
 
 // define audio classes
 AudioInputI2SQuad_F32         i2s_in(audio_settings);        //Digital audio *from* the Tympan AIC.

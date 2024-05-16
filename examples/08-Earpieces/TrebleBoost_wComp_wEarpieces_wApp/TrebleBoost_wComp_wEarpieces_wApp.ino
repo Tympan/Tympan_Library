@@ -37,8 +37,8 @@ const int audio_block_samples = 32;     //do not make bigger than AUDIO_BLOCK_SA
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                      myTympan(TympanRev::E, audio_settings);        //do TympanRev::D or TympanRev::E
-EarpieceShield              earpieceShield(TympanRev::E, AICShieldRev::A); //in the Tympan_Library, EarpieceShield is defined in AICShield.h
+Tympan                      myTympan(TympanRev::F, audio_settings);        //do TympanRev::D or E or F
+EarpieceShield              earpieceShield(TympanRev::F, AICShieldRev::A); //in the Tympan_Library, EarpieceShield is defined in AICShield.h
 
 //Create all the audio classes and make all of the audio connections
 #include      "AudioConnections.h"
@@ -46,8 +46,8 @@ EarpieceShield              earpieceShield(TympanRev::E, AICShieldRev::A); //in 
 // Create classes for controlling the system
 #include      "SerialManager.h"
 #include      "State.h"                            
-BLE           ble(&myTympan);                       //create bluetooth BLE
-SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
+BLE& ble = myTympan.getBLE();         //myTympan owns the ble object, but we have a reference to it here
+SerialManager serialManager(&ble);    //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
 
@@ -153,10 +153,9 @@ void setup() {
   earpieceShield.setHPFonADC(true, hardware_cutoff_Hz, audio_settings.sample_rate_Hz); //set to false to disable
   
   //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
-
-  //Set the cutoff frequency for the highpassfilter
+	myTympan.setupBLE(); //Assumes the default Bluetooth firmware. You can override!
+  
+	//Set the cutoff frequency for the highpassfilter
   setHighpassFilters_Hz(myState.cutoff_Hz);   //function defined near the bottom of this file
   printHighpassCutoff();
 

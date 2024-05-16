@@ -21,8 +21,8 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 
 // Create the audio library objects that we'll use
-Tympan                    myTympan(TympanRev::E, audio_settings);   //use TympanRev::D or TympanRev::E
-EarpieceShield            earpieceShield(TympanRev::E, AICShieldRev::A);  //Note that EarpieceShield is defined in the Tympan_Libarary in AICShield.h 
+Tympan                    myTympan(TympanRev::F, audio_settings);        //do TympanRev::D or E or F
+EarpieceShield            earpieceShield(TympanRev::F, AICShieldRev::A); //Note that EarpieceShield is defined in the Tympan_Libarary in AICShield.h 
 AudioSynthWaveform_F32    sineWave(audio_settings);     //from the Tympan_Library
 AudioOutputI2SQuad_F32    audioOutput(audio_settings);  //from the Tympan_Library
 
