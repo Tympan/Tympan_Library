@@ -164,7 +164,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
           Serial.println("serialManager: BLE: version returned err_code " + String(err_code));
         } else {
           Serial.println("serialManager: BLE module firmware: " + version);
-          setButtonText("version",version.substring(0,min(version.length(),27)));
+          setButtonText("version",version.substring(0,min(version.length(),(unsigned int)27)));
         }
       }
       break; 

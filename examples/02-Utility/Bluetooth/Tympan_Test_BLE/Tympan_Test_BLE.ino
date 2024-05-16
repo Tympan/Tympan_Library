@@ -69,7 +69,8 @@ void setup() {
   myTympan.setInputGain_dB(myState.input_gain_dB);     // set input volume, 0-47.5dB in 0.5dB setps
 
   //setup BLE
-  myTympan.setupBLE();
+  //myTympan.setBTFirmwareRev(5);  //only for oldest versions of Tympan revD.  Tympan Rev F, Rev E, and newer RevD should NOT use this line.
+  myTympan.setupBLE(); //or, just accept the default
 
   //setup complete!
   Serial.println("Setup complete.");
