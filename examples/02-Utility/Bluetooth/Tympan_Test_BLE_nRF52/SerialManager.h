@@ -9,7 +9,7 @@
 extern Tympan myTympan;                  //created in the main *.ino file
 extern State myState;                    //created in the main *.ino file
 extern AudioSettings_F32 audio_settings; //created in the main *.ino file  
-extern BLE_nRF52 *ble;
+extern BLE_nRF52 &ble;
 
 
 //functions in the main sketch that I want to call from here
@@ -33,12 +33,12 @@ extern void printGainLevels(void);
 void setButtonState(String btnId, bool newState) {
   String msg = String("STATE=BTN:" + btnId + ":1");
   //Serial.println("serialManager: setButtonState: sending = " + msg); //echo to USB Serial for debugging
-  ble->sendMessage(msg);
+  ble.sendMessage(msg);
 }
 void setButtonText(String btnId, String text) {
   String msg = String("TEXT=BTN:" + btnId + ":" + text);
   //Serial.println("serialManager: setButtonText: sending = " + msg); //echo to USB Serial for debugging
-  ble->sendMessage(msg);
+  ble.sendMessage(msg);
 }
 
 
@@ -121,9 +121,9 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'n':
       {
         String name = String("");
-        int err_code = ble->getBleName(&name);
+        int err_code = ble.getBleName(&name);
         Serial.println("serialManager: BLE: Name from module = " + name);
-        if (err_code != 0) Serial.println("serialManager:  ble->getBleName returned error code " + String(err_code));
+        if (err_code != 0) Serial.println("serialManager:  ble.getBleName returned error code " + String(err_code));
         setButtonText("bleName",name);
       }
       break;
@@ -131,29 +131,29 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       {
         String name = String("TympTymp");
         Serial.println("serialManager: BLE: Set Name of module to " + name);
-        int err_code = ble->setBleName(name);
-        if (err_code != 0) Serial.println("serialManager:  ble->setBleName returned error code " + String(err_code));
+        int err_code = ble.setBleName(name);
+        if (err_code != 0) Serial.println("serialManager:  ble.setBleName returned error code " + String(err_code));
       }
       break;
     case 't':
-      val = ble->isAdvertising();
+      val = ble.isAdvertising();
       Serial.println("serialManager: BLE: Advertising = " + String(val));
       setButtonText("isAdvert", String(val ? "ON" : "OFF"));
       break;
     case 'f':
       Serial.println("serialManager: BLE: Set Advertising to ON...");
-      err_code = ble->enableAdvertising(true);
-      if (err_code) Serial.println("SerialManager: ble->enableAdvertising returned err_code = " + String(err_code));
+      err_code = ble.enableAdvertising(true);
+      if (err_code) Serial.println("SerialManager: ble.enableAdvertising returned err_code = " + String(err_code));
       break;
     case 'F':
       Serial.println("serialManager: BLE: Set Advertising to OFF...");
-      err_code = ble->enableAdvertising(false);
-      if (err_code) Serial.println("SerialManager: ble->enableAdvertising returned err_code = " + String(err_code));
+      err_code = ble.enableAdvertising(false);
+      if (err_code) Serial.println("SerialManager: ble.enableAdvertising returned err_code = " + String(err_code));
       break;
     case 'm':
-      val = ble->getLedMode();
+      val = ble.getLedMode();
       if (val < 0) {
-        Serial.println("SerialManager: ble->getLedMode returned err_code = " + String(val));
+        Serial.println("SerialManager: ble.getLedMode returned err_code = " + String(val));
       } else {
         Serial.println("serialManager: BLE: LED Mode = " + String(val) + " (1=AUTO, 0=OFF)");
         setButtonText("ledMode", String(val ? "AUTO" : "OFF"));
@@ -161,15 +161,15 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       break;
     case 'b':
       Serial.println("serialManager: BLE: Set LED Mode to 1 (AUTO)");
-      err_code = ble->setLedMode(1);
+      err_code = ble.setLedMode(1);
       if (err_code < 0) {
-        Serial.println("SerialManager: ble->setLedMode returned err_code = " + String(err_code));
+        Serial.println("SerialManager: ble.setLedMode returned err_code = " + String(err_code));
       } else {
         delay(5); 
-        Serial.println("serialManager: following up by issuing ble->getLedMode()...");
-        val = ble->getLedMode();  
+        Serial.println("serialManager: following up by issuing ble.getLedMode()...");
+        val = ble.getLedMode();  
         if (val < 0) {
-          Serial.println("serialManager: ble->getLedMode returned err_code = " + String(val));  
+          Serial.println("serialManager: ble.getLedMode returned err_code = " + String(val));  
         } else {
           Serial.println("serialManager: BLE: LED Mode = " + String(val) + " (1=AUTO, 0=OFF)");
           setButtonText("ledMode", String(val ? "AUTO" : "OFF"));
@@ -178,15 +178,15 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       break;
     case 'B':
       Serial.println("serialManager: BLE: Set LED Mode to 0 (OFF)");
-      err_code = ble->setLedMode(0);
+      err_code = ble.setLedMode(0);
       if (err_code < 0) {
-        Serial.println("SerialManager: ble->setLedMode returned err_code = " + String(err_code));
+        Serial.println("SerialManager: ble.setLedMode returned err_code = " + String(err_code));
       } else {
         delay(5); 
-        Serial.println("serialManager: following up by issuing ble->getLedMode()...");
-        val = ble->getLedMode();  
+        Serial.println("serialManager: following up by issuing ble.getLedMode()...");
+        val = ble.getLedMode();  
         if (val < 0) {
-          Serial.println("SerialManager: ble->getLedMode returned err_code = " + String(val));  
+          Serial.println("SerialManager: ble.getLedMode returned err_code = " + String(val));  
         } else {
           Serial.println("serialManager: BLE: LED Mode = " + String(val) + " (1=AUTO, 0=OFF)");
           setButtonText("ledMode", String(val ? "AUTO" : "OFF"));
@@ -194,9 +194,9 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       }  
       break; 
     case 'g':
-      val = ble->isConnected(BLE_nRF52::GET_VIA_SOFTWARE);
+      val = ble.isConnected(BLE_nRF52::GET_VIA_SOFTWARE);
       if (val < 0) {
-        Serial.println("SerialManager: ble->isConnected(Software) returned err_code = " + String(val));
+        Serial.println("SerialManager: ble.isConnected(Software) returned err_code = " + String(val));
       } else {
         Serial.println("serialManager: BLE: Connected (via software) = " + String(val));
         setButtonText("isConn_s", String(val ? "YES" : "NO"));
@@ -204,9 +204,9 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       }
       break;
     case 'G':
-      val = ble->isConnected(BLE_nRF52::GET_VIA_GPIO);
+      val = ble.isConnected(BLE_nRF52::GET_VIA_GPIO);
       if (val < 0) {
-        Serial.println("SerialManager: ble->isConnected(GPIO) returned err_code = " + String(val));
+        Serial.println("SerialManager: ble.isConnected(GPIO) returned err_code = " + String(val));
       } else {
         Serial.println("serialManager: BLE: Connected (via GPIO) = " + String(val));
         setButtonText("isConn_g", String(val ? "YES" : "NO"));
@@ -216,7 +216,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'v':
       {
         String version;
-        err_code = ble->version(&version);
+        err_code = ble.version(&version);
         if (err_code < 0) {
           Serial.println("serialManager: BLE: version returned err_code " + String(err_code));
         } else {
@@ -293,7 +293,7 @@ void SerialManager::printTympanRemoteLayout(void) {
     if (myGUI.get_nPages() < 1) createTympanRemoteLayout();  //create the GUI, if it hasn't already been created
     String s = myGUI.asString();
     Serial.println(s);
-    ble->sendMessage(s); //ble is held by SerialManagerBase
+    ble.sendMessage(s); //ble is held by SerialManagerBase
     setFullGUIState();
 }
 

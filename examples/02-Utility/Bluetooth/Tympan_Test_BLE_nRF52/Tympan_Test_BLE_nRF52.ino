@@ -39,7 +39,7 @@ AudioConnection_F32       patchCord6(gain2, 0, i2s_out, 1);     //connect the Ri
 // Create classes for controlling the system
 #include      "SerialManager.h"
 #include      "State.h"                            
-BLE_nRF52     *ble = new BLE_nRF52(&myTympan);    //create BLE for the nRF52840 (RevF only!)
+BLE_nRF52&    ble = myTympan.getBLE_nRF52(); //get BLE object for the nRF52840 (RevF only!)
 SerialManager serialManager;                 //create the serial manager for real-time control (via USB or App)
 State         myState; //keeping one's state is useful for the App's GUI
 
@@ -82,13 +82,13 @@ void loop() {
   if (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
 
   //respond to in coming serial messages via BLE
-  if (ble->available() > 0) {
-    String msgFromBle; ble->recvBLE(&msgFromBle);    //get BLE messages (removing non-payload messages)
+  if (ble.available() > 0) {
+    String msgFromBle; ble.recvBLE(&msgFromBle);    //get BLE messages (removing non-payload messages)
     for (unsigned int i=0; i < msgFromBle.length(); i++) serialManager.respondToByte(msgFromBle[i]); //interpet each character of the message
   }
 
   //service the BLE advertising state
-  //ble->updateAdvertising(millis(),5000); //if not connected, ensure it's advertising (this line only needed for Tympan RevD and RevE)
+  //ble.updateAdvertising(millis(),5000); //if not connected, ensure it's advertising (this line only needed for Tympan RevD and RevE)
 
 
   //periodically print the CPU and Memory Usage

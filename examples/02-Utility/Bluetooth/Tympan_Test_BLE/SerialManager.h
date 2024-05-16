@@ -9,7 +9,7 @@
 extern Tympan myTympan;                  //created in the main *.ino file
 extern State myState;                    //created in the main *.ino file
 extern AudioSettings_F32 audio_settings; //created in the main *.ino file  
-extern BLE *ble;
+extern BLE &ble;
 
 
 //functions in the main sketch that I want to call from here
@@ -30,18 +30,6 @@ extern void printGainLevels(void);
 // you have a better idea of where to look for the code and what other code it relates to.
 //
 
-void setButtonState(String btnId, bool newState) {
-  String msg = String("STATE=BTN:" + btnId + ":1");
-  //Serial.println("serialManager: setButtonState: sending = " + msg); //echo to USB Serial for debugging
-  ble->sendMessage(msg);
-}
-void setButtonText(String btnId, String text) {
-  String msg = String("TEXT=BTN:" + btnId + ":" + text);
-  //Serial.println("serialManager: setButtonText: sending = " + msg); //echo to USB Serial for debugging
-  ble->sendMessage(msg);
-}
-
-
 //now, define the Serial Manager class
 class SerialManager  {  // see Tympan_Library for SerialManagerBase for more functions!
   public:
@@ -61,9 +49,20 @@ class SerialManager  {  // see Tympan_Library for SerialManagerBase for more fun
 
     //factors by which to raise or lower the parameters when receiving commands from TympanRemote App
     float gainIncrement_dB = 3.0f;            //raise or lower by x dB
+
+    void setButtonState(String btnId, bool newState) {
+      String msg = String("STATE=BTN:" + btnId + ":1");
+      //Serial.println("serialManager: setButtonState: sending = " + msg); //echo to USB Serial for debugging
+      ble.sendMessage(msg);
+    }
+    void setButtonText(String btnId, String text) {
+      String msg = String("TEXT=BTN:" + btnId + ":" + text);
+      //Serial.println("serialManager: setButtonText: sending = " + msg); //echo to USB Serial for debugging
+      ble.sendMessage(msg);
+    }
+
   private:
     TympanRemoteFormatter myGUI;  //Creates the GUI-writing class for interacting with TympanRemote App
-   
 };
 
 void SerialManager::printHelp(void) {  
@@ -118,9 +117,9 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'n':
       {
         String name = String("");
-        int err_code = ble->getBleName(&name);
+        int err_code = ble.getBleName(&name);
         Serial.println("serialManager: BLE: Name from module = " + name);
-        if (err_code != 0) Serial.println("serialManager:  ble->getBleName returned error code " + String(err_code));
+        if (err_code != 0) Serial.println("serialManager:  ble.getBleName returned error code " + String(err_code));
         setButtonText("bleName",name);
       }
       break;
@@ -128,27 +127,27 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     //   {
     //     String name = String("TympTymp");
     //     Serial.println("serialManager: BLE: Set 'Name' of module: " + name);
-    //     int err_code = ble->setBleName(name);
-    //     if (err_code != 0) Serial.println("serialManager:  ble->setBleName returned error code " + String(err_code));
+    //     int err_code = ble.setBleName(name);
+    //     if (err_code != 0) Serial.println("serialManager:  ble.setBleName returned error code " + String(err_code));
     //   }
       break;
     case 't':
-      val = ble->isAdvertising();
+      val = ble.isAdvertising();
       Serial.println("serialManager: BLE: Advertising = " + String(val));
       setButtonText("isAdvert", String(val ? "ON" : "OFF"));
       break;
 //    case 'f':
 //      Serial.println("serialManager: BLE: Set 'Advertising' to ON...");
-//      err_code = ble->enableAdvertising(true);
-//      if (err_code) Serial.println("SerialManager: ble->enableAdvertising returned err_code = " + String(err_code));
+//      err_code = ble.enableAdvertising(true);
+//      if (err_code) Serial.println("SerialManager: ble.enableAdvertising returned err_code = " + String(err_code));
 //      break;
 //    case 'F':
 //      Serial.println("serialManager: BLE: Set 'Advertising' to OFF...");
-//      err_code = ble->enableAdvertising(false);
-//      if (err_code) Serial.println("SerialManager: ble->enableAdvertising returned err_code = " + String(err_code));
+//      err_code = ble.enableAdvertising(false);
+//      if (err_code) Serial.println("SerialManager: ble.enableAdvertising returned err_code = " + String(err_code));
 //      break;
     case 'g':
-      val = ble->isConnected();
+      val = ble.isConnected();
       if (val < 0) {
         Serial.println("SerialManager: BLE: isConnected() returned err_code = " + String(val));
       } else {
@@ -159,7 +158,7 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
     case 'v':
       {
         String version;
-        err_code = ble->version(&version);
+        err_code = ble.version(&version);
         if (err_code < 0) {
           Serial.println("serialManager: BLE: version returned err_code " + String(err_code));
         } else {
@@ -219,7 +218,7 @@ void SerialManager::printTympanRemoteLayout(void) {
     if (myGUI.get_nPages() < 1) createTympanRemoteLayout();  //create the GUI, if it hasn't already been created
     String s = myGUI.asString();
     Serial.println(s);
-    ble->sendMessage(s); //ble is held by SerialManagerBase
+    ble.sendMessage(s); //ble is held by SerialManagerBase
     setFullGUIState();
 }
 
