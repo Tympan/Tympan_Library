@@ -41,7 +41,7 @@ const int audio_block_samples = 16;     //Shorter results in less latency.  Long
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E,audio_settings);   //only tested on Tympan RevE
+Tympan                    myTympan(TympanRev::F, audio_settings);  //do TympanRev::D or E or F
 AudioInputI2S_F32         i2s_in(audio_settings);                  //Digital audio *from* the Tympan AIC. 
 AudioFeedbackCancelNFXLMS_F32 afc(audio_settings);                 //adaptive feedback cancelation (AFC)
 AudioEffectGain_F32       gain1(audio_settings);                   //Applies digital gain to audio data.
