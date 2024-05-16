@@ -285,7 +285,7 @@ TR_Card* EarpieceMixer_F32_UI::addCard_audioSource(TR_Page *page_h) {
   card_h->addButton(F("Analog: PCB Mics"),        prefix+"w", F("configPCBMic"),   12); //label, command, id, width
   card_h->addButton(F("Analog: Mic Jack (Mic)"),  prefix+"W", F("configMicJack"),  12); //label, command, id, width
   card_h->addButton(F("Analog: Mic Jack (Line)"), prefix+"e", F("configLineJack"), 12); //label, command, id, width
-  card_h->addButton(F("Analog: BT Audio"),        prefix+"E", F("configLineSE"),   12); //label, command, id, width
+  card_h->addButton(F("Analog: BT Audio (Rev D/E)"),        prefix+"E", F("configLineSE"),   12); //label, command, id, width
   return card_h;
 }
 
