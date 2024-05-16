@@ -55,15 +55,14 @@ const int N_CHAN = 8;
 
 
 // Create audio classes and make audio connections
-Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
+Tympan   myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 #include "AudioConnections.h"                      //let's put them in their own file for clarity
 
 
 // Create classes for controlling the system
 #include      "SerialManager.h"
-#include      "State.h"                            //must be after N_CHAN is defined
-BLE_UI        ble(&myTympan);                      //create bluetooth BLE
-SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
+#include      "State.h"                     //must be after N_CHAN is defined
+BLE_UI&       ble = myTympan.getBLE_UI();   //myTympan owns the ble object, but we have a reference to it hereSerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
 
@@ -132,8 +131,8 @@ void setup() {
   setupAudioProcessing(); //see function in ConfigureAlgorithms.h
 
   //setup BLE
-  delay(500); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(500); //Assumes the default Bluetooth firmware. You can override!
-  
+  myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
+	
   //setup the serial manager
   setupSerialManager();
 

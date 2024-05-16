@@ -49,15 +49,15 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 const int N_CHAN = 8;                   // number of frequency bands and compression channels
 
 // Create audio classes and make audio connections
-Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
+Tympan   myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 #include "AudioConnections.h"                      //let's put them in their own file for clarity
                          
 
 // Create classes for controlling the system
 #include      "SerialManager.h"
-#include      "State.h"                 //must be after N_CHAN is defined
-BLE_UI        ble(&myTympan);           //create bluetooth BLE class
-SerialManager serialManager(&ble);      //create the serial manager for real-time control (via USB or App)
+#include      "State.h"                    //must be after N_CHAN is defined
+BLE_UI&       ble = myTympan.getBLE_UI();  //myTympan owns the ble object, but we have a reference to it here
+SerialManager serialManager(&ble);         //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
 
@@ -108,11 +108,11 @@ void setupSerialManager(void) {
 // ///////////////// Main setup() and loop() as required for all Arduino programs
 
 // define the setup() function, the function that is called once when the device is booting
-int USE_VOLUME_KNOB = 1;  //set to 1 to use volume knob to override the default vol_knob_gain_dB set a few lines below
+int USE_VOLUME_KNOB = 0;  //set to 1 to use volume knob to override the default vol_knob_gain_dB set a few lines below
 void setup() {
   myTympan.beginBothSerial();
   if (Serial) Serial.print(CrashReport);
-  Serial.println("WDRC_8Band_Full: setup():...");
+  Serial.println("WDRC_8BandFIR_Full: setup():...");
   Serial.print("Sample Rate (Hz): "); Serial.println(audio_settings.sample_rate_Hz);
   Serial.print("Audio Block Size (samples): "); Serial.println(audio_settings.audio_block_samples);
 
@@ -126,7 +126,7 @@ void setup() {
   setupAudioProcessing(); //see function in ConfigureAlgorithms.h
 
   //setup BLE
-  delay(500); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(500); //Assumes the default Bluetooth firmware. You can override!
+  myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
   
   //setup the serial manager
   setupSerialManager();
@@ -140,7 +140,7 @@ void setup() {
   Serial.println("Setup: SD configured for " + String(audioSDWriter.getNumWriteChannels()) + " channels.");
 
   //update the potentiometer settings
-	//if (USE_VOLUME_KNOB) servicePotentiometer(millis());  //see code later in this file
+	if (USE_VOLUME_KNOB) servicePotentiometer(millis());  //see code later in this file
   
   //End of setup
   Serial.println("Setup complete.");

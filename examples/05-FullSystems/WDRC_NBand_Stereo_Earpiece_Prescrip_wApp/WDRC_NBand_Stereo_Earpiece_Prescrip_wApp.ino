@@ -71,11 +71,11 @@ AudioSettings_F32   audio_settings(sample_rate_Hz, audio_block_samples);
 #include      "AudioConnections.h"  //let's put them in their own file for clarity
 
 // Create audio classes and make audio connections
-Tympan    myTympan(TympanRev::E, audio_settings);  //choose TympanRev::D or TympanRev::E
-EarpieceShield              earpieceShield(TympanRev::E, AICShieldRev::A); //in the Tympan_Library, EarpieceShield is defined in AICShield.h
+Tympan           myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
+EarpieceShield   earpieceShield(TympanRev::F, AICShieldRev::A); //in the Tympan_Library, EarpieceShield is defined in AICShield.h
 
 // Create classes for controlling the system
-BLE_UI        ble(&myTympan);                      //create bluetooth BLE
+BLE_UI&       ble = myTympan.getBLE_UI();  //myTympan owns the ble object, but we have a reference to it here
 SerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 BTNRH_StereoPresetManager_UI presetManager;  //initializes all presets to the built-in defaults...which are defined by Preset_00.h and Preset_01.h
@@ -163,9 +163,9 @@ void setup() {
 
   //setup BLE
   ble.setUseFasterBaudRateUponBegin(true); //speeds up baudrate to 115200.  ONLY WORKS FOR ANDROID.  If iOS, you must set to false.
-  delay(500); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(500); //Assumes the default Bluetooth firmware. You can override!
+	myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
   
-  //setup the serial manager
+	//setup the serial manager
   setupSerialManager();
 
   //prepare the SD writer for the format that we want and any error statements
