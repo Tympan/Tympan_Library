@@ -70,7 +70,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 Tympan                       myTympan(TympanRev::F, audio_settings); //do TympanRev::D or E or F
-//AICShield                  earpieceShield(TympanRev::E, AICShieldRev::A);
+//AICShield                  earpieceShield(TympanRev::F, AICShieldRev::A);  //do TympanRev::D or E or F
 AudioInputI2S_F32            i2s_in(audio_settings);          //Digital audio *from* the Tympan AIC.
 AudioEffectFreqComp_FD_F32   freqShift_L(audio_settings);     //create the frequency-domain processing block
 AudioEffectFreqComp_FD_F32   freqShift_R(audio_settings);     //create the frequency-domain processing block
