@@ -1,7 +1,7 @@
 /*
    SDWriter_wApp_wMTP
    
-   Created: Chip Audette, OpenAudio, May 2019 (Updated Aug 2021, April 2024)
+   Created: Chip Audette, OpenAudio, May 2019 (Updated Aug 2021, April 2024, May 2024)
    Purpose: Write audio to SD based on serial commands via USB serial or via Bluetooth (BLE).
       Access files on SD card from PC via experimental "MTP" support provided by Teensy
 
@@ -74,7 +74,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-Tympan                        myTympan(TympanRev::E);   //do TympanRev::D or TympanRev::E
+Tympan                        myTympan(TympanRev::F);   //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioSDWriter_F32_UI          audioSDWriter(audio_settings); //this is stereo by default
 AudioOutputI2S_F32            i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
@@ -91,7 +91,7 @@ AudioConnection_F32           patchcord4(i2s_in, 1, audioSDWriter, 1);   //conne
 // /////////// Create classes for controlling the system, espcially via USB Serial and via the App
 #include      "SerialManager.h"
 #include      "State.h"                
-BLE_UI        ble(&myTympan);           //create bluetooth BLE class
+BLE_UI&       ble = myTympan.getBLE_UI();   //myTympan owns the ble object, but we have a reference to it here
 SerialManager serialManager(&ble);     //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
@@ -164,7 +164,7 @@ void setup() {
   setConfiguration(myState.input_source);      //use the default that is written in State.h 
 
   //setup BLE
-  delay(500); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(500); //Assumes the default Bluetooth firmware. You can override!
+  delay(500); myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
   
   //setup the serial manager
   setupSerialManager();
