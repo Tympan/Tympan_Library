@@ -80,9 +80,13 @@ protected:
 	//virtual void switchToNewBaudRate(int new_baudrate);
 
 	const String EOC = String('\r');
-	HardwareSerial *serialToBLE = &Serial7;    //Tympan design uses Teensy's Serial1 to connect to BLE
-	HardwareSerial *serialFromBLE = &Serial7;  //Tympan design uses Teensy's Serial1 to connect from BLE
-
+	#if defined(KINETISK)   //for Teensy 3.x only!  which should never happen for RevF
+	  HardwareSerial *serialToBLE = &Serial1;  		//dummy value.  This branch should never happen.  This value is here just to avoid a compiler warning
+	  HardwareSerial *serialFromBLE = &Serial1;   //dummy value.  This branch should never happen.  This value is here just to avoid a compiler warning
+	#else
+	  HardwareSerial *serialToBLE = &Serial7;    //Tympan design uses Teensy's Serial1 to connect to BLE
+	  HardwareSerial *serialFromBLE = &Serial7;  //Tympan design uses Teensy's Serial1 to connect from BLE
+	#endif
 	static bool doesStartWithOK(const String &s);
 	int isConnected_getViaSoftware(void);
 	int isConnected_getViaGPIO(void);
