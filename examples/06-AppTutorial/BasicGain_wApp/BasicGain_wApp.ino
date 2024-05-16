@@ -83,7 +83,7 @@ void setup() {
   gain2.setGain_dB(digital_gain_dB);       //set the digital gainof the Right-channel gain processor  
 
   //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
+  //while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
   ble.setupBLE(myTympan.getBTFirmwareRev());  //this uses the default firmware assumption. You can override!
   
 	//finish
