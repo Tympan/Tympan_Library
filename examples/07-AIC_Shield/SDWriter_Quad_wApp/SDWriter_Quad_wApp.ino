@@ -23,11 +23,11 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-Tympan                        myTympan(TympanRev::E);   //do TympanRev::D or TympanRev::E
-AICShield                     aicShield(TympanRev::E, AICShieldRev::A);  //choose TympanRev::D or TympanRev::E 
-AudioInputI2SQuad_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
+Tympan                        myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
+AICShield                     aicShield(TympanRev::F, AICShieldRev::A);  //choose TympanRev::D or E or F
+AudioInputI2SQuad_F32         i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioSDWriter_F32_UI          audioSDWriter(audio_settings); //this is stereo by default
-AudioOutputI2SQuad_F32            i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
+AudioOutputI2SQuad_F32        i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
 
 //Connect to outputs
 AudioConnection_F32           patchcord1(i2s_in, 0, i2s_out, 0);    //Left channel input to left channel output
@@ -46,7 +46,7 @@ AudioConnection_F32           patchcord8(i2s_in, 3, audioSDWriter, 3);   //conne
 // /////////// Create classes for controlling the system, espcially via USB Serial and via the App
 #include      "SerialManager.h"
 #include      "State.h"                
-BLE_UI        ble(&myTympan);           //create bluetooth BLE class
+BLE_UI&       ble = myTympan.getBLE_UI();  //myTympan owns the ble object, but we have a reference to it here
 SerialManager serialManager(&ble);     //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
@@ -120,8 +120,8 @@ void setup() {
   setConfiguration(myState.input_source);      //use the default that is written in State.h 
 
   //setup BLE
-  delay(500); ble.setupBLE(myTympan.getBTFirmwareRev()); delay(500); //Assumes the default Bluetooth firmware. You can override!
-  
+  myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
+	
   //setup the serial manager
   setupSerialManager();
 
