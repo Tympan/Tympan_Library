@@ -28,7 +28,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they will be configured later
 
 //create audio library objects for handling the audio
-Tympan   myTympan(TympanRev::F);   //do TympanRev::D or TympanRev::E
+Tympan   myTympan(TympanRev::F,audio_settings);   //do TympanRev::D or TympanRev::E
 SDClass  sdx;  // explicitly create SD card, which we will pass to AudioSDWriter *and* which we will use for text logging
 String   log_filename;
 

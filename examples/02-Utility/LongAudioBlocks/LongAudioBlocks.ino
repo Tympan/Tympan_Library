@@ -54,7 +54,7 @@ uint32_t i2s_tx_buffer[audio_block_samples/2*n_chan]; //allocate the buffer for 
 
 
 // define classes to control the Tympan and the AIC_Shield
-Tympan      myTympan(TympanRev::E, audio_settings);    //choose TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 
 // define audio classes
 AudioInputI2S_F32         i2s_in(audio_settings, i2s_rx_buffer);   //Critical Feature #2: Pass the big buffer to the Tympan Library

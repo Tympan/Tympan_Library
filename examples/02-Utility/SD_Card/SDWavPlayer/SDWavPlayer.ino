@@ -18,9 +18,9 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio objects
+Tympan                   myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioSDPlayer_F32        audioSDPlayer(audio_settings); //this is in the Tympan_Library
 AudioOutputI2S_F32       audioOutput(audio_settings);
-Tympan                   myTympan(TympanRev::E); //do TympanRev::D or TympanRev::E
 
 //create audio connections
 AudioConnection_F32      patchCord1(audioSDPlayer, 0, audioOutput, 0);

@@ -19,7 +19,7 @@ const int audio_block_samples = 128;        //do not make bigger than AUDIO_BLOC
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio objects
-Tympan                   myTympan(TympanRev::E); //do TympanRev::D or TympanRev::E
+Tympan                   myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioPlayMemoryI16_F32   audioPlayMemory(audio_settings);
 AudioOutputI2S_F32       audioOutput(audio_settings);
 

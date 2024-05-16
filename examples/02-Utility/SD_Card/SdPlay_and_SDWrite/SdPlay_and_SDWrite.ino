@@ -67,7 +67,7 @@ const int audio_block_samples = 128;     //Number of samples per audio block (do
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // define classes to control the Tympan
-Tympan           myTympan(TympanRev::E);                  //do TympanRev::D or TympanRev::E
+Tympan           myTympan(TympanRev::F, audio_settings);  //do TympanRev::D or E or F
 SdFs             sd;                                      //because we're doing both a player and recorder, explicitly create the shared SD resource.  I'm not sure this is really necessary.
 
 

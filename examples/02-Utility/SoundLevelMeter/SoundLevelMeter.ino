@@ -1,7 +1,9 @@
 /*
 *   SoundLevelMeter
 *
-*   Created: Chip Audette, OpenAudio, June 2018 (Updated June 2021 for BLE and App)
+*   Created: Chip Audette, OpenAudio, June 2018
+*            Updated June 2021 for BLE and App
+*            Updated May 2024 for Rev F and new BLE
 *   Purpose: Compute the current sound level, dBA-Fast or whatever
 *            Uses exponential time weighting.
 *
@@ -21,11 +23,10 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                          myTympan(TympanRev::E);   //use TympanRev::E or TympanRev::D or TympanRev::C
-AudioInputI2S_F32               i2s_in(audio_settings);       //Digital audio in *from* the Teensy Audio Board ADC.
-AudioFilterFreqWeighting_F32    freqWeight1(audio_settings);  //A-weighting filter (optionally C-weighting)
-AudioCalcLevel_F32              calcLevel1(audio_settings);    //use this to square the signal
-AudioOutputI2S_F32              i2s_out(audio_settings);      //Digital audio out *to* the Teensy Audio Board DAC.
+Tympan                        myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or FAudioInputI2S_F32               i2s_in(audio_settings);       //Digital audio in *from* the Teensy Audio Board ADC.
+AudioFilterFreqWeighting_F32  freqWeight1(audio_settings);  //A-weighting filter (optionally C-weighting)
+AudioCalcLevel_F32            calcLevel1(audio_settings);   //use this to square the signal
+AudioOutputI2S_F32            i2s_out(audio_settings);      //Digital audio out *to* the Teensy Audio Board DAC.
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, freqWeight1, 0);      //connect the Left input to frequency weighting
@@ -34,7 +35,7 @@ AudioConnection_F32       patchCord3(i2s_in, 0, i2s_out, 0);      //echo the ori
 AudioConnection_F32       patchCord4(calcLevel1, 0, i2s_out, 1);     //connect level to the right output
 
 //Create BLE and serialManager
-BLE ble(&myTympan); //&Serial1 is the serial connected to the Bluetooth module
+BLE&          ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
 SerialManager serialManager(&ble);
 State myState(&audio_settings, &myTympan);
 
@@ -79,8 +80,8 @@ void setup() {
   setTimeAveragingType(State::TIME_SLOW);
 
   //setup BLE
-  while (Serial1.available()) Serial1.read(); //clear the incoming Serial1 (BT) buffer
-  ble.setupBLE(myTympan.getBTFirmwareRev());
+  //setup BLE
+  delay(500); myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
 
   myTympan.println("Setup complete.");
   serialManager.printHelp();

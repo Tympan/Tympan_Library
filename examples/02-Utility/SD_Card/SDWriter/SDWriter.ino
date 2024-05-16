@@ -13,6 +13,7 @@
     Jun 2018: updated for Tympan RevC or RevD
     Jun 2018: updated to add automatic mic detection
     Jul 2021: updated to support Tympan RevE 
+		May 2024: updated to support Tympan RevF
 
    License: MIT License, Use At Your Own Risk
 */
@@ -29,7 +30,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-Tympan                    myTympan(TympanRev::E,audio_settings);  //TympanRev::D or TympanRev::E
+Tympan                    myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 AudioInputI2S_F32         i2s_in(audio_settings);        //Digital audio input from the ADC
 AudioSDWriter_F32         audioSDWriter(audio_settings); //this is stereo by default but can do 4 channels
 AudioOutputI2S_F32        i2s_out(audio_settings);       //Digital audio output to the DAC.  Should always be last.

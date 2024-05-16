@@ -74,7 +74,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 // /////////// Define audio objects...they are configured later
 
 //create audio library objects for handling the audio
-Tympan                        myTympan(TympanRev::F);   //do TympanRev::D or TympanRev::E
+Tympan                        myTympan(TympanRev::F,audio_settings);   //do TympanRev::D or TympanRev::E
 AudioInputI2S_F32             i2s_in(audio_settings);   //Digital audio input from the ADC
 AudioSDWriter_F32_UI          audioSDWriter(audio_settings); //this is stereo by default
 AudioOutputI2S_F32            i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
