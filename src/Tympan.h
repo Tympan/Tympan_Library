@@ -35,9 +35,9 @@ enum class TympanRev { A=1, C, D0, D1, D2, D3, D4, D, E, E1, F };
 #include "AudioSettings_F32.h"
 
 // // Include BLE classes
-//#include "ble/BLE.h"
-//#include "ble/BLE_BC127.h"
-//#include "ble/BLE_nRF52.h"
+//#include "BLE/ble.h"
+//#include "BLE/ble_BC127.h"
+//#include "BLE/ble_nRF52.h"
 //
 // Ooops...these classes (Tympan and BLE_xx) interdepend an each other too much
 // to include the real header files (due to looping back on itself). So, instead,

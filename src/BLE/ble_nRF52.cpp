@@ -1,5 +1,5 @@
 
-#include <ble/ble_nRF52.h>
+#include "BLE/ble_nRF52.h"
 
 
 char foo_digit2ascii(uint8_t digit) {

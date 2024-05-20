@@ -1,4 +1,4 @@
-#include "ble/ble_BC127.h"
+#include "BLE/ble_BC127.h"
 
 const int factory_baudrate = 9600;   //here is one possible starting baudrate for the BLE module
 const int faster_baudrate = 115200; //here is the other possible starting baudrate for the BLE module

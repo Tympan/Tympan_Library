@@ -3,8 +3,8 @@
 
 #include <Arduino.h>   //for Serial
 //include <Tympan_Library.h>
-#include "ble/ble.h"
-#include "ble/bc127.h"
+#include "BLE/ble.h"
+#include "BLE/bc127.h"
 #include <Tympan.h>
 #include <SerialManager_UI.h>
 

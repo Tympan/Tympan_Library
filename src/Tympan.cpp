@@ -1,8 +1,8 @@
 
 #include "Tympan.h"
-#include "ble/BLE.h"
-#include "ble/BLE_BC127.h"
-#include "ble/BLE_nRF52.h"
+#include "BLE/ble.h"
+#include "BLE/ble_BC127.h"
+#include "BLE/ble_nRF52.h"
 
 
 const int TympanBase::BT_uint8_buff_len;

@@ -4,7 +4,7 @@
 #include <Arduino.h>   //for Serial
 #include <Tympan.h>
 #include <SerialManager_UI.h>
-#include "ble/ble.h"
+#include "BLE/ble.h"
 
 
 class BLE_nRF52: virtual public BLE
