@@ -160,7 +160,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	float incrementExpCR(float fac) { return setExpansionCompRatio(max(0.1f,getExpansionCompRatio() + fac)); }
 	float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() + fac); }
 	float incrementGain_dB(float increment_dB) { return setGain_dB(getGain_dB() + increment_dB); }    
-    float incrementCompRatio(float fac) { return setCompRatio(max(0.1f, getCompRatio() + fac)); }
+  float incrementCompRatio(float fac) { return setCompRatio(max(0.1f, getCompRatio() + fac)); }
 	float incrementKnee(float fac) {return setKneeCompressor_dBSPL(getKneeCompressor_dBSPL() + fac);}
 	float incrementLimiter(float fac) {return setKneeLimiter_dBSPL(getKneeLimiter_dBSPL() + fac);};
 	
