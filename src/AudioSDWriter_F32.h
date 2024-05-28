@@ -33,10 +33,10 @@
 //   just a virtual Base class.  Use AudioSDWriter_F32 further down.
 class AudioSDWriter {
   public:
- 	AudioSDWriter(void) {};
-    AudioSDWriter(SdFs * _sd) {
-		sd = _sd;
-	};
+		AudioSDWriter(void) {};
+			AudioSDWriter(SdFs * _sd) {
+			sd = _sd;
+		};
     enum class STATE { UNPREPARED = -1, STOPPED, RECORDING };
     STATE getState(void) {
       return current_SD_state;
@@ -48,17 +48,17 @@ class AudioSDWriter {
     virtual int getNumWriteChannels(void) {
       return numWriteChannels;
     }
-	virtual String getCurrentFilename(void) { return current_filename; }
+		virtual String getCurrentFilename(void) { return current_filename; }
 
     virtual void prepareSDforRecording(void) = 0;
     virtual int startRecording(void) = 0;
     virtual int startRecording(char *) = 0;
-	//virtual int startRecording_noOverwrite(void) = 0;
+		//virtual int startRecording_noOverwrite(void) = 0;
     virtual void stopRecording(void) = 0;
-	virtual void end(void) = 0;
+		virtual void end(void) = 0;
 
   protected:
-	SdFs * sd;
+	  SdFs * sd;
     STATE current_SD_state = STATE::UNPREPARED;
     WriteDataType writeDataType = WriteDataType::INT16;
     int recording_count = 0;
