@@ -78,8 +78,8 @@ float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 bool enable_printCPUandMemory = false;
 void setup() {
   //begin the serial comms (for debugging)
-  myTympan.beginBothSerial(); delay(500); //let's use the print functions in "myTympan" so it goes to BT, too!
-  myTympan.println("BasicGain_wAFC (NFXLMS): Starting setup()...");
+  myTympan.beginBothSerial(); delay(1000); //let's use the print functions in "myTympan" so it goes to BT, too!
+  myTympan.println("BasicGain_wAFC_NFXLMS: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(20,audio_settings); 
