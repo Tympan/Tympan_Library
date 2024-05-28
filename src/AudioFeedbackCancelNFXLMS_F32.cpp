@@ -14,28 +14,27 @@ void AudioFeedbackCancelNFXLMS_F32::update(void) {
   //allocate memory for the output of our algorithm
   audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
   if (!out_block) {
-	AudioStream_F32::release(in_block);
-	return;
+		AudioStream_F32::release(in_block);
+		return;
   }
 
-  //check to see if we're outpacing our feedback data
-  if (newest_ring_audio_block_id != 999999) { //999999 is the default startup number, so ignore it
-	if ((in_block->id > 100) && (newest_ring_audio_block_id > 0)) { //ignore startup period
-	  //if (abs(in_block->id - newest_ring_audio_block_id) > 1) {  //is the difference more than one block counter?
-	  if ((in_block->id != 0) && ((in_block->id - newest_ring_audio_block_id) > 0)) {
-	    //the data in the ring buffer is older than expected!
-	    Serial.print("AudioFeedbackCancelNFXLMS_F32: falling behind?  in_block = ");
-		Serial.print(in_block->id); Serial.print(", ring block = "); Serial.println(newest_ring_audio_block_id);
-	  }
+	//check to see if we're outpacing our feedback data
+	if (newest_ring_audio_block_id != 999999) { //999999 is the default startup number, so ignore it
+		if ((in_block->id > 100) && (newest_ring_audio_block_id > 0)) { //ignore startup period
+		  if ((in_block->id != 0) && ((in_block->id - newest_ring_audio_block_id) > 1)) {  //is the difference more than one block counter? (an offset of 1 is expected)
+				//the data in the ring buffer is older than expected!
+				Serial.print("AudioFeedbackCancelNFXLMS_F32: falling behind?  in_block = ");
+				Serial.print(in_block->id); Serial.print(", ring block = "); Serial.println(newest_ring_audio_block_id);
+		  }
+		}
 	}
-  }
 
   //do the work
   if (enabled) {
-	cha_afc_input(in_block->data, out_block->data, in_block->length);
+		cha_afc_input(in_block->data, out_block->data, in_block->length);
   } else {
-	//simply copy input to output
-	for (int i = 0; i < in_block->length; i++) out_block->data[i] = in_block->data[i];
+		//simply copy input to output
+		for (int i = 0; i < in_block->length; i++) out_block->data[i] = in_block->data[i];
   }
 
   // transmit the block and release memory
@@ -82,7 +81,7 @@ void AudioFeedbackCancelNFXLMS_F32::cha_afc_prepare(void) {
 void AudioFeedbackCancelNFXLMS_F32::white_filt(float *h, int n) {  //initialize the whitening filter
 	if (n < 3) {
 		h[0] = 1;
-		} else {
+	} else {
 		int m = (n - 1) / 2;
 		m = min(m, WFSZ-1);
 		h[m] = iltass[0];
@@ -165,24 +164,24 @@ int AudioFeedbackCancelNFXLMS_F32::cha_afc_input(float32_t *x, float32_t *y, int
 	  }
 	  // update band-limit filter coefficients
 	  if (pup) {
-		puc = (puc + 1) % pup;
-		if (puc == 0) {
-		  sum = 0;
-		  for (j = 0; j < pfl; j++) {
-			jp1 = j + 1;
-			nfc = (jp1 < pfl) ? jp1 : pfl;
-			cfc = 0;
-			for (k = 0; k < nfc; k++) {
-			  cfc += efbp[j - k] * ffrp[k];
+			puc = (puc + 1) % pup;
+			if (puc == 0) {
+				sum = 0;
+				for (j = 0; j < pfl; j++) {
+					jp1 = j + 1;
+					nfc = (jp1 < pfl) ? jp1 : pfl;
+					cfc = 0;
+					for (k = 0; k < nfc; k++) {
+						cfc += efbp[j - k] * ffrp[k];
+					}
+					ffrp[j] += alf * (cfc - ffrp[j]);
+					sum += ffrp[j];
+				}
+				sum /= pfl;
+				for (j = 0; j < pfl; j++) {
+					ffrp[j] -= sum;
+				}
 			}
-			ffrp[j] += alf * (cfc - ffrp[j]);
-			sum += ffrp[j];
-		  }
-		  sum /= pfl;
-		  for (j = 0; j < pfl; j++) {
-			  ffrp[j] -= sum;
-		  }
-		}
 	  }
 	  // save quality metrics
 //        if (nqm) {
