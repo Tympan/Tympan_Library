@@ -44,12 +44,12 @@ class AudioInputI2S_F32 : public AudioStream_F32
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
 	AudioInputI2S_F32(void) : AudioStream_F32(0, NULL) { 
-		Serial.println("AudioInputI2S_F32: constructor 1...");
+		//Serial.println("AudioInputI2S_F32: constructor 1...");
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use the default size
 		begin(); 
 	} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
 	AudioInputI2S_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { 
-		Serial.println("AudioInputI2S_F32: constructor 2...");
+		//Serial.println("AudioInputI2S_F32: constructor 2...");
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		begin(); 
