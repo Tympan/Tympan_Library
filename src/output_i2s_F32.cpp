@@ -901,10 +901,17 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 	int fs = fs_Hz;
 	
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
-	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
-	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
-
-	double C = ((double)fs * 256 * n1 * n2) / 24000000;
+	// Requirements: n2 must be 64 or below.  And, maybe, (n1*n2) = multiple of 4
+	//    By default n1 = 4, which enables sample rates down to 9888 Hz
+	//    This code will try n1 = 4, 8, 16, etc...but only 4 and 8 seem to result in a working system.
+	//    I don't know why n1 = 16 does not work (try asking for a sample rate of 4000 Hz)
+	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4.  nIf we were to stay at n1 = 4, system would not support sample rates below 9888 Hz
+	int n2;
+	while ((n2 = 1 + (24000000.f * 27.f) / (fs * 256.f * n1)) > 64) { //do not allow n2 to be greater than 64?
+		n1 *= 2;   //increase N1 (by factors of 4) to ensure n2 is 64 or less.  
+	}
+	
+	double C = ((double)fs * 256 * n1 * n2) / 24000000.f;
 	int c0 = C;
 	int c2 = 10000;
 	int c1 = C * c2 - (c0 * c2);
@@ -914,7 +921,7 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
 		   | CCM_CSCMR1_SAI1_CLK_SEL(2); // &0x03 // (0,1,2): PLL3PFD0, PLL5, PLL4
 	CCM_CS1CDR = (CCM_CS1CDR & ~(CCM_CS1CDR_SAI1_CLK_PRED_MASK | CCM_CS1CDR_SAI1_CLK_PODF_MASK))
-		   | CCM_CS1CDR_SAI1_CLK_PRED(n1-1) // &0x07
+		   | CCM_CS1CDR_SAI1_CLK_PRED(n1-1) // &0x07 for n1 = 4
 		   | CCM_CS1CDR_SAI1_CLK_PODF(n2-1); // &0x3f
 
 	// Select MCLK
