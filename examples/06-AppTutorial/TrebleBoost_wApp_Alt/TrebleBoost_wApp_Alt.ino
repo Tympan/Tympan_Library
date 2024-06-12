@@ -69,7 +69,7 @@ State         myState(&audio_settings, &myTympan, &serialManager); //keeping one
 void setup() {
   //begin the serial comms (for debugging)
   myTympan.beginBothSerial(); delay(1000);
-  Serial.println("TrebleBoost_wApp: Starting setup()...");
+  Serial.println("TrebleBoost_wApp_Alt: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
   AudioMemory_F32(10,audio_settings); 
