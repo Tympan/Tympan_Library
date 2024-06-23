@@ -23,7 +23,8 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                        myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or FAudioInputI2S_F32               i2s_in(audio_settings);       //Digital audio in *from* the Teensy Audio Board ADC.
+Tympan                        myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
+AudioInputI2S_F32             i2s_in(audio_settings);       //Digital audio in *from* the Teensy Audio Board ADC.
 AudioFilterFreqWeighting_F32  freqWeight1(audio_settings);  //A-weighting filter (optionally C-weighting)
 AudioCalcLevel_F32            calcLevel1(audio_settings);   //use this to square the signal
 AudioOutputI2S_F32            i2s_out(audio_settings);      //Digital audio out *to* the Teensy Audio Board DAC.

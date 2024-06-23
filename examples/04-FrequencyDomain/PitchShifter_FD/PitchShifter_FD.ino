@@ -111,19 +111,19 @@ float input_gain_dB = 15.0f; //gain on the microphone
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void switchToPCBMics(void) {
   Serial.println("Switching to PCB Mics.");
-  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the microphone jack - defaults to mic bias OFF
-  audioHardware.setInputGain_dB(input_gain_dB);
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the microphone jack - defaults to mic bias OFF
+  myTympan.setInputGain_dB(input_gain_dB);
 }
 void switchToLineInOnMicJack(void) {
   Serial.println("Switching to Line-in on Mic Jack.");
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF  
-  audioHardware.setInputGain_dB(0.0);
+  myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF  
+  myTympan.setInputGain_dB(0.0);
 }
 void switchToMicInOnMicJack(void) {
   Serial.println("Switching to Mic-In on Mic Jack.");
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias OFF   
-  audioHardware.setEnableStereoExtMicBias(true);  //put the mic bias on both channels
-  audioHardware.setInputGain_dB(input_gain_dB);
+  myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias OFF   
+  myTympan.setEnableStereoExtMicBias(true);  //put the mic bias on both channels
+  myTympan.setInputGain_dB(input_gain_dB);
 }
 
 
@@ -131,7 +131,7 @@ void switchToMicInOnMicJack(void) {
       
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
-  //audioHardware.beginBothSerial(); 
+  //myTympan.beginBothSerial(); 
   delay(500);
   Serial.println("pitchShifter: starting setup()...");
   Serial.print("    : sample rate (Hz) = ");  Serial.println(audio_settings.sample_rate_Hz);
@@ -154,11 +154,11 @@ void setup() {
   pitchShift.setScaleFac(scale_fac); //1.0 is no pitch shifting.
  
   //Enable the Tympan to start the audio flowing!
-  audioHardware.enable(); // activate AIC
+  myTympan.enable(); // activate AIC
 
   //setup DC-blocking highpass filter running in the ADC hardware itself
   float cutoff_Hz = 60.0;  //set the default cutoff frequency for the highpass filter
-  audioHardware.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
+  myTympan.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
 
   //Choose the desired input
   switchToPCBMics();        //use PCB mics as input
@@ -166,7 +166,7 @@ void setup() {
   //switchToLineInOnMicJack();  //use Mic jack as line input (ie, no mic bias)
   
   //Set the desired volume levels
-  audioHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
    
   // configure the blue potentiometer
   servicePotentiometer(millis(),0); //update based on the knob setting the "0" is not relevant here.
@@ -211,7 +211,7 @@ void servicePotentiometer(unsigned long curTime_millis, const unsigned long upda
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(audioHardware.readPotentiometer()) / 1023.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //use the potentiometer value to control something interesting
@@ -220,8 +220,8 @@ void servicePotentiometer(unsigned long curTime_millis, const unsigned long upda
 
       //change the volume
       float vol_dB = 0.f + 30.0f * ((val - 0.5) * 2.0); //set volume as 0dB +/- 30 dB
-      audioHardware.print("Changing output volume to = "); audioHardware.print(vol_dB); audioHardware.println(" dB");
-      audioHardware.volume_dB(vol_dB);
+      myTympan.print("Changing output volume to = "); myTympan.print(vol_dB); myTympan.println(" dB");
+      myTympan.volume_dB(vol_dB);
     }
     
     lastUpdate_millis = curTime_millis;

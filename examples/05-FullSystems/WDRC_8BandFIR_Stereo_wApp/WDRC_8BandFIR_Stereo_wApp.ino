@@ -63,6 +63,7 @@ Tympan   myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
 #include      "SerialManager.h"
 #include      "State.h"                     //must be after N_CHAN is defined
 BLE_UI&       ble = myTympan.getBLE_UI();   //myTympan owns the ble object, but we have a reference to it hereSerialManager serialManager(&ble);                 //create the serial manager for real-time control (via USB or App)
+SerialManager serialManager(&ble);         //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
 
 
