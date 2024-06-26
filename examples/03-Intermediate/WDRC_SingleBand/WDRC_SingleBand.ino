@@ -20,7 +20,7 @@
 
 
 //create audio library objects for handling the audio
-Tympan                  myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
+Tympan                  myTympan(TympanRev::F);   //do TympanRev::D or E or F
 AudioInputI2S_F32       i2s_in;
 AudioFilterBiquad_F32   iir1; 
 AudioEffectCompWDRC_F32  compWDRC1;   

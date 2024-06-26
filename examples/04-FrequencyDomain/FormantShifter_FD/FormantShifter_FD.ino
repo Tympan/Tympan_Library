@@ -46,8 +46,8 @@ AudioConnection_F32       patchCord4(gain1, 0, i2s_out, 1);         //connect to
 //control display and serial interaction
 bool enable_printCPUandMemory = false;
 void togglePrintMemoryAndCPU(void) { enable_printCPUandMemory = !enable_printCPUandMemory; };
-SerialManager serialManager(audioHardware);
-#define mySerial audioHardware   //audioHardware is a printable stream!
+SerialManager serialManager(myTympan);
+#define mySerial myTympan   //myTympan is a printable stream!
 
 //inputs and levels
 float input_gain_dB = 20.0f; //gain on the microphone
@@ -55,23 +55,23 @@ float formant_shift_gain_correction_dB = 0.0;  //will be used to adjust for gain
 float vol_knob_gain_dB = 0.0;      //will be overridden by volume knob
 void switchToPCBMics(void) {
   mySerial.println("Switching to PCB Mics.");
-  audioHardware.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the microphone jack - defaults to mic bias OFF
-  audioHardware.setInputGain_dB(input_gain_dB);
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC); // use the microphone jack - defaults to mic bias OFF
+  myTympan.setInputGain_dB(input_gain_dB);
 }
 void switchToLineInOnMicJack(void) {
   mySerial.println("Switching to Line-in on Mic Jack.");
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF  
-  audioHardware.setInputGain_dB(0.0);
+  myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF  
+  myTympan.setInputGain_dB(0.0);
 }
 void switchToMicInOnMicJack(void) {
   mySerial.println("Switching to Mic-In on Mic Jack.");
-  audioHardware.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias OFF   
-  audioHardware.setInputGain_dB(input_gain_dB);
+  myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC); // use the microphone jack - defaults to mic bias OFF   
+  myTympan.setInputGain_dB(input_gain_dB);
 }
       
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
-  audioHardware.beginBothSerial(); delay(1000);
+  myTympan.beginBothSerial(); delay(1000);
   mySerial.println("FormantShifter: starting setup()...");
   mySerial.print("    : sample rate (Hz) = ");  mySerial.println(audio_settings.sample_rate_Hz);
   mySerial.print("    : block size (samples) = ");  mySerial.println(audio_settings.audio_block_samples);
@@ -92,11 +92,11 @@ void setup() {
   }
 
   //Enable the Tympan to start the audio flowing!
-  audioHardware.enable(); // activate AIC
+  myTympan.enable(); // activate AIC
 
   //setup DC-blocking highpass filter running in the ADC hardware itself
   float cutoff_Hz = 60.0;  //set the default cutoff frequency for the highpass filter
-  audioHardware.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
+  myTympan.setHPFonADC(true,cutoff_Hz,audio_settings.sample_rate_Hz); //set to false to disble
 
   //Choose the desired input
   switchToPCBMics();        //use PCB mics as input
@@ -104,7 +104,7 @@ void setup() {
   //switchToLineInOnMicJack();  //use Mic jack as line input (ie, no mic bias)
   
   //Set the desired volume levels
-  audioHardware.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
+  myTympan.volume_dB(0);                   // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
    
   // configure the blue potentiometer
   servicePotentiometer(millis(),0); //update based on the knob setting the "0" is not relevant here.
@@ -144,7 +144,7 @@ void servicePotentiometer(unsigned long curTime_millis, const unsigned long upda
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
 
     //read potentiometer
-    float val = float(audioHardware.readPotentiometer()) / 1023.0; //0.0 to 1.0
+    float val = float(myTympan.readPotentiometer()) / 1023.0; //0.0 to 1.0
     val = (1.0/9.0) * (float)((int)(9.0 * val + 0.5)); //quantize so that it doesn't chatter...0 to 1.0
 
     //use the potentiometer value to control something interesting
