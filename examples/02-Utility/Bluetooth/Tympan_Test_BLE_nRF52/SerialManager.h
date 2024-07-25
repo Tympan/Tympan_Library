@@ -71,7 +71,7 @@ void SerialManager::printHelp(void) {
   Serial.println(" h: Print this help");
   Serial.println(" k/K: AUDIO: Incr/Decrease Digital Gain");
   Serial.println(" c/C: SYSTEM: Enable/Disable printing of CPU and Memory usage");
-  Serial.println(" v:   BLE: Get 'Version of firmware from module");
+  Serial.println(" v:   BLE: Get 'Version' of firmware from module");
   Serial.println(" n:   BLE: Get 'Name' from module");
   Serial.println(" N:   BLE: Set 'Name' of module to 'TYMP-TYMP'");
   Serial.println(" t:   BLE: Get 'Advertising' status via software");
