@@ -74,24 +74,26 @@ class audio_block_f32_t {
 class AudioConnection_F32
 {
   public:
-    AudioConnection_F32(AudioStream_F32 &source, AudioStream_F32 &destination) :
-      src(source), dst(destination), src_index(0), dest_index(0),
-      next_dest(NULL)
-      { connect(); }
+		AudioConnection_F32();
+    AudioConnection_F32(AudioStream_F32 &source, AudioStream_F32 &destination)
+      : AudioConnection_F32() { connect(source,destination); }
     AudioConnection_F32(AudioStream_F32 &source, unsigned char sourceOutput,
-      AudioStream_F32 &destination, unsigned char destinationInput) :
-      src(source), dst(destination),
-      src_index(sourceOutput), dest_index(destinationInput),
-      next_dest(NULL)
-      { connect(); }
+      AudioStream_F32 &destination, unsigned char destinationInput)
+			: AudioConnection_F32() { connect(source,sourceOutput, destination,destinationInput); }
     friend class AudioStream_F32;
+		~AudioConnection_F32(); 
+		int disconnect(void);
+		int connect(void);
+		int connect(AudioStream_F32 &source, AudioStream_F32 &destination) {return connect(source,0,destination,0);};
+		int connect(AudioStream_F32 &source, unsigned char sourceOutput,
+			AudioStream_F32 &destination, unsigned char destinationInput);
   protected:
-    void connect(void);
-    AudioStream_F32 &src;
-    AudioStream_F32 &dst;
+    AudioStream_F32 *src;
+    AudioStream_F32 *dst;
     unsigned char src_index;
     unsigned char dest_index;
     AudioConnection_F32 *next_dest;
+		bool isConnected;
 };
 
 
@@ -104,12 +106,31 @@ class AudioStream_F32 : public AudioStream {
       for (int i=0; i < n_input_f32; i++) {
         inputQueue_f32[i] = NULL;
       }
-	  if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
+			// add to a simple list, for update_all
+			// TODO: replace with a proper data flow analysis in update_all
+			if (first_update_f32 == NULL) {
+				first_update_f32 = this;
+			} else {
+				AudioStream_F32 *p;
+				for (p=first_update_f32; p->next_update_f32; p = p->next_update_f32) ;
+				p->next_update_f32 = this;
+			}
+			next_update_f32 = NULL;
+			//cpu_cycles = 0;
+			//cpu_cycles_max = 0;
+			//numConnections = 0;			
+			
+			//added by WEA to track usage
+			if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
     };
+		virtual ~AudioStream_F32(void) {
+			AudioStream::~AudioStream();
+		}
+		
     //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
     //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
     static void initialize_f32_memory(const unsigned int num);
-	static void initialize_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
+		static void initialize_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
 	
     //virtual void update(audio_block_f32_t *) = 0; 
     static uint8_t f32_memory_used;
@@ -117,20 +138,20 @@ class AudioStream_F32 : public AudioStream {
     static audio_block_f32_t * allocate_f32(void);
     static void release(audio_block_f32_t * block);
 	
-	//added for controlling whether calculations are done or not
-	static bool setIsAudioProcessing(bool enable) { if (enable) { return update_setup(); } else { return update_stop(); } };
-	static bool getIsAudioProcessing(void) { return isAudioProcessing; }
-  
-	//added for tracking and debugging how algorithms are called
-	static AudioStream_F32* allInstances[]; 
-	static int numInstances; 
-	static const int maxInstanceCounting;
-	//static void printNextUpdatePointers(void); 
-	static void printAllInstances(void);
-	String instanceName = String("NotNamed");
-	
-	static void reset_update_counter(void) { update_counter = 0; }
-	static uint32_t update_counter;
+		//added for controlling whether calculations are done or not
+		static bool setIsAudioProcessing(bool enable) { if (enable) { return update_setup(); } else { return update_stop(); } };
+		static bool getIsAudioProcessing(void) { return isAudioProcessing; }
+		
+		//added for tracking and debugging how algorithms are called
+		static AudioStream_F32* allInstances[]; 
+		static int numInstances; 
+		static const int maxInstanceCounting;
+		//static void printNextUpdatePointers(void); 
+		static void printAllInstances(void);
+		String instanceName = String("NotNamed");
+		
+		static void reset_update_counter(void) { update_counter = 0; }
+		static uint32_t update_counter;
 	
   protected:
     //bool active_f32;
@@ -139,21 +160,24 @@ class AudioStream_F32 : public AudioStream {
     audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
     audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
     friend class AudioConnection_F32;
-	static bool update_setup(void) { return isAudioProcessing = AudioStream::update_setup(); }
-	static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }
-	static void update_all(void) { update_counter++; AudioStream::update_all(); }
-	static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
-	
+		static bool update_setup(void) { return isAudioProcessing = AudioStream::update_setup(); }
+		static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }
+		static void update_all(void) { update_counter++; AudioStream::update_all(); }
+		static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
+		
   private:
+		static AudioConnection_F32* unused_f32; // linked list of unused but not destructed connections
     AudioConnection_F32 *destination_list_f32;
     audio_block_f32_t **inputQueue_f32;
     virtual void update(void) = 0;
-    audio_block_t *inputQueueArray_i16[1];  //two for stereo
+		static AudioStream_F32 *first_update_f32; // don't conflict with AudioStream::update_all, but it's private in AudioStream, so I need a version here so that AudioConnection_F32 can use something like it.
+    AudioStream_F32 *next_update_f32; // don't conflict with AudioStream::update_all, but it's private in AudioStream, so I need a version here so that AudioConnection_F32 can use something like it.
+		audio_block_t *inputQueueArray_i16[1];  //two for stereo  ...2024-08-24 WEA: why is this here?  Not needed?
     //static audio_block_f32_t *f32_memory_pool;
     static std::vector<audio_block_f32_t *> f32_memory_pool;
     static uint32_t f32_memory_pool_available_mask[6];
-	static void allocate_f32_memory(const unsigned int num);
-	static void allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
+		static void allocate_f32_memory(const unsigned int num);
+		static void allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
 };
 
 /*
