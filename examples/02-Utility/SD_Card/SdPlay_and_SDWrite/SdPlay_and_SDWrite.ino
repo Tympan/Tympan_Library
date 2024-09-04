@@ -81,7 +81,7 @@ AudioSDWriter_F32        audioSDWriter(&sd, audio_settings);  //Write audio to t
 AudioOutputI2S_F32       i2s_out(audio_settings);             //Send audio out
 
 //There are two ways that the audio flow can be configured...
-#if 1
+#if 0
   //OPTION 1: Take audio from the SD card, process it, then write it back to the SD card
   String description = String("Read Audio from SD, Process It, and Write Audio Back to SD");
 
