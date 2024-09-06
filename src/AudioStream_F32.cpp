@@ -25,7 +25,7 @@ uint32_t AudioStream_F32::f32_memory_pool_available_mask[6];
 
 uint8_t AudioStream_F32::f32_memory_used = 0;
 uint8_t AudioStream_F32::f32_memory_used_max = 0;
-AudioConnection_F32* AudioStream_F32::unused_f32 = NULL; // linked list of unused but not destructed connections
+//AudioConnection_F32* AudioStream_F32::unused_f32 = NULL; // linked list of unused but not destructed connections
 
 //added 2021-02-17
 const int AudioStream_F32::maxInstanceCounting = 120;
@@ -58,6 +58,15 @@ void AudioMemory_F32(const int num, const AudioSettings_F32 &settings) {
 	AudioMemory_F32( (unsigned int) num, settings); 
 }
 
+AudioStream_F32::~AudioStream_F32(void) {
+	//release any audio held in the input queue for this instance of AudioStream
+	for (int i=0; i<num_inputs; i++) {
+		audio_block_f32_t *block_f32 = inputQueue_f32[i];
+		if  (block_f32 != NULL) AudioStream_F32::release(block_f32);
+	}
+	
+	AudioStream::~AudioStream();
+}
 
 void AudioStream_F32::allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings) {
 
@@ -108,8 +117,8 @@ void AudioStream_F32::initialize_f32_memory(const unsigned int _num, const Audio
 		f32_memory_pool_available_mask[i >> 5] |= (1 << (i & 0x1F));
 	}
 	for (i=0; i < num; i++) {
-		//data[i].memory_pool_index = i;
-		f32_memory_pool[i]->memory_pool_index = i;
+		//data[i].memory_pool_index_f32 = i;
+		f32_memory_pool[i]->memory_pool_index_f32 = i;
 	}
 	__enable_irq();
 }
@@ -160,8 +169,8 @@ audio_block_f32_t * AudioStream_F32::allocate_f32(void)
 void AudioStream_F32::release(audio_block_f32_t *block)
 {
   if (!block) return;  //return if block is NULL
-  uint32_t mask = (0x80000000 >> (31 - (block->memory_pool_index & 0x1F)));
-  uint32_t index = block->memory_pool_index >> 5;
+  uint32_t mask = (0x80000000 >> (31 - (block->memory_pool_index_f32 & 0x1F)));
+  uint32_t index = block->memory_pool_index_f32 >> 5;
 
   __disable_irq();
   if (block->ref_count > 1) {
@@ -182,20 +191,40 @@ void AudioStream_F32::release(audio_block_f32_t *block)
 // by the caller after it's transmitted.  This allows the
 // caller to transmit to same block to more than 1 output,
 // and then release it once after all transmit calls.
+/*
 void AudioStream_F32::transmit(audio_block_f32_t *block, unsigned char index)
 {
   //Serial.print("AudioStream_F32: transmit().  start...index = ");Serial.println(index);
-  for (AudioConnection_F32 *c = destination_list_f32; c != NULL; c = c->next_dest) {
+  for (AudioConnection *c = destination_list; c != NULL; c = c->next_dest) {
 		//Serial.print("  : loop1, c->src_index = ");Serial.println(c->src_index);
     if (c->src_index == index) {
-      if (c->dst->inputQueue_f32[c->dest_index] == NULL) {
-        c->dst->inputQueue_f32[c->dest_index] = block;
-        block->ref_count++;
-        //Serial.print("  : block->ref_count = "); Serial.println(block->ref_count);
-      }
+			//let's check to confrim that the destination class is an AudioStream_F32
+			AudioStream_F32 *c_dst_f32 = dynamic_cast<AudioStream_F32*>(c->dst)
+			if (c_dst_f32 == nullptr) {
+				//it is not an AudioStream_F32
+				Serial.println("AudioStream_F32: transmit: *** ERROR ***");
+				Serial.println("    : Trying to send audio_block_f32 to a class that cannot take F32 data");
+				Serial.println("    : Sending nothing instead.");
+				//
+				// MAYBE ADD A DATA CONVERSION ROUTINE: audio_block_f32 to audio_block_t
+				// and transmit the audio_block_t to the next class
+				//
+			} else {
+				//it is an AudioStream_F32!
+				if (c_dst_f32->inputQueue_f32[c->dest_index] == NULL) {
+					c_dst_f32->inputQueue_f32[c->dest_index] = block;
+					block->ref_count++;
+					//Serial.print("  : block->ref_count = "); Serial.println(block->ref_count);
+				}
+			}
     }
   } 
-  //Serial.println("AudioStream_F32: transmit(). finished.");
+}
+*/
+//adding this only to handle the case when some (many) AudioStream_F32 classes
+//explicitly ask for AudioStream_F32::transmit().  I want to make sure that one is here?
+void AudioStream_F32::transmit(audio_block_f32_t *block, unsigned char index) {
+	AudioStream::transmit(static_cast<audio_block_t*>(block), index);
 }
 
 // Receive block from an input.  The block's data
@@ -203,10 +232,18 @@ void AudioStream_F32::transmit(audio_block_f32_t *block, unsigned char index)
 audio_block_f32_t * AudioStream_F32::receiveReadOnly_f32(unsigned int index)
 {
   audio_block_f32_t *in;
+ 
+  if (index >= num_inputs) return NULL;  //num_inputs is in cores/Teensy4/AudioStream.h
+  
+	//Old, from when audio_block_f32_t did NOT inherit from audio_block_t
+	//in = inputQueue_f32[index];
+	//inputQueue_f32[index] = NULL;
 
-  if (index >= num_inputs_f32) return NULL;
-  in = inputQueue_f32[index];
-  inputQueue_f32[index] = NULL;
+	//new for audio_block_f32_t inheriting from audio_block_t
+	audio_block_t *in_int16 = AudioStream::receiveReadOnly(index);
+	if (in_int16 == NULL) return NULL;
+  in = static_cast<audio_block_f32_t*>(in_int16);  //DANGER!  What if it wasn't really a audio_block_f32_t??
+	
   return in;
 }
 
@@ -217,22 +254,32 @@ audio_block_f32_t * AudioStream_F32::receiveWritable_f32(unsigned int index)
 {
   audio_block_f32_t *in, *p;
 
-  if (index >= num_inputs_f32) return NULL;
-  in = inputQueue_f32[index];
-  inputQueue_f32[index] = NULL;
+  if (index >= num_inputs) return NULL;  //num_inputs is in cores/Teensy4/AudioStream.h
+	
+	//Old, from when audio_block_f32_t did NOT inherit from audio_block_t	
+  //in = inputQueue_f32[index];
+  //inputQueue_f32[index] = NULL;
+	
+	//new for audio_block_f32_t inheriting from audio_block_t
+	audio_block_t *in_int16 = AudioStream::receiveReadOnly(index);
+	if (in_int16 == NULL) return NULL;
+  in = static_cast<audio_block_f32_t*>(in_int16);  //DANGER!  What if it wasn't really a audio_block_f32_t??
+	
+	//continue...copy the audio data
   if (in && in->ref_count > 1) {
-    p = allocate_f32();
-    //if (p) memcpy(p->data, in->data, sizeof(p->data));
-	if (p) memcpy(p->data, in->data, (p->full_length)*sizeof(p->data[0])); //revised 9/27/2023 as p->data is now allocated at runtime
-	p->id = in->id; //copy over ID so that the new one is the same as the one on the original block.  added 1/13/2020
-    in->ref_count--;
-    in = p;
+		p = allocate_f32();
+		//if (p) memcpy(p->data, in->data, sizeof(p->data));
+		if (p) memcpy(p->data, in->data, (p->full_length)*sizeof(p->data[0])); //revised 9/27/2023 as p->data is now allocated at runtime
+		p->id = in->id; //copy over ID so that the new one is the same as the one on the original block.  added 1/13/2020
+		in->ref_count--;
+		in = p;
   }
   return in;
 }
 
 /**************************************************************************************/
 // Constructor with no parameters: leave unconnected
+/*
 AudioConnection_F32::AudioConnection_F32() 
 	: src(NULL), dst(NULL),
 	  src_index(0), dest_index(0),
@@ -244,9 +291,11 @@ AudioConnection_F32::AudioConnection_F32()
 	next_dest = AudioStream_F32::unused_f32;
 	AudioStream_F32::unused_f32 = this;
 }
+*/
 
 
 // Destructor
+/*
 AudioConnection_F32::~AudioConnection_F32()
 {
 	AudioConnection_F32** pp;
@@ -259,10 +308,11 @@ AudioConnection_F32::~AudioConnection_F32()
 	if (*pp) // found ourselves
 		*pp = next_dest; // remove ourselves from the unused list
 }
+*/
 
 /**************************************************************************************/
 
-
+/* 
 int AudioConnection_F32::connect(void) {
 	int result = 1;
 	AudioConnection_F32 *p;
@@ -361,8 +411,8 @@ int AudioConnection_F32::connect(void) {
 	
 	return result;
 }
-
-
+ */
+/* 
 int AudioConnection_F32::connect(AudioStream_F32 &source, unsigned char sourceOutput,
 		AudioStream_F32 &destination, unsigned char destinationInput)
 {
@@ -379,69 +429,50 @@ int AudioConnection_F32::connect(AudioStream_F32 &source, unsigned char sourceOu
 	}
 	return result;
 }
+ */
+ 
 
 int AudioConnection_F32::disconnect(void)
 {
-	AudioConnection_F32 *p;
-
-	if (!isConnected) return 1;
-	if (dest_index >= dst->num_inputs_f32) return 2; // should never happen!
+	int ret_val = AudioConnection::disconnect();
+	if (ret_val > 0) return ret_val; //look at the various return codes from AudioStream::disconnect()...anything greater than 0 is it returning early 
+		
+	//Be aware that AudioConnection::disconnect() finished by re-enabling the IRQ.  
+	//For us here in AudioConnection::disconnect, we need to stall them a little longer
 	__disable_irq();
 	
-	// Remove destination from source list
-	p = src->destination_list_f32;
-	if (p == NULL) {
-//>>> PAH re-enable the IRQ
-		__enable_irq();
-		return 3;
-	} else if (p == this) {
-		if (p->next_dest) {
-			src->destination_list_f32 = next_dest;
-		} else {
-			src->destination_list_f32 = NULL;
+	//check to see if the destiation is an AudioStream_F32 (which it probably always will be)
+	//AudioStream_F32 *c_dst_f32 = dynamic_cast<AudioStream_F32*>(dst);  
+	
+	//DANGER: dynamic_cast aren't allowed on Teensy (the fno-rtti compiler flag) so we're
+	//forced to use the more dangerous static_cast<>
+	//Serial.println("AudioConnection_F32: disconnect: dst = " + String((int)dst));
+	AudioStream_F32 *c_dst_f32 = static_cast<AudioStream_F32*>(dst);  
+	//Serial.println("AudioConnection_F32: disconnect: c_dst_f32 = " + String((int)c_dst_f32));
+
+	//having gotten rid of dynamic_cast, we will never (?) get a nullptr, so this test is now dumb
+	if (c_dst_f32 != nullptr) {  //a failed case (ie, if it's not an AudioStream_F32) will result in nullptr
+		//>>> PAH release the audio buffer properly
+		//Remove possible pending src block from destination
+		//Serial.println("AudioConnection_F32: disconnect: c_dst_f32->inputQueue_f32[dest_index] = " + String((int)c_dst_f32->inputQueue_f32[dest_index]));
+		if (c_dst_f32->inputQueue_f32[dest_index] != NULL) {
+			//Serial.println("AudioConnection_F32: disconnect: releasing (c_dst_f32->inputQueue_f32[dest_index]...");
+			AudioStream_F32::release(c_dst_f32->inputQueue_f32[dest_index]);
+			// release() re-enables the IRQ. Need it to be disabled a little longer
+			__disable_irq();
+			c_dst_f32->inputQueue_f32[dest_index] = NULL;
 		}
 	} else {
-		while (p)
-		{
-			if (p->next_dest == this) // found the parent of the disconnecting object
-			{
-				p-> next_dest = this->next_dest; // skip parent's link past us
-				break;
-			}
-			else
-				p = p->next_dest; // carry on down the list
-		}
-	}
-//>>> PAH release the audio buffer properly
-	//Remove possible pending src block from destination
-	if(dst->inputQueue_f32[dest_index] != NULL) {
-		AudioStream_F32::release(dst->inputQueue_f32[dest_index]);
-		// release() re-enables the IRQ. Need it to be disabled a little longer
-		__disable_irq();
-		dst->inputQueue_f32[dest_index] = NULL;
+		// dst was not an AudioStream_F32, so we don't have to worry about releasing f32 memory
 	}
 
-	//Check if the disconnected AudioStream objects should still be active
-	src->numConnections--;
-	if (src->numConnections == 0) {
-		src->active = false;
-	}
-
-	dst->numConnections--;
-	if (dst->numConnections == 0) {
-		dst->active = false;
-	}
-	
-	isConnected = false;
-	next_dest = dst->unused_f32;
-	dst->unused_f32 = this;
-
+	//re-enable the IRQ!
 	__enable_irq();
 	
 	return 0;
 }
 
-AudioStream_F32 * AudioStream_F32::first_update_f32 = NULL;
+//AudioStream_F32 * AudioStream_F32::first_update_f32 = NULL;
 
 
 /* void AudioStream_F32::printNextUpdatePointers(void) {

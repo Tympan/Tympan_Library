@@ -38,7 +38,7 @@ class AudioConnection_F32;
 //create a new structure to hold audio as floating point values.
 //modeled on the existing teensy audio block struct, which uses Int16
 //https://github.com/PaulStoffregen/cores/blob/268848cdb0121f26b7ef6b82b4fb54abbe465427/teensy3/AudioStream.h
-class audio_block_f32_t {
+class audio_block_f32_t : public audio_block_t {
 	public:
 		audio_block_f32_t(void)
 		{
@@ -53,16 +53,15 @@ class audio_block_f32_t {
 			fs_Hz = settings.sample_rate_Hz;
 			length = settings.audio_block_samples;
 		}
-		~audio_block_f32_t(void) 
-		{
+		~audio_block_f32_t(void) {
 			if (data != NULL) delete data;
+			audio_block_t::~audio_block_t();
 		}
 		
-		
-		unsigned char ref_count;
-		unsigned char memory_pool_index;
-		unsigned char reserved1;
-		unsigned char reserved2;
+		//unsigned char ref_count_f32;  //we'll use ref_count in audio_block_t instead
+		unsigned char memory_pool_index_f32;
+		//unsigned char reserved1;
+		//unsigned char reserved2;
 		float32_t *data; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
 		int full_length = MAX_AUDIO_BLOCK_SAMPLES_F32; //MAX_AUDIO_BLOCK_SAMPLES_F32
 		int length = MAX_AUDIO_BLOCK_SAMPLES_F32; // AUDIO_BLOCK_SAMPLES is 128, from AudioStream.h
@@ -71,51 +70,27 @@ class audio_block_f32_t {
 	private:
 };
 
-class AudioConnection_F32
-{
-  public:
-		AudioConnection_F32();
-    AudioConnection_F32(AudioStream_F32 &source, AudioStream_F32 &destination)
-      : AudioConnection_F32() { connect(source,destination); }
-    AudioConnection_F32(AudioStream_F32 &source, unsigned char sourceOutput,
-      AudioStream_F32 &destination, unsigned char destinationInput)
-			: AudioConnection_F32() { connect(source,sourceOutput, destination,destinationInput); }
-    friend class AudioStream_F32;
-		~AudioConnection_F32(); 
-		int disconnect(void);
-		int connect(void);
-		int connect(AudioStream_F32 &source, AudioStream_F32 &destination) {return connect(source,0,destination,0);};
-		int connect(AudioStream_F32 &source, unsigned char sourceOutput,
-			AudioStream_F32 &destination, unsigned char destinationInput);
-  protected:
-    AudioStream_F32 *src;
-    AudioStream_F32 *dst;
-    unsigned char src_index;
-    unsigned char dest_index;
-    AudioConnection_F32 *next_dest;
-		bool isConnected;
-};
-
-
+#define AUDIOSTREAMF32_MAX_INT16_CONNECTIONS 8
 class AudioStream_F32 : public AudioStream {
   public:
-    AudioStream_F32(unsigned char n_input_f32, audio_block_f32_t **iqueue) : AudioStream(1, inputQueueArray_i16), 
-        num_inputs_f32(n_input_f32), inputQueue_f32(iqueue) {
+    AudioStream_F32(unsigned char n_inputs, audio_block_f32_t **iqueue) : 
+		    AudioStream(min(n_inputs, AUDIOSTREAMF32_MAX_INT16_CONNECTIONS), inputQueueArray_i16), 
+        inputQueue_f32(iqueue) {
       //active_f32 = false;
-      destination_list_f32 = NULL;
-      for (int i=0; i < n_input_f32; i++) {
+      //destination_list_f32 = NULL;
+      for (int i=0; i < n_inputs; i++) {
         inputQueue_f32[i] = NULL;
       }
 			// add to a simple list, for update_all
 			// TODO: replace with a proper data flow analysis in update_all
-			if (first_update_f32 == NULL) {
-				first_update_f32 = this;
-			} else {
-				AudioStream_F32 *p;
-				for (p=first_update_f32; p->next_update_f32; p = p->next_update_f32) ;
-				p->next_update_f32 = this;
-			}
-			next_update_f32 = NULL;
+			//if (first_update_f32 == NULL) {
+			//	first_update_f32 = this;
+			//} else {
+			//	AudioStream_F32 *p;
+			//	for (p=first_update_f32; p->next_update_f32; p = p->next_update_f32) ;
+			//	p->next_update_f32 = this;
+			//}
+			//next_update_f32 = NULL;
 			//cpu_cycles = 0;
 			//cpu_cycles_max = 0;
 			//numConnections = 0;			
@@ -123,10 +98,8 @@ class AudioStream_F32 : public AudioStream {
 			//added by WEA to track usage
 			if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
     };
-		virtual ~AudioStream_F32(void) {
-			AudioStream::~AudioStream();
-		}
-		
+		virtual ~AudioStream_F32(void);
+
     //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
     //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
     static void initialize_f32_memory(const unsigned int num);
@@ -155,7 +128,7 @@ class AudioStream_F32 : public AudioStream {
 	
   protected:
     //bool active_f32;
-    unsigned char num_inputs_f32;
+    //unsigned char num_inputs_f32;
     void transmit(audio_block_f32_t *block, unsigned char index = 0);
     audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
     audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
@@ -166,19 +139,52 @@ class AudioStream_F32 : public AudioStream {
 		static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
 		
   private:
-		static AudioConnection_F32* unused_f32; // linked list of unused but not destructed connections
-    AudioConnection_F32 *destination_list_f32;
+		//static AudioConnection_F32* unused_f32; // linked list of unused but not destructed connections
+    //AudioConnection_F32 *destination_list_f32;
     audio_block_f32_t **inputQueue_f32;
     virtual void update(void) = 0;
-		static AudioStream_F32 *first_update_f32; // don't conflict with AudioStream::update_all, but it's private in AudioStream, so I need a version here so that AudioConnection_F32 can use something like it.
-    AudioStream_F32 *next_update_f32; // don't conflict with AudioStream::update_all, but it's private in AudioStream, so I need a version here so that AudioConnection_F32 can use something like it.
-		audio_block_t *inputQueueArray_i16[1];  //two for stereo  ...2024-08-24 WEA: why is this here?  Not needed?
+		//static AudioStream_F32 *first_update_f32; // don't conflict with AudioStream::update_all, but it's private in AudioStream, so I need a version here so that AudioConnection_F32 can use something like it.
+    //AudioStream_F32 *next_update_f32; // don't conflict with AudioStream::update_all, but it's private in AudioStream, so I need a version here so that AudioConnection_F32 can use something like it.
+		audio_block_t *inputQueueArray_i16[AUDIOSTREAMF32_MAX_INT16_CONNECTIONS];  //assume max of 8 possible int16 connections (nearly all instances will actually use zero)
     //static audio_block_f32_t *f32_memory_pool;
     static std::vector<audio_block_f32_t *> f32_memory_pool;
     static uint32_t f32_memory_pool_available_mask[6];
 		static void allocate_f32_memory(const unsigned int num);
 		static void allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
 };
+
+
+class AudioConnection_F32 : public AudioConnection
+{
+  public:
+		AudioConnection_F32() : AudioConnection() {};
+    //AudioConnection_F32(AudioStream_F32 &source, AudioStream_F32 &destination)
+    //  : AudioConnection(source, (unsigned char)0, destination, (unsigned char)0) {}
+    AudioConnection_F32(AudioStream_F32 &source, unsigned char sourceOutput,
+      AudioStream_F32 &destination, unsigned char destinationInput)
+			: AudioConnection(source, sourceOutput, destination, destinationInput) {}
+		virtual ~AudioConnection_F32() {
+			AudioConnection_F32::disconnect();
+			AudioConnection::~AudioConnection();
+		}
+    friend class AudioStream_F32;
+		//virtual ~AudioConnection_F32(); 
+		int disconnect(void);
+		//int connect(void);
+		//int connect(AudioStream_F32 &source, AudioStream_F32 &destination) {return connect(source,0,destination,0);};
+		//int connect(AudioStream_F32 &source, unsigned char sourceOutput,
+		//	AudioStream_F32 &destination, unsigned char destinationInput);
+  protected:
+    //AudioStream_F32 *src;
+    //AudioStream_F32 *dst;
+    //unsigned char src_index;
+    //unsigned char dest_index;
+    //AudioConnection_F32 *next_dest;
+		//bool isConnected;
+};
+
+
+
 
 /*
 #define AudioMemory_F32(num) ({ \
