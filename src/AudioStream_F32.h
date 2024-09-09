@@ -97,19 +97,20 @@ class AudioConnection_F32
 
 class AudioStream_F32 : public AudioStream {
   public:
-    AudioStream_F32(unsigned char n_input_f32, audio_block_f32_t **iqueue) : AudioStream(1, inputQueueArray_i16), 
-        num_inputs_f32(n_input_f32), inputQueue_f32(iqueue) {
+    AudioStream_F32(unsigned char n_input_f32, audio_block_f32_t **iqueue) : 
+			AudioStream(1, inputQueueArray_i16), num_inputs_f32(n_input_f32), inputQueue_f32(iqueue)
+		{
       //active_f32 = false;
       destination_list_f32 = NULL;
       for (int i=0; i < n_input_f32; i++) {
         inputQueue_f32[i] = NULL;
       }
-	  if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
+			if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
     };
     //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
     //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
     static void initialize_f32_memory(const unsigned int num);
-	static void initialize_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
+	  static void initialize_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
 	
     //virtual void update(audio_block_f32_t *) = 0; 
     static uint8_t f32_memory_used;
@@ -117,21 +118,33 @@ class AudioStream_F32 : public AudioStream {
     static audio_block_f32_t * allocate_f32(void);
     static void release(audio_block_f32_t * block);
 	
-	//added for controlling whether calculations are done or not
-	static bool setIsAudioProcessing(bool enable) { if (enable) { return update_setup(); } else { return update_stop(); } };
-	static bool getIsAudioProcessing(void) { return isAudioProcessing; }
-  
-	//added for tracking and debugging how algorithms are called
-	static AudioStream_F32* allInstances[]; 
-	static int numInstances; 
-	static const int maxInstanceCounting;
-	//static void printNextUpdatePointers(void); 
-	static void printAllInstances(void);
-	String instanceName = String("NotNamed");
-	
-	static void reset_update_counter(void) { update_counter = 0; }
-	static uint32_t update_counter;
-	
+		//Control the global update_all() process handled by the underlying AudioStream class.
+		//These affect the *global* audio processing behavior, not the per-instance behavior.
+		//The methods below should only be used with care...like in the I2S classes.
+		static bool setIsAudioProcessing(bool enable) { if (enable) { return update_setup(); } else { return update_stop(); } };
+		static bool getIsAudioProcessing(void) { return isAudioProcessing; }
+		
+		//Control the update process for a single instance of AudioStream_f32.  I am re-using
+		//the "active" data member from AudioStream.h.  Typically, this is only set/cleared when
+		//the AudioConnections are set/cleared.  During the global update_all() process, this
+		//"active" flag is checked to see if update_all() should execute the instance's update()
+		//method.  By given greater access here, perhaps I am expanding the use of "active" too far?
+		//
+		//bool active; //This is already in AudioStream.h as "protected"
+		//bool isActive(void) { return active; }  //this is already in AudioStream.h as "public"
+		bool setActive(bool _active) { return active = _active; }  //added here in AudioStream_F32.h
+		
+		//added for tracking and debugging how algorithms are called
+		static AudioStream_F32* allInstances[]; 
+		static int numInstances; 
+		static const int maxInstanceCounting;
+		//static void printNextUpdatePointers(void); 
+		static void printAllInstances(void);
+		String instanceName = String("NotNamed");
+		
+		static void reset_update_counter(void) { update_counter = 0; }
+		static uint32_t update_counter;
+		
   protected:
     //bool active_f32;
     unsigned char num_inputs_f32;
@@ -139,10 +152,14 @@ class AudioStream_F32 : public AudioStream {
     audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
     audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
     friend class AudioConnection_F32;
-	static bool update_setup(void) { return isAudioProcessing = AudioStream::update_setup(); }
-	static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }
-	static void update_all(void) { update_counter++; AudioStream::update_all(); }
-	static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
+	
+		//Control the global update_all() process handled by the underlying AudioStream class.
+		//These affect the *global* audio processing behavior, not the per-instance behavior.
+		//The methods below should only be used with care...like in the I2S classes.
+		static bool update_setup(void) { return isAudioProcessing = AudioStream::update_setup(); }        //setup the global "update" process...not per instance, global! 
+		static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }   //stop the global "update" process...not per instance, global!
+		static void update_all(void) { update_counter++; AudioStream::update_all(); }											//force th execution of the global "update" process...not per instance, global!
+		static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
 	
   private:
     AudioConnection_F32 *destination_list_f32;
@@ -152,8 +169,8 @@ class AudioStream_F32 : public AudioStream {
     //static audio_block_f32_t *f32_memory_pool;
     static std::vector<audio_block_f32_t *> f32_memory_pool;
     static uint32_t f32_memory_pool_available_mask[6];
-	static void allocate_f32_memory(const unsigned int num);
-	static void allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
+		static void allocate_f32_memory(const unsigned int num);
+		static void allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
 };
 
 /*
