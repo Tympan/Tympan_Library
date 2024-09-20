@@ -28,21 +28,21 @@
 		are able to tell this SerialManagerBase that they exist and that they can respond
 		appropriately.  To do this, you must:
 	   
-	       * Your audio processing class (or whatever) must inherit from SerialManager_UI
-		     and implement the methods required by that SerialManager_UI.  These are 
-			 methods like printHelp() and processCharacterTriple() and setFullGUIState().
-			 Several of the Tympan_Library's most important classes already have these 
-			 SerialManager_UI methods implemented, so you don't have to do anything!
-		   * In your sketch (in your program), you register each instance of your class 
-		     with your SerialManager via the SerialManagerBase method add_UI_element().
-			 This tells the SerialManager that your class instances exist and that they
-			 are ready to interact!
-		   * In your sketch (in your program), you create a Tympan Remote GUI, and that
-		     the command characters that you set for each GUI element agree with the
-			 command characters that you wrote when you implemented your class's 
-			 processCharacterTriple().  Or, if you're using one of the Tympan_Library classes
-			 that alrady implement SerialManager_UI, it probably already has an App GUI that
-			 has been pre-written for you!  You can simply invoke those pre-written elements!
+		* Your audio processing class (or whatever) must inherit from SerialManager_UI
+			and implement the methods required by that SerialManager_UI.  These are 
+			methods like printHelp() and processCharacterTriple() and setFullGUIState().
+			Several of the Tympan_Library's most important classes already have these 
+			SerialManager_UI methods implemented, so you don't have to do anything!
+		* In your sketch (in your program), you register each instance of your class 
+			with your SerialManager via the SerialManagerBase method add_UI_element().
+			This tells the SerialManager that your class instances exist and that they
+			are ready to interact!
+		* In your sketch (in your program), you create a Tympan Remote GUI, and that
+			the command characters that you set for each GUI element agree with the
+			command characters that you wrote when you implemented your class's 
+			processCharacterTriple().  Or, if you're using one of the Tympan_Library classes
+			that alrady implement SerialManager_UI, it probably already has an App GUI that
+			has been pre-written for you!  You can simply invoke those pre-written elements!
 			 
 	Communication Methods: At its core, the App communicates one or more text characters
 		back to the Tympan.  Given that it must be characters, you can implement any protocol
@@ -50,37 +50,39 @@
 		and if you want to build upon the automated routines in this base class, the primary
 		communication approaches are:
 		
-		   * Single Character Commands:  The most basic approach is for you to create a
-		     button in the App whose command is a single character.  For example, you might
-			 create a button that sends a 'c' back to to the Tympan.  Typically, these single-
-			 character commands are interpretted in code that you write in your own
-			 implementation of SerialManager.  This single character can also come from a user
-			 typing it into the SerialMonitor.  All of the Tympan_Library examples treat characters
-			 coming in from the USB Serial link as the same as characters coming in from the 
-			 Bluetooth connection.
-		   * Four-Character Commands:  Most of the automated communcation takes place using
-		     a four-character command.  Each button in the App GUI would be told to transmit
-			 a four characters instead of just one.  The first character is a special character
-			 that identifies it as a four-character command. By default, this special character
-			 is an underscore ('_').  If this SerialManagerBase.respondToByte() sees an underscore
-			 it will assume that the next three characters form the rest of the command (with
-			 exceptions...see the code of respondToByte()).  The three characters are sent to
-			 each of the classes that have been registered with the SerialManagerBase via the
-			 processCharacterTriple.  Typically, the first of three characters identifies the
-			 command with a particular instance of your class.  Then, the second and third
-			 characters can be interpretted by the class however you'd like.
-		   * DataStreams: Besides the single-character and four-character modes, there are also
-		     data streaming modes to support specialized communication.  These special modes
-			 are not inteded to be invoked by a user's GUI, so they can be ignored.  To avoid
-			 inadvertently invoking these modes, never send characters such as 0x02, 0x03, 0x04.
-			 In fact, you should generally avoid any non-printable character or you risk seeing
-			 unexpected behavior.
+		* Single Character Commands:  The most basic approach is for you to create a
+			button in the App whose command is a single character.  For example, you might
+			create a button that sends a 'c' back to to the Tympan.  Typically, these single-
+			character commands are interpretted in code that you write in your own
+			implementation of SerialManager.  This single character can also come from a user
+			typing it into the SerialMonitor.  All of the Tympan_Library examples treat characters
+			coming in from the USB Serial link as the same as characters coming in from the 
+			Bluetooth connection.
+		* Four-Character Commands:  Most of the automated communcation takes place using
+			a four-character command.  Each button in the App GUI would be told to transmit
+			a four characters instead of just one.  The first character is a special character
+			that identifies it as a four-character command. By default, this special character
+			is an underscore ('_').  If this SerialManagerBase.respondToByte() sees an underscore
+			it will assume that the next three characters form the rest of the command (with
+			exceptions...see the code of respondToByte()).  The three characters are sent to
+			each of the classes that have been registered with the SerialManagerBase via the
+			processCharacterTriple.  Typically, the first of three characters identifies the
+			command with a particular instance of your class.  Then, the second and third
+			characters can be interpretted by the class however you'd like.
+		* DataStreams: Besides the single-character and four-character modes, there are also
+			data streaming modes to support specialized communication.  These special modes
+			are not inteded to be invoked by a user's GUI, so they can be ignored.  To avoid
+			inadvertently invoking these modes, never send characters such as 0x02, 0x03, 0x04.
+			In fact, you should generally avoid any non-printable character or you risk seeing
+			unexpected behavior.
 
-			 Datastreams expect the following message protocol.  Note that the message length and payload are sent as little endian (LSB, MSB):
+			Datastreams expect the following message protocol.  Note that the message length and
+			payload are sent as little endian (LSB, MSB):
 			 	1.	DATASTREAM_START_CHAR 	(0x02)
 				2.	Message Length (int32): number of bytes including parts-4 thru part-6
 				3.	DATASTREAM_SEPARATOR 	(0x03)
-				4.	Message Type (char): Avoid using the special characters 0x03 or 0x04.  (if set to ‘test’, it will print out the payload as an int, then a float)
+				4.	Message Type (char): Avoid using the special characters 0x03 or 0x04.  (if set
+							to ‘test’, it will print out the payload as an int, then a float)
 				5.	DATASTREAM_SEPARATOR 	(0x03)
 				6.	Payload
 				7.	DATASTREAM_END_CHAR 	(0x04)
@@ -95,15 +97,16 @@
 				6.	Payload					(0x499602D2, 0x499602D2) = [1234567890, 1234567890]
 				7.	DATASTREAM_END_CHAR 	(0x04)
 
-			- Expected output
-				-  SerialManagerBase: RespondToByte: Start data stream.
-                - SerialManagerBase: RespondToByte: Stream length = 13
-                - SerialManagerBase: RespondToByte: Time to process stream!
-            	- Stream is of type 'test'.
-                - int is 1234567890
-                - float is 1228890.25
+			Expected output
+				- SerialManagerBase: RespondToByte: Start data stream.
+				- SerialManagerBase: RespondToByte: Stream length = 13
+				- SerialManagerBase: RespondToByte: Time to process stream!
+					- Stream is of type 'test'.
+						- int is 1234567890
+						- float is 1228890.25
 
-			To register a callback when a datastream message is received, use setDataStreamCallback() and set a unique message type (i.e. not 'gha', 'dsl', afc', or 'test'):
+			To register a callback when a datastream message is received, use setDataStreamCallback()
+			and set a unique message type (i.e. not 'gha', 'dsl', afc', or 'test'):
  			- `serialManager.setDataStreamCallback(&dataStreamCallback);`
 			- `void dataStreamCallback(char* payload_p, String *msgType_p, int numBytes)`
 
