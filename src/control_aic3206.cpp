@@ -517,12 +517,44 @@ float AudioControlAIC3206::volume_dB(float orig_vol_dB, int Ichan) {  // 0 = Lef
 	return vol_dB;
 }
 float AudioControlAIC3206::volume_dB(float vol_left_dB, float vol_right_dB) {
-	volume_dB(vol_right_dB, 1);       //set right channel
-	return volume_dB(vol_left_dB, 0); //set left channel
+	volume_dB(vol_right_dB,       (int)1); //set right channel
+	return volume_dB(vol_left_dB, (int)0); //set left channel
 }
 float AudioControlAIC3206::volume_dB(float vol_dB) {
-	vol_dB = volume_dB(vol_dB, 1);  //set right channel
-	return volume_dB(vol_dB, 0);    //set left channel
+	vol_dB = volume_dB(vol_dB, (int)1);     //set right channel
+	return volume_dB(vol_dB,   (int)0);    //set left channel
+}
+
+float AudioControlAIC3206::setHeadphoneGain_dB(float gain_left_dB, float gain_right_dB) {
+	unsigned int buff = 0;
+	int8_t left_dB_u8 = 0;
+	int8_t right_dB_u8 = 0;
+
+	// round to nearest dB and clamp limits
+	left_dB_u8 = (int)(gain_left_dB + 0.5); 
+	right_dB_u8 = (int)(gain_right_dB + 0.5); 
+
+	left_dB_u8 = constrain(left_dB_u8, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
+	right_dB_u8 = constrain(gain_right_dB, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
+
+	//check to see if they want it muted
+	if (gain_left_dB < -90.0) left_dB_u8 = 0b00111001; //mute it
+	if (gain_right_dB < -90.0) right_dB_u8 = 0b00111001; //mute it
+
+	// Set Left Volume
+	//aic_goToBook(0);
+	buff = aic_readPage(AIC3206_HP_VOLUME_PAGE, AIC3206_HPL_VOLUME_REG); //read existing register value
+	buff = (buff & (~AIC3206_HP_VOLUME_MASK)) | (left_dB_u8 & AIC3206_HP_VOLUME_MASK);
+
+	aic_writePage( AIC3206_HP_VOLUME_PAGE, AIC3206_HPL_VOLUME_REG, uint8_t(buff) );
+
+	// Set Right Volume
+	buff = aic_readPage(AIC3206_HP_VOLUME_PAGE, AIC3206_HPR_VOLUME_REG); //read existing register value
+	buff = (buff & (~AIC3206_HP_VOLUME_MASK)) | (right_dB_u8 & AIC3206_HP_VOLUME_MASK);
+
+	aic_writePage( AIC3206_HP_VOLUME_PAGE, AIC3206_HPR_VOLUME_REG, uint8_t(buff) );
+
+	return left_dB_u8;
 }
 
 int AudioControlAIC3206::unmuteDAC(int chan) {

@@ -24,13 +24,6 @@
 #define TYMPAN_LEFT_JACK_AS_LINEIN_RIGHT_ON_BOARD_MIC   (AudioControlAIC3206::IN3_IN2) //use pink jack for left and on-board mic for right
 #define TYMPAN_LEFT_JACK_AS_MIC_RIGHT_ON_BOARD_MIC      (AudioControlAIC3206::IN3_wBIAS_IN2) //use pink jack (with bias) for left and on-board mic for right
 
-
-//convenience names to use with outputSelect()
-#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
-#define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
-#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out
-#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
-
 //names to use with setMicBias() to set the amount of bias voltage to use
 #define TYMPAN_MIC_BIAS_OFF             0
 #define TYMPAN_MIC_BIAS_1_25            1
@@ -39,9 +32,26 @@
 #define TYMPAN_MIC_BIAS_VSUPPLY         4
 #define TYMPAN_DEFAULT_MIC_BIAS TYMPAN_MIC_BIAS_2_5
 
+//convenience names to use with outputSelect()
+#define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
+#define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
+#define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out
+#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
+
+// Headphone Volume 
+#define AIC3206_HP_VOLUME_PAGE 0x01
+#define AIC3206_HPL_VOLUME_REG 0x10  //decimal 16
+#define AIC3206_HPR_VOLUME_REG 0x11  //decimal 17
+#define AIC3206_HP_VOLUME_MASK 0b00111111
+#define AIC3206_HP_VOLUME_MIN (int8_t)-6
+#define AIC3206_HP_VOLUME_MAX (int8_t)14
+
+
 #define BOTH_CHAN 0
 #define LEFT_CHAN 1
 #define RIGHT_CHAN 2
+
+
 
 //define AIC3206_DEFAULT_I2C_BUS 0   //bus zero is &Wire
 #define AIC3206_DEFAULT_RESET_PIN 42
@@ -82,6 +92,10 @@ public:
 	float volume_dB(float vol_dB);  //set both channels to the same volume (via the DAC output volume)
 	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels (via the DAC output volume), but to their own values
 	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
+	float setDacGain_dB(float gain_dB) { return setDacGain_dB(gain_dB, gain_dB); }
+	float setDacGain_dB(float gain_left_dB, float gain_right_dB) { return volume_dB(gain_left_dB, gain_right_dB); } 
+	float setHeadphoneGain_dB(float gain_dB) { return setHeadphoneGain_dB(gain_dB, gain_dB); }
+	float setHeadphoneGain_dB(float vol_left_dB, float vol_right_dB); // set HP volume
 	int muteDAC(int chan = BOTH_CHAN);  //mutes the output DAC
 	int unmuteDAC(int chan = BOTH_CHAN); //unmutes the output DAC
 	int muteHeadphone(int chan = BOTH_CHAN);   //mutes the headphone driver
