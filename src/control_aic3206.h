@@ -38,14 +38,6 @@
 #define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out
 #define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
 
-// Headphone Volume 
-#define AIC3206_HP_VOLUME_PAGE 0x01
-#define AIC3206_HPL_VOLUME_REG 0x10  //decimal 16
-#define AIC3206_HPR_VOLUME_REG 0x11  //decimal 17
-#define AIC3206_HP_VOLUME_MASK 0b00111111
-#define AIC3206_HP_VOLUME_MIN (int8_t)-6
-#define AIC3206_HP_VOLUME_MAX (int8_t)14
-
 
 #define BOTH_CHAN 0
 #define LEFT_CHAN 1

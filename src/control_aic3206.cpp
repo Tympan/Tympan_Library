@@ -176,6 +176,22 @@
 #define TYMPAN_ADC_MUTE_REG 0x0052 //  page 0, register 82
 #define TYMPAN_ADC_UNMUTE 0x00
 
+
+//******************* OUTPUT DEFINITIONS *****************************//
+#define TYMPAN_HP_DRIVER_GAIN_PAGE 1
+#define TYMPAN_HPL_DRIVER_GAIN_REG 0x10  //page 1, register 16
+#define TYMPAN_HPR_DRIVER_GAIN_REG 0x11  //page 1, register 17
+#define AIC3206_HP_VOLUME_MASK 0b00111111
+#define AIC3206_HP_VOLUME_MIN (int8_t)-6
+#define AIC3206_HP_VOLUME_MAX (int8_t)14
+
+#define TYMPAN_DAC_SETTINGS_PAGE 0
+#define TYMPAN_DAC_PROCESSING_BLOCK_REG 0x3c // page 0 register 60
+#define TYMPAN_DAC_CHANNEL_SETUP_REG  0x40 //page 0 register 64
+#define TYMPAN_DAC_VOLUME_LEFT_REG 0x41 // page 0 reg 65
+#define TYMPAN_DAC_VOLUME_RIGHT_REG 0x42 // page 0 reg 66
+
+
 void AudioControlAIC3206::setI2Cbus(int i2cBusIndex)
 {
   // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
@@ -247,7 +263,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 	
   if ( n == AudioControlAIC3206::IN1 ) {
     // USE LINE IN SOLDER PADS
-	aic_goToPage(TYMPAN_MICPGA_PAGE);
+		aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN1 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN1 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -259,7 +275,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 
   } else if ( n == AudioControlAIC3206::IN3_wBIAS ) {
     // mic-jack = IN3
-	aic_goToPage(TYMPAN_MICPGA_PAGE);
+		aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -271,7 +287,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 
   } else if ( n == AudioControlAIC3206::IN3 ) {
     // mic-jack = IN3
-	aic_goToPage(TYMPAN_MICPGA_PAGE);
+		aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN3 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -283,7 +299,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 	
   } else if ( n == AudioControlAIC3206::IN2 ) {
     // on-board = IN2
-	aic_goToPage(TYMPAN_MICPGA_PAGE);
+		aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN2 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN2 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -446,17 +462,6 @@ float AudioControlAIC3206::setInputGain_dB(float gain_dB) {
 	return setInputGain_dB(gain_dB,1); //right channel
 }
 
-//******************* OUTPUT DEFINITIONS *****************************//
-#define TYMPAN_HP_DRIVER_GAIN_PAGE 1
-#define TYMPAN_HPL_DRIVER_GAIN_REG 0x10  //page 1, register 16
-#define TYMPAN_HPR_DRIVER_GAIN_REG 0x11  //page 1, register 17
-
-#define TYMPAN_DAC_SETTINGS_PAGE 0
-#define TYMPAN_DAC_PROCESSING_BLOCK_REG 0x3c // page 0 register 60
-#define TYMPAN_DAC_CHANNEL_SETUP_REG  0x40 //page 0 register 64
-#define TYMPAN_DAC_VOLUME_LEFT_REG 0x41 // page 0 reg 65
-#define TYMPAN_DAC_VOLUME_RIGHT_REG 0x42 // page 0 reg 66
-
 
 //volume control, similar to Teensy Audio Board
 // value between 0.0 and 1.0.  Set to span -58 to +15 dB
@@ -525,38 +530,6 @@ float AudioControlAIC3206::volume_dB(float vol_dB) {
 	return volume_dB(vol_dB,   (int)0);    //set left channel
 }
 
-float AudioControlAIC3206::setHeadphoneGain_dB(float gain_left_dB, float gain_right_dB) {
-	unsigned int buff = 0;
-	int8_t left_dB_u8 = 0;
-	int8_t right_dB_u8 = 0;
-
-	// round to nearest dB and clamp limits
-	left_dB_u8 = (int)(gain_left_dB + 0.5); 
-	right_dB_u8 = (int)(gain_right_dB + 0.5); 
-
-	left_dB_u8 = constrain(left_dB_u8, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
-	right_dB_u8 = constrain(gain_right_dB, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
-
-	//check to see if they want it muted
-	if (gain_left_dB < -90.0) left_dB_u8 = 0b00111001; //mute it
-	if (gain_right_dB < -90.0) right_dB_u8 = 0b00111001; //mute it
-
-	// Set Left Volume
-	//aic_goToBook(0);
-	buff = aic_readPage(AIC3206_HP_VOLUME_PAGE, AIC3206_HPL_VOLUME_REG); //read existing register value
-	buff = (buff & (~AIC3206_HP_VOLUME_MASK)) | (left_dB_u8 & AIC3206_HP_VOLUME_MASK);
-
-	aic_writePage( AIC3206_HP_VOLUME_PAGE, AIC3206_HPL_VOLUME_REG, uint8_t(buff) );
-
-	// Set Right Volume
-	buff = aic_readPage(AIC3206_HP_VOLUME_PAGE, AIC3206_HPR_VOLUME_REG); //read existing register value
-	buff = (buff & (~AIC3206_HP_VOLUME_MASK)) | (right_dB_u8 & AIC3206_HP_VOLUME_MASK);
-
-	aic_writePage( AIC3206_HP_VOLUME_PAGE, AIC3206_HPR_VOLUME_REG, uint8_t(buff) );
-
-	return left_dB_u8;
-}
-
 int AudioControlAIC3206::unmuteDAC(int chan) {
 	int ret_val = -1;
 	uint8_t val = aic_readPage(TYMPAN_DAC_SETTINGS_PAGE, TYMPAN_DAC_CHANNEL_SETUP_REG);
@@ -598,17 +571,50 @@ int AudioControlAIC3206::muteDAC(int chan) {
 	return ret_val;	
 }
 
-#define TYMPAN_HPL_DRIVER_GAIN_PAGE 1
-#define TYMPAN_HPL_DRIVER_GAIN_REG 0x10  //page 1, register 16
-#define TYMPAN_HPR_DRIVER_GAIN_REG 0x11  //page 1, register 17
+//define TYMPAN_HP_DRIVER_GAIN_PAGE 1
+//define TYMPAN_HPL_DRIVER_GAIN_REG 0x10  //page 1, register 16
+//define TYMPAN_HPR_DRIVER_GAIN_REG 0x11  //page 1, register 17
+//define AIC3206_HP_VOLUME_PAGE 0x01
+//define AIC3206_HPL_VOLUME_REG 0x10  //decimal 16
+//define AIC3206_HPR_VOLUME_REG 0x11  //decimal 17
+float AudioControlAIC3206::setHeadphoneGain_dB(float gain_left_dB, float gain_right_dB) {
+	unsigned int buff = 0;
+	int8_t left_dB_u8 = 0;
+	int8_t right_dB_u8 = 0;
 
+	// round to nearest dB and clamp limits
+	left_dB_u8 = (int)(gain_left_dB + 0.5); 
+	right_dB_u8 = (int)(gain_right_dB + 0.5); 
+
+	left_dB_u8 = constrain(left_dB_u8, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
+	right_dB_u8 = constrain(gain_right_dB, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
+
+	//check to see if they want it muted
+	if (gain_left_dB < -90.0) left_dB_u8 = 0b00111001; //mute it
+	if (gain_right_dB < -90.0) right_dB_u8 = 0b00111001; //mute it
+
+	// Set Left Volume
+	//aic_goToBook(0);
+	buff = aic_readPage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG); //read existing register value
+	buff = (buff & (~AIC3206_HP_VOLUME_MASK)) | (left_dB_u8 & AIC3206_HP_VOLUME_MASK);
+
+	aic_writePage( TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG, uint8_t(buff) );
+
+	// Set Right Volume
+	buff = aic_readPage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG); //read existing register value
+	buff = (buff & (~AIC3206_HP_VOLUME_MASK)) | (right_dB_u8 & AIC3206_HP_VOLUME_MASK);
+
+	aic_writePage( TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG, uint8_t(buff) );
+
+	return left_dB_u8;
+}
 
 int AudioControlAIC3206::unmuteHeadphone(int chan) {
 	int ret_val = -1;
 	uint8_t val;
 	if ( (chan == BOTH_CHAN) || (chan == LEFT_CHAN) ) {
 		//set the left side
-		val = aic_readPage(TYMPAN_HPL_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG);
+		val = aic_readPage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG);
 		val = val & 0b10111111; //clear the bit to unmute
 		aic_writePage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG, val);
 		ret_val = chan;
@@ -629,7 +635,7 @@ int AudioControlAIC3206::muteHeadphone(int chan) {
 	aic_writePage(1, 9, 0);  //power down both left and right HP (and DAC)
 	if ( (chan == BOTH_CHAN) || (chan == LEFT_CHAN) ) {
 		//set the left side
-		val = aic_readPage(TYMPAN_HPL_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG);
+		val = aic_readPage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG);
 		val = val | 0b01000000; //set the bit to mute
 		aic_writePage(TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPL_DRIVER_GAIN_REG, val);
 		ret_val = chan;
