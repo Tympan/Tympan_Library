@@ -132,7 +132,7 @@ class AudioStream_F32 : public AudioStream {
 		//
 		//bool active; //This is already in AudioStream.h as "protected"
 		//bool isActive(void) { return active; }  //this is already in AudioStream.h as "public"
-		bool setActive(bool _active) { return active = _active; }  //added here in AudioStream_F32.h
+		virtual bool setActive(bool _active) { return active = _active; }  //added here in AudioStream_F32.h
 		
 		//added for tracking and debugging how algorithms are called
 		static AudioStream_F32* allInstances[]; 
