@@ -36,6 +36,7 @@
 #include "AudioFilterIIR_F32.h"
 #include "AudioFilterFreqWeighting_F32.h"
 #include "AudioFilterTimeWeighting_F32.h"
+#include "AudioForwarder_F32.h"
 #include "AudioFreqDomainBase_FD_F32.h"
 #include "AudioLoopBack_F32.h"
 #include "AudioMixer_F32.h"
