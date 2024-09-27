@@ -166,16 +166,18 @@ void AudioStream_F32::release(audio_block_f32_t *block)
 // and then release it once after all transmit calls.
 void AudioStream_F32::transmit(audio_block_f32_t *block, unsigned char index)
 {
+	//if (!block) return; //maybe using this will get rid of a lot of problems.  Or it'll mask problems?
+
   //Serial.print("AudioStream_F32: transmit().  start...index = ");Serial.println(index);
   for (AudioConnection_F32 *c = destination_list_f32; c != NULL; c = c->next_dest) {
-  	  //Serial.print("  : loop1, c->src_index = ");Serial.println(c->src_index);
+  	//Serial.print("  : loop1, c->src_index = ");Serial.println(c->src_index);
     if (c->src_index == index) {
     	//Serial.println("  : if1");
       if (c->dst.inputQueue_f32[c->dest_index] == NULL) {
-      	  //Serial.println("  : if2");
+      	//Serial.println("  : if2");
         c->dst.inputQueue_f32[c->dest_index] = block;
         block->ref_count++;
-          //Serial.print("  : block->ref_count = "); Serial.println(block->ref_count);
+        //Serial.print("  : block->ref_count = "); Serial.println(block->ref_count);
       }
     }
   } 
@@ -294,4 +296,15 @@ void AudioStream_F32::printAllInstances(void) {
 		Serial.println();
 	}
 	Serial.println("    : Done.");Serial.flush();
+}
+
+bool AudioStream_F32::putBlockInInputQueue(audio_block_f32_t *block, unsigned int ind) {
+	if ((block) && (ind >= 0) && (ind < num_inputs_f32)) { 
+		if (inputQueue_f32[ind] == NULL) {
+			inputQueue_f32[ind] = block; 
+      block->ref_count++;
+			return true; //success!
+		}
+	}
+	return false;
 }

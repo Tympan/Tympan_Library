@@ -133,6 +133,8 @@ class AudioStream_F32 : public AudioStream {
 		//bool active; //This is already in AudioStream.h as "protected"
 		//bool isActive(void) { return active; }  //this is already in AudioStream.h as "public"
 		virtual bool setActive(bool _active) { return active = _active; }  //added here in AudioStream_F32.h
+		virtual bool setActive(bool _active, int flag_setup) { return active = _active; }  //default to ignore the setup flag.  Override in your derived class, if you wish
+		
 		
 		//added for tracking and debugging how algorithms are called
 		static AudioStream_F32* allInstances[]; 
@@ -145,10 +147,15 @@ class AudioStream_F32 : public AudioStream {
 		static void reset_update_counter(void) { update_counter = 0; }
 		static uint32_t update_counter;
 		
+		//added to enable AudioStreamComposite_F32 to put its inputs into another AudioStream_F32 inputs
+		bool putBlockInInputQueue(audio_block_f32_t *block, unsigned int ind);
+		
+		//moved from protected to public to enable AudioForwarder_F32 to work
+    void transmit(audio_block_f32_t *block, unsigned char index = 0);
+		
   protected:
     //bool active_f32;
     unsigned char num_inputs_f32;
-    void transmit(audio_block_f32_t *block, unsigned char index = 0);
     audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
     audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
     friend class AudioConnection_F32;
@@ -160,7 +167,7 @@ class AudioStream_F32 : public AudioStream {
 		static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }   //stop the global "update" process...not per instance, global!
 		static void update_all(void) { update_counter++; AudioStream::update_all(); }											//force th execution of the global "update" process...not per instance, global!
 		static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
-	
+		
   private:
     AudioConnection_F32 *destination_list_f32;
     audio_block_f32_t **inputQueue_f32;
