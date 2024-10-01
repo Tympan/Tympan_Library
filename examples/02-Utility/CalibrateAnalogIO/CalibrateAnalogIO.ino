@@ -35,7 +35,7 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Create the audio objects and then connect them
-Tympan    myTympan(TympanRev::E,audio_settings);   //do TympanRev::D or TympanRev::E
+Tympan    myTympan(TympanRev::F,audio_settings);   //do TympanRev::D or TympanRev::E
 #include "AudioProcessing.h"  //see here for audio objects, connections, and configuration functions
 
 // /////////// Create classes for controlling the system, espcially via USB Serial and via the App        
