@@ -1,5 +1,5 @@
 /*
-  CalibrateAnalogIO
+  CalibrateOutputAndInput
 
   Created: Chip Audette, OpenAudio, Oct 2024
   Purpose: Measure the signal level of the analog input (pink jack).  If you know 
@@ -57,7 +57,7 @@ void setup() {
   //begin the serial comms (for debugging)
   myTympan.beginBothSerial(); delay(500);
   while (!Serial && (millis() < 2000UL)) delay(5); //wait for 2 seconds to see if USB Serial comes up (try not to miss messages!)
-  myTympan.println("CalibrateAnalogIO: Starting setup()...");
+  myTympan.println("CalibrateOutputAndInput: Starting setup()...");
   Serial.println("Sample Rate (Hz): " + String(audio_settings.sample_rate_Hz));
   Serial.println("Audio Block Size (samples): " + String(audio_settings.audio_block_samples));
 

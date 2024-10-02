@@ -1,5 +1,5 @@
 /*
-  CalibrateOutput
+  01-CalibrateOutput
 
   Created: Chip Audette, OpenAudio, Oct 2024
   Purpose: Generates a sine wave and outputs it to the black headphone jack.  You can
@@ -26,7 +26,7 @@ const int                  audio_block_samples = 128;     //do not make bigger t
 AudioSettings_F32          audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Create the audio objects and then connect them
-Tympan                     myTympan(TympanRev::E,audio_settings); //do TympanRev::D or TympanRev::E or TympanRev::F
+Tympan                     myTympan(TympanRev::F,audio_settings); //do TympanRev::D or TympanRev::E or TympanRev::F
 AudioInputI2S_F32          i2s_in(audio_settings);                //Digital audio input from the ADC...not used in this program
 AudioSynthWaveform_F32     sineWave(audio_settings);              //generate a synthetic sine wave
 AudioOutputI2S_F32         i2s_out(audio_settings);               //Digital audio output to the DAC.  Should always be last.
