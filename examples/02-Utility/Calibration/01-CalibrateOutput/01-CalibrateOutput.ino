@@ -61,7 +61,7 @@ void setup() {
 
   //activate the Tympan audio hardware
   myTympan.enable();        // activate the flow of audio
-  myTympan.volume_dB(0.0);  // headphone amplifier
+  myTympan.volume_dB(0.0);  // AIC's output gain
 
   //setup the test tone
   setFrequency_Hz(sine_freq_Hz);
