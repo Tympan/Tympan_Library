@@ -42,7 +42,7 @@ AudioConnection_F32        patchcord22(i2s_in, 1, audioSDWriter,    1);    //Rig
 AudioConnection_F32        patchcord30(sineWave, 0, calcOutputLevel,    0);   //Sine wave to level monitor
 AudioConnection_F32        patchcord31(sineWave, 0, outputSwitchMatrix, 0);   //Sine wave to level monitor
 AudioConnection_F32        patchcord32(outputSwitchMatrix, State::OUT_LEFT,  i2s_out, 0);   //Sine wave to left output
-AudioConnection_F32        patchcord33(outputSwitchMatrix, State::OUT_RIGHT, i2s_out, 1);   //Sine wave to righ toutput
+AudioConnection_F32        patchcord33(outputSwitchMatrix, State::OUT_RIGHT, i2s_out, 1);   //Sine wave to right toutput
 
 
 // /////////// Functions for configuring the system
