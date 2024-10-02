@@ -10,6 +10,10 @@
     You can measure the voltage of this signal using a volt meter.  You can then feed
     the signal back into the Tympan's input (pink) jack to perform the calibration.
 
+    This example includes a mode for automatically stepping up through many test
+    frequencies.  See the options available in the Serial Monitor menu.  Send
+    an "h" (without quotes) in the Serial Monitor to see the help menu.
+
     This example also lets you record the audio to the SD card for analysis on your
     PC or Mac.
 
@@ -30,17 +34,21 @@
 #include "State.h"        
 
 //set the sample rate and block size
-const float sample_rate_Hz = 44100.0f ; //24000 or 44117 or 96000 (or other frequencies in the table in AudioOutputI2S_F32)
-const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
+const float       sample_rate_Hz = 44100.0f ;   //24000 or 44117 or 96000 (or other frequencies in the table in AudioOutputI2S_F32)
+const int         audio_block_samples = 128;    //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Create the audio objects and then connect them
-Tympan    myTympan(TympanRev::F,audio_settings);   //do TympanRev::D or TympanRev::E or TympanRev::F
+Tympan            myTympan(TympanRev::F,audio_settings);   //do TympanRev::D or TympanRev::E or TympanRev::F
 #include "AudioProcessing.h"  //see here for audio objects, connections, and configuration functions
 
-// /////////// Create classes for controlling the system, espcially via USB Serial and via the App        
-SerialManager serialManager;     //create the serial manager for real-time control (via USB or App)
-State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
+// Create classes for controlling the system, espcially via USB Serial and via the App        
+SerialManager     serialManager;     //create the serial manager for real-time control (via USB or App)
+State             myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
+
+// Be aware that this calibration program can output steady tones or it can automatically step the tones across frequencies
+#include "TestToneControl.h"   //see here for the relevant functions for managing the changing test tones
+
 
 // ///////////////// Main setup() and loop() as required for all Arduino programs
 
@@ -64,20 +72,19 @@ void setup() {
   //Select the input that we will use 
   setConfiguration(myState.input_source);      //use the default that is written in State.h 
 
-  //Setup the sine wave
-  setFrequency_Hz(myState.sine_freq_Hz);
-  setAmplitude(myState.sine_amplitude);
-  setOutputChan(myState.output_chan);
-
   //Setup the level measuring
-  setCalcLevelTimeConstants(myState.calcLevel_timeConst_sec);
-  Serial.println("Setup: Setting time constants for level measurements to " + String(myState.calcLevel_timeConst_sec,4) + " sec");
+  setCalcLevelTimeWindow(myState.calcLevel_timeWindow_sec);
+  Serial.println("Setup: Setting time windows for level measurements to " + String(myState.calcLevel_timeWindow_sec,4) + " sec");
 
   //prepare the SD writer for the format that we want and any error statements
   audioSDWriter.setSerial(&myTympan);         //the library will print any error info to this serial stream (note that myTympan is also a serial stream)
   audioSDWriter.setNumWriteChannels(2);       //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
   Serial.println("Setup: SD configured for " + String(audioSDWriter.getNumWriteChannels()) + " channels.");
-  
+
+  //Setup the output signal
+  setOutputChan(myState.output_chan);
+  switchTestToneMode(myState.current_test_tone_mode);
+
   //End of setup
   Serial.println("Setup: complete."); 
   serialManager.printHelp();
@@ -99,11 +106,20 @@ void loop() {
   //periodically print the CPU and Memory Usage
   if (myState.enable_printCpuToUSB) myState.printCPUandMemory(millis(), 3000); //print every 3000msec  (method is built into TympanStateBase.h, which myState inherits from)
 
-  //periodically print the signal levels
-  if (myState.flag_printInputLevelToUSB) printInputSignalLevels(millis(),1000);  //print every 1000 msec
+  //check to see what test mode we're in
+  if (myState.current_test_tone_mode == State::TONE_MODE_STEPPED_FREQUENCY) {  //are we doing stepped tones?
 
-  //periodically print the output levels
-  if (myState.flag_printOutputLevelToUSB) printOutputSignalLevels(millis(),1000);  //print every 1000 msec
+    //update the stepped dones
+    serviceSteppedToneTest(millis());  //update the tones
+
+  } else {                                                                     //we are not doing stepped tones
+    //periodically print the signal levels
+    if (myState.flag_printInputLevelToUSB) printInputSignalLevels(millis(),1000);  //print every 1000 msec
+
+    //periodically print the output levels
+    if (myState.flag_printOutputLevelToUSB) printOutputSignalLevels(millis(),1000);  //print every 1000 msec
+  }
+
 } //end loop()
 
 // //////////////////////////////////////// Other functions

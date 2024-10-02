@@ -33,16 +33,27 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     //set highpass filter on ADC
     float adc_hp_cutoff_Hz = 31.25f;
 
-    //variables related to the sine wave
-    float sine_freq_Hz = 1000.0f;
-    float sine_amplitude = sqrt(2)*sqrt(pow(10.0,0.1*-20.0)); //default amplitude (-20dBFS converted to linear and then converted from RMS to amplitude)
+    //variables related to the test tone mode
+    enum Test_Tone_Mode { TONE_MODE_MUTE, TONE_MODE_STEADY, TONE_MODE_STEPPED_FREQUENCY};
+    int current_test_tone_mode = TONE_MODE_STEADY;
+    float stepped_test_start_freq_Hz = 20.0;  //starting frequency for stepped tones
+    float stepped_test_end_freq_Hz = 20000.0; //ending frequency for stepped tones
+    float stepped_test_step_Hz = 50.0;        //frequency inrement for stepped tones
+    float stepped_test_step_dur_sec = 1.0;    //duration at each step
+    unsigned long stepped_test_next_change_millis = 0UL;
+  
+    //variables related to the current sine wave
+    float default_sine_freq_Hz   = 1000.0;  //used whenever switching the TONE_MODE
+    float default_sine_amplitude = sqrt(2.0)*sqrt(pow(10.0,0.1*-20.0));   //(-20dBFS converted to linear and then converted from RMS to amplitude)
+    float sine_freq_Hz           = 1000.0;  //the current frequency
+    float sine_amplitude         = 0.0;     //the current amplitude 
 
     //variables relating to the output switching of the sine wave
     enum OUT_CHAN { OUT_LEFT=0, OUT_RIGHT=1, OUT_BOTH=9};
     int output_chan = OUT_BOTH;
 
     //variables associated with level measurement
-    float calcLevel_timeConst_sec = 0.125f;
+    float calcLevel_timeWindow_sec = 0.125f;
     
     //Put different gain settings (except those in the compressors) here to ease the updating of the GUI
     float input_gain_dB  = 0.0;   //gain of the hardware PGA in the AIC

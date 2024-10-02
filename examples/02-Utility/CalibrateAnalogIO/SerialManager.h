@@ -19,6 +19,10 @@ extern float setFrequency_Hz(float freq_Hz);
 extern float setAmplitude(float amplitude);
 extern int setOutputChan(int chan);
 extern bool enablePrintMemoryAndCPU(bool _enable);
+extern void printInputConfiguration(void);
+extern void printOutputChannel(void);
+extern void printTestToneMode(void);
+extern int switchTestToneMode(int new_mode);
 
 class SerialManager : public SerialManagerBase  {  // see Tympan_Library for SerialManagerBase for more functions!
   public:
@@ -35,19 +39,17 @@ class SerialManager : public SerialManagerBase  {  // see Tympan_Library for Ser
 
 void SerialManager::printHelp(void) {  
   Serial.println("SerialManager Help: Available Commands:");
-  Serial.println(" General: No Prefix");
-  Serial.println("   h:   Print this help");
-  Serial.print(  "   w:   Switch Input to PCB Mics");                if (myState.input_source==State::INPUT_PCBMICS)   {Serial.println(" (active)");} else { Serial.println(); }
-  Serial.print(  "   W:   Switch Input to MicIn on the Pink Jack");  if (myState.input_source==State::INPUT_JACK_MIC)  {Serial.println(" (active)");} else { Serial.println(); }
-  Serial.print(  "   e:   Switch Input to LineIn on the Pink Jack"); if (myState.input_source==State::INPUT_JACK_LINE) {Serial.println(" (active)");} else { Serial.println(); }
-  Serial.println("   i/I: Input: Increase or decrease input gain (current = " + String(myState.input_gain_dB,1) + " dB)");
-  Serial.println("   f/F: Sine: Increase or decrease sine frequency (current = " + String(myState.sine_freq_Hz,1) + " Hz");
-  Serial.println("   a/A: Sine: Increase or decrease sine amplitude (current = " + String(20*log10(myState.sine_amplitude)-3.0,1) + " dBFS (output), " + String(myState.sine_amplitude,3) + " amplitude)");
-  Serial.println("   1/2/3: Sine: Output to left (1), right (2), or both (3)");
-  Serial.print(  "   p/P: Printing: start/Stop printing of input signal levels"); if (myState.flag_printInputLevelToUSB)   {Serial.println(" (active)");} else { Serial.println(" (off)"); }
-  Serial.print(  "   o/O: Printing: start/Stop printing of output signal levels"); if (myState.flag_printOutputLevelToUSB)   {Serial.println(" (active)");} else { Serial.println(" (off)"); }
-  Serial.println("   r:   SD: Start recording audio to SD card");
-  Serial.println("   s:   SD: Stop recording audio to SD card");
+  Serial.println("General: No Prefix");
+  Serial.println("  h:     Print this help");
+  Serial.print(  "  w/W/E: Input: Use PCB mics (w), jack as mic (W), jack as line-in (e) (current = ");  printInputConfiguration(); Serial.println(")");
+  Serial.println("  i/I:   Input: Increase or decrease input gain (current = " + String(myState.input_gain_dB,1) + " dB)");
+  Serial.println("  f/F:   Sine: Increase or decrease steady-tone frequency (current = " + String(myState.sine_freq_Hz,1) + " Hz)");
+  Serial.println("  a/A:   Sine: Increase or decrease sine amplitude (current = " + String(20*log10(myState.sine_amplitude)-3.0,1) + " dB re: output FS = " + String(myState.sine_amplitude,3) + " amplitude)");
+  Serial.print(  "  1/2/3: Sine: Output to left (1), right (2), or both (3) (current = "); printOutputChannel(); Serial.println(")");
+  Serial.print(  "  t/T:   TestMode: Switch between steady tone (t) or stepped-tone (T) modes (current = "); printTestToneMode(); Serial.println(")");
+  Serial.print(  "  p/P:   Printing: start/Stop printing of input signal levels"); if (myState.flag_printInputLevelToUSB)   {Serial.println(" (active)");} else { Serial.println(" (off)"); }
+  Serial.print(  "  o/O:   Printing: start/Stop printing of output signal levels"); if (myState.flag_printOutputLevelToUSB)   {Serial.println(" (active)");} else { Serial.println(" (off)"); }
+  Serial.println("  r/s:   SD: Start recording (r) or stop (s) audio to SD card");
   Serial.println();
 }
 
@@ -88,11 +90,11 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
       Serial.println("SerialManager: Decreased input gain to: " + String(myState.input_gain_dB) + " dB");
       break;
     case 'f':
-      setFrequency_Hz(myState.sine_freq_Hz*frequencyIncrement_factor);
+      setFrequency_Hz(max(125.0/4,min(16000.0,myState.sine_freq_Hz*frequencyIncrement_factor)));  //octave-based incrementing. Limit freuqencies to 31.25 Hz -> 16 kHz
       Serial.println("SerialManager: increased tone frequency to " + String(myState.sine_freq_Hz));
       break;
     case 'F':
-      setFrequency_Hz(myState.sine_freq_Hz/frequencyIncrement_factor);
+      setFrequency_Hz(max(125.0/4,min(16000.0,myState.sine_freq_Hz/frequencyIncrement_factor)));  //octave-based incrementing. Limit freuqencies to 31.25 Hz -> 16 kHz
       Serial.println("SerialManager: decreased tone frequency to " + String(myState.sine_freq_Hz));
       break;
     case 'a':
@@ -114,6 +116,12 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
     case '3':
       Serial.println("SerialManager: outputing sine to both left and right");
       setOutputChan(State::OUT_BOTH);
+      break;
+    case 't':
+      switchTestToneMode(State::TONE_MODE_STEADY);
+      break;
+    case 'T':
+      switchTestToneMode(State::TONE_MODE_STEPPED_FREQUENCY);
       break;
     case 'p':
       myState.flag_printInputLevelToUSB = true;

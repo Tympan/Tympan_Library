@@ -2,11 +2,11 @@
 #define _AudioProcessing_h
 
 AudioInputI2S_F32          i2s_in(audio_settings);             //Digital audio input from the ADC
-AudioCalcLevel_F32         calcInputLevel_L(audio_settings);   //use this to measure the input signal level
-AudioCalcLevel_F32         calcInputLevel_R(audio_settings);   //use this to measure the input signal level
+AudioCalcLeq_F32           calcInputLevel_L(audio_settings);   //use this to measure the input signal level
+AudioCalcLeq_F32           calcInputLevel_R(audio_settings);   //use this to measure the input signal level
 AudioSynthWaveform_F32     sineWave(audio_settings);           //generate a synthetic sine wave
 AudioSwitchMatrix4_F32     outputSwitchMatrix(audio_settings); //use this to route the sine wave to L, R, or Both
-AudioCalcLevel_F32         calcOutputLevel(audio_settings);    //use this to measure the input signal level
+AudioCalcLeq_F32           calcOutputLevel(audio_settings);    //use this to measure the input signal level
 AudioSDWriter_F32          audioSDWriter(audio_settings);      //this is stereo by default
 AudioOutputI2S_F32         i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
 
@@ -79,26 +79,17 @@ void setConfiguration(int config) {
   }
 }
 
-float setCalcLevelTimeConstants(float time_const_sec) {
-  time_const_sec = max(time_const_sec,0.0001);
-  calcInputLevel_L.setTimeConst_sec(time_const_sec);
-  myState.calcLevel_timeConst_sec = calcInputLevel_L.getTimeConst_sec();
-  calcInputLevel_R.setTimeConst_sec(myState.calcLevel_timeConst_sec);
-  calcOutputLevel.setTimeConst_sec(myState.calcLevel_timeConst_sec);
-  return myState.calcLevel_timeConst_sec; 
+void printInputConfiguration(void) {
+  switch (myState.input_source) {
+    case State::INPUT_PCBMICS:
+      Serial.print("PCB Mics"); break;
+    case State::INPUT_JACK_MIC:
+      Serial.print("Input Jack as Mic"); break;
+    case State::INPUT_JACK_LINE:
+      Serial.print("Input Jack as Line-In"); break;
+  }
 }
 
-float setFrequency_Hz(float freq_Hz) {
-  myState.sine_freq_Hz = constrain(freq_Hz, 125.0f/4.0, 16000.0f); //constrain between 32 Hz and 16 kHz
-  sineWave.frequency(myState.sine_freq_Hz);
-  return myState.sine_freq_Hz;
-}
-
-float setAmplitude(float amplitude) {
-  myState.sine_amplitude = constrain(amplitude, 0.0, 1.0); //constrain between 0.0 and 1.0
-  sineWave.amplitude(myState.sine_amplitude);
-  return myState.sine_amplitude;
-}
 
 int setOutputChan(int chan) {
   const int inputChanForSineWave = 0;
@@ -111,23 +102,67 @@ int setOutputChan(int chan) {
       Serial.println("setOutputChan: chan = " +  String(chan) + ".  Setting to LEFT...");
       outputSwitchMatrix.setInputToOutput(inputChanForSineWave,outputChanLeft);     //sine to left output
       outputSwitchMatrix.setInputToOutput(inputChanForMutedOutput,outputChanRight); //mute the right output
-      return chan; //return early
+      myState.output_chan = chan;
+      break;
     case State::OUT_RIGHT:
       Serial.println("setOutputChan: chan = " +  String(chan) + ".  Setting to RIGHT...");
       outputSwitchMatrix.setInputToOutput(inputChanForMutedOutput,outputChanLeft);  //mute the left output
       outputSwitchMatrix.setInputToOutput(inputChanForSineWave,outputChanRight);    //sine to right output
-      return chan; //return early
+      myState.output_chan = chan;
+      break;
     case State::OUT_BOTH:
       Serial.println("setOutputChan: chan = " +  String(chan) + ".  Setting to BOTH...");
       outputSwitchMatrix.setInputToOutput(inputChanForSineWave,outputChanLeft);     //sine to left output
       outputSwitchMatrix.setInputToOutput(inputChanForSineWave,outputChanRight);    //sine to right output
-      return chan; //return early
+      myState.output_chan = chan;
+      break;
     default:
-      Serial.println("setOutputChan: *** WARNING ***: chan = " +  String(chan) + " not recognized.  Muting all output channels...");
-      outputSwitchMatrix.setInputToOutput(inputChanForMutedOutput,outputChanLeft);     //sine to left output
-      outputSwitchMatrix.setInputToOutput(inputChanForMutedOutput,outputChanRight);    //sine to right output  
+      Serial.println("setOutputChan: *** WARNING ***: chan = " +  String(chan) + " not recognized.  Setting to BOTH...");
+      outputSwitchMatrix.setInputToOutput(inputChanForSineWave,outputChanLeft);     //sine to left output
+      outputSwitchMatrix.setInputToOutput(inputChanForSineWave,outputChanRight);    //sine to right output  
+      myState.output_chan = chan;
+      break;
   }
-  return -1;  //indicates an error
+  return myState.output_chan;
 }
+
+void printOutputChannel(void) {
+  switch (myState.output_chan) {
+    case State::OUT_LEFT:
+      Serial.print("LEFT"); break;
+    case State::OUT_RIGHT:
+      Serial.print("RIGHT"); break;
+    case State::OUT_BOTH:
+      Serial.print("BOTH"); break;
+  }
+}
+
+// /////////// Functions for configuring the audio processing
+
+float setCalcLevelTimeWindow(float time_window_sec) {
+  time_window_sec = max(time_window_sec,0.0001);       //don't windows that are too short
+  calcInputLevel_L.setTimeWindow_sec(time_window_sec); //try to set the window time
+  myState.calcLevel_timeWindow_sec = calcInputLevel_L.getTimeWindow_sec(); //ask what time was actually set
+
+  //set the rest of the time windows
+  calcInputLevel_R.setTimeWindow_sec(myState.calcLevel_timeWindow_sec);
+  calcOutputLevel.setTimeWindow_sec(myState.calcLevel_timeWindow_sec);
+  return myState.calcLevel_timeWindow_sec; 
+}
+
+float setFrequency_Hz(float freq_Hz) {
+  const float min_freq_Hz = 125.0/8; 
+  const float max_freq_Hz = 20000.0;
+  myState.sine_freq_Hz = constrain(freq_Hz, min_freq_Hz, max_freq_Hz); //constrain between 32 Hz and 16 kHz
+  sineWave.frequency(myState.sine_freq_Hz);
+  return myState.sine_freq_Hz;
+}
+
+float setAmplitude(float amplitude) {
+  myState.sine_amplitude = constrain(amplitude, 0.0, 1.0); //constrain between 0.0 and 1.0
+  sineWave.amplitude(myState.sine_amplitude);
+  return myState.sine_amplitude;
+}
+
 
 #endif
