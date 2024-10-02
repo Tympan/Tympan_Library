@@ -14,7 +14,6 @@
 *          | ----==------> audioSDWriter (Right) [end]
 *
 *      sineWave (Mono source)
-*          | ------------> calcOutputLevel       [end]
 *          | ------------> AudioOutputI2S(Left)  [end]
 *          | ------------> AudioOutputI2S(Right) [end]
 *
