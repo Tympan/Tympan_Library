@@ -33,17 +33,17 @@ class AudioSwitchMatrix4_F32 : public AudioStream_F32 {
 			return -1;
 		}
 
-  private:
+	private:
 		const int max_n_chan = 4;
-    audio_block_f32_t *inputQueueArray[4];
-    int inputForEachOutput[4];  //inputForEachOutput[0] is the input for output[0], inputForEachOutput[1] is the input for output[1], etc
+		audio_block_f32_t *inputQueueArray[4];
+		int inputForEachOutput[4];  //inputForEachOutput[0] is the input for output[0], inputForEachOutput[1] is the input for output[1], etc
 };
 
 class AudioSwitchMatrix8_F32 : public AudioStream_F32 {
 	//GUI: inputs:8, outputs:8  //this line used for automatic generation of GUI node
 	//GUI: shortName:SwitchMtrx8
 	public:
-	  AudioSwitchMatrix8_F32() : AudioStream_F32(8, inputQueueArray) { setDefaultValues(); }
+		AudioSwitchMatrix8_F32() : AudioStream_F32(8, inputQueueArray) { setDefaultValues(); }
 		AudioSwitchMatrix8_F32(const AudioSettings_F32 &settings) : AudioStream_F32(8, inputQueueArray) { setDefaultValues(); }
 		
 		void setDefaultValues(void) {
