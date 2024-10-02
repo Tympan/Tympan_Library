@@ -7,7 +7,7 @@
 *   Purpose: Compute the current sound level, dBA-Fast or whatever
 *            Uses exponential time weighting.
 *
-*   Uses Tympan RevC, RevD, or RevE.
+*   Uses Tympan RevC through Rev F
 *   Uses BLE and TympanRemote App
 *
 *   MIT License.  use at your own risk.
