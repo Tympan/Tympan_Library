@@ -37,17 +37,21 @@ class State : public TympanStateBase_UI { // look in TympanStateBase or TympanSt
     float sine_freq_Hz = 1000.0f;
     float sine_amplitude = sqrt(2)*sqrt(pow(10.0,0.1*-20.0)); //default amplitude (-20dBFS converted to linear and then converted from RMS to amplitude)
 
+    //variables relating to the output switching of the sine wave
+    enum OUT_CHAN { OUT_LEFT=0, OUT_RIGHT=1, OUT_BOTH=9};
+    int output_chan = OUT_BOTH;
+
     //variables associated with level measurement
     float calcLevel_timeConst_sec = 0.125f;
     
     //Put different gain settings (except those in the compressors) here to ease the updating of the GUI
     float input_gain_dB  = 0.0;   //gain of the hardware PGA in the AIC
     //float output_gain_dB = 0.0;  //gain of the hardware headphone amplifier in the AIC
-    
+
     //variables related ot printing of output
     bool enable_printCpuToUSB = false;
-    bool enable_printTextToUSB = true;
-    
+    bool flag_printInputLevelToUSB = true;
+    bool flag_printOutputLevelToUSB = false;
 
 };
 

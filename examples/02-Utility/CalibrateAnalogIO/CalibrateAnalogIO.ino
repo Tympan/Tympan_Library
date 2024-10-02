@@ -35,14 +35,12 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Create the audio objects and then connect them
-Tympan    myTympan(TympanRev::F,audio_settings);   //do TympanRev::D or TympanRev::E
+Tympan    myTympan(TympanRev::F,audio_settings);   //do TympanRev::D or TympanRev::E or TympanRev::F
 #include "AudioProcessing.h"  //see here for audio objects, connections, and configuration functions
 
 // /////////// Create classes for controlling the system, espcially via USB Serial and via the App        
 SerialManager serialManager;     //create the serial manager for real-time control (via USB or App)
 State         myState(&audio_settings, &myTympan, &serialManager); //keeping one's state is useful for the App's GUI
-bool          enablePrintLoudnessLevels(bool _enable) { return myState.enable_printTextToUSB = _enable; };
-
 
 // ///////////////// Main setup() and loop() as required for all Arduino programs
 
@@ -69,6 +67,7 @@ void setup() {
   //Setup the sine wave
   setFrequency_Hz(myState.sine_freq_Hz);
   setAmplitude(myState.sine_amplitude);
+  setOutputChan(myState.output_chan);
 
   //Setup the level measuring
   setCalcLevelTimeConstants(myState.calcLevel_timeConst_sec);
@@ -101,11 +100,14 @@ void loop() {
   if (myState.enable_printCpuToUSB) myState.printCPUandMemory(millis(), 3000); //print every 3000msec  (method is built into TympanStateBase.h, which myState inherits from)
 
   //periodically print the signal levels
-  if (myState.enable_printTextToUSB) printSignalLevels(millis(),1000);  //print every 1000 msec
+  if (myState.flag_printInputLevelToUSB) printInputSignalLevels(millis(),1000);  //print every 1000 msec
+
+  //periodically print the output levels
+  if (myState.flag_printOutputLevelToUSB) printOutputSignalLevels(millis(),1000);  //print every 1000 msec
 } //end loop()
 
 // //////////////////////////////////////// Other functions
-void printSignalLevels(unsigned long cur_millis, unsigned long updatePeriod_millis) {
+void printInputSignalLevels(unsigned long cur_millis, unsigned long updatePeriod_millis) {
   static unsigned long lastUpdate_millis = 0UL;
   if ( (cur_millis < lastUpdate_millis) || (cur_millis >= lastUpdate_millis + updatePeriod_millis) ) {
     Serial.print("Input gain = " + String(myState.input_gain_dB,1) + " dB");
@@ -113,7 +115,20 @@ void printSignalLevels(unsigned long cur_millis, unsigned long updatePeriod_mill
     Serial.print(calcInputLevel_L.getCurrentLevel_dB(),2);
     Serial.print(", ");
     Serial.print(calcInputLevel_R.getCurrentLevel_dB(),2);
-    Serial.print(" dB re: FS (input)");
+    Serial.print(" dB re: input FS");
+    Serial.println();
+
+    lastUpdate_millis = cur_millis;    
+  }
+}
+
+void printOutputSignalLevels(unsigned long cur_millis, unsigned long updatePeriod_millis) {
+  static unsigned long lastUpdate_millis = 0UL;
+  if ( (cur_millis < lastUpdate_millis) || (cur_millis >= lastUpdate_millis + updatePeriod_millis) ) {
+    Serial.print("SineWave, commanded amplitude = " + String(sineWave.getAmplitude(),4));
+    Serial.print(", Measured Ouptut = ");
+    Serial.print(calcOutputLevel.getCurrentLevel_dB(),2);
+    Serial.print(" dB re: output FS");
     Serial.println();
 
     lastUpdate_millis = cur_millis;    

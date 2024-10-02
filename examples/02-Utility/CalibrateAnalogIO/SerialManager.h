@@ -17,8 +17,8 @@ extern void setConfiguration(int);
 extern float setInputGain_dB(float val_dB);
 extern float setFrequency_Hz(float freq_Hz);
 extern float setAmplitude(float amplitude);
+extern int setOutputChan(int chan);
 extern bool enablePrintMemoryAndCPU(bool _enable);
-extern bool enablePrintLoudnessLevels(bool _enable);
 
 class SerialManager : public SerialManagerBase  {  // see Tympan_Library for SerialManagerBase for more functions!
   public:
@@ -43,7 +43,9 @@ void SerialManager::printHelp(void) {
   Serial.println("   i/I: Input: Increase or decrease input gain (current = " + String(myState.input_gain_dB,1) + " dB)");
   Serial.println("   f/F: Sine: Increase or decrease sine frequency (current = " + String(myState.sine_freq_Hz,1) + " Hz");
   Serial.println("   a/A: Sine: Increase or decrease sine amplitude (current = " + String(20*log10(myState.sine_amplitude)-3.0,1) + " dBFS (output), " + String(myState.sine_amplitude,3) + " amplitude)");
-  Serial.print(  "   p/P: Printing: start/Stop printing of signal levels"); if (myState.enable_printTextToUSB)   {Serial.println(" (active)");} else { Serial.println(" (off)"); }
+  Serial.println("   1/2/3: Sine: Output to left (1), right (2), or both (3)");
+  Serial.print(  "   p/P: Printing: start/Stop printing of input signal levels"); if (myState.flag_printInputLevelToUSB)   {Serial.println(" (active)");} else { Serial.println(" (off)"); }
+  Serial.print(  "   o/O: Printing: start/Stop printing of output signal levels"); if (myState.flag_printOutputLevelToUSB)   {Serial.println(" (active)");} else { Serial.println(" (off)"); }
   Serial.println("   r:   SD: Start recording audio to SD card");
   Serial.println("   s:   SD: Stop recording audio to SD card");
   Serial.println();
@@ -101,13 +103,33 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
       setAmplitude(myState.sine_amplitude/sqrt(pow(10.0,0.1*amplitudeIcrement_dB))); //converting dB back to linear units
       Serial.println("SerialManager: decreased tone amplitude to " + String(20.f*log10f(myState.sine_amplitude)-3.0,1) + " dB re: FS (output)");
       break;
+    case '1':
+      Serial.println("SerialManager: outputing sine to left only");
+      setOutputChan(State::OUT_LEFT);
+      break;
+    case '2':
+      Serial.println("SerialManager: outputing sine to right only");
+      setOutputChan(State::OUT_RIGHT);
+      break;
+    case '3':
+      Serial.println("SerialManager: outputing sine to both left and right");
+      setOutputChan(State::OUT_BOTH);
+      break;
     case 'p':
-      enablePrintLoudnessLevels(true);
-      Serial.println("SerialManager: enabled printing of the signal levels");
+      myState.flag_printInputLevelToUSB = true;
+      Serial.println("SerialManager: enabled printing of the input signal levels");
       break;
     case 'P':
-      enablePrintLoudnessLevels(false);
-      Serial.println("SerialManager: disabled printing of the signal levels");
+      myState.flag_printInputLevelToUSB = false;
+      Serial.println("SerialManager: disabled printing of the input signal levels");
+      break;
+    case 'o':
+      myState.flag_printOutputLevelToUSB = true;
+      Serial.println("SerialManager: enabled printing of the output signal level");
+      break;
+    case 'O':
+      myState.flag_printOutputLevelToUSB = false;
+      Serial.println("SerialManager: disabled printing of the output signal level");
       break;
     case 'r':
       Serial.println("SerialManager: starting recording of input sginals to the SD card...");
