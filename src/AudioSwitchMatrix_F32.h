@@ -23,9 +23,10 @@ class AudioSwitchMatrix4_F32 : public AudioStream_F32 {
 		}
 		virtual void update(void);
 
-		// Set output_chan to negative value to mute the input.  One input can be used multiple times,
-		// but if you try to use the same output multiple times, only the latest-to-be-specified will
-		// be used.
+		// For a given output channel, set the input chan to negative to mute the output.
+		// To mute an input, go through each output and ensure that the input isn't connected.
+		// You can route an input to multiple outputs.
+		// Each output can only have 1 input (it will use the most recently specified input)
 		int setInputToOutput(int input_chan, int output_chan) {
 			if ((output_chan >= 0) && (output_chan < max_n_chan)) {
 				return inputForEachOutput[output_chan] = input_chan;
@@ -52,9 +53,10 @@ class AudioSwitchMatrix8_F32 : public AudioStream_F32 {
 
 		virtual void update(void);
 	
-		// Set output_chan to negative value to mute the input.  One input can be used multiple times,
-		// but if you try to use the same output multiple times, only the latest-to-be-specified will
-		// be used.
+		// For a given output channel, set the input chan to negative to mute the output.
+		// To mute an input, go through each output and ensure that the input isn't connected.
+		// You can route an input to multiple outputs.
+		// Each output can only have 1 input (it will use the most recently specified input)
 		int setInputToOutput(int input_chan, int output_chan) {
 			if ((output_chan >= 0) && (output_chan < max_n_chan)) {
 				return inputForEachOutput[output_chan] = input_chan;
