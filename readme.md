@@ -53,7 +53,7 @@ While the Tympan is connected to your computer (via USB) and running the Basic G
 
 Once this works, you can work your way down the examples list to see how they add complexity and capability.  Have fun!
 
-Latest Version of Library in Arduino Library Manager
+Latest Version in Arduino Library Manager
 -------------
 
 To check on the status of the Tympan_Library being accepted by the Arduino library manager, see the Arduino processing log here: https://downloads.arduino.cc/libraries/logs/github.com/Tympan/Tympan_Library/ 
