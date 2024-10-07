@@ -63,7 +63,7 @@ The Arduino "Library Manager" is a handy way for some users to keep up-to-date w
   * In the file [library.properties](https://github.com/Tympan/Tympan_Library/releases/new), update the version number to whatever new version number you intend to use.  Commit the change and push the change up here to GitHub.  If you forget to do this, Arduino will ignore the release.
 * Do the GitHub release in the usual way:
   * Go to [Draft a New Release](https://github.com/Tympan/Tympan_Library/releases/new)
-  * Under "Choose a Tag", start typing a new name for the Tag and Release ("V3.0.6") and be sure to also click "Create New Tag on Publish"
+  * Under "Choose a Tag", start typing a name that you want to use for this Release ("V3.0.6").  Be sure to also click "Create New Tag on Publish" to tag the repo at its current state, which is what the release will be built on.
   * Fill in field for "Release Name" and add some text describing what is in the release
   * Click the button "Generate Release Notes", which puts a listing of all the commits at the bottom of the release text
   * Click "Publish Release"
