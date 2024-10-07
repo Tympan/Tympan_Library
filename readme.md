@@ -55,6 +55,16 @@ Once this works, you can work your way down the examples list to see how they ad
 
 Releasing Tympan_Library to Arduino Library Manager
 -------------
-For those who use the Arduino "Library Manager" to keep up-to-date with the Tympan_Library, be aware that the Arduino Library Manager will only know to update people's libraries if we do a new "Release" here on GitHub.  **Before doing a GitHub release, remember to update the version number listed in the file [library.properties](https://github.com/Tympan/Tympan_Library/blob/main/library.properties)** that's here at the root this repo.  Update the version number listed there, commit and push the change to the repo, then go ahead and do the GitHub release. If you fail to update library.properties, the Arduino processing system will ignore the new release.
+For those who use the Arduino "Library Manager" to keep up-to-date with the Tympan_Library, be aware that the Arduino Library Manager will only know to update people's libraries if we do a new "Release" here on GitHub.  **Before doing a GitHub release, remember to update the version number listed in the file [library.properties](https://github.com/Tympan/Tympan_Library/blob/main/library.properties)** that's here at the root this repo.  If you fail to update library.properties, the Arduino processing system will ignore the new release.
+
+So, the full procedure would be:
+* Commit any software changes that you want and push them up here to GitHub
+* In the file [library.properties]((https://github.com/Tympan/Tympan_Library/releases/new), update the version number listed there, commit the change, and push the change up here to GitHub
+* Do the GitHub release
+  * Go to [Draft a New Release](https://github.com/Tympan/Tympan_Library/releases/new)
+  * Under "Choose a Tag", start typing a new name for the Tag and Release ("V3.0.6") and be sure to also click "Create New Tag on Publish"
+  * Fill in field for "Release Name" and add some text describing what is in the release
+  * Click the button "Generate Release Notes", which puts a listing of all the commits at the bottom of the release text
+  * Click "Publish Release"
 
 To check on the status of the Tympan_Library being accepted by the Arduino Library Manager, see the Arduino processing log here: https://downloads.arduino.cc/libraries/logs/github.com/Tympan/Tympan_Library/ 
