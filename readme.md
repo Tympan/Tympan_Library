@@ -57,10 +57,10 @@ Releasing Tympan_Library to Arduino Library Manager
 -------------
 The Arduino "Library Manager" is a handy way for some users to keep up-to-date with the Tympan_Library.  For those of us used to using Git/GitHub, be aware that users do not get the latest state of the repository.  Instead, the Arduino Library Manager will only people's libraries if we do a new "Release" here on GitHub.  For Arduino to accept the release, however, you must do the release correctly:
 
-* Make any desired changes to the Tympan_Library:
-  * Commit any software changes that you want and push them up here to GitHub
+* Make your desired changes to the Tympan_Library:
+  * Commit your software changes to the repo and push them up here to GitHub
 * Arduino-Specific Changes:
-  * In the file [library.properties]((https://github.com/Tympan/Tympan_Library/releases/new), update the version number to whatever new version number you intend to use.  Commit the change and push the change up here to GitHub.  If you forget to do this, Arduino will ignore the release.
+  * In the file [library.properties](https://github.com/Tympan/Tympan_Library/releases/new), update the version number to whatever new version number you intend to use.  Commit the change and push the change up here to GitHub.  If you forget to do this, Arduino will ignore the release.
 * Do the GitHub release in the usual way:
   * Go to [Draft a New Release](https://github.com/Tympan/Tympan_Library/releases/new)
   * Under "Choose a Tag", start typing a new name for the Tag and Release ("V3.0.6") and be sure to also click "Create New Tag on Publish"
