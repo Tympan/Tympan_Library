@@ -55,12 +55,13 @@ Once this works, you can work your way down the examples list to see how they ad
 
 Releasing Tympan_Library to Arduino Library Manager
 -------------
-For those who use the Arduino "Library Manager" to keep up-to-date with the Tympan_Library, be aware that the Arduino Library Manager will only know to update people's libraries if we do a new "Release" here on GitHub.  **Before doing a GitHub release, remember to update the version number listed in the file [library.properties](https://github.com/Tympan/Tympan_Library/blob/main/library.properties)** that's here at the root this repo.  If you fail to update library.properties, the Arduino processing system will ignore the new release.
+The Arduino "Library Manager" is a handy way for some users to keep up-to-date with the Tympan_Library.  For those of us used to using Git/GitHub, be aware that users do not get the latest state of the repository.  Instead, the Arduino Library Manager will only people's libraries if we do a new "Release" here on GitHub.  For Arduino to accept the release, however, you must do the release correctly:
 
-So, the full procedure would be:
-* Commit any software changes that you want and push them up here to GitHub
-* In the file [library.properties]((https://github.com/Tympan/Tympan_Library/releases/new), update the version number listed there, commit the change, and push the change up here to GitHub
-* Do the GitHub release
+* Make any desired changes to the Tympan_Library:
+  * Commit any software changes that you want and push them up here to GitHub
+* Arduino-Specific Changes:
+  * In the file [library.properties]((https://github.com/Tympan/Tympan_Library/releases/new), update the version number to whatever new version number you intend to use.  Commit the change and push the change up here to GitHub.  If you forget to do this, Arduino will ignore the release.
+* Do the GitHub release in the usual way:
   * Go to [Draft a New Release](https://github.com/Tympan/Tympan_Library/releases/new)
   * Under "Choose a Tag", start typing a new name for the Tag and Release ("V3.0.6") and be sure to also click "Create New Tag on Publish"
   * Fill in field for "Release Name" and add some text describing what is in the release
