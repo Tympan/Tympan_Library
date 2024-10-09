@@ -53,6 +53,7 @@
 
    For Tympan Rev D, program in Arduino IDE as a Teensy 3.6.
    For Tympan Rev E, program in Arduino IDE as a Teensy 4.1.
+   For Tympan Rev F, program in Arduino IDE as a Teensy 4.1.
 
    MIT License.  use at your own risk.
 */
