@@ -1,6 +1,6 @@
 
 
-// One can use "MTP" to access the BatTact SD card via USB from your PC.
+// One can use "MTP" to access the Tympan SD card via USB from your PC.
 //
 // To do this, you need:
 //   * Arduino IDE 1.8.15 or later
