@@ -95,10 +95,16 @@ void AudioSDPlayer_F32::begin(void)
 }
 
 
-bool AudioSDPlayer_F32::play(const char *filename)
+
+// Here is the "open" function.  It is rare that the user will want to call this directly.
+// Basically, only use this if you are going to stream the data out over Serial rather than
+// playing the audio in real time.
+bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffer)
 {
   if (state == STATE_NOT_BEGUN) begin();
-  stop();
+  //stop();
+	
+	active = false;  //from AudioStream.h.  Setting to false to prevent update() from being called.  Only for open().
 
   __disable_irq();
   file.open(filename,O_READ);   //open for reading
@@ -116,8 +122,22 @@ bool AudioSDPlayer_F32::play(const char *filename)
   buffer_write = 0;
   state_read = READ_STATE_NORMAL;
   readHeader();
-  
+	
+	//pre-fill the buffer?
+	if (flag_preload_buffer) readFromSDtoBuffer(READ_SIZE_BYTES);
+		
   return true;
+}
+
+//"play" is the usual way of opening a file and playing it.
+bool AudioSDPlayer_F32::play(const char *filename)
+{
+	bool isOpen = open(filename,false);
+	
+	//now, activate the instance so that update() will be called
+	active = true;  //in AudioStream.h.  Activates this instance so that update() gets called
+	
+	return isOpen;
 }
 
 void AudioSDPlayer_F32::stop(void)
@@ -203,6 +223,45 @@ uint16_t AudioSDPlayer_F32::readFromBuffer(float32_t *left_f32, float32_t *right
 	return n_samples_read;
 }
 
+
+uint32_t AudioSDPlayer_F32::readRawBytes(uint8_t *out_buffer, const uint32_t n_bytes_wanted) {
+	if (n_bytes_wanted == 0) return 0;
+	uint32_t n_bytes_filled = 0;
+	
+	//ensure that there is some data in the buffer (if any is available)
+	if ((state_read == READ_STATE_NORMAL) && (data_length > 0)) readFromSDtoBuffer(READ_SIZE_BYTES);
+	
+	//try to copy bytes
+	while ((n_bytes_filled < n_bytes_wanted) && (getNumBuffBytes() > 0) && (data_length > 0)) {
+
+		//fill as many bytes as possible from the buffer, until we've hit our
+		//target number of bytes are until there aren't any bytes left
+		uint32_t n_to_copy = min(getNumBuffBytes(), n_bytes_wanted - n_bytes_filled);
+		uint32_t fill_target = n_bytes_filled + n_to_copy;
+		while ((data_length > 0) && (n_bytes_filled < fill_target)) {
+			out_buffer[n_bytes_filled++] = buffer[buffer_read++];       //copy the byte
+			if (buffer_read >= N_BUFFER) buffer_read=0;  //wrap around, if needed
+
+			//keep track of using up the allowed audio data within the WAV file (there can be extraneous 
+			//non-audio data at the end of a WAV file).  We just used two bytes.
+			data_length--; //we just used one byte
+		}
+	
+		//ensure that there is some data in the buffer (if any is available)
+		if ((state_read == READ_STATE_NORMAL) && (data_length > 0)) readFromSDtoBuffer(READ_SIZE_BYTES);
+		
+	}
+			
+		
+	//if we didn't get all the bytes that we wanted, fill the rest with zeros
+	if (n_bytes_filled < n_bytes_wanted) {
+		uint32_t foo_index = n_bytes_filled;
+		while (foo_index < n_bytes_wanted) out_buffer[foo_index++] = 0;  //fill with zeros
+	}
+	
+	//return the number of bytes of real data
+	return n_bytes_filled;
+}
 uint16_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps_wanted, int n_chan) {
 	if (n_chan < 1) return 0;
 	uint16_t n_samples_read = 0;
@@ -218,7 +277,6 @@ uint16_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32
 		readFromSDtoBuffer(READ_SIZE_BYTES);
 	}		
 		
-	
 	//loop through all desired samples, filing as many samples as possible, until we've hit our
 	//target number of samples are until there aren't any samples left
 	while ( (n_samples_read < n_samps_wanted) && (getNumBuffBytes() >= bytes_perSamp_allChans) ) { //do we have enough 
@@ -398,7 +456,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 
 start:
 
- #if 0
+ #if 1
   Serial.print("AudioSDPlayer_F32: readHeader, start: ");
   Serial.print("size = ");
   Serial.print(size);
@@ -700,7 +758,7 @@ bool AudioSDPlayer_F32::isPlaying(void)
   //if (state < STATE_STOP) Serial.println("AudioSDPlayer_F32: isPlaying: state = " + String(state));
   uint8_t s = *(volatile uint8_t *)&state;
   //if (state < STATE_STOP) Serial.println("AudioSDPlayer_F32: isPlaying: s = " + String(state) + ", is less than " + String(STATE_STOP) + "?");
-  return (s < STATE_STOP);  //used to be (s < 8) which rejected if still parsing the header
+  return ((s < STATE_STOP) && (active));  //used to be (s < 8) which rejected if still parsing the header
 }
 
 

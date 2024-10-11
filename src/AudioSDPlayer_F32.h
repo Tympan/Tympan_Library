@@ -68,13 +68,15 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		//}
 
 		void init(void);
-		void begin(void);  //begins SD card
-		bool play(const String &filename) { return play(filename.c_str()); }
-		bool play(const char *filename);
-		void stop(void);
-		bool isPlaying(void);
-		uint32_t positionMillis(void);
-		uint32_t lengthMillis(void);
+		virtual void begin(void);  //begins SD card
+		virtual bool play(const String &filename) { return play(filename.c_str()); } //"play" opens the file and activates for using update()
+		virtual bool play(const char *filename);  //"play" opens the file and activates for using update()
+		virtual bool open(const String &filename) { return open(filename.c_str(),true); } //"open" opens the file but does NOT activate using update()
+		virtual bool open(const char *filename, bool flag_preload_buffer);  //"open" opens the file but does NOT activate using update()
+		virtual void stop(void);
+		virtual bool isPlaying(void);
+		virtual uint32_t positionMillis(void);
+		virtual uint32_t lengthMillis(void);
 		virtual void update(void);
 		float setSampleRate_Hz(float fs_Hz) { 
 			sample_rate_Hz = fs_Hz; 
@@ -82,16 +84,36 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 			return sample_rate_Hz;
 		}
 		int setBlockSize(int block_size) { return audio_block_samples = block_size; };
-		bool isFileOpen(void) {
+		virtual bool isFileOpen(void) {
 			if (file.isOpen()) return true;
 			return false;
 		}  
-		void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
+		virtual void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
 
-		int serviceSD(void);
-		int getNumBuffBytes(void);
+		virtual int serviceSD(void);
+		
+		//get some sizes
+		uint16_t getBufferLengthBytes(void) { return N_BUFFER; }  //what is the full length of the buffer, regardless of how much data is in it
+		virtual int getNumBuffBytes(void);  //what is the number of bytes in the buffer, which will include any non-audio data that might be at end of WAV
+		uint32_t getNumberRemainingBytes(void) { return data_length; } //what is the number of audio bytes remaining to be returned (ie, what's in the buffer and still on the SD)
+
+		// copy some data from SD to a local buffer (RAM).  Because accessing
+		// the SD can be slow and unpredictable, don't do this in the high
+		// high priority interrupt-driven part of your code (ie, update()).
+		// Instead only call it from the low priority main-loop-driven part of
+		// your code.
+		int readFromSDtoBuffer(const uint16_t n_bytes_to_read);  //returns 0 if normal
+		
   
-	private:
+		// Use this to access the raw bytes in the WAV file (excluding the header).
+		// As this code might force reading from the SD card, don't do this in the
+		// high priority interrupt-driven part of your code (ie, update()).  
+		// Instead only call it from the low priority main-loop-driven part of
+		// your code.
+
+		uint32_t readRawBytes(uint8_t *out_buffer, const uint32_t n_bytes_to_read);
+		
+	protected:
 		//SdFs sd;
 		SdFs *sd_ptr;
 		SdFile file;
@@ -129,7 +151,6 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		uint16_t readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps);
 		uint16_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
 		uint16_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps, int n_chan);
-		int  readFromSDtoBuffer(const uint16_t n_bytes_to_read);
 		bool readHeader(void);
 };
 
