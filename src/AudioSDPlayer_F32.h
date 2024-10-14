@@ -89,6 +89,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 			return false;
 		}  
 		virtual void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
+		virtual bool listFiles(void);
 
 		virtual int serviceSD(void);
 		
@@ -96,6 +97,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		uint16_t getBufferLengthBytes(void) { return N_BUFFER; }  //what is the full length of the buffer, regardless of how much data is in it
 		virtual int getNumBuffBytes(void);  //what is the number of bytes in the buffer, which will include any non-audio data that might be at end of WAV
 		uint32_t getNumberRemainingBytes(void) { return data_length; } //what is the number of audio bytes remaining to be returned (ie, what's in the buffer and still on the SD)
+		int16_t getBytesPerSample(void) { return bits/8; }
+		int16_t getNumChannels(void) { return channels; }
 
 		// copy some data from SD to a local buffer (RAM).  Because accessing
 		// the SD can be slow and unpredictable, don't do this in the high

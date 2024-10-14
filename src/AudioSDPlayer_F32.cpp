@@ -94,6 +94,11 @@ void AudioSDPlayer_F32::begin(void)
   update_counter = 0;
 }
 
+bool AudioSDPlayer_F32::listFiles(void) {
+	if (sd_ptr == NULL) return;
+	if (state == STATE_NOT_BEGUN) begin();
+	return sd_ptr->ls(); //add LS_R to make recursive.  otherwise, just does the local directory
+}
 
 
 // Here is the "open" function.  It is rare that the user will want to call this directly.
@@ -456,7 +461,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 
 start:
 
- #if 1
+ #if 0
   Serial.print("AudioSDPlayer_F32: readHeader, start: ");
   Serial.print("size = ");
   Serial.print(size);
