@@ -94,7 +94,7 @@ void AudioSDPlayer_F32::begin(void)
   update_counter = 0;
 }
 
-bool AudioSDPlayer_F32::listFiles(void) {
+bool AudioSDPlayer_F32::sendFilenames(void) {
 	if (state == STATE_NOT_BEGUN) begin();
 	return sd_ptr->ls(); //add LS_R to make recursive.  otherwise, just does the local directory
 }

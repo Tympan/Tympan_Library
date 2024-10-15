@@ -89,7 +89,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 			return false;
 		}  
 		virtual void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
-		virtual bool listFiles(void);
+		virtual bool sendFilenames(void);
 
 		virtual int serviceSD(void);
 		
@@ -113,7 +113,6 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		// high priority interrupt-driven part of your code (ie, update()).  
 		// Instead only call it from the low priority main-loop-driven part of
 		// your code.
-
 		uint32_t readRawBytes(uint8_t *out_buffer, const uint32_t n_bytes_to_read);
 		
 	protected:
