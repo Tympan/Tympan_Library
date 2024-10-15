@@ -50,8 +50,6 @@ class SDtoSerial {
 		SdFs *sd_ptr;
 		Stream *serial_ptr;
 		SdFile file;
-		uint32_t data_length;     // number of bytes remaining in current section
-		uint32_t total_length;    // number of audio data bytes in file
 		
 		unsigned int transfer_block_size = 1024;  //default value
 		unsigned int block_delay_msec = 1;        //how much delay to put between each block when transmitting
