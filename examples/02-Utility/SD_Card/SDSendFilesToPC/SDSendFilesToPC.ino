@@ -13,7 +13,7 @@
     via USB and turned on, you can use your serial communicaiton program to:
 
     1) Send 'L' to list the files on the SD card
-    2) Send 'o' to ask to open a file
+    2) Send 'f' to ask to open a file
     3) When prompted, send the filename you want (ending with a newline character)
     4) Send 't' to transfer all the data bytes of the file over serial to the PC
 
@@ -21,7 +21,7 @@
     file if it knows how many bytes are in the file.  So, in that case, youu would 
     insert the following step:
 
-    3.5) Send 's' to ask for the size of the file in bytes
+    3.5) Send 'b' to ask for the size of the file in bytes
 
     The file will be automatically closed when the data has all been transferred.
 
