@@ -40,7 +40,6 @@
 // Include all the of the needed libraries
 #include        <Tympan_Library.h>
 #include        "SdFat.h"  // included as part of the Teensy installation
-#include        "SDtoSerial.h"               //This will be part of the Tympan library
 #include        "SerialManager.h"
 
 // Create the entities that we need
