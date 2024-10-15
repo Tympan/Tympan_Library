@@ -189,7 +189,7 @@ class SDWriter : public Print
       *(int16_t*)(wheader + 20) = 1; // PCM
       *(int16_t*)(wheader + 22) = nchan; // numChannels
       *(int32_t*)(wheader + 24) = fsamp; // sample rate
-      *(int32_t*)(wheader + 28) = fsamp * nbytes; // byte rate
+      *(int32_t*)(wheader + 28) = fsamp * nchan * nbytes; // byte rate (updated 10/14/2024)
       *(int16_t*)(wheader + 32) = nchan * nbytes; // block align
       *(int16_t*)(wheader + 34) = nbits; // bits per sample
       *(int32_t*)(wheader + 40) = nsamp * nchan * nbytes;
