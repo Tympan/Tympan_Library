@@ -63,6 +63,7 @@
 #include "AudioSDPlayer_F32.h"
 #include "AudioSDPlayerTeensy_F32.h"
 #include "AudioSDWriter_F32.h"
+#include "SDtoSerial.h"
 #include "SDWriter.h"
 #include "SerialManagerBase.h"
 #include "SerialManager_UI.h"

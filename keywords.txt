@@ -256,6 +256,14 @@ getNBuffBlocks	KEYWORD2
 getFFTObject	KEYWORD2
 IFFT_Overlapped_F32	KEYWORD1
 
+SDtoSerial	KEYWORD1
+open	KEYWORD2
+isFileOpen	KEYWORD2
+close	KEYWORD2
+getFileSize	KEYWORD2
+getTransferBlockSize	KEYWORD2
+sendFile	KEYWORD2
+
 SerialManagerBase	KEYWORD1
 respondToByte	KEYWORD2
 add_UI_element	KEYWORD2
