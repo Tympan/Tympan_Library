@@ -1,6 +1,33 @@
 
 #ifndef _SDtoSerial_h
 #define _SDtoSerial_h
+//
+// SDtoSerial
+//
+// Created: Chip Audette, OpenAudio, Oct 2024
+//
+// Purpose: Enable the user to transfer files from their SD card
+// back to their PC over a serial link.
+//
+// Typical Use Case:
+// 
+// 1) User asks Tympan to send a list of filenames on the SD
+//     * Use SDtoSerial::sendFilenames(','); //comma-separated namespace
+// 2) User asks the Tympan to open a specific file
+//     * Use SDtoSerial::open(filename);
+// 3) User asks for the size of the file in bytes (probably needed to receive file correctly)
+//     * Use SDtoSerial::sendFileSize();
+// 4) User request the Tympan to start sending the file's bytes
+//     * Use SDtoSerial::sendFile()
+//
+// Alternatively, one can collapse this process:
+//
+// ###) User initiates the whole transfer process with one call:
+//     * Use SDtoSerial::sendFile(filename);
+//     * SDtoSerial automatically sends the file size (text, ending in newline)
+//     * SDtoSerial automatically starts sending the bytes (binary)
+//
+// MIT License.  Use at your own risk.
 
 
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
