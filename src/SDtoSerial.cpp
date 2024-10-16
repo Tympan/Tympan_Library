@@ -25,30 +25,42 @@ bool SDtoSerial::sendFilenames(const char separator) {
   return ret_val;
 }
 
+//set the filename that we will read from
+String SDtoSerial::setFilename(const String &given_fname) {
+   if (isFileOpen()) file.close();  //close any file that is open
+  cur_filename.remove(0); //clear the current filename String
+  return cur_filename += given_fname; //append the given string and return
+ } 
 
-bool SDtoSerial::open(const char *filename)
+//receive a string as the filename
+String SDtoSerial::receiveFilename(const char EOL_char) {
+  if (serial_ptr == nullptr) return String("");  //not ready to receive bytes from Serial
+  return setFilename((serial_ptr->readStringUntil(EOL_char)).trim());
+} 
+
+bool SDtoSerial::open(void)
 {
   if (state == SD_STATE_NOT_BEGUN) begin();
-
-  file.open(filename,O_READ);   //open for reading
+  if (state == SD_STATE_NOT_BEGUN) return false;  //failed to open SD
+  if (cur_filename.length() == 0) return false;    //no filename	
+  file.open(cur_filename.c_str(),O_READ);   //open for reading
   if (!isFileOpen()) return false;
   
   state_read = READ_STATE_NORMAL;
-  //readHeader();
-		
   return true;
 }
 
 
 //send the file size as a character string (with end-of-line)
 bool SDtoSerial::sendFileSize(void) { 
-  if (file.isOpen() && serial_ptr) { 
+  if (file.isOpen() && (serial_ptr != nullptr)) { 
     serial_ptr->println(getFileSize()); 
     return true; 
   } 
   return false; 
 }
 
+/*
 //opens the file, sends the size in bytes (as text), then sends the raw contents of the file, then closes the file
 uint64_t SDtoSerial::sendSizeThenFile(const String &filename) {
 
@@ -63,6 +75,48 @@ uint64_t SDtoSerial::sendSizeThenFile(const String &filename) {
   
   //send the file
   return sendFile(); //sends as raw bytes
+}
+*/
+
+//automates the transfer process by sending requests and receiving requests over serial		
+uint64_t SDtoSerial::sendFile_interactive(void) {
+	if (serial_ptr == nullptr) {
+		Serial.println("SDtoSerial: sendFile_interactive: *** ERROR ***: Serial pointer not provided. Exiting.");
+		return 0;
+	}
+
+  //get file name from the user
+  Serial.println("SDtoSerial: sendFile_interactive: send filename to read from (end with newline)");
+	Serial.setTimeout(10000);  //set timeout in milliseconds...make longer for human interaction
+  String fname = receiveFilename('\n'); //also sets the filename
+	Serial.setTimeout(1000);  //change the Serial timeout time back to default
+    
+  //open the file
+  bool isOpen = open(); //opens using the current filename
+  if (!isOpen) {
+    Serial.println("SDtoSerial: sendFile_interactive: *** ERROR ***: Cannot open file " + String(fname) + " for reading. Exiting.");
+    return 0;
+  }
+	
+	//send the file size in bytes
+	Serial.println("SDtoSerial: sending file size in bytes (followed by newline)");
+	uint64_t bytes_to_send = getFileSize();
+	bool success = sendFileSize();
+	if (!success) {
+		Serial.println("SDtoSerial: sendFile_interactive: *** ERROR ***: Could not send file size. Exiting.");
+    return 0;
+	}	
+	
+	//send the file itself
+	Serial.println("SDtoSerial: sendFile_interactive: Sending the file bytes (after this newline)");	
+	uint64_t bytes_sent = sendFile();
+  if (bytes_sent != bytes_to_send) {
+      Serial.println("SDtoSerial: sendFile_interactive: Only sent " + String(bytes_sent) + " bytes.  File transfer has stopped.");
+  } else {
+    Serial.println("SDfromSerial: sendFile_interactive: Successfully received " + String(bytes_sent) + " bytes into " + fname + ".  File transfer complete.");
+  }	
+	
+	return bytes_sent;
 }
 
 //open the file, send it, close it

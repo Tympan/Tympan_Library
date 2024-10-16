@@ -23,9 +23,10 @@
 // Alternatively, one can collapse this process:
 //
 // ###) User initiates the whole transfer process with one call:
-//     * Use SDtoSerial::sendFile(filename);
-//     * SDtoSerial automatically sends the file size (text, ending in newline)
-//     * SDtoSerial automatically starts sending the bytes (binary)
+//     * Use SDtoSerial::sendFile_interactive();
+//     * SDtoSerial automatically asks the user to send the file name (as text, ending with newline)
+//     * SDtoSerial automatically sends to the user the file size in bytes (as text, ending with newline)
+//     * SDtoSerial automatically sends to the user the file's bytes
 //
 // MIT License.  Use at your own risk.
 
@@ -33,14 +34,13 @@
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 #include <Print.h>   //frpm Arduino cores
 
-class Print_ReplaceChar; //forward declare
-class Print_RemoveChar;  //forward declare
+
 
 class SDtoSerial {
 	public:
-		SDtoSerial(void) :                        sd_ptr(NULL), serial_ptr(&Serial) { init(); }
+		SDtoSerial(void) :                        sd_ptr(nullptr), serial_ptr(&Serial) { init(); }
 		SDtoSerial(SdFs * _sd) :                  sd_ptr(_sd),  serial_ptr(&Serial) { init(); }
-		SDtoSerial(Stream *ser_ptr) :             sd_ptr(NULL), serial_ptr(ser_ptr) { init(); }
+		SDtoSerial(Stream *ser_ptr) :             sd_ptr(nullptr), serial_ptr(ser_ptr) { init(); }
 		SDtoSerial(SdFs * _sd, Stream *ser_ptr) : sd_ptr(_sd),  serial_ptr(ser_ptr) { init(); }
 		
 		enum SD_STATE {SD_STATE_BEGUN=0, SD_STATE_NOT_BEGUN=99};
@@ -50,8 +50,13 @@ class SDtoSerial {
  		virtual void begin(void);                                          //begin the SD card
 		virtual bool sendFilenames(void) { return sendFilenames('\n'); };  //list files in the current directory
 		virtual bool sendFilenames(const char separator);                  //list files in the current directory
-		virtual bool open(const String &filename) { return open(filename.c_str()); }  //returns true if successful
-		virtual bool open(const char *filename);                                      //returns true if successful
+		virtual String setFilename(const String &given_fname);              //close any open files and set a new filename
+    virtual String getFilename(void) { return cur_filename; }
+		virtual String receiveFilename(void) { return receiveFilename('\n'); };   //receive the filename over the serial link
+    virtual String receiveFilename(const char EOL_char);                      //receive the filename over the serial link
+    virtual bool open(const String &filename) { setFilename(filename); return open(); }  //returns true if successful
+		virtual bool open(const char *filename) { return open(String(filename)); }           //returns true if successful
+		virtual bool open(void);
 		virtual bool isFileOpen(void) { if ((serial_ptr != nullptr) && file.isOpen()) { return true; } return false; }
 		virtual void close(void) { file.close(); }
 		
@@ -65,7 +70,7 @@ class SDtoSerial {
 		unsigned int setBlockDelay_msec(unsigned int foo_msec) { return block_delay_msec = foo_msec; }
 		unsigned int getBlockDelay_msec(void)                  { return block_delay_msec; }
 		
-		virtual uint64_t sendSizeThenFile(const String &filename);  //this is the most likely method to be used
+		virtual uint64_t sendFile_interactive(void);  //automates the transfer process by sending requests and receiving requests over serial
 		virtual uint64_t sendFile(const String &filename) { return sendFile(filename.c_str()); }
 		virtual uint64_t sendFile(char *filename);    //open the file, send it, close it
 		virtual uint64_t sendFile(void);              //sends in blocks.  returns the number of bytes sent.  Uses sendOneBlock()
@@ -84,6 +89,7 @@ class SDtoSerial {
 		uint8_t state;
 		uint8_t state_read;
 		
+    String cur_filename = String(""); //current filename		
 };
 
 
@@ -102,7 +108,7 @@ class Print_ReplaceChar : public Print {
 		bool isActive = false;
 
 	private:
-		Print *print_ptr;
+		Print *print_ptr = nullptr;
 		char targ_char = 'A', replacement_char = 'A';
 };
 
@@ -120,7 +126,7 @@ class Print_RemoveChar : public Print {
 		bool isActive = false;
 
 	private:
-		Print *print_ptr;
+		Print *print_ptr = nullptr;
 		char targ_char = 'A';  //default, will be overwritten in constructor
 };
 

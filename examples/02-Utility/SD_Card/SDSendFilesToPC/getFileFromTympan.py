@@ -155,7 +155,7 @@ print("RESULT: value=",n_bytes)                           #print the value to th
 
 # Fourth, transfer the file itself
 sendTextToSerial(serial_to_tympan, 't')                   #send the command to the Tympan
-reply = readBytesFromSerial(serial_to_tympan,n_bytes)     #get the one-line reply from the Tympan
+reply = readBytesFromSerial(serial_to_tympan,n_bytes)     #get the bytes sent by the Tympan
 print("REPLY:",reply)                                     #print the bytes to the screen here in Pyton
 
 
