@@ -40,7 +40,7 @@ bool SerialManager::respondToByte(char c) {
       printHelp(); 
       break;
     case 'd':
-      createDummyFileOnSD(); //send a pointer to the SD system
+      createDummyFileOnSD(); //this function is in the main *.ino file
       break;
     case 'L':
       Serial.print("SerialMonitor: Listing Files on SD:"); //don't include end-of-line
