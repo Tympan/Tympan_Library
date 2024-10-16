@@ -93,6 +93,17 @@ def processLineIntoFilenames(line):
     #
     return all_fnames
 
+# Filter the filenames to keep those whose extension is of the desired type (WAV, TXT, etc)
+def keepFilenamesOfType(all_fnames,targ_types=['wav']):
+    out_fnames=[]
+    for fname in all_fnames:
+        pieces = fname.split('.')
+        if (pieces[-1].lower() in targ_types): #is the trailing extension the same as our target?
+            out_fnames.append(fname)          #if so, keep the filename!
+        #
+    #
+    return out_fnames
+
 # ##################################### Define High-Level Functions
 
 # Here is the script for working with the Tympan to send a file to be saved on its SD card
