@@ -5,8 +5,8 @@
 # MIT License 
 #
 # This script communicates with the Tympan over the USB Serial link.
-# The purpose is to get the audio data from a WAV file on the Tympan's
-# SD card.
+# The purpose is to get a file from the Tympan's SD card over to the
+# PC and saved on the PC's local disk
 #
 # I'm using this as a Serial communication example: 
 # https://projecthub.arduino.cc/ansh2919/serial-communication-between-python-and-arduino-663756
