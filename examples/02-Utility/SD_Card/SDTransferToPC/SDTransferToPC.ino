@@ -1,29 +1,29 @@
 /*
-  SDSendFilesToPC
+  SDTransferToPC
    
   Created: Chip Audette, OpenHearing, Oct 2024
-  Purpose: Transfer files from the SD to your PC via the Serial link.  To receive the files,
-    you will want to use some sort of program (Python script included here) to receive the
-    data from the Tympan and write it to your PC's disk.  The Arduino Serial Monitor will
-    not help you save the files.  Sorry.
+  Purpose: Transfer files from your PC to the Tympan via the Serial link.  To send and
+    receive the files, you'll want some sort of program (Python script included here) 
+    to open the file on your PC and to either send the file's bytes to the Tympan or to
+    receive the bytes from teh Tympan.  The Arduino Serial Monitor will not help you send
+    or receive any files.  Sorry.
 
-  HOW TO USE: Obviously, you need a Tympan and you need to put an SD card in your Tympan.
-    Since this example will be transfering files off the SD card back to your PC, your
-    SD card needs some example files on it.  So, with the Tympan plugged into the PC
-    via USB and turned on, you can use your serial communicaiton program to:
+  Requirements: Obviously, you need a Tympan and you need to put an SD card in your Tympan.
 
-    1) Send 'L' to list the files on the SD card
-    2) Send 'f' to ask to open a file
-    3) When prompted, send the filename you want (ending with a newline character)
-    4) Send 't' to transfer all the data bytes of the file over serial to the PC
+  How to send a file from the Tympan's SD to your PC:
+    1) [Optional] Send 'L' to list the files on the SD card
+    2) Send 't' to start the transfer process from the Tympan to the PC
+       * When prompted, send the filename of the file on the SD that you want to read (as text, ending with newline character)
+       * Tympan will respond with the number of bytes in the file (as text, ending with newline character)
+       * Tympan will respond stating that the bytes will begin being transfered
+       * Tympan will send all of the file's bytes
 
-    In many cases, it is easier for your serial communication program to receive the
-    file if it knows how many bytes are in the file.  So, in that case, youu would 
-    insert the following step:
-
-    3.5) Send 'b' to ask for the size of the file in bytes
-
-    The file will be automatically closed when the data has all been transferred.
+  How to receive a file from your PC to the Tympan's SD
+    1) Send 'T' to start the transfer process from the PC to the Tympan
+       * When prompted, send the filename you want to write (as text, ending with newline character)
+       * When prompted, send the length of the file in bytes (as text, ending with newline character)
+       * When prompted, send all of the file's bytes
+       * Tympan will respond with message about success or failure
 
     If you cannot connect to the Tympan via the included Python script, be sure that
     you have closed the Arduino Serial Monitor.  Only one program can use your PC's
@@ -43,10 +43,10 @@
 #include        "SerialManager.h"
 
 // Create the entities that we need
-Tympan          myTympan(TympanRev::F);      //use TympanRev::D or E or F
-SdFs            sd;                          //This is the SD card.  SdFs is part of the Teensy install
-SDtoSerial      SD_to_serial(&sd, &Serial);  //transfers raw bytes of files on the sd over to Serial (part of Tympan Library)
-SerialManager   serialManager;               //create the serial manager for real-time control (via USB)
+Tympan          myTympan(TympanRev::F);        //use TympanRev::D or E or F
+SdFs            sd;                            //This is the SD card.  SdFs is part of the Teensy install
+SdFileTransfer  sdFileTransfer(&sd, &Serial);  //Transfers raw bytes of files from Serial to the SD card.  Part of Tympan_Library
+SerialManager   serialManager;                 //create the serial manager for real-time control (via USB)
 
 
 // ///////////////////////// Main setup() and loop() as required for all Arduino programs
@@ -54,8 +54,8 @@ SerialManager   serialManager;               //create the serial manager for rea
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
   //myTympan.beginBothSerial(); //only needed if using bluetooth
-  delay(500);  while ((millis() < 2000) && !Serial) delay(10);  //stall a bit to see if Serial is connected
-  Serial.println("SDSendFilesToPC: setup():...");
+  delay(500);  while ((millis() < 2000) && (!Serial)) { delay(10); }  //stall a bit to see if Serial is connected
+  Serial.println("SDTransferToPC: setup():...");
 
   //enable the Tympan
   myTympan.enable();
@@ -69,6 +69,7 @@ void setup() {
 
 } //end setup()
 
+
 // define the loop() function, the function that is repeated over and over for the life of the device
 void loop() {
 
@@ -79,6 +80,7 @@ void loop() {
   myTympan.serviceLEDs(millis(),LOW);  //update blinking at LOW speed
 
 } //end loop()
+
 
 // ///////////////////////////////////////////////////////////////////////////////////////////
 
