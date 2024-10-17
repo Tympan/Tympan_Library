@@ -55,7 +55,7 @@ class audio_block_f32_t {
 		}
 		~audio_block_f32_t(void) 
 		{
-			if (data != NULL) delete data;
+			if (data != NULL) delete [] data;
 		}
 		
 		
