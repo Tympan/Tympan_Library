@@ -71,6 +71,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		virtual void begin(void);  //begins SD card
 		virtual bool play(const String &filename) { return play(filename.c_str()); } //"play" opens the file and activates for using update()
 		virtual bool play(const char *filename);  //"play" opens the file and activates for using update()
+		virtual bool play(void);    //plays a file that has already been opened
 		virtual bool open(const String &filename) { return open(filename.c_str(),true); } //"open" opens the file but does NOT activate using update()
 		virtual bool open(const char *filename, bool flag_preload_buffer);  //"open" opens the file but does NOT activate using update()
 		virtual void stop(void);
@@ -92,10 +93,11 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		virtual bool sendFilenames(void);
 
 		virtual int serviceSD(void);
+		int fillBufferFromSD(void);
 		
 		//get some sizes
-		uint16_t getBufferLengthBytes(void) { return N_BUFFER; }  //what is the full length of the buffer, regardless of how much data is in it
-		virtual int getNumBuffBytes(void);  //what is the number of bytes in the buffer, which will include any non-audio data that might be at end of WAV
+		uint32_t getBufferLengthBytes(void) { return N_BUFFER; }  //what is the full length of the buffer, regardless of how much data is in it
+		virtual uint32_t getNumBuffBytes(void);  //what is the number of bytes in the buffer, which will include any non-audio data that might be at end of WAV
 		uint32_t getNumberRemainingBytes(void) { return data_length; } //what is the number of audio bytes remaining to be returned (ie, what's in the buffer and still on the SD)
 		int16_t getBytesPerSample(void) { return bits/8; }
 		int16_t getNumChannels(void) { return channels; }
@@ -105,7 +107,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		// high priority interrupt-driven part of your code (ie, update()).
 		// Instead only call it from the low priority main-loop-driven part of
 		// your code.
-		int readFromSDtoBuffer(const uint16_t n_bytes_to_read);  //returns 0 if normal
+		int readFromSDtoBuffer(const uint32_t n_bytes_to_read);  //returns 0 if normal
 		
   
 		// Use this to access the raw bytes in the WAV file (excluding the header).
@@ -131,12 +133,16 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		//audio_block_f32_t *block_right_f32 = NULL;
 		uint16_t block_offset;    // how much data is in block_left & block_right
 
-		const uint16_t READ_SIZE_BYTES = 512;
-		uint8_t temp_buffer[512];  //make same size as the above
-		const uint16_t N_BUFFER = 32*512;  //should be multiple of READ_SIZE_BYTES
-		uint8_t buffer[32*512];       // buffer X blocks of data
-		uint16_t buffer_write = 0;
-		uint16_t buffer_read = 0;
+		constexpr static uint16_t READ_SIZE_BYTES = 512;  //was 512...will larger reads be faster overall?
+		uint8_t temp_buffer[READ_SIZE_BYTES];  //make same size as the above
+		#if defined(KINETISK)
+			constexpr static uint32_t N_BUFFER = 32*(uint32_t)READ_SIZE_BYTES;  //Tympan Rev A-D is a Teensy 3.6, which has less RAM, so use a smaller buffer
+		#else
+			constexpr static uint32_t N_BUFFER = 256*(uint32_t)READ_SIZE_BYTES;  //Newer Tympans have more RAM, so use a biffer buffer.  (originall was 32*READ_SIZE_BYTES)
+		#endif
+		uint8_t buffer[N_BUFFER];       // buffer X blocks of data
+		uint32_t buffer_write = 0;
+		uint32_t buffer_read = 0;
 		//uint16_t buffer_offset;   // where we're at consuming "buffer"
 		//uint16_t buffer_length;   // how much data is in "buffer" (512 until last read)
 		uint8_t header_offset;    // number of bytes in header[]
@@ -150,9 +156,9 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 
 		uint32_t updateBytes2Millis(void);
 
-		uint16_t readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps);
-		uint16_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
-		uint16_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps, int n_chan);
+		uint32_t readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps);
+		uint32_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
+		uint32_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps, int n_chan);
 		bool readHeader(void);
 };
 

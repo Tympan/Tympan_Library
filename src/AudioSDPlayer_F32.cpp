@@ -128,7 +128,7 @@ bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffe
   readHeader();
 	
 	//pre-fill the buffer?
-	if (flag_preload_buffer) readFromSDtoBuffer(READ_SIZE_BYTES);
+	if (flag_preload_buffer) fillBufferFromSD();
 		
   return true;
 }
@@ -136,12 +136,24 @@ bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffe
 //"play" is the usual way of opening a file and playing it.
 bool AudioSDPlayer_F32::play(const char *filename)
 {
-	bool isOpen = open(filename,false);
+	bool isOpen = open(filename,true); //the "true" tells it to fill the read buffer from the SD right now
 	
 	//now, activate the instance so that update() will be called
 	active = true;  //in AudioStream.h.  Activates this instance so that update() gets called
 	
 	return isOpen;
+}
+
+//Play an already-opened file
+bool AudioSDPlayer_F32::play(void) {
+	if (isFileOpen()) {
+		Serial.println("AudioSDPlayer_F32: file was already open.  Starting playing");
+		active = true;  //in AudioStream.h.  Activates this instance so that update() gets called
+	} else {
+		Serial.println("AudiOSDPlayer_F32: play: cannot play file because no file has been opened.");
+		active = false;
+	}
+	return active;
 }
 
 void AudioSDPlayer_F32::stop(void)
@@ -213,9 +225,9 @@ void AudioSDPlayer_F32::update(void) {
 	}
 }
 
-uint16_t AudioSDPlayer_F32::readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps) {
+uint32_t AudioSDPlayer_F32::readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps) {
 	//loop through the buffer and copy samples to the output arrays
-	uint16_t n_samples_read = 0;
+	uint32_t n_samples_read = 0;
 	switch (state_play) {
 		case STATE_DIRECT_16BIT_MONO: case STATE_DIRECT_16BIT_STEREO:
 			n_samples_read = readBuffer_16bit_to_f32(left_f32, right_f32, n_samps, channels); 		
@@ -266,20 +278,24 @@ uint32_t AudioSDPlayer_F32::readRawBytes(uint8_t *out_buffer, const uint32_t n_b
 	//return the number of bytes of real data
 	return n_bytes_filled;
 }
-uint16_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps_wanted, int n_chan) {
+uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps_wanted, int n_chan) {
 	if (n_chan < 1) return 0;
-	uint16_t n_samples_read = 0;
-	const uint16_t bytes_perSamp_allChans = 2 * n_chan; //mono will need 2 bytes (16 bits) per sample and stereo will need 2*2 bytes (32 bits) per sample
-	const int bytes_total = bytes_perSamp_allChans*n_chan;
+	uint32_t n_samples_read = 0;
+	const uint32_t bytes_perSamp_allChans = 2 * n_chan; //mono will need 2 bytes (16 bits) per sample and stereo will need 2*2 bytes (32 bits) per sample
+	const uint32_t bytes_desired = bytes_perSamp_allChans*n_samps_wanted;
 	uint8_t lsb, msb;
 	int16_t val_int16;
 	float32_t val_f32;
+
 	
-	//check to see if we have enough data in the main buffer.  If not, try to load some, if possible
-	while ((state_read == READ_STATE_NORMAL) && ( (getNumBuffBytes() < bytes_total) || (data_length < (uint32_t)bytes_total) ) )
-	{
-		readFromSDtoBuffer(READ_SIZE_BYTES);
-	}		
+	if (1) {  //do we allow ourselves to read from the SD during this high-speed update()-driven interrupt?
+		//check to see if we have enough data in the main buffer.  If not, try to load one read-block of data
+		if ((state_read == READ_STATE_NORMAL) && ( (getNumBuffBytes() < bytes_desired) || (data_length < bytes_desired) ) )
+		{
+			Serial.println("AudioSDPlayer_F32::readBuffer_16bit_to_f32: reading from SD in the high-speed loop.  Danger!");
+			readFromSDtoBuffer(READ_SIZE_BYTES);
+		}
+	}
 		
 	//loop through all desired samples, filing as many samples as possible, until we've hit our
 	//target number of samples are until there aren't any samples left
@@ -314,12 +330,13 @@ uint16_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32
 			buffer_read = buffer_write;
 		}
 	}
+	
 	return n_samples_read;
 }
 
-
-int AudioSDPlayer_F32::getNumBuffBytes(void) {
-	int n_buff = 0;
+//how many valid (waiting-to-be-used) bytes are already in the circular buffer
+uint32_t AudioSDPlayer_F32::getNumBuffBytes(void) {
+	uint32_t n_buff = 0;
 	if (buffer_read == buffer_write) {
 		n_buff = 0;
 	} else if (buffer_read > buffer_write) {
@@ -331,18 +348,32 @@ int AudioSDPlayer_F32::getNumBuffBytes(void) {
 }
 
 int AudioSDPlayer_F32::serviceSD(void) {
+	return fillBufferFromSD();
+}
+
+int AudioSDPlayer_F32::fillBufferFromSD(void) {
 	//This function should be called from the Arduino loop() function.
 	//This function loads data from the SD card into a RAM buffer, as
-	//long as there's room in the buffer to do a full read (512 bytes?)
+	//long as there's room in the buffer to do the read
 
 	//should we be reading?  If not, return.
 	if (state == STATE_STOP) return 0;
 
-	return readFromSDtoBuffer(READ_SIZE_BYTES);
+	//keep reading until the buffer is full (or an error occurs)
+	int error_code = 0; 
+	while ((error_code == 0) && (N_BUFFER - getNumBuffBytes() > READ_SIZE_BYTES)) {
+		if (file.available() && (state_read != READ_STATE_FILE_EMPTY)) {
+			if ((N_BUFFER - getNumBuffBytes()) > (N_BUFFER/4)) {
+				Serial.println("AudioSDPlayer_F32: fillBufferFromSD: play buffer was 75% empty");
+			}
+		}
+		error_code = readFromSDtoBuffer(READ_SIZE_BYTES);
+	}
 
+	return error_code;
 }
 
-int AudioSDPlayer_F32::readFromSDtoBuffer(const uint16_t n_bytes_to_read) {
+int AudioSDPlayer_F32::readFromSDtoBuffer(const uint32_t n_bytes_to_read) {
 	if (state_read == READ_STATE_FILE_EMPTY) return -1;
 	if (file.available() == false) return -1;
 	if (n_bytes_to_read == 0) return 0;
