@@ -362,11 +362,11 @@ int AudioSDPlayer_F32::fillBufferFromSD(void) {
 	//keep reading until the buffer is full (or an error occurs)
 	int error_code = 0; 
 	while ((error_code == 0) && (N_BUFFER - getNumBuffBytes() > READ_SIZE_BYTES)) {
-		if (file.available() && (state_read != READ_STATE_FILE_EMPTY)) {
-			if ((N_BUFFER - getNumBuffBytes()) > (N_BUFFER/4)) {
-				Serial.println("AudioSDPlayer_F32: fillBufferFromSD: play buffer was 75% empty");
-			}
-		}
+		//if (file.available() && (state_read != READ_STATE_FILE_EMPTY)) {
+		//	if ((N_BUFFER - getNumBuffBytes()) > (N_BUFFER/4)) {
+		//		Serial.println("AudioSDPlayer_F32: fillBufferFromSD: play buffer was 75% empty");
+		//	}
+		//}
 		error_code = readFromSDtoBuffer(READ_SIZE_BYTES);
 	}
 
