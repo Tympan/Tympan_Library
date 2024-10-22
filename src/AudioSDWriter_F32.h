@@ -50,6 +50,7 @@ class AudioSDWriter {
     }
 		virtual String getCurrentFilename(void) { return current_filename; }
 
+		virtual void begin(void) { prepareSDforRecording(); };  //begins SD card
     virtual void prepareSDforRecording(void) = 0;
     virtual int startRecording(void) = 0;
     virtual int startRecording(char *) = 0;
