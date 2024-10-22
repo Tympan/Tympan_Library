@@ -27,7 +27,7 @@ void SerialManager::printHelp(void) {
   Serial.println(" General: No Prefix");
   Serial.println("   h    : Print this help");
   Serial.println("   p    : SDPlay : Play file from SD card named " + sdPlay_filename);
-  Serial.println("   q    : SDPlay : Stop any currnetly plying SD file");
+  Serial.println("   q    : SDPlay : Stop any currnetly playing SD file");
   Serial.println("   r    : SDWrite: Manually start recording");
   Serial.println("   s    : SDWrite: Manually stop recording");
   
