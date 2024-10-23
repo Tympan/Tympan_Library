@@ -45,7 +45,7 @@ void AudioSDWriter_F32::prepareSDforRecording(void) {
 	if (current_SD_state == STATE::UNPREPARED) {
 		if (buffSDWriter) {
 			buffSDWriter->init(); //part of SDWriter, which is the base for BufferedSDWriter_I16
-			if (PRINT_FULL_SD_TIMING) buffSDWriter->setPrintElapsedWriteTime(true); //for debugging.  make sure time is less than (audio_block_samples/sample_rate_Hz * 1e6) = 2900 usec for 128 samples at 44.1 kHz
+			if (PRINT_FULL_SD_TIMING) buffSDWriter->setPrintElapsedWriteTime(true); //for debugging.  
 		}
 		current_SD_state = STATE::STOPPED;
 	}
@@ -260,45 +260,44 @@ void AudioSDWriter_F32::copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[]
   //do any of the given audio blocks actually contain data
   int any_data = 0, nsamps = 0;
   for (int Ichan = 0; Ichan < numChan; Ichan++) {
-	if (audio_blocks[Ichan]) { //looking for anything NOT null
-	  any_data++;  //this audio_block[Ichan] is not null, so count it
-	  chan_received[Ichan] = true;
-	  nsamps = audio_blocks[Ichan]->length; //how long is it?
-	  //Serial.print("SDWriter: copyToWriteBuffer: good "); Serial.println(Ichan);
-	} else {
-		chan_received[Ichan] = false;
-	}
+		if (audio_blocks[Ichan]) { //looking for anything NOT null
+			any_data++;  //this audio_block[Ichan] is not null, so count it
+			chan_received[Ichan] = true;
+			nsamps = audio_blocks[Ichan]->length; //how long is it?
+			//Serial.print("SDWriter: copyToWriteBuffer: good "); Serial.println(Ichan);
+		} else {
+			chan_received[Ichan] = false;
+		}
   }
   if (any_data == 0) return;  //if there's no data, return;
   if (any_data < numChan) { // do we have all the channels?  If not, send error?
     Serial.print("AudioSDWriter: copyToWriteBuffer: only got "); Serial.print(any_data);
     Serial.print(" of ");  Serial.print(numChan);  Serial.print(" channels: ");
-	for(int Ichan = 0; Ichan < numChan; Ichan++) { Serial.print(chan_received[Ichan]); }
-	Serial.println();
-	return;  //return if not all data is present
+		for(int Ichan = 0; Ichan < numChan; Ichan++) { Serial.print(chan_received[Ichan]); }
+		Serial.println();
+		return;  //return if not all data is present
   }
 
   //check to see if there have been any jumps in the data counters
   for (int Ichan = 0; Ichan < numChan; Ichan++) {
-	if (audio_blocks[Ichan] != NULL) {
-	  if (((audio_blocks[Ichan]->id - last_audio_block_id[Ichan]) != 1) && (last_audio_block_id[Ichan] != 0)) {
-		//Serial.print("AudioSDWriter: chan "); Serial.print(Ichan);
-		//Serial.print(", data skip? This ID = "); Serial.print(audio_blocks[Ichan]->id);
-		//Serial.print(", Previous ID = "); Serial.println(last_audio_block_id[Ichan]);
-	  }
-	  last_audio_block_id[Ichan] = audio_blocks[Ichan]->id;
-	}
+		if (audio_blocks[Ichan] != NULL) {
+			if (((audio_blocks[Ichan]->id - last_audio_block_id[Ichan]) != 1) && (last_audio_block_id[Ichan] != 0)) {
+				//Serial.print("AudioSDWriter: chan "); Serial.print(Ichan);
+				//Serial.print(", data skip? This ID = "); Serial.print(audio_blocks[Ichan]->id);
+				//Serial.print(", Previous ID = "); Serial.println(last_audio_block_id[Ichan]);
+			}
+			last_audio_block_id[Ichan] = audio_blocks[Ichan]->id;
+		}
   }
 
   //data looks good, prep for handoff
   float32_t *ptr_audio[numChan] = {}; //the braces cause it to init all to zero (null)
   for (int Ichan = 0; Ichan < numChan; Ichan++) { 
-	if (audio_blocks[Ichan]) {
-		ptr_audio[Ichan] = audio_blocks[Ichan]->data;
-	} else {
-		//create a block, fill with zeros and store it
-		
-	}
+		if (audio_blocks[Ichan]) {
+			ptr_audio[Ichan] = audio_blocks[Ichan]->data;
+		} else {
+			//create a block, fill with zeros and store it
+		}
   }
 
   //now push it into the buffer via the base class BufferedSDWriter
@@ -319,36 +318,34 @@ int AudioSDWriter_F32::serviceSD_withWarnings(AudioInputI2SQuad_F32 &i2s_in) {
 }
 
 int AudioSDWriter_F32::serviceSD_withWarnings(void) {
-  static int max_max_bytes_written = 0; //for timing diagnotstics
-  static int max_bytes_written = 0; //for timing diagnotstics
-  static int max_dT_micros = 0; //for timing diagnotstics
-  static int max_max_dT_micros = 0; //for timing diagnotstics
 
-  unsigned long dT_micros = micros();  //for timing diagnotstics
+  unsigned long dT_millis = millis();  //for timing diagnotstics
   //int bytes_written = audioSDWriter.serviceSD();
   int bytes_written = serviceSD(); 
-  dT_micros = micros() - dT_micros;  //timing calculation
+  dT_millis = millis() - dT_millis;  //timing calculation
 
   if ( bytes_written > 0 ) {
     
-    max_bytes_written = max(max_bytes_written, bytes_written);
-    max_dT_micros = max((int)max_dT_micros, (int)dT_micros);
-   
-    if (dT_micros > 10000) {  //if the write took a while, print some diagnostic info
-      max_max_bytes_written = max(max_bytes_written,max_max_bytes_written);
-      max_max_dT_micros = max(max_dT_micros, max_max_dT_micros);
-      
-      Serial.print("serviceSD: bytes written = ");
-      Serial.print(bytes_written); Serial.print(", ");
-      Serial.print(max_bytes_written); Serial.print(", ");
-      Serial.print(max_max_bytes_written); Serial.print(", ");
-      Serial.print("dT millis = "); 
-      Serial.print((float)dT_micros/1000.0,1); Serial.print(", ");
-      Serial.print((float)max_dT_micros/1000.0,1); Serial.print(", "); 
-      Serial.print((float)max_max_dT_micros/1000.0,1);Serial.print(", ");      
-      Serial.println();
-      max_bytes_written = 0;
-      max_dT_micros = 0;     
+		//if slow, issue warning
+    bool criteria1 = (dT_millis > 150);
+		uint32_t samples_filled = buffSDWriter->getNumSampsInBuffer();
+		uint32_t buffer_len = buffSDWriter->getLengthOfBuffer();
+		uint32_t samples_empty = buffer_len - samples_filled;
+		float samples_per_second = buffSDWriter->getNChanWAV() * buffSDWriter->getSampleRateWAV();
+		float remaining_time_sec = ((float)samples_empty) / samples_per_second;
+  	float buffer_empty_frac = ((float)samples_empty)/((float)buffer_len);
+		//bool criteria2 = (dT_millis > 20) && (buffer_fill_frac > 0.7f);
+    bool criteria2 = ((dT_millis > 25) && (remaining_time_sec < 0.100));
+		if (criteria1 || criteria2) {
+			Serial.print("AudioSDWriter_F32: Warning: long write: ");
+			Serial.print(dT_millis); Serial.print(" msec");
+			Serial.print(" for "); Serial.print(bytes_written); Serial.print(" bytes");
+			//Serial.print(" at "); Serial.print(((float)bytes_written)/((float)(dT_millis)),1);Serial.print(" kB/sec");
+			Serial.print(", buffer is " ); Serial.print(buffSDWriter->getNumSampsInBuffer());
+			Serial.print("/"); Serial.print(buffSDWriter->getLengthOfBuffer());
+			Serial.print(" used = "); Serial.print(100.0f*buffer_empty_frac, 2); Serial.print("% open");
+			Serial.print(" = ");Serial.print((int)(remaining_time_sec*1000)); Serial.print(" msec remain.");
+			Serial.println();
     }
   }
   return bytes_written;
