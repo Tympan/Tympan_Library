@@ -107,8 +107,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		// high priority interrupt-driven part of your code (ie, update()).
 		// Instead only call it from the low priority main-loop-driven part of
 		// your code.
-		int readFromSDtoBuffer(const uint32_t n_bytes_to_read);  //returns 0 if normal
-		
+		int readFromSDtoBuffer(const uint16_t n_bytes_to_read);  //returns 0 if normal.  Can only read 2^16 bytes!! (64K)
+		int readFromSDtoBuffer_old(const uint16_t n_bytes_to_read);  //returns 0 if normal.  Can only read 2^16 bytes!! (64K)
   
 		// Use this to access the raw bytes in the WAV file (excluding the header).
 		// As this code might force reading from the SD card, don't do this in the
@@ -133,12 +133,14 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		//audio_block_f32_t *block_right_f32 = NULL;
 		uint16_t block_offset;    // how much data is in block_left & block_right
 
-		constexpr static uint16_t READ_SIZE_BYTES = 512;  //was 512...will larger reads be faster overall?
-		uint8_t temp_buffer[READ_SIZE_BYTES];  //make same size as the above
+		constexpr static uint32_t MIN_READ_SIZE_BYTES = 512;
+		constexpr static uint32_t MAX_READ_SIZE_BYTES = min(8*MIN_READ_SIZE_BYTES,65535); //keep as integer multiple of MIN_READ_SIZE_BYTES
+		//uint32_t READ_SIZE_BYTES = MAX_READ_SIZE_BYTES;  //was 512...will larger reads be faster overall?
+		//uint8_t temp_buffer[MAX_READ_SIZE_BYTES];  //make same size as the above
 		#if defined(KINETISK)
-			constexpr static uint32_t N_BUFFER = 32*(uint32_t)READ_SIZE_BYTES;  //Tympan Rev A-D is a Teensy 3.6, which has less RAM, so use a smaller buffer
+			constexpr static uint32_t N_BUFFER = 32*MIN_READ_SIZE_BYTES;  //Tympan Rev A-D is a Teensy 3.6, which has less RAM, so use a smaller buffer
 		#else
-			constexpr static uint32_t N_BUFFER = 256*(uint32_t)READ_SIZE_BYTES;  //Newer Tympans have more RAM, so use a biffer buffer.  (originall was 32*READ_SIZE_BYTES)
+			constexpr static uint32_t N_BUFFER = 256*MIN_READ_SIZE_BYTES;  //Newer Tympans have more RAM, so use a biffer buffer.  (originall was 32*READ_SIZE_BYTES)
 		#endif
 		uint8_t buffer[N_BUFFER];       // buffer X blocks of data
 		uint32_t buffer_write = 0;
@@ -157,8 +159,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		uint32_t updateBytes2Millis(void);
 
 		uint32_t readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps);
-		uint32_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
-		uint32_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps, int n_chan);
+		//uint32_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
+		uint32_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps, uint16_t n_chan);
 		bool readHeader(void);
 };
 

@@ -239,13 +239,15 @@ uint32_t AudioSDPlayer_F32::readFromBuffer(float32_t *left_f32, float32_t *right
 	return n_samples_read;
 }
 
-
+//copy bytes from the main circular buffer into a buffer provided by the user
+//so that the user can independtly do something with the bytes (such as transmit
+//them back to the PC via Serial or whatever)
 uint32_t AudioSDPlayer_F32::readRawBytes(uint8_t *out_buffer, const uint32_t n_bytes_wanted) {
 	if (n_bytes_wanted == 0) return 0;
 	uint32_t n_bytes_filled = 0;
 	
 	//ensure that there is some data in the buffer (if any is available)
-	if ((state_read == READ_STATE_NORMAL) && (data_length > 0)) readFromSDtoBuffer(READ_SIZE_BYTES);
+	if ((state_read == READ_STATE_NORMAL) && (data_length > 0)) readFromSDtoBuffer(MAX_READ_SIZE_BYTES);
 	
 	//try to copy bytes
 	while ((n_bytes_filled < n_bytes_wanted) && (getNumBuffBytes() > 0) && (data_length > 0)) {
@@ -264,7 +266,7 @@ uint32_t AudioSDPlayer_F32::readRawBytes(uint8_t *out_buffer, const uint32_t n_b
 		}
 	
 		//ensure that there is some data in the buffer (if any is available)
-		if ((state_read == READ_STATE_NORMAL) && (data_length > 0)) readFromSDtoBuffer(READ_SIZE_BYTES);
+		if ((state_read == READ_STATE_NORMAL) && (data_length > 0)) readFromSDtoBuffer(MAX_READ_SIZE_BYTES);
 		
 	}
 			
@@ -278,22 +280,29 @@ uint32_t AudioSDPlayer_F32::readRawBytes(uint8_t *out_buffer, const uint32_t n_b
 	//return the number of bytes of real data
 	return n_bytes_filled;
 }
-uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, int n_samps_wanted, int n_chan) {
-	if (n_chan < 1) return 0;
+uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps_wanted, uint16_t n_chan) {
 	uint32_t n_samples_read = 0;
-	const uint32_t bytes_perSamp_allChans = 2 * n_chan; //mono will need 2 bytes (16 bits) per sample and stereo will need 2*2 bytes (32 bits) per sample
+	const uint32_t bytes_perSamp_allChans = 2 * (uint32_t)n_chan; //mono will need 2 bytes (16 bits) per sample and stereo will need 2*2 bytes (32 bits) per sample
 	const uint32_t bytes_desired = bytes_perSamp_allChans*n_samps_wanted;
 	uint8_t lsb, msb;
 	int16_t val_int16;
 	float32_t val_f32;
+	static unsigned long last_warning_millis = 0;
 
 	
-	if (1) {  //do we allow ourselves to read from the SD during this high-speed update()-driven interrupt?
-		//check to see if we have enough data in the main buffer.  If not, try to load one read-block of data
-		if ((state_read == READ_STATE_NORMAL) && ( (getNumBuffBytes() < bytes_desired) || (data_length < bytes_desired) ) )
-		{
-			Serial.println("AudioSDPlayer_F32::readBuffer_16bit_to_f32: reading from SD in the high-speed loop.  Danger!");
-			readFromSDtoBuffer(READ_SIZE_BYTES);
+	//check to see if we have enough data in the main buffer.  If not, try to load one read-block of data
+	if ((state_read == READ_STATE_NORMAL) && ( (getNumBuffBytes() < bytes_desired) || (data_length < bytes_desired))) {
+		if (0) {  //do we allow ourselves to read from the SD during this high-speed update()-driven interrupt?
+			Serial.println("AudioSDPlayer_F32 :readBuffer_16bit_to_f32: reading from SD in the high-speed loop.  Danger!");
+			readFromSDtoBuffer(MIN_READ_SIZE_BYTES);
+		} else {
+			//just issue a warning
+			if ((bytes_desired > getNumBuffBytes()) && (bytes_desired < data_length)) {
+				if ((millis() < last_warning_millis) || (millis() > last_warning_millis+50)) { //limit to a warning every 50 msec
+					Serial.println("AudioSDPlayer_F32: readBuffer_16bit_to_f32: insufficient data in RAM buffer.");
+					last_warning_millis = millis();
+				}
+			}
 		}
 	}
 		
@@ -310,7 +319,7 @@ uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32
 				//non-audio data at the end of a WAV file).  We just used two bytes.
 				data_length -= 2;  
 				
-				//form the 16-bit value and confirm to float
+				//form the 16-bit value and convert to float
 				val_int16 = (msb << 8) | lsb;
 				val_f32 = ((float32_t)val_int16) / 32767.0;
 				
@@ -338,7 +347,7 @@ uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32
 uint32_t AudioSDPlayer_F32::getNumBuffBytes(void) {
 	uint32_t n_buff = 0;
 	if (buffer_read == buffer_write) {
-		n_buff = 0;
+		n_buff = 0;  //buffer_read == buffer_write is assumed to be an empty circular buffer?
 	} else if (buffer_read > buffer_write) {
 		n_buff = N_BUFFER - buffer_read + buffer_write;
 	} else {
@@ -349,8 +358,10 @@ uint32_t AudioSDPlayer_F32::getNumBuffBytes(void) {
 
 int AudioSDPlayer_F32::serviceSD(void) {
 	return fillBufferFromSD();
+	//return readFromSDtoBuffer(MAX_READ_SIZE_BYTES);
 }
 
+// Fill the circular buffer from the SD (should leave one block empty, however)
 int AudioSDPlayer_F32::fillBufferFromSD(void) {
 	//This function should be called from the Arduino loop() function.
 	//This function loads data from the SD card into a RAM buffer, as
@@ -360,40 +371,134 @@ int AudioSDPlayer_F32::fillBufferFromSD(void) {
 	if (state == STATE_STOP) return 0;
 
 	//keep reading until the buffer is full (or an error occurs)
-	int error_code = 0; 
-	while ((error_code == 0) && (N_BUFFER - getNumBuffBytes() > READ_SIZE_BYTES)) {
-		//if (file.available() && (state_read != READ_STATE_FILE_EMPTY)) {
-		//	if ((N_BUFFER - getNumBuffBytes()) > (N_BUFFER/4)) {
-		//		Serial.println("AudioSDPlayer_F32: fillBufferFromSD: play buffer was 75% empty");
-		//	}
-		//}
-		error_code = readFromSDtoBuffer(READ_SIZE_BYTES);
+	int error_code = 0; //assume no error at first
+	uint32_t actual_space_in_buffer = N_BUFFER - getNumBuffBytes();  //how much space is in the circular buffer
+	const uint32_t min_required_space_in_buffer_after_reads =  1;    //don't allow ourself to completely fill the buffer...we cannot have read and write pointers land together
+	uint32_t space_to_fill_in_buffer = actual_space_in_buffer - min_required_space_in_buffer_after_reads;
+
+	//if ((state_read != READ_STATE_FILE_EMPTY) && (file.available()) && (space_to_fill_in_buffer >= MIN_READ_SIZE_BYTES)) {
+	//	Serial.println("AudioSDPlayer_F32: fillBufferFromSD: space_to_fill_in_buffer = " + String(space_to_fill_in_buffer));
+	//}
+	
+	while ((error_code == 0) && (space_to_fill_in_buffer > MIN_READ_SIZE_BYTES)) { //only continue of there is space
+		//set the read size to the maximum allowed
+		uint16_t n_bytes_to_read = MAX_READ_SIZE_BYTES;
+		
+		//if this read size is larger than the space available, reduce read size to fit
+		while ((n_bytes_to_read > space_to_fill_in_buffer) && (n_bytes_to_read > MIN_READ_SIZE_BYTES)) n_bytes_to_read -= MIN_READ_SIZE_BYTES;
+
+		//read the bytes from the SD into the circular buffer
+		error_code = readFromSDtoBuffer(n_bytes_to_read);
+		
+		//update our assessment of the fullness of the circular buffer...which prepares us to loop around for the test in the "while"
+		actual_space_in_buffer = N_BUFFER - getNumBuffBytes();
+		space_to_fill_in_buffer = actual_space_in_buffer - min_required_space_in_buffer_after_reads;
 	}
 
 	return error_code;
 }
 
-int AudioSDPlayer_F32::readFromSDtoBuffer(const uint32_t n_bytes_to_read) {
+/* int AudioPlayer_F32::fillBufferFromSD_longReads(void) {
+	//This function should be called from the Arduino loop() function.
+	//This function loads data from the SD card into a RAM buffer, as
+	//long as there's room in the buffer to do the read
+
+	//should we be reading?  If not, return.
+	if ((state == STATE_STOP) || (state_read == READ_STATE_FILE_EMPTY)) return 0;
+	
+	//read the first leg
+	uint8_t *start = buffer + buffer_write;
+	uint32_t n_bytes_to_read = 0;
+	if (buffer_write >= buffer_read) {
+		n_bytes_to_read = N_BUFFER - buffer_write;
+	} else {
+		n_bytes_to_read = buffer_read - buffer_write;
+	}
+	
+		//stopped writing code here
+	
+	return 0; //fix this
+}	
+} */
+
+
+//Read bytes from the SD directly to the circular buffer.
+//Currently, I've limited it to only reading 2^16 (ie, 64K) bytes so that I can
+//return negative values as error codes.  This is a dumb reason, but it's what I did.
+int AudioSDPlayer_F32::readFromSDtoBuffer(const uint16_t n_bytes_requested) {
 	if (state_read == READ_STATE_FILE_EMPTY) return -1;
 	if (file.available() == false) return -1;
-	if (n_bytes_to_read == 0) return 0;
-
-	//try reading data (might be getting header first, though
-	bool file_has_data = true;
-	while ((N_BUFFER - getNumBuffBytes() > n_bytes_to_read) && (file_has_data)) {
+	if (n_bytes_requested == 0) return 0;
 	
+	//initialize
+	bool file_has_data = true; //assume at first that the file does have data
+	
+	//is there enough space for at least a minimum read operation?
+	uint32_t space_in_circular_buffer = N_BUFFER - getNumBuffBytes();
+	const uint32_t min_required_space_in_buffer_after_reads =  1;    //don't allow ourself to completely fill the buffer...we cannot have read and write pointers land together
+	uint32_t allowed_space_in_circular_buffer = space_in_circular_buffer - min_required_space_in_buffer_after_reads; 
+	if (n_bytes_requested >= MIN_READ_SIZE_BYTES) {
+		if (allowed_space_in_circular_buffer < MIN_READ_SIZE_BYTES) return 0; //not enough space!
+	} else {
+		if (allowed_space_in_circular_buffer == 0) return 0; //not enough space!
+	}
+	
+	//choose how many bytes to actually read
+	uint16_t bytes_remaining = min(n_bytes_requested,allowed_space_in_circular_buffer); //here at the start, we have to read all the bytes
+	if (bytes_remaining > MIN_READ_SIZE_BYTES) {
+		//make multiple of MIN_READ_SIZE_BYTES
+		uint16_t new_bytes_remaining = MIN_READ_SIZE_BYTES; //this should 
+		while ((new_bytes_remaining < bytes_remaining) && (new_bytes_remaining <= (65535-MIN_READ_SIZE_BYTES-1))) new_bytes_remaining += MIN_READ_SIZE_BYTES;
+		if (new_bytes_remaining > bytes_remaining) new_bytes_remaining -= MIN_READ_SIZE_BYTES;
+		bytes_remaining = new_bytes_remaining;
+	}		
+			
+	//loop until all the data is read (or the file runs out)
+	while ((bytes_remaining > 0) && (file_has_data)) { 
+		//how much to read
+		uint16_t n_bytes_to_read = min(MAX_READ_SIZE_BYTES,bytes_remaining);
+		if (buffer_write >= buffer_read) {
+			//we can read to the end of the circular buffer, if we want
+			uint32_t n_bytes_to_end_of_buffer = N_BUFFER - buffer_write;
+			n_bytes_to_read = min(n_bytes_to_read,n_bytes_to_end_of_buffer);
+		} else {
+			//we can read up to the read pointer, if we want
+			uint32_t n_bytes_to_read_pointer = buffer_read - buffer_write;
+			n_bytes_to_read = min(n_bytes_to_read,n_bytes_to_read_pointer);
+		}
+			
 		//read the bytes from the SD into a temporary linear buffer
-		int read_length = file.read(temp_buffer, n_bytes_to_read);
-		if (read_length != n_bytes_to_read) { 
-			file_has_data = false;
-			//Serial.println("AudioSDPlayer_F32: readFromSDtoBuffer: read_length was only " + String(read_length) + " versus expected " + String(READ_SIZE_BYTES));
+		uint8_t *start_ptr = buffer + buffer_write;
+    unsigned long dT_millis = millis();  //for timing diagnotstics
+		int16_t bytes_read = file.read(start_ptr, n_bytes_to_read);
+    dT_millis = millis() - dT_millis;  //timing calculation
+		buffer_write += bytes_read; if (buffer_write >= N_BUFFER) buffer_write = 0; //wrap around as needed
+		if (bytes_read != n_bytes_to_read) file_has_data = false;
+			
+			
+		//if slow, issue warning
+		const bool criteria1 = (dT_millis > 150);
+		const uint32_t bytes_filled = getNumBuffBytes();
+		const uint32_t buffer_len = getBufferLengthBytes();
+		const float bytes_per_second = channels * sample_rate_Hz * bits/8;  //2 bytes per sample for int16 data in the WAV
+		const float remaining_time_sec = ((float)bytes_filled) / bytes_per_second;
+  	const float buffer_fill_frac = ((float)bytes_filled)/((float)buffer_len);
+		//bool criteria2 = (dT_millis > 20) && (buffer_fill_frac < 0.3f);
+		const bool criteria2 = ((dT_millis > 25) && (remaining_time_sec < 0.100));
+		if (criteria1 || criteria2) {  //if the read took a while, print some diagnostic info
+			Serial.print("AudioSDPlayer_F32: Warning: long read: ");
+			Serial.print(dT_millis); Serial.print(" msec");
+			Serial.print(" for "); Serial.print(bytes_read); Serial.print(" bytes");
+			//Serial.print(" at "); Serial.print(((float)bytes_read)/((float)(dT_millis)),1);Serial.print(" kB/sec");
+			Serial.print(", buffer is " ); Serial.print(getNumBuffBytes());
+			Serial.print("/"); Serial.print(getBufferLengthBytes());
+			Serial.print(" = "); Serial.print(100.0f*buffer_fill_frac, 2); Serial.print("% filled");
+			Serial.print(" = ");Serial.print((int)(remaining_time_sec*1000)); Serial.print(" msec remain.");
+      Serial.println();
 		}
-		
-		//copy the bytes from the temporary linear buffer into the full circular buffer
-		for (int i=0; i <  read_length; i++) {
-			buffer[buffer_write++] = temp_buffer[i];
-			if (buffer_write >= N_BUFFER) buffer_write = 0; //wrap around as needed
-		}
+			
+		//prepare for next loop
+		bytes_remaining -= bytes_read;
 	}
 	
 	//did the file run out of data?
@@ -403,8 +508,51 @@ int AudioSDPlayer_F32::readFromSDtoBuffer(const uint32_t n_bytes_to_read) {
 	}
 	
 	return 0;  //normal return
-	
 }
+		
+		
+//Read bytes from the SD to the temp buffer and then to the full circular buffer.
+//Currently, I've limited it to only reading 2^16 (ie, 64K) bytes so that I can
+//return negative values as error codes.  This is a dumb reason, but it's what I did.
+/*
+int AudioSDPlayer_F32::readFromSDtoBuffer_old(const uint16_t n_bytes_requested) {
+	if (state_read == READ_STATE_FILE_EMPTY) return -1;
+	if (file.available() == false) return -1;
+	if (n_bytes_requested == 0) return 0;
+	
+	//initialize
+	bool file_has_data = true; //assume at first that the file does have data
+	uint32_t space_in_circular_buffer = N_BUFFER - getNumBuffBytes(); // how much to read
+	uint16_t bytes_remaining = min(n_bytes_requested,space_in_circular_buffer); //here at the start, we have to read all the bytes
+		
+	//loop until all the data is read (or the file runs out)
+	while ((bytes_remaining >= MIN_READ_SIZE_BYTES) && (file_has_data)) { //by using ">", this should never completely fill the buffer, which is good...the read_ptr and write_ptr should only equal each other if the buffer is empty
+		//how much to read
+		uint16_t n_bytes_to_read = min(MAX_READ_SIZE_BYTES,bytes_remaining); 
+	
+		//read the bytes from the SD into a temporary linear buffer
+		int16_t bytes_read = file.read(temp_buffer, n_bytes_to_read);
+		if (bytes_read != n_bytes_to_read) file_has_data = false;
+		
+		//copy the bytes from the temporary linear buffer into the full circular buffer
+		for (int16_t i=0; i <  bytes_read; i++) {
+			buffer[buffer_write++] = temp_buffer[i];
+			if (buffer_write >= N_BUFFER) buffer_write = 0; //wrap around as needed
+		}
+		
+		//prepare for next loop
+		bytes_remaining -= bytes_read;
+	}
+	
+	//did the file run out of data?
+	if (file_has_data == false) {
+		file.close();
+		state_read = READ_STATE_FILE_EMPTY;
+	}
+	
+	return 0;  //normal return
+}
+*/
 
 /* 
   // we only get to this point when buffer[512] is empty
@@ -479,7 +627,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
   //int16_t val_int16;
 
   //read first bytes from file into our global buffer
-  readFromSDtoBuffer(READ_SIZE_BYTES); //this should be more than enough
+  readFromSDtoBuffer(MIN_READ_SIZE_BYTES); //this should be more than enough
   uint32_t size = getNumBuffBytes();
   if (size == 0) {
 	  Serial.println("AudioSDPlayer_F32: readHeader: *** ERROR ***: Failed to read any bytes.");
