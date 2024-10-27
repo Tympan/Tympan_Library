@@ -160,11 +160,8 @@ void loop() {
   //respond to Serial commands
   if (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
 
-  //service the SD recording to empty the record buffer to the SD card
-  audioSDWriter.serviceSD_withWarnings(i2s_in); //For the warnings, it asks the i2s_in class for some info
-
-  //service the SD player to refill the play buffer from the SD card
-  audioSDPlayer.serviceSD();
+  //service the SD reading and writing
+  service_SD_read_write();
   
   //service the LEDs...blink slow normally, blink fast if recording
   myTympan.serviceLEDs(millis(),audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING); 
@@ -175,6 +172,32 @@ void loop() {
 } //end loop()
 
 // //////////////////////////////////// Servicing routines not otherwise embedded in other classes
+
+//For the SD cards, it needs to periodically read bytes from the SD card into the SDplayer's read buffer.
+//Similarly, it needs to periodically write bytes from the SDwriter's write buffer to the SD card.
+//In this function, we look to see which one is closest to running out of buffer, and we service its
+//needs first.
+int service_SD_read_write(void) {
+  //see how much empty space is left in the write buffer (as measured in milliseconds of in-coming data)
+  uint32_t writeBuffer_empty_msec = 9999;
+  if (audioSDWriter.isFileOpen()) writeBuffer_empty_msec = audioSDWriter.getNumUnfilledSamplesInBuffer_msec();
+
+  //see how much data is left in the read buffer (as measured in milliseconds of out-going data)
+  uint32_t playBuffer_full_msec = 9999;
+  if (audioSDPlayer.isFileOpen()) playBuffer_full_msec = audioSDPlayer.getNumBytesInBuffer_msec();
+
+  //choose which one to update first based on who's buffer is closest to running out
+  if (playBuffer_full_msec < writeBuffer_empty_msec) {
+    //service the player first as its buffer is closest to being out
+    audioSDPlayer.serviceSD();   
+    audioSDWriter.serviceSD_withWarnings(i2s_in); //For the warnings, it asks the i2s_in class for some info
+  } else { 
+    //service the writer first, as its buffer is closest to being out
+    audioSDWriter.serviceSD_withWarnings(i2s_in); //For the warnings, it asks the i2s_in class for some info
+    audioSDPlayer.serviceSD();   
+  }
+  return 0;
+}
 
 
 void serviceStatusMessages(void) {
