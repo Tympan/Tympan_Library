@@ -96,11 +96,17 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		int fillBufferFromSD(void);
 		
 		//get some sizes
+		int16_t getNumChannels(void) { return channels; }
+		int16_t getBytesPerSample(void) { return bits/8; }
 		uint32_t getBufferLengthBytes(void) { return N_BUFFER; }  //what is the full length of the buffer, regardless of how much data is in it
 		virtual uint32_t getNumBuffBytes(void);  //what is the number of bytes in the buffer, which will include any non-audio data that might be at end of WAV
-		uint32_t getNumberRemainingBytes(void) { return data_length; } //what is the number of audio bytes remaining to be returned (ie, what's in the buffer and still on the SD)
-		int16_t getBytesPerSample(void) { return bits/8; }
-		int16_t getNumChannels(void) { return channels; }
+		uint32_t getNumberRemainingBytes(void) { return data_length; } //what is the number of audio bytes remaining to be returned (ie, what's in the buffer *plus* what is still on the SD)
+		uint32_t getNumBytesInBuffer(void) { return getNumBuffBytes(); }
+		uint32_t getNumBytesInBuffer_msec(void) {
+			uint32_t bytes_in_buffer = getNumBytesInBuffer();
+			float bytes_per_msec = (sample_rate_Hz*channels*(bits/8)) / 1000.0f;  //these data memersare in the SDWriter class
+			return (uint32_t)((float)bytes_in_buffer/bytes_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
+		}
 
 		// copy some data from SD to a local buffer (RAM).  Because accessing
 		// the SD can be slow and unpredictable, don't do this in the high
