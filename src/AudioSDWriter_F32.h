@@ -215,12 +215,13 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			if (buffSDWriter) return buffSDWriter->isFileOpen();
 			return false;
 		}
-
+		int32_t getNumUnfilledSamplesInBuffer(void) { if (buffSDWriter) buffSDWriter->getNumUnfilledSamplesInBuffer(); return 0; }  //how much of the buffer is empty, in samples
+		uint32_t getNumUnfilledSamplesInBuffer_msec(void) { if (buffSDWriter) return buffSDWriter->getNumUnfilledSamplesInBuffer_msec(); return 0; }  //how much of the buffer is empty, in msec
 
 		unsigned long getStartTimeMillis(void) { return t_start_millis; };
 		unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
 		SdFs * getSdPtr(void) { 
-			if (!buffSDWriter) return buffSDWriter->getSdPtr(); 
+			if (buffSDWriter) return buffSDWriter->getSdPtr(); 
 			return sd;
 		}
 			

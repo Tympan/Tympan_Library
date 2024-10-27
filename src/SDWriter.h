@@ -182,6 +182,12 @@ class BufferedSDWriter : public SDWriter
 			if (bufferReadInd <= bufferWriteInd) return bufferWriteInd-bufferReadInd;
 			return getLengthOfBuffer() - bufferReadInd + bufferWriteInd;
 		}
+		int32_t getNumUnfilledSamplesInBuffer(void) { return getLengthOfBuffer() - getNumSampsInBuffer(); }  //how much of the buffer is empty, in samples
+		uint32_t getNumUnfilledSamplesInBuffer_msec(void) {
+			int32_t available_buffer_samples = getNumUnfilledSamplesInBuffer();
+			float samples_per_msec = (WAV_sampleRate_Hz*WAV_nchan) / 1000.0f;  //these data memersare in the SDWriter class
+			return (uint32_t)((float)available_buffer_samples/samples_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
+		}
 	
   protected:
     int writeSizeSamples = 0;
