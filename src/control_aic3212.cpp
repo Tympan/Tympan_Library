@@ -294,13 +294,13 @@ namespace tlv320aic3212
                 .ndac = 1,                                      //Divisor
                 .mdac = 8,                                      //Divisor
                 .dosr = 32,                                     //Decimation factor
-                .prb_p = 1,                                     //Decimation Filter
+                .prb_p = 1,                                     //Interpolation (reconstruction) Filter: 1-3 => A, 7-11 => B 
                 .ptm_p = DAC_PowerTune_Mode::PTM_P4 },          //Powertune mode
         .adc = {.clk_src = ADC_DAC_Clock_Source::MCLK1, 
                 .nadc = 1,                                      //Divisor
                 .madc = 8,                                      //Divisor
                 .aosr = 32,                                     //Decimation factor
-                .prb_r = 1,                                     //Decimation Filter A
+                .prb_r = 1,                                     //Decimation Filter: 1-3 => A, 7-9 => B 
                 .ptm_r = ADC_PowerTune_Mode::PTM_R4}};          //Powertune mode
 
     // -------------------- Local Variables --------------
