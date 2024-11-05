@@ -60,36 +60,10 @@ int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const 
 	return N_FFT;
 }
 
-void AudioEffectFreqShift_FD_F32::update(void)
-{
-	//get a pointer to the latest data
-	audio_block_f32_t *in_audio_block = AudioStream_F32::receiveReadOnly_f32();
-	if (!in_audio_block) return;
-
-	//simply return the audio if this class hasn't been enabled
-	if (!enabled) {
-		AudioStream_F32::transmit(in_audio_block);
-		AudioStream_F32::release(in_audio_block);
-		return;
-	}
-
-	//convert to frequency domain
-	myFFT.execute(in_audio_block, complex_2N_buffer); //FFT is in complex_2N_buffer, interleaved real, imaginary, real, imaginary, etc
-	unsigned long incoming_id = in_audio_block->id;
-	AudioStream_F32::release(in_audio_block);  //We just passed ownership of in_audio_block to myFFT, so we can release it here as we won't use it here again.
-
-	// ////////////// Do your processing here!!!
-
-	//define some variables
-	int fftSize = myFFT.getNFFT();
-	int N_2 = fftSize / 2 + 1;
-	int source_ind; // neg_dest_ind;
-
-	//zero out DC and Nyquist
-	//complex_2N_buffer[0] = 0.0;  complex_2N_buffer[1] = 0.0;
-	//complex_2N_buffer[N_2] = 0.0;  complex_2N_buffer[N_2] = 0.0;  
-
-	//do the shifting
+void AudioEffectFreqShift_FD_F32::shiftTheBins(float32_t *complex_2N_buffer, int NFFT, int shift_bins) {
+	int N_2 = NFFT/2;
+	int source_ind;
+	
 	if (shift_bins < 0) {
 		for (int dest_ind=0; dest_ind < N_2; dest_ind++) {
 		  source_ind = dest_ind - shift_bins;
@@ -114,8 +88,40 @@ void AudioEffectFreqShift_FD_F32::update(void)
 			}
 		}    
 	}
+}
+
+void AudioEffectFreqShift_FD_F32::update(void)
+{
+	//get a pointer to the latest data
+	audio_block_f32_t *in_audio_block = AudioStream_F32::receiveReadOnly_f32();
+	if (!in_audio_block) return;
+
+	//simply return the audio if this class hasn't been enabled
+	if (!enabled) {
+		AudioStream_F32::transmit(in_audio_block);
+		AudioStream_F32::release(in_audio_block);
+		return;
+	}
+
+	//convert to frequency domain
+	myFFT.execute(in_audio_block, complex_2N_buffer); //FFT is in complex_2N_buffer, interleaved real, imaginary, real, imaginary, etc
+	unsigned long incoming_id = in_audio_block->id;
+	AudioStream_F32::release(in_audio_block);  //We just passed ownership of in_audio_block to myFFT, so we can release it here as we won't use it here again.
+
+	// ////////////// Do your processing here!!!
+
+	//zero out DC and Nyquist
+	//complex_2N_buffer[0] = 0.0;  complex_2N_buffer[1] = 0.0;
+	//complex_2N_buffer[N_2] = 0.0;  complex_2N_buffer[N_2] = 0.0;  
+
+	//shift the frequency bins around as desired
+	shiftTheBins(complex_2N_buffer, myFFT.getNFFT(), shift_bins);
   
-	//here's the tricky bit!  Phase shifting may be needed through time
+	//here's the tricky bit! We typically need to adjust the phase of each shifted FFT block 
+	//in order to account for the fact that the FFT blocks overlap in time, which means that
+	//their (original) phase evolves in a specific way.  We need to recreate that specific
+	//phase evolution in our shifted blocks.
+	int N_2 = myFFT.getNFFT() / 2 + 1;
 	switch (overlap_amount) {
 		case NONE:
 			//no phase change needed

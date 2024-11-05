@@ -54,11 +54,11 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
     }
 
     //destructor...release all of the memory that has been allocated
-    ~AudioEffectFreqShift_FD_F32(void) {
+    virtual ~AudioEffectFreqShift_FD_F32(void) {
       if (complex_2N_buffer != NULL) delete complex_2N_buffer;
     }
 
-    int setup(const AudioSettings_F32 &settings, const int _N_FFT);
+    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT);
 
     int setShift_bins(int _shift_bins) {
       return shift_bins = _shift_bins;
@@ -66,30 +66,31 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
     int getShift_bins(void) {
       return shift_bins;
     }
-	float getShift_Hz(void) {
-		return getFrequencyOfBin(shift_bins);
-	}
-	float getFrequencyOfBin(int bin) { //"bin" should be zero to (N_FFT-1)
-		return sample_rate_Hz * ((float)bin) / ((float) N_FFT);
-	}
-	
-    virtual void update(void);
-	bool enable(bool state = true) { enabled = state; return enabled;}
-	FFT_Overlapped_F32* getFFTobj(void) { return &myFFT; }
-	IFFT_Overlapped_F32* getIFFTobj(void) { return &myIFFT; }
+		float getShift_Hz(void) {
+			return getFrequencyOfBin(shift_bins);
+		}
+		float getFrequencyOfBin(int bin) { //"bin" should be zero to (N_FFT-1)
+			return sample_rate_Hz * ((float)bin) / ((float) N_FFT);
+		}
+		
+		virtual void shiftTheBins(float32_t *complex_buffer, int NFFT, int n_shift);
+		virtual void update(void);
+		bool enable(bool state = true) { enabled = state; return enabled;}
+		FFT_Overlapped_F32* getFFTobj(void) { return &myFFT; }
+		IFFT_Overlapped_F32* getIFFTobj(void) { return &myIFFT; }
 
-  private:
+  protected:
     int enabled = 0;
     float32_t *complex_2N_buffer;
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
-	int N_FFT = -1;
-	enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to THREE_QUARTERS
-	int overlap_amount = NONE;
-	int overlap_block_counter = 0;
-	
+		int N_FFT = -1;
+		enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to THREE_QUARTERS
+		int overlap_amount = NONE;
+		int overlap_block_counter = 0;
+		
     int shift_bins = 0; //how much to shift the frequency
 };
 
