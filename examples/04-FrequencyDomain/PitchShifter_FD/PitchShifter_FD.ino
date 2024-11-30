@@ -81,7 +81,7 @@ uint32_t i2s_tx_buffer[audio_block_samples/2*n_chan]; //allocate the buffer for 
 Tympan                        myTympan(TympanRev::F, audio_settings); //do TympanRev::D or E or F
 AudioInputI2S_F32             i2s_in(audio_settings, i2s_rx_buffer);  //Source of live audio (PCB mic or line-in jack)
 AudioPlayMemoryI16_F32        audioPlayMemory(audio_settings);        //pre-recorded example audio included here in sample_MUSIC.h
-AudioEffectPitchShift_FD_F32  pitchShift(audio_settings);             //Freq domain processing!  https://github.com/Tympan/Tympan_Library/blob/master/src/AudioEffectpitchShiftFD_F32.h
+AudioEffectPitchShift_FD_F32  pitchShift(audio_settings);             //Freq domain processing! https://github.com/Tympan/Tympan_Library/blob/main/src/AudioEffectPitchShift_FD_F32.h
 AudioEffectGain_F32           gain1;                                  //Applies digital gain to audio data.
 AudioOutputI2S_F32            i2s_out(audio_settings, i2s_tx_buffer); //Digital audio out *to* the Tympan AIC.
 
