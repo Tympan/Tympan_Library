@@ -4,27 +4,26 @@
 //
 // Created: Chip Audette (OpenAudio) Sept 2023
 //
-// Background: Pitch shifting is when the frequencies within the
-//    audio are multiplied up or down such that the harmonic
-//    relationships are maintined.  Compare this to "frequency
-//    shifting", which also raises or lowers the frequencies of the
-//    audio...but frequency shifting simplys adds or subtracts a
-//    fixed number of Hz to the audio.  This frequency addition
-//    destroys the harmonic relationships within the audio, which
-//    makes it unsuitable for musical applications.  Instead, pitch
-//    shifting multiplies (not adds) the frequencies, which maintains
-//    the harmonic relationships.  Unfortunately, pitch shifting is 
-//    much more complicated to implement than frequency shifting.  So,
-//    if you look at the code (AudioEffectPitchShift_FD_F32), it is
-//    harder to follow.  Listening to the audio, it also has its own
-//    unique artifacts...it's not perfect.
+// Background: Pitch shifting is a form of frequency shifting where the
+//    frequency content of the audio is *multiplied* up or down.  For example,
+//    a pitch shifter might be configured to multiply all frequencies by 2x, 
+//    thereby making 250 Hz become 500 Hz and making 1000 Hz become 2000 Hz.
+//    As a result, the harmonic relationships within the audio are maintained,
+//    which means that the results are still musical to a human hear.  This is
+//    in contrast to a frequency shifter, which simply adds or subtracts a fixed
+//    number of Hz to all frequency components of the audio.  While multiplication
+//    will maintain harmonic relationships, addition/subtraction will not.  
+//    Therefore, a frequency shifter is unsuitable for musical applications.
+//    Pitch shifting is needed for musical applications.  Unfortunately, pitch
+//    shifting is much more complicated to implement than frequency shifting.  So,
+//    if you look at the code (AudioEffectPitchShift_FD_F32), it is harder to follow.
+//    Listening to the audio, it also has its own unique artifacts...it's not perfect.
 //
-// Approach: This example uses a phase vocoder implemented in the
-//    frequency domain.  Specifically, this uses the two step approach
-//    of (1) stretching the audio in time without changing pitch, (2) 
-//    resampling the audio [ie, playing it back faster or slower] to
-//    return the audio to the original duration, which also ends up
-//    raising or lowering the pitch. 
+// Approach: This example uses a phase vocoder implemented in the frequency domain.
+//    Specifically, this uses the two step approach of (1) stretching the audio in 
+//    time without changing pitch, (2) resampling the audio [ie, playing it back 
+//    faster or slower] to return the audio to the original duration, which also ends
+//    up raising or lowering the pitch. 
 //
 //    For raising the pitch, the steps look like this:
 //    * Start with samples in the time domain
