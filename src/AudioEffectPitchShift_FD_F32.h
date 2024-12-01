@@ -4,7 +4,8 @@
  * 
  * Created: Chip Audette, Sept 2023
  * Purpose: Shift the pitch of the audio up or down so that harmonic relationships
- *          are maintained correctly (unlike the AudioEffectPitchShift_FD_F32 module)
+ *          are maintained correctly (unlike the AudioEffectFreqShift_FD_F32 module)
+ *          Uses a "phase vocoder" algorithm.
  *          
  * This processes a single stream of audio data (ie, it is mono)       
  *          
@@ -12,7 +13,7 @@
 */
 
 #ifndef _AudioEffectPitchShift_FD_F32_h
-#define _AudioEffectPitchhift_FD_F32_h
+#define _AudioEffectPitchShift_FD_F32_h
 
 #include "AudioStream_F32.h"
 #include <arm_math.h>
