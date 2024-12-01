@@ -1,6 +1,7 @@
 // PitchShifter_FD
 //
-// Demonstrate pitch shifting via frequency domain processing.
+// Demonstrate pitch shifting via frequency domain processing.  Uses a "phase
+// vocoder" algorithm.
 //
 // Created: Chip Audette (OpenAudio) Sept 2023
 //
@@ -16,16 +17,18 @@
 //    Therefore, a frequency shifter is unsuitable for musical applications.
 //    Pitch shifting is needed for musical applications.  Unfortunately, pitch
 //    shifting is much more complicated to implement than frequency shifting.  So,
-//    if you look at the code (AudioEffectPitchShift_FD_F32), it is harder to follow.
-//    Listening to the audio, it also has its own unique artifacts...it's not perfect.
+//    if you look at the pitch shifting code (AudioEffectPitchShift_FD_F32), it is
+//    harder to follow than the code for frequency shifting (AudioEffectFreqShift_FD_F32).
+//    Listening to the audio, pitch shifting also has its own unique artifacts...it's
+//    not perfect.
 //
 // Approach: This example uses a phase vocoder implemented in the frequency domain.
-//    Specifically, this uses the two step approach of (1) stretching the audio in 
-//    time without changing pitch, (2) resampling the audio [ie, playing it back 
-//    faster or slower] to return the audio to the original duration, which also ends
-//    up raising or lowering the pitch. 
+//    Specifically, phase vocoding uses a two step approach: (1) it first stretches 
+//    the audio in time without changing pitch, and then (2) it resamples the audio
+//    [ie, plays it back faster or slower], which returns the audio to the original
+//    duration while raising or lowering the pitch. 
 //
-//    For raising the pitch, the steps look like this:
+// For raising the pitch, the steps look like this:
 //    * Start with samples in the time domain
 //    * Stretch the duration while keeping the pitch unchanged: 
 //         * Take FFT to convert to frequency domain
