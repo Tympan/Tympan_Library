@@ -5,18 +5,30 @@ void AudioSynthWaveform_F32::update(void) {
 	block_counter++;
 	
   //get input block (the modulation of the frequency)
-  audio_block_f32_t *lfo = receiveReadOnly_f32(0);
+  audio_block_f32_t *lfo_block = receiveReadOnly_f32(0);
   
   //get output block
-  audio_block_f32_t *block = allocate_f32();
-  if (!block) return;
+  audio_block_f32_t *block_new = allocate_f32();
+  if (!block_new) { AudioStream_F32::release(lfo_block); return; } //could not allocate block.  So, release memory and return.
   
-  switch (_OscillatorMode) {
+  //process the audio to fill the output block with data samples
+	AudioSynthWaveform_F32::processAudioBlock(lfo_block, block_new);
+  
+	//updat ethe counter on the new block
+  block_new->id = block_counter;
+
+  AudioStream_F32::transmit(block_new);
+  AudioStream_F32::release(block_new);
+  AudioStream_F32::release(lfo_block);
+}
+
+int AudioSynthWaveform_F32::processAudioBlock(audio_block_f32_t *lfo_block, audio_block_f32_t *block_new)  {
+	switch (_OscillatorMode) {
     case OSCILLATOR_MODE_SINE:
         for (int i = 0; i < audio_block_samples; i++) {
-          applyMod(i, lfo);
+          applyMod(i, lfo_block);
 
-          block->data[i] = arm_sin_f32(_Phase);
+          block_new->data[i] = arm_sin_f32(_Phase);
           _Phase += _PhaseIncrement;
           while (_Phase >= twoPI) {
               _Phase -= twoPI;
@@ -25,9 +37,9 @@ void AudioSynthWaveform_F32::update(void) {
         break;
     case OSCILLATOR_MODE_SAW:
         for (int i = 0; i < audio_block_samples; i++) {
-          applyMod(i, lfo);
+          applyMod(i, lfo_block);
 
-          block->data[i] = 1.0f - (2.0f * _Phase / twoPI);
+          block_new->data[i] = 1.0f - (2.0f * _Phase / twoPI);
           _Phase += _PhaseIncrement;
           while (_Phase >= twoPI) {
             _Phase -= twoPI;
@@ -36,12 +48,12 @@ void AudioSynthWaveform_F32::update(void) {
         break;
     case OSCILLATOR_MODE_SQUARE:
       for (int i = 0; i < audio_block_samples; i++) {
-        applyMod(i, lfo);
+        applyMod(i, lfo_block);
 
         if (_Phase <= _PI) {
-          block->data[i] = 1.0f;
+          block_new->data[i] = 1.0f;
         } else {
-          block->data[i] = -1.0f;
+          block_new->data[i] = -1.0f;
         }
 
         _Phase += _PhaseIncrement;
@@ -52,10 +64,10 @@ void AudioSynthWaveform_F32::update(void) {
       break;
     case OSCILLATOR_MODE_TRIANGLE:
       for (int i = 0; i < audio_block_samples; i++) {
-        applyMod(i, lfo);
+        applyMod(i, lfo_block);
 
         float32_t value = -1.0f + (2.0f * _Phase / twoPI);
-        block->data[i] = 2.0f * (fabs(value) - 0.5f);
+        block_new->data[i] = 2.0f * (fabs(value) - 0.5f);
         _Phase += _PhaseIncrement;
         while (_Phase >= twoPI) {
           _Phase -= twoPI;
@@ -65,14 +77,10 @@ void AudioSynthWaveform_F32::update(void) {
   }
 
   if (_magnitude != 1.0f) {
-    arm_scale_f32(block->data, _magnitude, block->data, audio_block_samples);
+    arm_scale_f32(block_new->data, _magnitude, block_new->data, audio_block_samples);
   }
-  
-  block->id = block_counter;
-
-  AudioStream_F32::transmit(block);
-  AudioStream_F32::release(block);
-  AudioStream_F32::release(lfo);
+	
+	return 0;
 }
 
 inline float32_t AudioSynthWaveform_F32::applyMod(uint32_t sample, audio_block_f32_t *lfo) {
