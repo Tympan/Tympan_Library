@@ -60,6 +60,7 @@
 #include "record_queue_F32.h"
 #include "input_i2s_F32.h"
 #include "input_i2s_quad_F32.h"
+#include "input_i2s_hex_F32.h"
 #include "AudioSDPlayer_F32.h"
 #include "AudioSDPlayerTeensy_F32.h"
 #include "AudioSDWriter_F32.h"
