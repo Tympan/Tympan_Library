@@ -62,9 +62,13 @@ print("REPLY:",reply.strip())
 # Transfer a file FROM THE TYMPAN
 print();print("ACTION: Receiving a file from the Tympan...")
 command_getFileFromTypman = 't'                #This is set by the Tympan program
-fname_to_read_on_Tympan = 'exampleSent.txt'    #on Tympan, what file to send to PC?
+if 1:
+  # On the Tympan, whate filename to read from?
+  fname_to_read_on_Tympan = fname_to_write_on_Tympan     #use the same filename that we wrote on the Tympan in the earlier code
+else:
+  # Or, specifiy a new filename for the Tympan to read from
+  fname_to_read_on_Tympan = 'exampleSent.txt'    #on Tympan, what file to send to PC
 fname_to_write_locally = 'exampleReceived.txt' #on the local computer, what file to receive to?
-fname_to_read_on_Tympan = fname_to_write_on_Tympan     #on the Tympan, what filename to read from?
 receive_success = tympanSerial.receiveFileFromTympan(serial_to_tympan, command_getFileFromTypman, \
                         fname_to_read_on_Tympan,fname_to_write_locally, verbose=verbose)
 
