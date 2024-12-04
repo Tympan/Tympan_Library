@@ -78,21 +78,21 @@ void AudioInputI2SHex_F32::begin(void)
 	I2S1_RCR3 = I2S_RCR3_RCE_3CH << pinoffset;
 	switch (pinoffset) {
 	  case 0:
-		CORE_PIN8_CONFIG = 3;
-		CORE_PIN6_CONFIG = 3;
-		CORE_PIN9_CONFIG = 3;
-		IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2; // GPIO_B1_00_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
-		break;
+			CORE_PIN8_CONFIG = 3;
+			CORE_PIN6_CONFIG = 3;
+			CORE_PIN9_CONFIG = 3;
+			IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2; // GPIO_B1_00_ALT3, pg 873
+			IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
+			IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
+			break;
 	  case 1:
-		CORE_PIN6_CONFIG = 3;
-		CORE_PIN9_CONFIG = 3;
-		CORE_PIN32_CONFIG = 3;
-		IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
-		IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
-		break;
+			CORE_PIN6_CONFIG = 3;
+			CORE_PIN9_CONFIG = 3;
+			CORE_PIN32_CONFIG = 3;
+			IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
+			IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
+			IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
+			break;
 	}
 	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
 	dma.TCD->SOFF = 4;
@@ -137,7 +137,7 @@ void AudioInputI2SHex_F32::isr(void)
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
 		//src = (int16_t *)((uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2);
-		src = (int16_t *)&i2s_rx_buffer[audio_block_samples];
+		src = (int16_t *)((uint32_t)i2s_rx_buffer + I2S_BUFFER_TO_USE_BYTES / 2); 
 		//if (update_responsibility) update_all();
 		if (AudioInputI2SHex_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
@@ -234,8 +234,8 @@ void AudioInputI2SHex_F32::update(void)
 	}
 	__disable_irq();
 	if (block_offset >= (uint32_t)audio_block_samples) {
-		// the DMA filled 4 blocks, so grab them and get the
-		// 4 new blocks to the DMA, as quickly as possible
+		// the DMA filled 6 blocks, so grab them and get the
+		// 6 new blocks to the DMA, as quickly as possible
 		out1 = block_ch1;
 		block_ch1 = new1;
 		out2 = block_ch2;
