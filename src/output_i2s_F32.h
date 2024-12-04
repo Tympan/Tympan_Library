@@ -69,12 +69,11 @@ public:
 	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
 
-	friend class AudioInputI2S_F32;
 	#if defined(__IMXRT1062__)
 	friend class AudioOutputI2SQuad_F32;
 	friend class AudioInputI2SQuad_F32;
 	//friend class AudioOutputI2SHex;
-	//friend class AudioInputI2SHex;
+	friend class AudioInputI2SHex_F32;
 	//friend class AudioOutputI2SOct;
 	//friend class AudioInputI2SOct;
 	#endif

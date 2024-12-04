@@ -17,6 +17,7 @@
 #include "AudioStream_F32.h"
 #include "input_i2s_F32.h"
 #include "input_i2s_quad_F32.h"
+#include "input_i2s_hex_F32.h"
 #include "SDWriter.h"
 #include "SerialManager_UI.h"
 #include "TympanRemoteFormatter.h"
@@ -208,8 +209,10 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		int serviceSD_withWarnings(void);
 		int serviceSD_withWarnings(AudioInputI2S_F32 &i2s_in);
 		int serviceSD_withWarnings(AudioInputI2SQuad_F32 &i2s_in);
+		int serviceSD_withWarnings(AudioInputI2SHex_F32 &i2s_in);
 		void checkMemoryI2S(AudioInputI2S_F32 &i2s_in);
 		void checkMemoryI2S(AudioInputI2SQuad_F32 &i2s_in);
+		void checkMemoryI2S(AudioInputI2SHex_F32 &i2s_in);
 
 		bool isFileOpen(void) {
 			if (buffSDWriter) return buffSDWriter->isFileOpen();
