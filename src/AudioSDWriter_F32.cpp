@@ -316,6 +316,11 @@ int AudioSDWriter_F32::serviceSD_withWarnings(AudioInputI2SQuad_F32 &i2s_in) {
   if ( bytes_written > 0 ) checkMemoryI2S(i2s_in);
   return bytes_written;
 }
+int AudioSDWriter_F32::serviceSD_withWarnings(AudioInputI2SHex_F32 &i2s_in) {
+  int bytes_written = serviceSD_withWarnings();
+  if ( bytes_written > 0 ) checkMemoryI2S(i2s_in);
+  return bytes_written;
+}
 
 int AudioSDWriter_F32::serviceSD_withWarnings(void) {
 
@@ -362,8 +367,7 @@ void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2S_F32 &i2s_in) {
 		  Serial.println(approx_time_sec);
 		}
 	}
-
-    i2s_in.clear_isOutOfMemory();
+  i2s_in.clear_isOutOfMemory();
 }
 
 void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SQuad_F32 &i2s_in) {
@@ -377,10 +381,21 @@ void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SQuad_F32 &i2s_in) {
 			Serial.println(approx_time_sec);
 		}
 	}
-
 	i2s_in.clear_isOutOfMemory();
 }
+void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SHex_F32 &i2s_in) {
+	//print a warning if there has been an SD writing hiccup
 
+	//if (audioSDWriter.getQueueOverrun() || i2s_in.get_isOutOfMemory()) {
+	if (i2s_in.get_isOutOfMemory()) {
+		float approx_time_sec = ((float)(millis()-getStartTimeMillis()))/1000.0;
+		if (approx_time_sec > 0.1) {
+			Serial.print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
+			Serial.println(approx_time_sec);
+		}
+	}
+	i2s_in.clear_isOutOfMemory();
+}
 
 
 
