@@ -140,7 +140,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		uint16_t block_offset;    // how much data is in block_left & block_right
 
 		constexpr static uint32_t MIN_READ_SIZE_BYTES = 512;
-		constexpr static uint32_t MAX_READ_SIZE_BYTES = min(8*MIN_READ_SIZE_BYTES,65535); //keep as integer multiple of MIN_READ_SIZE_BYTES
+		constexpr static uint32_t MAX_READ_SIZE_BYTES = min(8U*MIN_READ_SIZE_BYTES,65535U); //keep as integer multiple of MIN_READ_SIZE_BYTES
 		//uint32_t READ_SIZE_BYTES = MAX_READ_SIZE_BYTES;  //was 512...will larger reads be faster overall?
 		//uint8_t temp_buffer[MAX_READ_SIZE_BYTES];  //make same size as the above
 		#if defined(KINETISK)
