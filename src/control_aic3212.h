@@ -207,36 +207,36 @@ namespace tlv320aic3212 {
 
     class AudioControlAIC3212 //final : public TeensyAudioControl
     {
-    public:
-        // GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
-        AudioControlAIC3212(void)
-        { // specify nothing
-            debugToSerial = false;
-        }
-        AudioControlAIC3212(bool _debugToSerial)
-        { // specify debug
-            debugToSerial = _debugToSerial;
-        }
-        AudioControlAIC3212(int _resetPin)
-        { // specify reset pin (minimum recommended!)
-            resetPinAIC = _resetPin;
-            debugToSerial = false;
-        }
-        AudioControlAIC3212(int _resetPin, int i2cBusIndex, uint8_t _i2cAddress)
-        { // specify reset pin and i2cBus (minimum if using for 2nd AIC)
-            setResetPin(_resetPin);
-            setI2Cbus(i2cBusIndex);
-            i2cAddress = _i2cAddress;
-            debugToSerial = false;
-        }
-        AudioControlAIC3212(int _resetPin, int i2cBusIndex, uint8_t _i2cAddress, bool _debugToSerial)
-        { // specify everything
-            setResetPin(_resetPin);
-            setI2Cbus(i2cBusIndex);
-            i2cAddress = _i2cAddress;
-            debugToSerial = _debugToSerial;
-        }
-		virtual ~AudioControlAIC3212(void) { };
+			public:
+				// GUI: inputs:0, outputs:0  //this line used for automatic generation of GUI node
+				AudioControlAIC3212(void)
+				{ // specify nothing
+						debugToSerial = false;
+				}
+				AudioControlAIC3212(bool _debugToSerial)
+				{ // specify debug
+						debugToSerial = _debugToSerial;
+				}
+				AudioControlAIC3212(int _resetPin)
+				{ // specify reset pin (minimum recommended!)
+						resetPinAIC = _resetPin;
+						debugToSerial = false;
+				}
+				AudioControlAIC3212(int _resetPin, int i2cBusIndex, uint8_t _i2cAddress)
+				{ // specify reset pin and i2cBus (minimum if using for 2nd AIC)
+						setResetPin(_resetPin);
+						setI2Cbus(i2cBusIndex);
+						i2cAddress = _i2cAddress;
+						debugToSerial = false;
+				}
+				AudioControlAIC3212(int _resetPin, int i2cBusIndex, uint8_t _i2cAddress, bool _debugToSerial)
+				{ // specify everything
+						setResetPin(_resetPin);
+						setI2Cbus(i2cBusIndex);
+						i2cAddress = _i2cAddress;
+						debugToSerial = _debugToSerial;
+				}
+				virtual ~AudioControlAIC3212(void) { };
 		
         
         virtual bool enable(void);
@@ -257,13 +257,13 @@ namespace tlv320aic3212 {
         float volume_dB(float vol_left_dB, int chan);           // set each channel seperately (0 = left; 1 = right)
         float setHeadphoneGain_dB(float vol_left_dB, float vol_right_dB); // set HP volume
         float setSpeakerVolume_dB(float target_vol_dB);         // sets the volume of both Class D Speaker Outputs
-		//int muteDAC(int chan = BOTH_CHAN);  //mutes the output DAC
-		//int unmuteDAC(int chan = BOTH_CHAN); //unmutes the output DAC
-		//int muteHeadphone(int chan = BOTH_CHAN);   //mutes the headphone driver
-		//int unmuteHeadphone(int chan = BOTH_CHAN); //unmutes the headphone driver
-		int enableHeadphonePower(int chan, bool enable = true); //use AIC_BOTH_CHAN, AIC_LEFT_CHAN, AIC_RIGHT_CHAN
- 
-		bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
+				//int muteDAC(int chan = BOTH_CHAN);  //mutes the output DAC
+				//int unmuteDAC(int chan = BOTH_CHAN); //unmutes the output DAC
+				//int muteHeadphone(int chan = BOTH_CHAN);   //mutes the headphone driver
+				//int unmuteHeadphone(int chan = BOTH_CHAN); //unmutes the headphone driver
+				int enableHeadphonePower(int chan, bool enable = true); //use AIC_BOTH_CHAN, AIC_LEFT_CHAN, AIC_RIGHT_CHAN
+		 
+				bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
         bool inputSelect(AIC_Input both) { return inputSelect(both, both); };
         bool inputSelect(AIC_Input left, AIC_Input right);
         float applyLimitsOnInputGainSetting(float gain_dB);
@@ -311,7 +311,7 @@ namespace tlv320aic3212 {
         // void aic_initDAC(void);
         // void aic_initADC(void);
         void setResetPin(int pin) { resetPinAIC = pin; }
-		bool firstTime_outputSelect = true;
+				bool firstTime_outputSelect = true;
 
         int prevMicDetVal = -1;
         int resetPinAIC = AIC3212_DEFAULT_RESET_PIN; // AIC reset pin, Rev C

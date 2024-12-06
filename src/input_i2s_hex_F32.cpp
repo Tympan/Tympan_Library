@@ -37,7 +37,7 @@
 
 
 //DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*3]; //Teensy original
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*6]; //Teensy Audio original
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*6]; //The "divide by 2" is because we're fitting 16-bit samples into 32-bit slots
 uint32_t *AudioInputI2SHex_F32::i2s_rx_buffer = i2s_default_rx_buffer;
 audio_block_f32_t * AudioInputI2SHex_F32::block_ch1 = NULL;
 audio_block_f32_t * AudioInputI2SHex_F32::block_ch2 = NULL;
@@ -98,9 +98,9 @@ void AudioInputI2SHex_F32::begin(void)
 	dma.TCD->SOFF = 4;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
 	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
-		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |
-		DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);
-	dma.TCD->SLAST = -12;
+		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |  // 4 samples @ 2 bytes each?
+		DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);    
+	dma.TCD->SLAST = -12;  //6 samples @ 2 bytes each?
 	dma.TCD->DADDR = i2s_rx_buffer;
 	dma.TCD->DOFF = 2;
 	
@@ -148,7 +148,7 @@ void AudioInputI2SHex_F32::isr(void)
 	
 	//This block of code only copies the data into F32 buffers but leaves the scaling at +/-32767.0
 	//which will then be scaled in the update() method instead of here
-	if (block_ch1&& block_ch2 && block_ch3 && block_ch4) {
+	if (block_ch1&& block_ch2 && block_ch3 && block_ch4 && block_ch5 && block_ch6) {
 		offset = AudioInputI2SHex_F32::block_offset;
 		if (offset <= (uint32_t)(audio_block_samples/2)) {
 			//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer) / 2);

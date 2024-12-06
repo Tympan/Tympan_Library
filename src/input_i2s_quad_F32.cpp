@@ -133,9 +133,9 @@ void AudioInputI2SQuad_F32::begin(void)
 	dma.TCD->SOFF = 4;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
 	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
-		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |
+		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // 4 samples @ 2 bytes each?
 		DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);
-	dma.TCD->SLAST = -8;
+	dma.TCD->SLAST = -8;   //4 samples @ 2 bytes each?
 	dma.TCD->DADDR = i2s_rx_buffer;
 	dma.TCD->DOFF = 2;
 	//dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original Teensy Audio Library
