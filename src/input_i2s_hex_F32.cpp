@@ -148,7 +148,7 @@ void AudioInputI2SHex_F32::isr(void)
 	
 	//This block of code only copies the data into F32 buffers but leaves the scaling at +/-32767.0
 	//which will then be scaled in the update() method instead of here
-	if (block_ch1&& block_ch2 && block_ch3 && block_ch4 && block_ch5 && block_ch6) {
+	if (block_ch1 && block_ch2 && block_ch3 && block_ch4 && block_ch5 && block_ch6) {
 		offset = AudioInputI2SHex_F32::block_offset;
 		if (offset <= (uint32_t)(audio_block_samples/2)) {
 			//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer) / 2);

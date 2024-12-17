@@ -35,9 +35,9 @@
 //include "memcpy_audio.h"
 //#include "memcpy_interleave.h"
 #include <arm_math.h>
-#include <Audio.h> //to get access to Audio/utlity/imxrt_hw.h...do we really need this??? WEA 2020-10-31
+//include <Audio.h> //to get access to Audio/utlity/imxrt_hw.h...do we really need this??? WEA 2020-10-31
 
- /* Comment this out
+
 //taken from Teensy Audio utility/imxrt_hw.h and imxrt_hw.cpp...
 #if defined(__IMXRT1062__)
 	#ifndef imxr_hw_h_
@@ -72,7 +72,7 @@
 	//No IMXRT
 	#define IMXRT_CACHE_ENABLED 0
 #endif 
-*/ //end of commented block
+
 
 ////////////
 //
@@ -204,9 +204,9 @@ uint32_t * AudioOutputI2S_F32::i2s_tx_buffer = i2s_default_tx_buffer;
 float AudioOutputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioOutputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
-#if defined(__IMXRT1062__)
-#include <utility/imxrt_hw.h>   //from Teensy Audio library.  For set_audioClock()
-#endif
+//#if defined(__IMXRT1062__)
+//#include <utility/imxrt_hw.h>   //from Teensy Audio library.  For set_audioClock()
+//#endif
 
 //#for 16-bit transfers
 #define I2S_BUFFER_TO_USE_BYTES (AudioOutputI2S_F32::audio_block_samples*sizeof(i2s_tx_buffer[0]))
@@ -935,7 +935,8 @@ void AudioOutputI2S_F32::config_i2s(bool transferUsing32bit, float fs_Hz)
 	int c0 = C;
 	int c2 = 10000;
 	int c1 = C * c2 - (c0 * c2);
-	set_audioClock(c0, c1, c2);
+	//set_audioClock(c0, c1, c2);
+	set_audioClock_tympan(c0, c1, c2);
 
 	// clear SAI1_CLK register locations
 	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))

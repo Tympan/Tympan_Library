@@ -32,16 +32,17 @@
 
 #include <Arduino.h>
 #include "output_i2s_quad_F32.h"
-#include "memcpy_audio.h"
+//include "memcpy_audio.h"
+#include "utility/memcpy_audio_tympan.h"
 #include <arm_math.h>
 #include "output_i2s_F32.h"  //for config_i2s() and setI2Sfreq_T3()
 
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
 
-#if defined(__IMXRT1062__)
-#include "utility/imxrt_hw.h"
-#endif
+//if defined(__IMXRT1062__)
+//include "utility/imxrt_hw.h"
+//endif
 
 
 audio_block_f32_t * AudioOutputI2SQuad_F32::block_ch1_1st = NULL;
@@ -237,10 +238,10 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 	arm_float_to_q15(src4, tmp_src4, n);
 	
 	//memcpy_tointerleaveQuad(dest, src1, src2, src3, src4);
-	memcpy_tointerleaveQuad(dest, (int16_t *)tmp_src1, 
-	                              (int16_t *)tmp_src2, 
-								  (int16_t *)tmp_src3, 
-								  (int16_t *)tmp_src4);
+	memcpy_tointerleaveQuad_tympan(dest, (int16_t *)tmp_src1, 
+				(int16_t *)tmp_src2, 
+	   		(int16_t *)tmp_src3, 
+				(int16_t *)tmp_src4);
 #else
 	
 //  // This block of code assumes that the audio data has NOT already been scaled to +/-32767.0
