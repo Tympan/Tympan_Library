@@ -416,7 +416,8 @@ namespace tlv320aic3212
     }
     
 
-    bool AudioControlAIC3212::inputSelect(AIC_Input left, AIC_Input right)
+    //bool AudioControlAIC3212::inputSelect(AIC_Input left, AIC_Input right)
+    bool AudioControlAIC3212::inputSelect(int left, int right)
     {     
         if (debugToSerial)
             Serial.println("# AudioControlAIC3212: inputSelect");

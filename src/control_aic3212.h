@@ -22,18 +22,21 @@ namespace tlv320aic3212 {
 
     enum AIC_ID 
     {
-        Aic_Id_1,
-        Aic_Id_2
+        Aic_Id_1=0,
+        Aic_Id_2,
+				Aic_Id_pcmd1
     };
 
     enum AIC_Input 
     {
-        Aic_Input_In1,
+        Aic_Input_In1=0,
         Aic_Input_In2,
         Aic_Input_In3,
         Aic_Input_In4,
         Aic_Input_Pdm,     // PDM Mic with PDM_CLK on GPIO2, PDM_DAT on GPI1
-        Aic_Input_None
+        Aic_Input_None,
+				Aic_Input_pcmd1,
+				Aic_Input_pcmd2				
     };
 
     enum AIC_Output
@@ -264,8 +267,8 @@ namespace tlv320aic3212 {
 				int enableHeadphonePower(int chan, bool enable = true); //use AIC_BOTH_CHAN, AIC_LEFT_CHAN, AIC_RIGHT_CHAN
 		 
 				bool inputLevel(float n);                               // dummy to be compatible with Teensy Audio Library
-        bool inputSelect(AIC_Input both) { return inputSelect(both, both); };
-        bool inputSelect(AIC_Input left, AIC_Input right);
+        bool inputSelect(int both) { return inputSelect(both, both); };
+        bool inputSelect(int left, int right);
         float applyLimitsOnInputGainSetting(float gain_dB);
         float setInputGain_dB(float gain_dB);           // set both channels to the same gain
         float setInputGain_dB(float gain_dB, int chan); // set each channel seperately (0 = left; 1 = right)
