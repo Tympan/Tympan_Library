@@ -156,7 +156,7 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 	return return_val;
 }
 
-int AudioSDWriter_F32::startRecording(char* fname) {
+int AudioSDWriter_F32::startRecording(const char* fname) {
   int return_val = 0;
   
   //check to see if the SD has been initialized

@@ -58,11 +58,11 @@ class SDWriter : public Print
 			sd->end();
 		}
 
-    bool openAsWAV(char *fname);
-    bool open(char *fname);
+    bool openAsWAV(const char *fname);
+    bool open(const char *fname);
     int close(void);
-		bool exists(char *fname) { return sd->exists(fname); }
-		bool remove(char *fname) { return sd->remove(fname); }
+		bool exists(const char *fname) { return sd->exists(fname); }
+		bool remove(const char *fname) { return sd->remove(fname); }
 		
     bool isFileOpen(void) {
       if (file.isOpen()) return true;

@@ -1,7 +1,7 @@
 
 #include "SDWriter.h"
 
-bool SDWriter::openAsWAV(char *fname) {
+bool SDWriter::openAsWAV(const char *fname) {
 	bool returnVal = open(fname);
 	if (isFileOpen()) { //true if file is open
 		flag__fileIsWAV = true;
@@ -10,7 +10,7 @@ bool SDWriter::openAsWAV(char *fname) {
 	return returnVal;
 }
 
-bool SDWriter::open(char *fname) {
+bool SDWriter::open(const char *fname) {
 	if (sd->exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
 		// The SD library writes new data to the end of the file, so to start
 		//a new recording, the old file must be deleted before new data is written.

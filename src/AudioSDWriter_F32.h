@@ -54,7 +54,7 @@ class AudioSDWriter {
 		virtual void begin(void) { prepareSDforRecording(); };  //begins SD card
     virtual void prepareSDforRecording(void) = 0;
     virtual int startRecording(void) = 0;
-    virtual int startRecording(char *) = 0;
+    virtual int startRecording(const char *) = 0;
 		//virtual int startRecording_noOverwrite(void) = 0;
     virtual void stopRecording(void) = 0;
 		virtual void end(void) = 0;
@@ -185,7 +185,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		void end(void);
 
 		int startRecording(void);    //call this to start a WAV recording...automatically generates a filename
-		int startRecording(char* fname); //or call this to specify your own filename.
+		int startRecording(const char* fname); //or call this to specify your own filename.
 		//int startRecording_noOverwrite(void);
 		void stopRecording(void);    //call this to stop recording
 		int deleteAllRecordings(void);  //clears all AUDIOxxx.wav files from the SD card
@@ -235,11 +235,11 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		Print *serial_ptr = &Serial;
 		unsigned long t_start_millis = 0;
 
-		bool openAsWAV(char *fname) {
+		bool openAsWAV(const char *fname) {
 			if (buffSDWriter) return buffSDWriter->openAsWAV(fname);
 			return false;
 		}
-		bool open(char *fname) {
+		bool open(const char *fname) {
 			if (buffSDWriter) return buffSDWriter->open(fname);
 			return false;
 		}
