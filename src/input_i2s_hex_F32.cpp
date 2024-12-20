@@ -49,9 +49,9 @@ uint32_t AudioInputI2SHex_F32::block_offset = 0;
 bool AudioInputI2SHex_F32::update_responsibility = false;
 DMAChannel AudioInputI2SHex_F32::dma(false);
 
-int AudioInputI2SHex_F32::flag_out_of_memory = 0;
-float AudioInputI2SHex_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioInputI2SHex_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
+//int AudioInputI2SHex_F32::flag_out_of_memory = 0;
+//float AudioInputI2SHex_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
+//int AudioInputI2SHex_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 //for 16-bit transfers?
 #define I2S_BUFFER_TO_USE_BYTES ((AudioInputI2SHex_F32::audio_block_samples)*6*(sizeof(i2s_rx_buffer[0])/2))
@@ -61,6 +61,7 @@ int AudioInputI2SHex_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 void AudioInputI2SHex_F32::begin(void)
 {
+	Serial.println("AudioInputI2SHex_F32: begin: starting...");
 	dma.begin(true); // Allocate the DMA channel first
 
 	//AudioOutputI2SHex_F32::sample_rate_Hz = sample_rate_Hz; //these were given in the AudioSettings in the contructor

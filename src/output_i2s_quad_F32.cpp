@@ -87,7 +87,7 @@ int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 void AudioOutputI2SQuad_F32::begin(void)
 {
-#if 1
+	Serial.println("AudioOutputI2SQuad_F32: begin: starting...");
 	dma.begin(true); // Allocate the DMA channel first
 
 	block_ch1_1st = NULL;
@@ -169,13 +169,11 @@ void AudioOutputI2SQuad_F32::begin(void)
 		I2S1_TCR3 = I2S_TCR3_TCE_2CH << pinoffset;
 		update_responsibility = update_setup();
 		dma.attachInterrupt(isr);
-
-
-
+		
 	#endif
 	
-	enabled = 1;
-#endif
+	//enabled = 1;
+
 }
 
 void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st, audio_block_f32_t *&block_2nd, uint32_t &ch_offset)

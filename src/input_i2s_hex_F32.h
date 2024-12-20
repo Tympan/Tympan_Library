@@ -38,17 +38,18 @@
 #include <AudioStream_F32.h> // github.com/PaulStoffregen/cores/blob/master/teensy4/AudioStream.h
 //include "AudioStream.h"   //do we really need this? (from Chip)
 #include <DMAChannel.h>  // github.com/PaulStoffregen/cores/blob/master/teensy4/DMAChannel.h
-#include "input_i2s_F32.h" //for scale_i16_to_f32()
+#include "input_i2s_F32.h" //for scale_i16_to_f32() and for AudioInputI2SBase_F32
 
 
-class AudioInputI2SHex_F32 : public AudioStream_F32
+class AudioInputI2SHex_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 public:
-	AudioInputI2SHex_F32(void) : AudioStream_F32(0, NULL) { begin(); }
-	AudioInputI2SHex_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { 
+	AudioInputI2SHex_F32(void)  { begin(); }
+	AudioInputI2SHex_F32(const AudioSettings_F32 &settings) : AudioInputI2SHex_F32(settings, true) {}
+	AudioInputI2SHex_F32(const AudioSettings_F32 &settings, bool flag_callBegin) { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
-		begin(); 
+		if (flag_callBegin) begin(); 
 	}
 	virtual void update(void);
 	void begin(void);
@@ -67,11 +68,7 @@ private:
 	static audio_block_f32_t *block_ch4;
 	static audio_block_f32_t *block_ch5;
 	static audio_block_f32_t *block_ch6;
-	static float sample_rate_Hz;
-	static int audio_block_samples;
 	static uint32_t block_offset;
-	static int flag_out_of_memory;
-	unsigned long update_counter=0;
 };
 
 

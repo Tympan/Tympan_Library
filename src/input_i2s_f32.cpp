@@ -47,11 +47,11 @@ uint16_t AudioInputI2S_F32::block_offset = 0;
 bool AudioInputI2S_F32::update_responsibility = false;
 DMAChannel AudioInputI2S_F32::dma(false);
 
-int AudioInputI2S_F32::flag_out_of_memory = 0;
-unsigned long AudioInputI2S_F32::update_counter = 0;
+int AudioInputI2SBase_F32::flag_out_of_memory = 0;
+unsigned long AudioInputI2SBase_F32::update_counter = 0;
 
-float AudioInputI2S_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-int AudioInputI2S_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //set to default, gets set again later during initialization
+float AudioInputI2SBase_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
+int AudioInputI2SBase_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //set to default, gets set again later during initialization
 
 
 //#for 16-bit transfers

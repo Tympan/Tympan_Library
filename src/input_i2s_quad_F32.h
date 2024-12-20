@@ -39,22 +39,23 @@
 #include "AudioStream_F32.h"
 #include "AudioStream.h"   //do we really need this? (Chip 2020-10-31)
 #include "DMAChannel.h"
-#include "input_i2s_F32.h" //for scale_i16_to_f32()
+#include "input_i2s_F32.h" //for scale_i16_to_f32() and for AudioInputI2SBase_F32
 
-class AudioInputI2SQuad_F32 : public AudioStream_F32
+class AudioInputI2SQuad_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
-	AudioInputI2SQuad_F32(void) : AudioStream_F32(0, NULL) { 
+	AudioInputI2SQuad_F32(void) { 
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 		begin(); 
 	}
-	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { 
+	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioInputI2SQuad_F32(settings, true) {}
+	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) {
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
-		begin(); 
+		if (flag_callBegin) begin(); 
 	}
- 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) : AudioStream_F32(0, NULL) { 
+ 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_rx_buffer = rx_buff;
@@ -66,8 +67,8 @@ public:
 	//static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void);
 	//void begin(bool);
-	int get_isOutOfMemory(void) { return flag_out_of_memory; }
-	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
+	//int get_isOutOfMemory(void) { return flag_out_of_memory; }
+	//void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
 	static uint32_t *i2s_rx_buffer; 
 protected:
 	static bool update_responsibility;
@@ -79,11 +80,11 @@ private:
 	static audio_block_f32_t *block_ch2;
 	static audio_block_f32_t *block_ch3;
 	static audio_block_f32_t *block_ch4;
-	static float sample_rate_Hz;
-	static int audio_block_samples;
+//	static float sample_rate_Hz;
+//	static int audio_block_samples;
 	static uint32_t block_offset;
-	static int flag_out_of_memory;
-	unsigned long update_counter=0;
+//	static int flag_out_of_memory;
+//	unsigned long update_counter=0;
 };
 
 
