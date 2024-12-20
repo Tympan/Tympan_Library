@@ -15,9 +15,9 @@
 #include <Arduino.h>  //for Serial
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
-#include "input_i2s_F32.h"
-#include "input_i2s_quad_F32.h"
-#include "input_i2s_hex_F32.h"
+#include "input_i2s_F32.h"  //for AudioInputI2SBase_F32
+//include "input_i2s_quad_F32.h"
+//include "input_i2s_hex_F32.h"
 #include "SDWriter.h"
 #include "SerialManager_UI.h"
 #include "TympanRemoteFormatter.h"
@@ -35,7 +35,7 @@
 class AudioSDWriter {
   public:
 		AudioSDWriter(void) {};
-			AudioSDWriter(SdFs * _sd) {
+		AudioSDWriter(SdFs * _sd) {
 			sd = _sd;
 		};
     enum class STATE { UNPREPARED = -1, STOPPED, RECORDING };
@@ -207,12 +207,14 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			return false;
 		}
 		int serviceSD_withWarnings(void);
-		int serviceSD_withWarnings(AudioInputI2S_F32 &i2s_in);
-		int serviceSD_withWarnings(AudioInputI2SQuad_F32 &i2s_in);
-		int serviceSD_withWarnings(AudioInputI2SHex_F32 &i2s_in);
-		void checkMemoryI2S(AudioInputI2S_F32 &i2s_in);
-		void checkMemoryI2S(AudioInputI2SQuad_F32 &i2s_in);
-		void checkMemoryI2S(AudioInputI2SHex_F32 &i2s_in);
+		int serviceSD_withWarnings(AudioInputI2SBase_F32 &i2s_in);
+		//int serviceSD_withWarnings(AudioInputI2S_F32 &i2s_in);
+		//int serviceSD_withWarnings(AudioInputI2SQuad_F32 &i2s_in);
+		//int serviceSD_withWarnings(AudioInputI2SHex_F32 &i2s_in);
+		void checkMemoryI2S(AudioInputI2SBase_F32 &i2s_in);
+		//void checkMemoryI2S(AudioInputI2S_F32 &i2s_in);
+		//void checkMemoryI2S(AudioInputI2SQuad_F32 &i2s_in);
+		//void checkMemoryI2S(AudioInputI2SHex_F32 &i2s_in);
 
 		bool isFileOpen(void) {
 			if (buffSDWriter) return buffSDWriter->isFileOpen();
