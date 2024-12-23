@@ -79,6 +79,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		virtual uint32_t positionMillis(void);
 		virtual uint32_t lengthMillis(void);
 		virtual void update(void);
+		virtual bool enableResampling(bool _enable) { return flag_enableResampling = _enable; }
+		
 		float setSampleRate_Hz(float fs_Hz) { 
 			sample_rate_Hz = fs_Hz; 
 			updateBytes2Millis();
@@ -161,12 +163,20 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		static unsigned long update_counter;
 		float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
 		int audio_block_samples = AUDIO_BLOCK_SAMPLES;
+		
+		bool flag_enableResampling = false;
+		float file_sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
+		float current_sample_value[4] = {0.0f, 0.0f, 0.0f, 0.0f};  //used for upsampling
+		float prev_sample_value[4] = {0.0f, 0.0f, 0.0f, 0.0f};  //used for upsampling
+		
 
 		uint32_t updateBytes2Millis(void);
 
 		uint32_t readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps);
 		//uint32_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
 		uint32_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps, uint16_t n_chan);
+		uint32_t readBuffer_16bit_to_f32_resample(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps, uint16_t n_chan);
+		float getNextSampleFromBuffer_16bit_to_f32(void);
 		bool readHeader(void);
 };
 

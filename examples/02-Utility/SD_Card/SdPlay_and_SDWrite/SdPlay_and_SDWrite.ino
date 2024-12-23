@@ -145,6 +145,10 @@ void setup() {
   audioSDWriter.setNumWriteChannels(2);             //four channels for this quad recorder, but you could set it to 2
   Serial.println("SD configured to write " + String(audioSDWriter.getNumWriteChannels()) + " channels.");
 
+  //If using higher sampling rates, consider enabling the SDPlayer's automatic up-sampling.  
+	//Otherwise, the Tympan will simply ignore the file's sample rate and will force-play it at the Tympan's sample rate
+  //audioSDPlayer.enableResampling(true); //as of Dec 2024, it only does integer-ratio up-sampling
+
   //Set the state of the LEDs
   myTympan.setRedLED(HIGH); myTympan.setAmberLED(LOW);
 

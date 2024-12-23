@@ -230,7 +230,11 @@ uint32_t AudioSDPlayer_F32::readFromBuffer(float32_t *left_f32, float32_t *right
 	uint32_t n_samples_read = 0;
 	switch (state_play) {
 		case STATE_DIRECT_16BIT_MONO: case STATE_DIRECT_16BIT_STEREO:
-			n_samples_read = readBuffer_16bit_to_f32(left_f32, right_f32, n_samps, channels); 		
+			if (flag_enableResampling) {
+				n_samples_read = readBuffer_16bit_to_f32_resample(left_f32, right_f32, n_samps, channels); 		
+			} else {
+				n_samples_read = readBuffer_16bit_to_f32(left_f32, right_f32, n_samps, channels); 		
+			}
 			break;
 		default:
 			//file format not accounted for...so just do nothing and (later) code will auto-fill with zeros
@@ -280,6 +284,7 @@ uint32_t AudioSDPlayer_F32::readRawBytes(uint8_t *out_buffer, const uint32_t n_b
 	//return the number of bytes of real data
 	return n_bytes_filled;
 }
+
 uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps_wanted, uint16_t n_chan) {
 	uint32_t n_samples_read = 0;
 	const uint32_t bytes_perSamp_allChans = 2 * (uint32_t)n_chan; //mono will need 2 bytes (16 bits) per sample and stereo will need 2*2 bytes (32 bits) per sample
@@ -341,6 +346,98 @@ uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32(float32_t *left_f32, float32
 	}
 	
 	return n_samples_read;
+}
+
+float AudioSDPlayer_F32::getNextSampleFromBuffer_16bit_to_f32(void) {
+	//get the lsb and msb, assuming they form a 16-bit value
+	uint8_t lsb = buffer[buffer_read++]; if (buffer_read >= N_BUFFER) buffer_read=0;  //wrap around, if needed
+	uint8_t msb = buffer[buffer_read++]; if (buffer_read >= N_BUFFER) buffer_read=0;  //wrap around, if needed
+
+	//keep track of using up the allowed audio data within the WAV file (there can be extraneous 
+	//non-audio data at the end of a WAV file).  We just used two bytes.
+	data_length -= 2;  
+	
+	//form the 16-bit value and convert to float
+	int16_t val_int16 = (msb << 8) | lsb;
+	return ((float32_t)val_int16) / 32767.0; //convert to float that ranges [-1.0 to +1.0]
+}
+
+
+uint32_t AudioSDPlayer_F32::readBuffer_16bit_to_f32_resample(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps_wanted, uint16_t n_chan) {
+	uint32_t n_samples_prepared = 0;
+	const uint32_t bytes_perSamp_allChans = 2 * (uint32_t)n_chan; //mono will need 2 bytes (16 bits) per sample and stereo will need 2*2 bytes (32 bits) per sample
+	uint32_t upsample_ratio = 1;
+	if (file_sample_rate_Hz < sample_rate_Hz) upsample_ratio = (uint32_t)(sample_rate_Hz / file_sample_rate_Hz + 0.5); //integer-ratio upsampling only
+	const uint32_t bytes_desired_out = bytes_perSamp_allChans*n_samps_wanted;
+	const uint32_t bytes_desired_fromBuff = bytes_desired_out / upsample_ratio;
+	float32_t val_f32;
+	static unsigned long last_warning_millis = 0;
+	
+	//Serial.println("AudioSDPlayer_F32: readBuffer_16bit_to_f32_resample: upsample_ratio = " + String(upsample_ratio));
+	
+	//check to see if we have enough data in the main buffer.  If not, try to load one read-block of data
+	if ((state_read == READ_STATE_NORMAL) && ( (getNumBuffBytes() < bytes_desired_fromBuff) || (data_length < bytes_desired_fromBuff))) {
+		if (0) {  //do we allow ourselves to read from the SD during this high-speed update()-driven interrupt?
+			Serial.println("AudioSDPlayer_F32 :readBuffer_16bit_to_f32_resample: reading from SD in the high-speed loop.  Danger!");
+			readFromSDtoBuffer(MIN_READ_SIZE_BYTES);
+		} else {
+			//just issue a warning
+			if ((bytes_desired_fromBuff > getNumBuffBytes()) && (bytes_desired_fromBuff < data_length)) {
+				if ((millis() < last_warning_millis) || (millis() > last_warning_millis+50)) { //limit to a warning every 50 msec
+					Serial.println("AudioSDPlayer_F32: readBuffer_16bit_to_f32_resample: insufficient data in RAM buffer.");
+					last_warning_millis = millis();
+				}
+			}
+		}
+	}
+	
+	//initialize current/future value
+	for (int Ichan = 0; (Ichan < n_chan) && (Ichan < 4); Ichan++) current_sample_value[Ichan] = getNextSampleFromBuffer_16bit_to_f32();
+	
+	//loop through all desired samples, filing as many samples as possible, until we've hit our
+	//target number of samples are until there aren't any samples left
+	int interp_counter = -1;  // initialize.  usually will be between 0 and the upsample ratio
+	while ( (n_samples_prepared < n_samps_wanted) && (getNumBuffBytes() >= bytes_perSamp_allChans) ) { //do we have enough 
+		if (data_length >= bytes_perSamp_allChans) { //do we have enough bytes of *allowed* WAV data
+			
+			//increment the interpolation counter to see if it's time to step to the next input sample
+			interp_counter++;
+			if (interp_counter >= upsample_ratio) {
+				//move to the next sample from the buffer!
+				for (int Ichan = 0; (Ichan < n_chan) && (Ichan < 4); Ichan++) {
+					prev_sample_value[Ichan] = current_sample_value[Ichan];
+					current_sample_value[Ichan] = getNextSampleFromBuffer_16bit_to_f32();;
+					interp_counter = 0;
+				}
+			}
+					
+			//create the new output sample per channel	
+			for (int Ichan=0; Ichan < n_chan; Ichan++) {
+				if (interp_counter == 0) {
+					val_f32 = prev_sample_value[Ichan];
+				} else {
+					//linear interpolation
+					val_f32 = (current_sample_value[Ichan]-prev_sample_value[Ichan])*(float(interp_counter)/float(upsample_ratio)) + prev_sample_value[Ichan];
+				}
+				
+				//push the value into the left or right output
+				if (Ichan==0) {
+					left_f32[n_samples_prepared]=val_f32;
+				} else {
+					right_f32[n_samples_prepared]=val_f32;
+				}
+			} //end loop over channels
+			n_samples_prepared++; //acknowledge that we just filled a sample slot (filling both left+right counts as 1 sample)
+			
+		} else {
+			//we've used up all the allowed data that we've read.
+			//discard any fractional bytes remaining, just to be clear that we're done.
+			data_length = 0;
+			buffer_read = buffer_write;
+		}
+	}
+	
+	return n_samples_prepared;
 }
 
 //how many valid (waiting-to-be-used) bytes are already in the circular buffer
@@ -862,6 +959,7 @@ bool AudioSDPlayer_F32::parse_format(void)
   }
 
   rate = header[1];
+	file_sample_rate_Hz = (float)rate;
   //Serial.println("AudioSDPlayer_F32::parse_format: rate = " + String(rate));
   
   //if (rate == 96000) {
