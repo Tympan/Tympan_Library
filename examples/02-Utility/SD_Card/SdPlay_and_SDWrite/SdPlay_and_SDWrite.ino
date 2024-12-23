@@ -63,7 +63,7 @@
 #include <Tympan_Library.h>
 
 //set the sample rate and block size
-const float sample_rate_Hz = 44100.0f ;  //Desired sample rate (we ignore the sample rate of the WAV file)
+const float sample_rate_Hz = 96000.0f ;  //Desired sample rate (we ignore the sample rate of the WAV file)
 const int audio_block_samples = 128;     //Number of samples per audio block (do not make bigger than 128)
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
@@ -147,7 +147,7 @@ void setup() {
 
   //If using higher sampling rates, consider enabling the SDPlayer's automatic up-sampling.  
 	//Otherwise, the Tympan will simply ignore the file's sample rate and will force-play it at the Tympan's sample rate
-  //audioSDPlayer.enableResampling(true); //as of Dec 2024, it only does integer-ratio up-sampling
+  audioSDPlayer.enableResampling(true); //as of Dec 2024, it only does integer-ratio up-sampling
 
   //Set the state of the LEDs
   myTympan.setRedLED(HIGH); myTympan.setAmberLED(LOW);
