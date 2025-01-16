@@ -5,10 +5,13 @@ int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const 
 	sample_rate_Hz = settings.sample_rate_Hz;
 
 	//setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
-	N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-	if (N_FFT < 1) return N_FFT;
-	N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-	if (N_FFT < 1) return N_FFT;
+	int prev_N_FFT = N_FFT;
+	if (prev_N_FFT != _N_FFT) {
+		N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
+		if (N_FFT < 1) return N_FFT;
+		N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
+		if (N_FFT < 1) return N_FFT;
+	}
 
 	//decide windowing
 	//Serial.println("AudioEffectFreqShift_FD_F32: setting myFFT to use hanning...");
@@ -53,7 +56,10 @@ int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const 
 	#endif
 
 	//allocate memory to hold frequency domain data
-	complex_2N_buffer = new float32_t[2 * N_FFT];
+	if (prev_N_FFT != _N_FFT) {
+		if (complex_2N_buffer) delete[] complex_2N_buffer;
+		complex_2N_buffer = new float32_t[2 * N_FFT];
+	}
 
 	//we're done.  return!
 	enabled = 1;

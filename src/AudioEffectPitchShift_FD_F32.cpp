@@ -7,11 +7,14 @@ int AudioEffectPitchShift_FD_F32::setup(const AudioSettings_F32 &settings, const
   audio_block_samples = settings.audio_block_samples;
 
   //setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
-  N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-  if (N_FFT < 1) return N_FFT;
-  N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-  if (N_FFT < 1) return N_FFT;
-
+	int prev_N_FFT = N_FFT;
+	if (prev_N_FFT != _N_FFT) {
+		N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
+		if (N_FFT < 1) return N_FFT;
+		N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
+		if (N_FFT < 1) return N_FFT;
+	}
+	
   //decide windowing
   Serial.println("AudioEffectPitchShift_FD_F32: setting myFFT to use hanning...");
   (myFFT.getFFTObject())->useHanningWindow(); //applied prior to FFT
@@ -53,16 +56,18 @@ int AudioEffectPitchShift_FD_F32::setup(const AudioSettings_F32 &settings, const
   #endif
 
   //allocate memory to hold frequency domain data
-  complex_2N_buffer = new float32_t[2 * N_FFT];
-  cur_mag = new float32_t[N_FFT/2+1];
-  prev_mag = new float32_t[N_FFT/2+1];
-  cur_phase = new float32_t[N_FFT/2+1];
-  prev_phase = new float32_t[N_FFT/2+1];
-  cur_dPhase = new float32_t[N_FFT/2+1];
-  prev_dPhase = new float32_t[N_FFT/2+1];
-  new_mag = new float32_t[N_FFT/2+1];
-  prev_new_mag = new float32_t[N_FFT/2+1];
-  shifted_phases = new float32_t[N_FFT/2+1];
+	if (prev_N_FFT != _N_FFT) {
+		if (complex_2N_buffer) {delete[] complex_2N_buffer;} complex_2N_buffer = new float32_t[2 * N_FFT];
+		if (cur_mag) { delete[] cur_mag;}                    cur_mag = new float32_t[N_FFT/2+1];
+		if (prev_mag) { delete[] prev_mag;}              		 prev_mag = new float32_t[N_FFT/2+1];
+		if (cur_phase) { delete[] cur_phase;}           		 cur_phase = new float32_t[N_FFT/2+1];
+		if (prev_phase) { delete[] prev_phase;}              prev_phase = new float32_t[N_FFT/2+1];
+		if (cur_dPhase) { delete[] cur_dPhase;}              cur_dPhase = new float32_t[N_FFT/2+1];
+		if (prev_dPhase) { delete[] prev_dPhase;}            prev_dPhase = new float32_t[N_FFT/2+1];
+		if (new_mag) { delete[] new_mag;}              		   new_mag = new float32_t[N_FFT/2+1];
+		if (prev_new_mag) { delete[] prev_new_mag;}          prev_new_mag = new float32_t[N_FFT/2+1];
+		if (shifted_phases) { delete[] shifted_phases;}      shifted_phases = new float32_t[N_FFT/2+1];
+	}
 
   //pass parameters to the resampling filter
   resample_filter.setSampleRate_Hz(sample_rate_Hz);
