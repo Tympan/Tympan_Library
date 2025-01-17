@@ -5,7 +5,7 @@
 int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT) {
   sample_rate_Hz = settings.sample_rate_Hz;
   audio_block_samples = settings.audio_block_samples;
-  int N_FFT;
+  //int N_FFT;  //it's in the header file
 
   //setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
 	int prev_N_FFT = N_FFT;

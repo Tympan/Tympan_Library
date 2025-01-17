@@ -58,7 +58,8 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
-	int audio_block_samples = 128;
+	  int audio_block_samples = 128;
+		int N_FFT;
     
 };
 
