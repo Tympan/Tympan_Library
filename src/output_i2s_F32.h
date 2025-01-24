@@ -65,7 +65,7 @@ public:
 		if (flag_callBegin) begin();  
 	}
 	
-	virtual void update(void);
+	void update(void) override;
 	void begin(void);
 	void begin(bool);
 	void sub_begin_i32(void);
