@@ -36,7 +36,7 @@ class AudioSwitchMatrix4_F32 : public AudioStream_F32 {
 
 	private:
 		const int max_n_chan = 4;
-		audio_block_f32_t *inputQueueArray[4];
+		audio_block_f32_t *inputQueueArray[4] = {};
 		int inputForEachOutput[4];  //inputForEachOutput[0] is the input for output[0], inputForEachOutput[1] is the input for output[1], etc
 };
 
@@ -66,7 +66,7 @@ class AudioSwitchMatrix8_F32 : public AudioStream_F32 {
 
 	private:
 		const int max_n_chan = 8;
-		audio_block_f32_t *inputQueueArray[8];
+		audio_block_f32_t *inputQueueArray[8] = {};
 		int inputForEachOutput[8];  //inputForEachOutput[0] is the input for output[0], inputForEachOutput[1] is the input for output[1], etc
 };
 

@@ -42,7 +42,7 @@ public:
 
   private:
 		const int max_n_IO_chan = 4;
-    audio_block_f32_t *inputQueueArray[4];
+		audio_block_f32_t *inputQueueArray[4] = {};
 		AudioStream_F32 *forwarding_dest = NULL;
 };
 
