@@ -123,7 +123,7 @@
 	#define MADC                                                              8
 
 	// Signal Processing Modes, Playback and Recording.
-	#define PRB_P                                                             1
+	#define PRB_P                                                             1  
 	#define PRB_R                                                             1
 
 #endif  //for standard vs low-latency vs PDM setup
@@ -668,7 +668,7 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 	//	LOL/LOR are line output left and right
 
 	if (flag_full) {
-		aic_writeAddress(TYMPAN_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
+		aic_writePage(0, TYMPAN_DAC_PROCESSING_BLOCK_REG, PRB_P); // processing blocks - DAC
 
 		//mute, disable, then power-down everything
 		aic_goToPage(1);
