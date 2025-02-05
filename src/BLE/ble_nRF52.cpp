@@ -27,6 +27,22 @@ int printString(const String &str) {
   return printByteArray((uint8_t *)c_str,str.length());
 }
 
+int BLE_nRF52::begin(int doFactoryReset) {
+	 //clear the incoming Serial buffer	
+	while (serialFromBLE->available()) serialFromBLE->read();
+	
+	//send begin command to the BLE module
+	sendCommand("SET BEGIN=","TRUE");
+	String reply;
+  recvReply(&reply);
+  if (doesStartWithOK(reply)) {  
+    return 0;
+  } else {
+    Serial.println("BLE_nRF52: begin: failed to begin.  Reply = " + reply);
+  }
+	return -1;
+}
+
 size_t BLE_nRF52::send(const String &str) {
 
   //Serial.println("BLE_local: send(string): ...);
