@@ -28,19 +28,29 @@ int printString(const String &str) {
 }
 
 int BLE_nRF52::begin(int doFactoryReset) {
+	int ret_val = -1;
 	 //clear the incoming Serial buffer	
 	while (serialFromBLE->available()) serialFromBLE->read();
+	String reply;
+	
+	//send commands to modify the BLE setup, if desired
+	if (0) {
+		sendCommand("SET MAC=", "AABBCCDDEEFF"); //set the MAC address that the BLE module advertises
+		recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to change MAC.  Reply = " + reply);}
+	}
+	if (0) {
+		sendCommand("SET ADVERT_SERVICE_ID=","3");       //set BLE module to advertise for service #3 (which is the adafruit/nordic UART service)
+		recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to set to advertise service 3.  Reply = " + reply);}
+	}
+	if (0) {
+		sendCommand("SET ENABLE_SERVICE_ID4=","TRUE");   //set BLE module to enable preset service #4 (which is BLE battery service)?
+		recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to Activate Service 4.  Reply = " + reply);}
+	}
 	
 	//send begin command to the BLE module
-	sendCommand("SET BEGIN=","TRUE");
-	String reply;
-  recvReply(&reply);
-  if (doesStartWithOK(reply)) {  
-    return 0;
-  } else {
-    Serial.println("BLE_nRF52: begin: failed to begin.  Reply = " + reply);
-  }
-	return -1;
+	sendCommand("BEGIN"," 1");
+  recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to begin.  Reply = " + reply);}
+	return ret_val;
 }
 
 size_t BLE_nRF52::send(const String &str) {
