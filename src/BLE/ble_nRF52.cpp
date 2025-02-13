@@ -27,29 +27,98 @@ int printString(const String &str) {
   return printByteArray((uint8_t *)c_str,str.length());
 }
 
+
+
 int BLE_nRF52::begin(int doFactoryReset) {
 	int ret_val = -1;
-	 //clear the incoming Serial buffer	
+	String reply;  //we might need this later
+	//clear the incoming Serial buffer	
+	delay(2000);  //the UART serial link seems to drop the messages if we wait any less time than this
 	while (serialFromBLE->available()) serialFromBLE->read();
-	String reply;
 	
-	//send commands to modify the BLE setup, if desired
+	//if desired, send command to get the BLE version
 	if (0) {
-		sendCommand("SET MAC=", "AABBCCDDEEFF"); //set the MAC address that the BLE module advertises
-		recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to change MAC.  Reply = " + reply);}
-	}
-	if (0) {
-		sendCommand("SET ADVERT_SERVICE_ID=","3");       //set BLE module to advertise for service #3 (which is the adafruit/nordic UART service)
-		recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to set to advertise service 3.  Reply = " + reply);}
-	}
-	if (0) {
-		sendCommand("SET ENABLE_SERVICE_ID4=","TRUE");   //set BLE module to enable preset service #4 (which is BLE battery service)?
-		recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to Activate Service 4.  Reply = " + reply);}
+		int err_code = version(&reply);  
+		if (err_code == 0) Serial.print("BLE_nRF52: begin: BLE firmware = " + reply);
 	}
 	
-	//send begin command to the BLE module
-	sendCommand("BEGIN"," 1");
-  recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to begin.  Reply = " + reply);}
+	//if desired send command to modify the advertised MAC addressed
+	if (0) {
+		setBleMac("AABBCCDDEEFF"); //set the MAC address that the BLE module advertises
+	}
+	
+	//if desired, send commands to add another BLE service and to advertise that new service
+	if (0) {
+		int target_service_id = BLESVC_LEDBUTTON;
+		enableServiceByID(target_service_id, true);    //enable the service 
+		enableAdvertiseServiceByID(target_service_id); //tell the BLE module that this is the service we want it to advertise
+	}
+
+	//THIS IS THE KEY ACTIVITY:  Send begin() command to the BLE module
+	String begin_reply;
+	sendCommand("BEGIN ","1");delay(5);
+  recvReply(&begin_reply); 
+	if (doesStartWithOK(begin_reply)) {  
+		//it's good!
+		ret_val = 0; 
+	} else { 
+		//we didn't get an OK response.  it could be because the firmware is too old
+		String version_str;
+		int err_code = version(&version_str);
+		bool suppress_warning_because_firmware_is_old = false;
+		if (err_code == 0) {
+			//we got the version info.
+			//
+			//strip off the leading text by finding the first space
+			int ind = version_str.indexOf(" ");
+			if (ind >= 0) {
+				version_str = version_str.substring(ind+1);
+				//find the first "v" to mark the version
+				ind = version_str.indexOf("v");
+				if (ind >= 0) {
+					version_str = version_str.substring(ind+1);
+					if (version_str.length() >= 3) {
+						float version_float = version_str.substring(0,3).toFloat();
+						if (version_float >= 0.4) {
+							//it should have the BEGIN command, yet it failed, so do not suppress the warning
+						} else {
+							//it is old enough to not have the BEGIN command, so that's why it failed, so do suppress the warning
+							suppress_warning_because_firmware_is_old = true;
+							ret_val = 0;
+						}
+					}
+				}
+			}
+		}
+		if (!suppress_warning_because_firmware_is_old) {
+			ret_val = -1; Serial.println("BLE_nRF52: begin: failed to begin.  Error msg = " + begin_reply);
+		}
+	}
+	
+	
+	//if desired, change the BLE name
+	if (0) {
+		String name = String("My Custom Name");
+		int err_code = setBleName(name);
+		if (err_code != 0) Serial.println("ble_NRF52: begin:  ble_nRF52.setBleName returned error code " + String(err_code));
+	}
+	
+	//if desired, send the first data to service ID 5
+	if (0) {
+		int n_bytes = 1; uint8_t data[n_bytes] = {0x00};
+		sendCommand("BLENOTIFY 5 0 1 ",data, n_bytes);   //service 5, characteristic 0, 1 byte
+		sendCommand("BLEWRITE 5 0 1 ",data, n_bytes);   //service 5, characteristic 0, 1 byte
+		delay(1);recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to send data to service 5.  Reply = " + reply);}
+	} 
+
+	//if desired, send the first data to service ID 6
+	if (0) {
+		int n_bytes = 4; uint8_t data[n_bytes] = {0x00, 0x00, 0xc8, 0x42}; //floating point for 100.0, reverse byte order
+		sendCommand("BLENOTIFY 6 0 4 ",data, n_bytes);   //service 6, characteristic 0, 4 bytes
+		sendCommand("BLEWRITE 6 0 4 ",data, n_bytes);   //service 6, characteristic 0, 4 bytes
+		delay(1);recvReply(&reply); if (doesStartWithOK(reply)) {  ret_val = 0; } else { ret_val = -1; Serial.println("BLE_nRF52: begin: failed to send data to service 6.  Reply = " + reply);}
+	} 
+
 	return ret_val;
 }
 
@@ -167,14 +236,29 @@ size_t BLE_nRF52::sendMessage(const String &orig_s) {
 
 size_t BLE_nRF52::sendCommand(const String &cmd, const String &data) {
   size_t len = 0;
-
+	
   //usualy something like cmd="SET NAME=" with data = "MY_NAME"
   //or something like cmd="GET NAME" with data =''
-  String total_message = cmd + data;
-  len += serialToBLE->write(total_message.c_str(), total_message.length() );   
-  //Serial.println("BLE_nRF52:sendCommand: sent " + total_message);
-  serialToBLE->write(EOC.c_str(),EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
+	if (0) {
+		len += serialToBLE->write(cmd.c_str(), cmd.length() );
+		for (unsigned int i=0; i<data.length(); ++i) len += serialToBLE->write(data[i]);  //be sure to send as invidual bytes
+		serialToBLE->write(EOC.c_str(),EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
+  } else {
+		len += BLE_nRF52::sendCommand(cmd, data.c_str(), data.length()); //use this form to ensure that non-printable characters in data (especially 0x00) are transmitted correctly
+	}
   return len;
+}
+
+size_t BLE_nRF52::sendCommand(const String &cmd, const char* data, size_t data_len) {
+	return BLE_nRF52::sendCommand(cmd, (uint8_t*) data, data_len);
+}
+
+size_t BLE_nRF52::sendCommand(const String &cmd, const uint8_t* data, size_t data_len) {
+  size_t len = 0;
+	len += serialToBLE->write( cmd.c_str(), cmd.length() );
+	len += serialToBLE->write(data,data_len);
+  serialToBLE->write(EOC.c_str(),EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
+  return len;	
 }
 
 
@@ -182,6 +266,7 @@ size_t BLE_nRF52::recvReply(String *reply_ptr, unsigned long timeout_millis) {
   unsigned long max_millis = millis() + timeout_millis;
   bool waiting_for_EOC = true;
   bool waiting_for_O_or_F = true;
+	reply_ptr->remove(0,reply_ptr->length());
   while ((millis() < max_millis) && (waiting_for_EOC)) {
     while (serialFromBLE->available()) {
       char c = serialFromBLE->read();
@@ -318,6 +403,38 @@ int BLE_nRF52::getBleName(String *reply_ptr) {
   return -1;
 }
 
+int BLE_nRF52::setBleMac(const String &s) {
+  sendCommand("SET MAC=", s);
+ 
+  String reply;
+  recvReply(&reply);
+  if (doesStartWithOK(reply)) {  
+    return 0;
+  } else {
+    Serial.println("BLE_nRF52: setBleName: failed to set the BLE MAC.  Reply = " + reply);
+  }
+  return -1;
+}
+
+/*
+int BLE_nRF52::getBleMac(String *reply_ptr) {
+  sendCommand(String("GET MAC"), String(""));
+
+  recvReply(reply_ptr); //look for "OK MY_NAME"
+  //Serial.println("BLE_nRF52: getBleName: received raw reply_ptr = " + *reply_ptr);
+  if (doesStartWithOK(*reply_ptr)) {
+    reply_ptr->remove(0,2);  //remove the leading "OK"
+    if ((reply_ptr->length() > 0) && (reply_ptr->charAt(0)==' ')) reply_ptr->remove(0,1);  //if present, remove the space that should have been after "OK"
+    return 0;
+  } else {
+    Serial.println("BLE_nRF52: getBleName: failed to get the BLE MAC.  Reply = " + *reply_ptr);
+    if (reply_ptr->length() > 0) reply_ptr->remove(0,reply_ptr->length());  //empty the string
+  }
+  return -1;
+}
+*/
+
+
 
 int BLE_nRF52::getLedMode(void) {
   sendCommand("GET LEDMODE",String(""));
@@ -325,7 +442,6 @@ int BLE_nRF52::getLedMode(void) {
   
   String reply;
   recvReply(&reply); //look for "OK MY_NAME"
-  //Serial.println("BLE_nRF52: version: received raw reply = " + reply);
   if (doesStartWithOK(reply)) {
     reply.remove(0,2);  //remove the leading "OK"
     reply.trim(); //remove leading or trailing whitespace
@@ -389,6 +505,40 @@ int BLE_nRF52::isAdvertising(void) {
     }
   } 
   return -1; //error
+}
+
+int BLE_nRF52::enableServiceByID(int service_id, bool enable) { 
+	if ((service_id < 1) || (service_id > 9)) return -1;  //return with error if given id is out of this narrow range 
+	
+	//build up the command and send it
+	char service_id_char = (char)((uint8_t)service_id + (uint8_t)'0');
+	String true_false = "TRUE";
+	if (!enable) true_false = "FALSE";
+	sendCommand("SET ENABLE_SERVICE_ID" + String(service_id_char) + "=",true_false); delay(1);
+
+	//receive reply
+  String reply; recvReply(&reply);
+	if (!doesStartWithOK(reply)) Serial.println("BLE_nRF52: enableServiceByID: failed to set service " + String(service_id_char) + " to " + true_false + ". Reply = " + reply);
+
+	//return
+  if (doesStartWithOK(reply)) return 0; //good result
+  return -1; //error  //bad result
+}
+
+int BLE_nRF52::enableAdvertiseServiceByID(int service_id) {  
+	if ((service_id < 1) || (service_id > 9)) return -1;  //return with error if given id is out of this narrow range 
+	
+	//build up the command and send it
+	char service_id_char = (char)((uint8_t)service_id + (uint8_t)'0');
+	sendCommand("SET ADVERT_SERVICE_ID=",service_id_char);
+
+	//receive reply
+  String reply; recvReply(&reply);
+	if (!doesStartWithOK(reply)) Serial.println("BLE_nRF52: enableAdvertiseServiceByID: failed to set advertising for service " + String(service_id_char) + ". Reply = " + reply);
+
+	//return
+  if (doesStartWithOK(reply)) return 0; //good result
+  return -1; //error  //bad result
 }
 
 int BLE_nRF52::enableAdvertising(bool enable) {

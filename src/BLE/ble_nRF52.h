@@ -31,6 +31,8 @@ public:
 	size_t sendString(const String &s, bool print_debug) override;
 	virtual size_t sendString(const String &s) { return sendString(s,false);}
 	virtual size_t sendCommand(const String &cmd,const String &data);
+	virtual size_t sendCommand(const String &cmd, const char* data, size_t data_len);
+	virtual size_t sendCommand(const String &cmd, const uint8_t* data, size_t data_len);
 
 	//send strings, but add formatting for TympanRemote App
 	size_t sendMessage(const String &s) override;
@@ -39,6 +41,7 @@ public:
 	//receive reply from BLE unit (formatted with "OK" or "FAIL")
 	virtual size_t recvReply(String *s_ptr, unsigned long timeout_mills);
 	virtual size_t recvReply(String *s_ptr) { return recvReply(s_ptr, rx_timeout_millis); }
+	static bool doesStartWithOK(const String &s);
 
 	//receive message, from Tympan Remote App (or otherwise)
 	int available(void) override { return serialFromBLE->available(); }
@@ -53,11 +56,26 @@ public:
 
 	virtual int setBleName(const String &s);
 	virtual int getBleName(String *reply_ptr);
+	virtual int setBleMac(const String &s);
+	//virtual int getBleMac(const String &s);
 	int version(String *reply_ptr) override;
 	int isConnected(void) override { return isConnected(GET_AUTO); }
 	virtual int isConnected(int method);
 	int isAdvertising(void) override;
 	int enableAdvertising(bool);
+	
+	//preset services`
+	enum PRESET_BLE_SERVICES {BLESVC_DFU=0, 
+													BLESVC_DIS=1, 
+													BLESVC_UART_TYMPAN=2, 
+													BLESVC_UART_ADAFRUIT=3,
+													BLESVC_BATT=4,
+													BLESVC_LEDBUTTON=5,
+													BLESVC_LEDBUTTON_4BYTE=6};
+	virtual int enableServiceByID(int servide_id, bool enable);
+	virtual int enableAdvertiseServiceByID(int service_id);
+
+		
 	
 	// These do nothing but are needed for compatibility with ble.h
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
@@ -74,6 +92,7 @@ public:
 	int PIN_IS_CONNECTED = 39;  //Tympan RevF
 	enum GET_TYPE { GET_AUTO=0, GET_VIA_SOFTWARE, GET_VIA_GPIO};
 	
+	
 protected:
 	//virtual bool useFasterBaudRateUponBegin = false; //default as to whether to use faster baud rate or not
 	//virtual void setSerialBaudRate(int new_baud);
@@ -88,7 +107,6 @@ protected:
 	  HardwareSerial *serialToBLE = &Serial7;    //Tympan design uses Teensy's Serial1 to connect to BLE
 	  HardwareSerial *serialFromBLE = &Serial7;  //Tympan design uses Teensy's Serial1 to connect from BLE
 	#endif
-	static bool doesStartWithOK(const String &s);
 	int isConnected_getViaSoftware(void);
 	int isConnected_getViaGPIO(void);
 	
