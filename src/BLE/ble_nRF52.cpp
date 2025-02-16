@@ -262,7 +262,7 @@ size_t BLE_nRF52::sendCommand(const String &cmd, const char* data, size_t data_l
 	if (0) {
 		//print out the command, for debugging
 		Serial.print("BLE_nRF52: sendCommand: sending: " + cmd);
-		for (int i=0; i<data_len;i++) Serial.write(data[i]);
+		for (size_t i=0; i<data_len;i++) Serial.write(data[i]);
 		Serial.println();
 	}
 	return BLE_nRF52::sendCommand(cmd, (uint8_t*) data, data_len);
