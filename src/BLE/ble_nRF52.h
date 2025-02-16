@@ -75,16 +75,16 @@ public:
 													BLESVC_LEDBUTTON_4BYTE=6};
 	virtual int enableServiceByID(int service_id, bool enable);
 	virtual int enableAdvertiseServiceByID(int service_id);
-	virtual int notifyBle_float32(int service_id, int char_id, float32_t val);
-	virtual int writeBle_float32 (int service_id, int char_id, float32_t val);
-	virtual int notifyBle_int32(int service_id, int char_id, int32_t val);
-	virtual int writeBle_int32 (int service_id, int char_id, int32_t val);	
-	virtual int notifyBle_uint32(int service_id, int char_id, uint32_t val);
-	virtual int writeBle_uint32 (int service_id, int char_id, uint32_t val);	
-	virtual int notifyBle_uint8(int service_id, int char_id, uint8_t val);
-	virtual int writeBle_uint8 (int service_id, int char_id, uint8_t val);
-	virtual int notifyBle_char(int service_id, int char_id, char val)      { return notifyBle_uint8(service_id, char_id, (uint8_t)val); };
-	virtual int writeBle_char (int service_id, int char_id, char val)      { return writeBle_uint8 (service_id, char_id, (uint8_t)val); };		
+	virtual int notifyBle(int service_id, int char_id, float32_t val);
+	virtual int writeBle (int service_id, int char_id, float32_t val);
+	virtual int notifyBle(int service_id, int char_id, int32_t val);
+	virtual int writeBle (int service_id, int char_id, int32_t val);	
+	virtual int notifyBle(int service_id, int char_id, uint32_t val);
+	virtual int writeBle (int service_id, int char_id, uint32_t val);	
+	virtual int notifyBle(int service_id, int char_id, uint8_t val)   { return notifyBle(service_id, char_id, &val, 1); };
+	virtual int writeBle (int service_id, int char_id, uint8_t val)   { return writeBle (service_id, char_id, &val, 1); };
+	virtual int notifyBle(int service_id, int char_id, char val)      { return notifyBle(service_id, char_id, (uint8_t)val); };
+	virtual int writeBle (int service_id, int char_id, char val)      { return writeBle (service_id, char_id, (uint8_t)val); };		
 	virtual int notifyBle(int service_id, int char_id, const uint8_t vals[], size_t n_bytes);
 	virtual int writeBle (int service_id, int char_id, const uint8_t vals[], size_t n_bytes);
 	

@@ -626,49 +626,49 @@ void convertToByteArray(float val, uint8_t *array_4bytes) {
 	convertToByteArray(val_uint32, array_4bytes);
 }
 
-int BLE_nRF52::notifyBle_float32(int service_id, int char_id, float32_t val) {  //notify, float32
+int BLE_nRF52::notifyBle(int service_id, int char_id, float32_t val) {  //notify, float32
 	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
   convertToByteArray(val,byte_array);
 	return notifyBle(service_id, char_id, byte_array, n_bytes);
 }
-int BLE_nRF52::notifyBle_int32(int service_id, int char_id, int32_t val) {  //notify, int32
+int BLE_nRF52::notifyBle(int service_id, int char_id, int32_t val) {  //notify, int32
 	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
   convertToByteArray(val,byte_array);
 	return notifyBle(service_id, char_id, byte_array, n_bytes);
 }
-int BLE_nRF52::notifyBle_uint32(int service_id, int char_id, uint32_t val) {  //notify, uint32
+int BLE_nRF52::notifyBle(int service_id, int char_id, uint32_t val) {  //notify, uint32
 	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
   convertToByteArray(val,byte_array);
 	return notifyBle(service_id, char_id, byte_array, n_bytes);
 }
-int BLE_nRF52::notifyBle_uint8(int service_id, int char_id, uint8_t val)   { 
-	//return notifyBle(service_id, char_id, &val, 1);	
-	const size_t n_bytes = 1;	uint8_t byte_array[n_bytes];
-	byte_array[0] = val;
-	return notifyBle(service_id, char_id, byte_array, n_bytes);
-}
+//int BLE_nRF52::notifyBle(int service_id, int char_id, uint8_t val)   { 
+//	//return notifyBle(service_id, char_id, &val, 1);	
+//	const size_t n_bytes = 1;	uint8_t byte_array[n_bytes];
+//	byte_array[0] = val;
+//	return notifyBle(service_id, char_id, byte_array, n_bytes);
+//}
 
-int BLE_nRF52::writeBle_float32(int service_id, int char_id, float32_t val) {  //write, float32
+int BLE_nRF52::writeBle(int service_id, int char_id, float32_t val) {  //write, float32
 	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
   convertToByteArray(val,byte_array);
 	return writeBle(service_id, char_id, byte_array, n_bytes);
 }
-int BLE_nRF52::writeBle_int32(int service_id, int char_id, int32_t val) {  //write, int32
+int BLE_nRF52::writeBle(int service_id, int char_id, int32_t val) {  //write, int32
 	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
   convertToByteArray(val,byte_array);
 	return writeBle(service_id, char_id, byte_array, n_bytes);
 }
-int BLE_nRF52::writeBle_uint32(int service_id, int char_id, uint32_t val) {  //write, uint32
+int BLE_nRF52::writeBle(int service_id, int char_id, uint32_t val) {  //write, uint32
 	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
   convertToByteArray(val,byte_array);
 	return writeBle(service_id, char_id, byte_array, n_bytes);
 }
-int BLE_nRF52::writeBle_uint8(int service_id, int char_id, uint8_t val)   { 
-	//return notifyBle(service_id, char_id, &val, 1);	
-	const size_t n_bytes = 1;	uint8_t byte_array[n_bytes];
-	byte_array[0] = val;
-	return writeBle(service_id, char_id, byte_array, n_bytes);
-}
+//int BLE_nRF52::writeBle(int service_id, int char_id, uint8_t val)   { 
+//	//return notifyBle(service_id, char_id, &val, 1);	
+//	const size_t n_bytes = 1;	uint8_t byte_array[n_bytes];
+//	byte_array[0] = val;
+//	return writeBle(service_id, char_id, byte_array, n_bytes);
+//}
 int BLE_nRF52::notifyBle(int service_id, int char_id, const uint8_t byte_array[], size_t n_bytes) {
 	int ret_val = 0;
   String params_str = String(" ") + String(service_id) + " " + String(char_id) + " " + String(n_bytes) + " "; //start and end with a a space
