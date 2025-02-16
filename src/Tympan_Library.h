@@ -85,6 +85,7 @@
 #include "BLE/ble.h"
 #include "BLE/ble_BC127.h"
 #include "BLE/ble_nRF52.h"
+#include "BLE/BleTypes.h"
 
 #endif
 

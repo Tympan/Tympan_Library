@@ -220,6 +220,8 @@ BLE_nRF52	KEYWORD1
 BLE_nRF52_UI	KEYWORD1
 isConnected	KEYWORD2
 isAdvertising	KEYWORD2
+BleDataMessage	KEYWORD1
+
 
 EarpieceMixerState	KEYWORD1
 EarpieceMixer_F32	KEYWORD1
