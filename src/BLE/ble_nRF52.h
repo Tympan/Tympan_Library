@@ -1,6 +1,18 @@
 #ifndef _BLE_NRF52_H
 #define _BLE_NRF52_H
 
+/* //////////////////////////////////////////////////////////////
+*
+* BLE_nRF52
+*
+* Created: Chip Audette, OpenAudio
+*
+* Purpose: Class for implementing BLE communcation functions for the nRF52840 BLE module
+*
+* MIT License, Use at your own risk.
+*
+////////////////////////////////////////////////////////////// */
+
 #include <Arduino.h>   //for Serial
 #include <Tympan.h>
 #include <SerialManager_UI.h>

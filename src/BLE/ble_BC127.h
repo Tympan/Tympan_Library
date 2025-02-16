@@ -1,6 +1,19 @@
 #ifndef _BLE_BC127_H
 #define _BLE_BC127_H
 
+/* //////////////////////////////////////////////////////////////
+*
+* BLE_BC127
+*
+* Created: Ray Jenkins, Chip Audette
+*
+* Purpose: Class for implementing BLE communcation functions for the BC127 BLE module
+*
+* MIT License, Use at your own risk.
+*
+////////////////////////////////////////////////////////////// */
+
+
 #include <Arduino.h>   //for Serial
 //include <Tympan_Library.h>
 #include "BLE/ble.h"

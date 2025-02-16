@@ -1,6 +1,18 @@
 #ifndef _BLE_H
 #define _BLE_H
 
+/* //////////////////////////////////////////////////////////////
+*
+* BLE
+*
+* Created: Ray Jenkins, Eric Yuan, Chip Audette
+*
+* Purpose: Interface for accessing general BLE interactions.
+*
+* MIT License, Use at your own risk.
+*
+////////////////////////////////////////////////////////////// */
+
 #include <Arduino.h>   //for Serial
 //include "Tympan.h"
 #include "SerialManager_UI.h"
