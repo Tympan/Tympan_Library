@@ -119,11 +119,13 @@
 
 #include <Arduino.h> //for Serial and String
 #include "BLE/ble.h"
+#include "BLE/BleTypes.h"
 #include <vector>
 //#include "SerialManager_UI.h"
 class SerialManager_UI;  //forward declare.  Assume SerialManager_UI.h will be included elsewhere
 
 #define MAX_DATASTREAM_LENGTH 1024
+#define MAX_BLE_PAYLOAD (MAX_DATASTREAM_LENGTH) //for safety
 #define DATASTREAM_START_CHAR (char)0x02
 #define DATASTREAM_SEPARATOR (char)0x03
 #define DATASTREAM_END_CHAR (char)0x04
@@ -136,46 +138,61 @@ typedef void(*callback_t)(char* payload_p, String* msgType_p, int numBytes);	//t
 
 class SerialManagerBase {
   public:
-    SerialManagerBase(void) {};
+    SerialManagerBase(void) {common_setup(); };
     SerialManagerBase(BLE *_ble) :
-      ble(_ble) {};
+      ble(_ble) { common_setup(); };
+			
+		void common_setup(void) {
+			bleDataMessageQueue.setMaxAllowedSize(16); //maximum number of BLE messages that can be queued
+		}
 
     virtual BLE *setBLE(BLE *_ble) { return ble = _ble; };
     virtual BLE *getBLE(void) { return ble; };
     
-	virtual void printHelp(void);
+		virtual void printHelp(void);
     virtual void respondToByte(char c);
     virtual void setButtonState(String btnId, bool newState, bool sendNow = true);
     virtual void setButtonText(String btnId, String text);
     virtual void sendTxBuffer(void);
-	virtual void setFullGUIState(bool activeButtonsOnly=false); 
+		virtual void setFullGUIState(bool activeButtonsOnly=false); 
 
-	enum read_state_options {
-	  SINGLE_CHAR,	  STREAM_LENGTH,	  STREAM_DATA,	  QUAD_CHAR_1,	  QUAD_CHAR_2,	  QUAD_CHAR_3
-	};
-	
-	void setDataStreamCallback(callback_t callBackFunc_p);
+		enum read_state_options {
+			SINGLE_CHAR,	  STREAM_LENGTH,	  STREAM_DATA,	  QUAD_CHAR_1,	  QUAD_CHAR_2,	  QUAD_CHAR_3
+		};
+		
+		void setDataStreamCallback(callback_t callBackFunc_p);
 
-	SerialManager_UI* add_UI_element(SerialManager_UI *);
+		//handle BLE messages
+		SerialManager_UI* add_UI_element(SerialManager_UI *);
+		int isBleDataMessageAvailable(void) { return bleDataMessageQueue.size(); }
+		BleDataMessage getBleDataMessage(void);
+		uint32_t setMaxAllowedBleMessageQueueSize(uint32_t size) { return bleDataMessageQueue.getMaxAllowedSize(); }
+
 
   protected:
     virtual bool processCharacter(char c);
     virtual void processStream(void);
     virtual bool interpretQuadChar(char mode_char, char chan_char, char data_char); 
+		virtual int interpretBleData(int idx);
     virtual int readStreamIntArray(int idx, int* arr, int len);
     virtual int readStreamFloatArray(int idx, float* arr, int len);
+		virtual void printStreamData(int idx);
     
     int serial_read_state; // Are we reading one character at a time, or a stream?
     char stream_data[MAX_DATASTREAM_LENGTH];
+		//size_t ble_n_bytes = 0;
+		//uint8_t ble_payload[MAX_BLE_PAYLOAD];
     int stream_length = 0;
     int stream_chars_received;
     BLE *ble;
     char GUI_persistent_mode = 'g';  //is this used?  I don't think so.
     String TX_string;
     char mode_char, chan_char, data_char; //for quad_char processing
-	callback_t _datastreamCallback_p = NULL;
+		callback_t _datastreamCallback_p = NULL;
 
-	std::vector<SerialManager_UI *> UI_element_ptr;
+		std::vector<SerialManager_UI *> UI_element_ptr;
+		BleDataMessageQueue bleDataMessageQueue; // Like a std::queue, but limits the number of elements.  See BLE/BleTypes.h
+
 };
 
 
