@@ -13,10 +13,11 @@ public:
 	BLE_nRF52(HardwareSerial *sp) : serialToBLE(sp), serialFromBLE(sp) {};
 	BLE_nRF52(TympanBase *_tympan) : serialToBLE(_tympan->BT_Serial), serialFromBLE(_tympan->BT_Serial) {};
 	BLE_nRF52(void) {} //uses default serial ports set down in the protected section
-	int begin(void) override {  return begin(false); }
+	int begin(void) override {  return begin(false); } //normal begin()
+	virtual int begin_basic(void); //only use if you're really sure that you know what you're doing
 	virtual int begin(int doFactoryReset);
 	
-	virtual void setupBLE(void) { setupBLE(10); } //default to firmware 10
+	virtual void setupBLE(void) { setupBLE(10); } 
 	void setupBLE(int BT_firmware) override { setupBLE(BT_firmware,false); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
 	void setupBLE(int BT_firmware, bool printDebug) override { setupBLE(BT_firmware, printDebug, false); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
 	virtual void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset) {
@@ -72,10 +73,20 @@ public:
 													BLESVC_BATT=4,
 													BLESVC_LEDBUTTON=5,
 													BLESVC_LEDBUTTON_4BYTE=6};
-	virtual int enableServiceByID(int servide_id, bool enable);
+	virtual int enableServiceByID(int service_id, bool enable);
 	virtual int enableAdvertiseServiceByID(int service_id);
-
-		
+	virtual int notifyBle_float32(int service_id, int char_id, float32_t val);
+	virtual int writeBle_float32 (int service_id, int char_id, float32_t val);
+	virtual int notifyBle_int32(int service_id, int char_id, int32_t val);
+	virtual int writeBle_int32 (int service_id, int char_id, int32_t val);	
+	virtual int notifyBle_uint32(int service_id, int char_id, uint32_t val);
+	virtual int writeBle_uint32 (int service_id, int char_id, uint32_t val);	
+	virtual int notifyBle_uint8(int service_id, int char_id, uint8_t val);
+	virtual int writeBle_uint8 (int service_id, int char_id, uint8_t val);
+	virtual int notifyBle_char(int service_id, int char_id, char val)      { return notifyBle_uint8(service_id, char_id, (uint8_t)val); };
+	virtual int writeBle_char (int service_id, int char_id, char val)      { return writeBle_uint8 (service_id, char_id, (uint8_t)val); };		
+	virtual int notifyBle(int service_id, int char_id, const uint8_t vals[], size_t n_bytes);
+	virtual int writeBle (int service_id, int char_id, const uint8_t vals[], size_t n_bytes);
 	
 	// These do nothing but are needed for compatibility with ble.h
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }

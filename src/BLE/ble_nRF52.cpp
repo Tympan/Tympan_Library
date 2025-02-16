@@ -27,33 +27,10 @@ int printString(const String &str) {
   return printByteArray((uint8_t *)c_str,str.length());
 }
 
-
-
-int BLE_nRF52::begin(int doFactoryReset) {
-	int ret_val = -1;
-	String reply;  //we might need this later
-	//clear the incoming Serial buffer	
-	delay(2000);  //the UART serial link seems to drop the messages if we wait any less time than this
-	while (serialFromBLE->available()) serialFromBLE->read();
+int BLE_nRF52::begin_basic(void) {
+	//Serial.println("BLE_nRF52: begin_basic: starting begin_basic()...");
+	int ret_val = 0;
 	
-	//if desired, send command to get the BLE version
-	if (0) {
-		int err_code = version(&reply);  
-		if (err_code == 0) Serial.print("BLE_nRF52: begin: BLE firmware = " + reply);
-	}
-	
-	//if desired send command to modify the advertised MAC addressed
-	if (0) {
-		setBleMac("AABBCCDDEEFF"); //set the MAC address that the BLE module advertises
-	}
-	
-	//if desired, send commands to add another BLE service and to advertise that new service
-	if (0) {
-		int target_service_id = BLESVC_LEDBUTTON;
-		enableServiceByID(target_service_id, true);    //enable the service 
-		enableAdvertiseServiceByID(target_service_id); //tell the BLE module that this is the service we want it to advertise
-	}
-
 	//THIS IS THE KEY ACTIVITY:  Send begin() command to the BLE module
 	String begin_reply;
 	sendCommand("BEGIN ","1");delay(5);
@@ -94,12 +71,44 @@ int BLE_nRF52::begin(int doFactoryReset) {
 			ret_val = -1; Serial.println("BLE_nRF52: begin: failed to begin.  Error msg = " + begin_reply);
 		}
 	}
+	return ret_val;
+}
+
+
+int BLE_nRF52::begin(int doFactoryReset) {
+	//Serial.println("BLE_nRF52: begin: starting begin()...");
+	int ret_val = -1;
+	
+	String reply;  //we might need this later
+	//clear the incoming Serial buffer	
+	delay(2000);  //the UART serial link seems to drop the messages if we wait any less time than this
+	while (serialFromBLE->available()) serialFromBLE->read();
+	
+	//if desired, send command to get the BLE version
+	if (0) {
+		int err_code = version(&reply);  
+		if (err_code == 0) Serial.println("BLE_nRF52: begin: BLE firmware = " + reply);
+	}
+	
+	//if desired send command to modify the advertised MAC addressed
+	if (0) {
+		setBleMac("AABBCCDDEEFF"); //set the MAC address that the BLE module advertises
+	}
+	
+	//if desired, send commands to add another BLE service and to advertise that new service
+	if (0) {
+		int target_service_id = BLESVC_LEDBUTTON;
+		enableServiceByID(target_service_id, true);    //enable the service 
+		enableAdvertiseServiceByID(target_service_id); //tell the BLE module that this is the service we want it to advertise
+	}
+
+	// here is the core activity
+	ret_val = begin_basic();
 	
 	
 	//if desired, change the BLE name
 	if (0) {
-		String name = String("My Custom Name");
-		int err_code = setBleName(name);
+		int err_code = setBleName("MyBleName");
 		if (err_code != 0) Serial.println("ble_NRF52: begin:  ble_nRF52.setBleName returned error code " + String(err_code));
 	}
 	
@@ -250,6 +259,12 @@ size_t BLE_nRF52::sendCommand(const String &cmd, const String &data) {
 }
 
 size_t BLE_nRF52::sendCommand(const String &cmd, const char* data, size_t data_len) {
+	if (0) {
+		//print out the command, for debugging
+		Serial.print("BLE_nRF52: sendCommand: sending: " + cmd);
+		for (int i=0; i<data_len;i++) Serial.write(data[i]);
+		Serial.println();
+	}
 	return BLE_nRF52::sendCommand(cmd, (uint8_t*) data, data_len);
 }
 
@@ -592,6 +607,96 @@ int BLE_nRF52::version(String *replyToReturn_ptr) {
 }
 
 
+uint32_t floatToBytesInUint32(float32_t value) {  uint32_t result;  memcpy(&result, &value, sizeof(value)); return result; }
+uint32_t floatToBytesInInt32(float32_t value) {  uint32_t result;  memcpy(&result, &value, sizeof(value)); return result; }
+void convertToByteArray(uint32_t val_uint32, uint8_t *array_4bytes) {
+	const uint8_t n_bytes = 4;
+	for (uint8_t Ibyte = 0; Ibyte < n_bytes; ++Ibyte) {
+		array_4bytes[Ibyte]=(uint8_t)(0x000000FF & (val_uint32 >> (Ibyte*8)));  //lower bytes first
+	}
+}
+void convertToByteArray(int32_t val, uint8_t *array_4bytes) {
+	uint32_t val_uint32;  
+	memcpy(&val_uint32, &val, sizeof(val));	
+	convertToByteArray(val_uint32, array_4bytes);
+}
+void convertToByteArray(float val, uint8_t *array_4bytes) {
+	uint32_t val_uint32;  
+	memcpy(&val_uint32, &val, sizeof(val));	
+	convertToByteArray(val_uint32, array_4bytes);
+}
+
+int BLE_nRF52::notifyBle_float32(int service_id, int char_id, float32_t val) {  //notify, float32
+	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
+  convertToByteArray(val,byte_array);
+	return notifyBle(service_id, char_id, byte_array, n_bytes);
+}
+int BLE_nRF52::notifyBle_int32(int service_id, int char_id, int32_t val) {  //notify, int32
+	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
+  convertToByteArray(val,byte_array);
+	return notifyBle(service_id, char_id, byte_array, n_bytes);
+}
+int BLE_nRF52::notifyBle_uint32(int service_id, int char_id, uint32_t val) {  //notify, uint32
+	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
+  convertToByteArray(val,byte_array);
+	return notifyBle(service_id, char_id, byte_array, n_bytes);
+}
+int BLE_nRF52::notifyBle_uint8(int service_id, int char_id, uint8_t val)   { 
+	//return notifyBle(service_id, char_id, &val, 1);	
+	const size_t n_bytes = 1;	uint8_t byte_array[n_bytes];
+	byte_array[0] = val;
+	return notifyBle(service_id, char_id, byte_array, n_bytes);
+}
+
+int BLE_nRF52::writeBle_float32(int service_id, int char_id, float32_t val) {  //write, float32
+	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
+  convertToByteArray(val,byte_array);
+	return writeBle(service_id, char_id, byte_array, n_bytes);
+}
+int BLE_nRF52::writeBle_int32(int service_id, int char_id, int32_t val) {  //write, int32
+	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
+  convertToByteArray(val,byte_array);
+	return writeBle(service_id, char_id, byte_array, n_bytes);
+}
+int BLE_nRF52::writeBle_uint32(int service_id, int char_id, uint32_t val) {  //write, uint32
+	const size_t n_bytes = 4;	uint8_t byte_array[n_bytes];
+  convertToByteArray(val,byte_array);
+	return writeBle(service_id, char_id, byte_array, n_bytes);
+}
+int BLE_nRF52::writeBle_uint8(int service_id, int char_id, uint8_t val)   { 
+	//return notifyBle(service_id, char_id, &val, 1);	
+	const size_t n_bytes = 1;	uint8_t byte_array[n_bytes];
+	byte_array[0] = val;
+	return writeBle(service_id, char_id, byte_array, n_bytes);
+}
+int BLE_nRF52::notifyBle(int service_id, int char_id, const uint8_t byte_array[], size_t n_bytes) {
+	int ret_val = 0;
+  String params_str = String(" ") + String(service_id) + " " + String(char_id) + " " + String(n_bytes) + " "; //start and end with a a space
+
+  String command_str = "BLENOTIFY";
+  //Serial.print("ble_nRF52: notifyBle: Full Command: " + command_str + params_str + ": "); for (int i=0; i<n_bytes;i++) { Serial.print("0x"); Serial.print(data_uint8[i],HEX); Serial.print(" ");}; Serial.println();
+  sendCommand(command_str + params_str, byte_array, n_bytes);   
+  delay(4); String reply; recvReply(&reply); 
+	if (!doesStartWithOK(reply)) {
+		ret_val = -1;
+		Serial.println("BLE_nRF52: noitfyBle: failed send BLE data via " + command_str + ". Reply = " + reply);
+	}
+	return ret_val;
+}
+int BLE_nRF52::writeBle(int service_id, int char_id, const uint8_t byte_array[], size_t n_bytes) {
+	int ret_val = 0;
+  String params_str = String(" ") + String(service_id) + " " + String(char_id) + " " + String(n_bytes) + " "; //start and end with a a space
+
+  String command_str = "BLEWRITE";
+  //Serial.print("ble_nRF52: writeBle: Full Command: " + command_str + params_str + ": "); for (int i=0; i<n_bytes;i++) { Serial.print("0x"); Serial.print(data_uint8[i],HEX); Serial.print(" ");}; Serial.println();
+  sendCommand(command_str + params_str, byte_array, n_bytes);   
+  delay(4); String reply; recvReply(&reply); 
+	if (!doesStartWithOK(reply)) {
+		ret_val = -1;
+		Serial.println("BLE_nRF52: writeBle: failed send BLE data via " + command_str + ". Reply = " + reply);
+	}
+	return ret_val;
+}
 
 
 
