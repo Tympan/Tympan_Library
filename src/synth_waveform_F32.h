@@ -134,8 +134,8 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
       }
     }
 
-    void update(void);
-		int processAudioBlock(audio_block_f32_t *lfo_block, audio_block_f32_t *block_new);
+    void update(void) override;   //override the version in AudioStream_F32 -> AudioStream
+		virtual int processAudioBlock(audio_block_f32_t *lfo_block, audio_block_f32_t *block_new);
 		
 		void setSampleRate(const float32_t fs_Hz)
 		{
@@ -152,7 +152,7 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 		float setAmplitude(float amp) { amplitude(amp); return getAmplitude(); }
 		
 	
-  private:
+  protected:
     inline float32_t applyMod(uint32_t sample, audio_block_f32_t *lfo);
     const float32_t _PI;
     float32_t twoPI;
@@ -175,6 +175,19 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 
     audio_block_f32_t *inputQueueArray_f32[1];
 		unsigned int block_counter=0;
+};
+
+class AudioSynthWaveformQuadrature_F32 : public AudioSynthWaveform_F32 
+{
+	 //GUI: inputs:1, outputs:2  //this line used for automatic generation of GUI node
+	public:
+		AudioSynthWaveformQuadrature_F32(void) : AudioSynthWaveform_F32() {};
+		AudioSynthWaveformQuadrature_F32(const AudioSettings_F32 &settings) : AudioSynthWaveform_F32(settings) {};
+
+		void update(void) override;  //override the version in AudioSynthWaveform_F32
+		virtual int processAudioBlock(audio_block_f32_t *lfo_block, audio_block_f32_t *block_new, audio_block_f32_t *block2_new); //create a new two-channel version
+	protected:
+		const float32_t PI_DIV_2 = 0.5f * _PI;
 };
 
 #endif
