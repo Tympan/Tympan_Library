@@ -35,7 +35,7 @@ class AudioFilterFIR_F32 : public AudioFilterBase_F32
 		bool begin(const float32_t *cp, const int _n_coeffs, const int block_size);   //or, you can provide it with the block size
 		void end(void) {  coeff_p = NULL; enable(false); }
 		void update(void);
-		int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update(); returns zero if OK
+		int processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update(); returns zero if OK
 
  		bool enable(bool enable = true) { 
 			if (enable == true) {

@@ -52,7 +52,7 @@ class AudioFilterBase_F32 : public AudioStream_F32 {
     AudioFilterBase_F32(void) : AudioStream_F32(1, inputQueueArray) {};
     AudioFilterBase_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray) {};
 
-    virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) = 0;
+    virtual int processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new) = 0;
 
     virtual bool enable(bool enable = true) {
       if (enable == true) {
@@ -220,7 +220,7 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
     float increment_filter_q(float incr_fac);
 
     virtual void update(void);
-    virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new);
+    virtual int processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new);
     virtual float getCutoffFrequency_Hz(void) {  return cutoff_Hz;  }
     virtual float getQ(void) {  return q;  }
     virtual float getBW_Hz(void);

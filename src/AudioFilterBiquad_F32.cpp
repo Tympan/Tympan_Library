@@ -42,7 +42,7 @@ void AudioFilterBiquad_F32::update(void)
   AudioStream_F32::release(block);
 }
 
-int AudioFilterBiquad_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new)  {
+int AudioFilterBiquad_F32::processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new)  {
 	if (!is_enabled || !block || !block_new) return -1;
 	
 	if (is_bypassed) {

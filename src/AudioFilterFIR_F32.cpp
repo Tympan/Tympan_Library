@@ -71,7 +71,7 @@ void AudioFilterFIR_F32::update(void)
 	
 }
 
-int AudioFilterFIR_F32::processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new) {
+int AudioFilterFIR_F32::processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new) {
 	if ((is_enabled == false) || (block==NULL) || (block_new==NULL)) return -1;
 	
 	//check to make sure our FIR instance has the right size
