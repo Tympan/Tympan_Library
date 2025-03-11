@@ -3,7 +3,7 @@
 *
 *   Created: Chip Audette, OpenAudio, Feb 2025
 *            
-*   Purpose: For Tympan Rev F, send values to phone via the BLE Battery Service.
+*   Purpose: For Tympan Rev F, send values to phone via the nRF LED Button Service.
 *
 *      You can use the nRF "Blinky" App to interact with a Tympan that is running
 *      this sketch.  Once this sketch is loaded onto the Tympan, the Tympan will
