@@ -135,7 +135,7 @@ private:
 //	uint16_t writeposition;
 //	uint16_t delay_samps[8]; // # of samples to delay for each channel
 //#else
-	int writeposition;	   //position within current head buffer in the queue
+	int writeposition = 0;	   //position within current head buffer in the queue
 	uint32_t delay_samps[8]; // # of samples to delay for each channel
 //#endif
 	audio_block_f32_t *queue[DELAY_QUEUE_SIZE_F32];
