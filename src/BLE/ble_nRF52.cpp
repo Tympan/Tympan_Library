@@ -700,6 +700,103 @@ int BLE_nRF52::writeBle(int service_id, int char_id, const uint8_t byte_array[],
 
 
 
+int BLE_nR52_CustomService::setServiceUUID(const String &text) {
+	int ret_val = 0;
+	int char_id = 0; //it's used in the transmission, but it's ignored for this command
+  String pre_str = String("SVCSETUP") + String(" ") + String(service_id) + " " + String(char_id) + " "; //start and end with a a space
+	String command_str = "SERVICEUUID";
+  if (this_nRF52) {
+		this_nRF52->sendCommand(pre_str + command_str + "=", text);
+		delay(4); String reply; this_nRF52->recvReply(&reply); 
+		if (!this_nRF52->doesStartWithOK(reply)) {
+			ret_val = -1;  Serial.println("BLE_nRF52: setServiceUUID: failed: " + command_str + ". Reply = " + reply);
+		}
+	} else {
+		ret_val = -2;  //no valid ble pointer
+	}
+	return ret_val;
+};
+
+int BLE_nR52_CustomService::setServiceName(const String &text) {
+	int ret_val = 0;
+	int char_id = 0; //it's used in the transmission, but it's ignored for this command
+  String pre_str = String("SVCSETUP") + String(" ") + String(service_id) + " " + String(char_id) + " "; //start and end with a a space
+	String command_str = "SERVICENAME";
+  if (this_nRF52) {
+		this_nRF52->sendCommand(pre_str + command_str + "=", text);
+		delay(4); String reply; this_nRF52->recvReply(&reply); 
+		if (!this_nRF52->doesStartWithOK(reply)) {
+			ret_val = -1;  Serial.println("BLE_nRF52: setServiceName: failed: " + command_str + ". Reply = " + reply);
+		}
+	} else {
+		ret_val = -2;  //no valid ble pointer
+	}
+	return ret_val;
+};
+
+int BLE_nR52_CustomService::addCharacteristic(const String &text) {
+	int ret_val = 0;
+	int char_id = 0; //it's used in the transmission, but it's ignored for this command
+  String pre_str = String("SVCSETUP") + String(" ") + String(service_id) + " " + String(char_id) + " "; //start and end with a a space
+	String command_str = "ADDCHAR";
+  if (this_nRF52) {
+		this_nRF52->sendCommand(pre_str + command_str + "=", text);
+		delay(4); String reply; this_nRF52->recvReply(&reply); 
+		if (!this_nRF52->doesStartWithOK(reply)) {
+			ret_val = -1;  Serial.println("BLE_nRF52: addCharacteristic: failed: " + command_str + ". Reply = " + reply);
+		}
+	} else {
+		ret_val = -2;  //no valid ble pointer
+	}
+	return ret_val;
+}; 
+int BLE_nR52_CustomService::setCharName(const int char_id, const String &text) {
+	int ret_val = 0;
+  String pre_str = String("SVCSETUP") + String(" ") + String(service_id) + " " + String(char_id) + " "; //start and end with a a space
+	String command_str = "CHARNAME";
+  if (this_nRF52) {
+		this_nRF52->sendCommand(pre_str + command_str + "=", text);
+		delay(4); String reply; this_nRF52->recvReply(&reply); 
+		if (!this_nRF52->doesStartWithOK(reply)) {
+			ret_val = -1;  Serial.println("BLE_nRF52: setCharName: failed: " + command_str + ". Reply = " + reply);
+		}
+	} else {
+		ret_val = -2;  //no valid ble pointer
+	}
+	return ret_val;
+};
+int BLE_nR52_CustomService::setCharProperties(const int char_id, const String &text) {
+	int ret_val = 0;
+  String pre_str = String("SVCSETUP") + String(" ") + String(service_id) + " " + String(char_id) + " "; //start and end with a a space
+	String command_str = "CHARPROPS";
+  if (this_nRF52) {
+		this_nRF52->sendCommand(pre_str + command_str + "=", text);
+		delay(4); String reply; this_nRF52->recvReply(&reply); 
+		if (!this_nRF52->doesStartWithOK(reply)) {
+			ret_val = -1;  Serial.println("BLE_nRF52: setCharProperties: failed: " + command_str + ". Reply = " + reply);
+		}
+	} else {
+		ret_val = -2;  //no valid ble pointer
+	}
+	return ret_val;
+};
+int BLE_nR52_CustomService::setCharNBytes(const int char_id, const int n_bytes) {
+	int ret_val = 0;
+  String pre_str = String("SVCSETUP") + String(" ") + String(service_id) + " " + String(char_id) + " "; //start and end with a a space
+	String command_str = "CHARNBYTES";
+  if (this_nRF52) {
+		this_nRF52->sendCommand(pre_str + command_str + "=", String(n_bytes));
+		delay(4); String reply; this_nRF52->recvReply(&reply); 
+		if (!this_nRF52->doesStartWithOK(reply)) {
+			ret_val = -1;  Serial.println("BLE_nRF52: setCharNBytes: failed: " + command_str + ". Reply = " + reply);
+		}
+	} else {
+		ret_val = -2;  //no valid ble pointer
+	}
+	return ret_val;
+};
+
+
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //

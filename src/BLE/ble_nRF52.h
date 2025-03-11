@@ -84,7 +84,9 @@ public:
 													BLESVC_UART_ADAFRUIT=3,
 													BLESVC_BATT=4,
 													BLESVC_LEDBUTTON=5,
-													BLESVC_LEDBUTTON_4BYTE=6};
+													BLESVC_LEDBUTTON_4BYTE=6,
+													BLESVC_GENERIC_1=7,
+													BLESVC_GENERIC_2=8};
 	virtual int enableServiceByID(int service_id, bool enable);
 	virtual int enableAdvertiseServiceByID(int service_id);
 	virtual int notifyBle(int service_id, int char_id, float32_t val);
@@ -151,6 +153,27 @@ class BLE_nRF52_UI : public BLE_nRF52, virtual public BLE_UI
 		// ///////// end of required methods
 		virtual bool processSingleCharacter(char data_char);
 
+};
+
+class BLE_nR52_CustomService {
+	public:
+		BLE_nR52_CustomService(BLE_nRF52 *foo_nRF52, int _svc_id) {
+			this_nRF52 = foo_nRF52;
+			service_id = _svc_id;
+		}
+		virtual ~BLE_nR52_CustomService(void) {}
+		int setServiceUUID(const String &uuid);
+		int setServiceName(const String &name);
+		int addCharacteristic(const String &uuid); 
+		int setCharName(const int char_id, const String &name);
+		int setCharProperties(const int char_id, const String &char_props);
+		int setCharNBytes(const int char_id, const int n_bytes);
+		
+	protected:
+		BLE_nRF52 *this_nRF52 = nullptr;
+		int service_id = 7; //will get overwritten in the constructor
+		
+	
 };
 
 #endif
