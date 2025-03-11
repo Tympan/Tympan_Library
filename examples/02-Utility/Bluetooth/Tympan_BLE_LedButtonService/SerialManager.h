@@ -8,11 +8,6 @@
 extern Tympan myTympan;                  //created in the main *.ino file
 extern AudioSettings_F32 audio_settings; //created in the main *.ino file  
 
-
-//functions in the main sketch that I want to call from here
-extern void changeGain(float);
-extern void printGainLevels(void);
-
 //now, define the Serial Manager class
 class SerialManager : virtual public SerialManagerBase {  // see Tympan_Library for SerialManagerBase for more functions!
   public:
