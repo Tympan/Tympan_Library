@@ -41,9 +41,10 @@ void createCustomBleService_simple(void) {
 
   //Note: "READ"/"NOTIFY" is data going from the Tympan to the phone.
   //      "WRITE" is data going from the phone to the Tympan
+  Serial.println("createCustomBleService_simple: setting up characteristic 0...");
   myBleService.addCharacteristic("FFEEDDCCBBAA99887766554433221101"); //this creates the first characteristic (0th characteristic)
-  myBleService.setCharName(0,"MyReadWrite");
   myBleService.setCharProperties(0, "00011010"); // set as READ (bit 1) and WRITE (bit 3) and NOTIFY (bit 4)
+  myBleService.setCharName(0,"MyReadWrite");
   myBleService.setCharNBytes(0, 1);  //characteristic will send or receive 1 bytes
 }
 
@@ -54,19 +55,22 @@ void createCustomBleService_complex(void) {
 
   //Note: "READ"/"NOTIFY" is data going from the Tympan to the phone.
   //      "WRITE" is data going from the phone to the Tympan
+  Serial.println("createCustomBleService_complex: setting up characteristic 0...");
   myBleService.addCharacteristic("FFEEDDCCBBAA99887766554433221109"); //this creates the first characteristic (characteristic "0")
-  myBleService.setCharName(0,"MyReadWrite");  
   myBleService.setCharProperties(0, "00011010"); // set as READ (bit 1) and WRITE (bit 3) and NOTIFY (bit 4)
+  myBleService.setCharName(0,"MyReadWrite");  
   myBleService.setCharNBytes(0, 1);  //characteristic will send or receive 1 byte
 
+  Serial.println("createCustomBleService_complex: setting up characteristic 1...");
   myBleService.addCharacteristic("FFEEDDCCBBAA9988776655443322110A"); //this creates the first characteristic (characteristic "1")
-  myBleService.setCharName(1,"MyRead1");  
   myBleService.setCharProperties(1, "00010010"); // set as READ (bit 1) and NOTIFY (bit 4)
+  myBleService.setCharName(1,"MyRead1");  
   myBleService.setCharNBytes(1, 4);  //characteristic will send  4 bytes
 
+  Serial.println("createCustomBleService_complex: setting up characteristic 2...");
   myBleService.addCharacteristic("FFEEDDCCBBAA9988776655443322110B"); //this creates the first characteristic (characteristic "2")
-  myBleService.setCharName(2,"MyWrite1");    //confusingly, for the phone to get this name, the READ bit (below) must be true, even if you just want WRITE
   myBleService.setCharProperties(2, "00001010"); // set as READ (bit 1) and Write (bit 3)
+  myBleService.setCharName(2,"MyWrite1");    //confusingly, for the phone to get this name, the READ bit (above) must be true, even if you just want WRITE
   myBleService.setCharNBytes(2, 4);  //characteristic will receive 4 bytes
 }
 
@@ -102,6 +106,7 @@ void setup() {
 
   //setup is complete
   Serial.println("Setup complete.");
+  serialManager.printHelp();
 }  //end setup()
 
 
@@ -122,11 +127,35 @@ void loop() {
   if (serialManager.isBleDataMessageAvailable()) {  //this method is in SerialManagerBase.h
     BleDataMessage ble_msg = serialManager.getBleDataMessage(); // BleDataMessage is in BLE/BleTypes.h
 
-    //print info about the BLE message
-    Serial.print("Loop: Received BLE Message:");
-    Serial.print("service_id = " + String(ble_msg.service_id));
-    Serial.print(", characteristic_id = " + String(ble_msg.characteristic_id));
-    Serial.print(", data = ");  for (uint8_t val : ble_msg.data) Serial.print(val); //general way of printing all of the bytes in the payload
+    //print the message to the Serial Monitor
+    Serial.print("Received BLE Msg: ");
+    Serial.print("service_id = "); Serial.print(String(ble_msg.service_id));
+    Serial.print(", char_id = "); Serial.print(ble_msg.characteristic_id);
+    Serial.print(", n bytes = "); Serial.print(ble_msg.data.size());
+    if (ble_msg.data.size() == 1) {
+      //single byte
+      uint8_t val = ble_msg.data[0];
+      Serial.print(", data (uint8) = ");  
+      Serial.print(val); Serial.print(" (0x"); Serial.print(val,HEX); Serial.print(")");
+    } else if (ble_msg.data.size() == 2) {
+      //4 bytes, assume uint16...little endian
+      uint16_t val16 = ble_msg.data[0] + (ble_msg.data[1]<<8);
+      Serial.print(", data (uint16, LSB) = ");  Serial.print(val16);
+      Serial.print(" (");
+      for (uint8_t val : ble_msg.data) { Serial.print(" 0x"); Serial.print(val, HEX); }
+      Serial.print(")");
+    } else if (ble_msg.data.size() == 4) {
+      //4 bytes, assume uint32...little ending
+      uint32_t val32 = ble_msg.data[0] + (ble_msg.data[1]<<8) + (ble_msg.data[2]<<16) + (ble_msg.data[3]<<24);
+      Serial.print(", data (uint32, LSB) = ");  Serial.print(val32);
+      Serial.print(" (");
+      for (uint8_t val : ble_msg.data) { Serial.print(" 0x"); Serial.print(val, HEX); }
+      Serial.print(")");
+    } else {
+      //other number of bytes
+      Serial.print(", data = ");
+      for (uint8_t val : ble_msg.data) { Serial.print(" 0x"); Serial.print(val, HEX); }
+    }
     Serial.println();    
 
   }
