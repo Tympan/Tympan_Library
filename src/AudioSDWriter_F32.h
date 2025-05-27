@@ -181,6 +181,9 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			if (buffSDWriter) return buffSDWriter->allocateBuffer(); //use default buffer size
 			return -2;
 		}
+		void freeBuffer(void) {
+			if (buffSDWriter) buffSDWriter->freeBuffer(); // free memory allocated to buffer
+		}
 
 		void prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
 		void end(void) override;

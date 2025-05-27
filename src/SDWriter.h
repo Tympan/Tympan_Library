@@ -139,7 +139,7 @@ class BufferedSDWriter : public SDWriter
     BufferedSDWriter(SdFs * _sd, Print* _serial_ptr, const int _writeSizeBytes) : SDWriter(_sd, _serial_ptr) {
       setWriteSizeBytes(_writeSizeBytes);
     };
-    ~BufferedSDWriter(void) { delete ptr_zeros; delete write_buffer; }
+    ~BufferedSDWriter(void) { delete[] ptr_zeros; delete[] write_buffer; }
 		
 		bool sync(void);
 
@@ -163,6 +163,7 @@ class BufferedSDWriter : public SDWriter
 			resetBuffer();
       return (int)write_buffer;
     }
+    void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
     void resetBuffer(void) { bufferReadInd = 0; bufferWriteInd = 0;  }
  
     //here is how you send data to this class.  this doesn't write any data, it just stores data
@@ -197,7 +198,7 @@ class BufferedSDWriter : public SDWriter
     const int nBytesPerSample = 2;
     int32_t bufferLengthSamples = maxBufferLengthBytes / nBytesPerSample;
     int32_t bufferEndInd = maxBufferLengthBytes / nBytesPerSample;
-    float32_t *ptr_zeros;
+    float32_t *ptr_zeros = nullptr;
 		int ditheringMethod = 0;  //default 0 is off
 };
 
