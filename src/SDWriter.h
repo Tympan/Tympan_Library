@@ -71,7 +71,7 @@ class SDWriter : public Print
 
     //This "write" is for compatibility with the Print interface.  Writing one
     //byte at a time is EXTREMELY inefficient and shouldn't be done
-    virtual size_t write(uint8_t foo);
+    size_t write(uint8_t foo) override;
 
     //write Byte buffer...the lowest-level call upon which the others are built.
     //writing 512 is most efficient (ie 256 int16 or 128 float32

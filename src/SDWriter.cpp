@@ -72,7 +72,7 @@ size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	//const int fileSize = bytesWritten+44;
 
 	int fsamp = (int) sampleRate_Hz;
-	int nbits = 16;
+	int nbits = 16;   //assumes we're writing INT16 data
 	int nbytes = nbits / 8;
 	int nsamp = (fileSize - WAVheader_bytes) / (nbytes * nchan);
 
@@ -82,15 +82,15 @@ size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	strcpy(wheader + 8, "WAVE");
 	strcpy(wheader + 12, "fmt ");
 	strcpy(wheader + 36, "data");
-	*(int32_t*)(wheader + 16) = 16; // chunk_size
+	*(int32_t*)(wheader + 16) = 16; // chunk_size   //is this related to assuming INT16 data type being written to file?
 	*(int16_t*)(wheader + 20) = 1; // PCM
 	*(int16_t*)(wheader + 22) = nchan; // numChannels
 	*(int32_t*)(wheader + 24) = fsamp; // sample rate
-	*(int32_t*)(wheader + 28) = fsamp * nchan * nbytes; // byte rate (updated 10/14/2024)
+	*(int32_t*)(wheader + 28) = fsamp * nchan * nbytes; // byte rate (updated 10/14/2024) 
 	*(int16_t*)(wheader + 32) = nchan * nbytes; // block align
 	*(int16_t*)(wheader + 34) = nbits; // bits per sample
 	*(int32_t*)(wheader + 40) = nsamp * nchan * nbytes;
-	*(int32_t*)(wheader + 4) = 36 + nsamp * nchan * nbytes;
+	*(int32_t*)(wheader + 4) = 36 + nsamp * nchan * nbytes;  //what is this?  Why 36???
 
 	return wheader;
 }
@@ -158,6 +158,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 			//add dithering, if desired
 			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod);
 	
+			//convert to INT16 datatype and put in the write buffer
 			write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
 			//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
 		}

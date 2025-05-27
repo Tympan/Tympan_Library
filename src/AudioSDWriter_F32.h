@@ -42,7 +42,7 @@ class AudioSDWriter {
     STATE getState(void) {
       return current_SD_state;
     };
-    enum class WriteDataType { INT16 }; //in the future, maybe add FLOAT32
+    enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
     virtual int setNumWriteChannels(int n) {
       return numWriteChannels = max(1, min(n, AUDIOSDWRITER_MAX_CHAN));  //can be 1, 2 or 4 (3 might work but its behavior is unknown)
     }
@@ -58,6 +58,7 @@ class AudioSDWriter {
 		//virtual int startRecording_noOverwrite(void) = 0;
     virtual void stopRecording(void) = 0;
 		virtual void end(void) = 0;
+		virtual int serviceSD(void) = 0;
 
   protected:
 	  SdFs * sd;
@@ -65,7 +66,7 @@ class AudioSDWriter {
     WriteDataType writeDataType = WriteDataType::INT16;
     int recording_count = 0;
     int numWriteChannels = 2;
-	String current_filename = String("Not Recording");
+	  String current_filename = String("Not Recording");
 };
 
 //AudioSDWriter_F32: A class to write data from audio blocks as part
@@ -164,7 +165,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			return n;
 		}
 		float setSampleRate_Hz(float fs_Hz) {
-			if ((fs_Hz > 44116.0) && (fs_Hz < 44118.0)) fs_Hz = 44100.0;  //special case for Teensy...44117 is intended to be 44100
+			if ((fs_Hz > 44116.0) && (fs_Hz < 44118.0)) fs_Hz = 44100.0;  //special case for Teensy 3.x...44117 is intended to be 44100
 			if (buffSDWriter) return buffSDWriter->setSampleRateWAV(fs_Hz);
 			return fs_Hz;
 		}
@@ -181,28 +182,28 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			return -2;
 		}
 
-		void prepareSDforRecording(void); //you can call this explicitly, or startRecording() will call it automatcally
-		void end(void);
+		void prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
+		void end(void) override;
 
-		int startRecording(void);    //call this to start a WAV recording...automatically generates a filename
-		int startRecording(const char* fname); //or call this to specify your own filename.
+		int startRecording(void) override;    //call this to start a WAV recording...automatically generates a filename
+		int startRecording(const char* fname) override; //or call this to specify your own filename.
 		//int startRecording_noOverwrite(void);
-		void stopRecording(void);    //call this to stop recording
+		void stopRecording(void) override;    //call this to stop recording
 		int deleteAllRecordings(void);  //clears all AUDIOxxx.wav files from the SD card
 
 		//update is called by the Audio processing ISR.  This update function should
 		//only service the recording queues so as to buffer the audio data.
 		//The acutal SD writing should occur in the loop() as invoked by a service routine
-		void update(void);
+		void update(void) override;
 
 		//this method is used by update() to stuff audio into the memory buffer for writing
-		virtual void copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[], const int numChan);
+		void copyAudioToWriteBuffer(audio_block_f32_t *audio_blocks[], const int numChan);
 
 		//In the loop(), the user must call serviceSD regularly so that the system will actually
 		//write the audio to the SD.  This is the routine htat  pulls data from the buffer and 
 		//sends to SD for writing.  If you don't call this routine, the audio will just pile up
 		//in the buffer and then overflow
-		int serviceSD(void) {
+		int serviceSD(void) override {
 			if (buffSDWriter) return buffSDWriter->writeBufferedData();
 			return false;
 		}
@@ -297,10 +298,10 @@ class AudioSDWriter_F32_UI : public AudioSDWriter_F32, public SerialManager_UI {
 			AudioSDWriter_F32(settings, _serial_ptr, _writeSizeBytes), SerialManager_UI() {};
 			
 		 // ///////// here are the methods that you must implement from SerialManager_UI
-		virtual void printHelp(void);
-		//virtual bool processCharacter(char c); //no used here
-		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
-		virtual void setFullGUIState(bool activeButtonsOnly = false);  
+		void printHelp(void) override;
+		//bool processCharacter(char c) override; //no used here
+		bool processCharacterTriple(char mode_char, char chan_char, char data_char) override;
+		void setFullGUIState(bool activeButtonsOnly = false) override;  
 		// /////////////////////////////////	
 		
 		//create the button sets for the TympanRemote's GUI
