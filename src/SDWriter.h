@@ -158,8 +158,8 @@ class BufferedSDWriter : public SDWriter
     int allocateBuffer(const int _nBytes = maxBufferLengthBytes) {
 			//bufferLengthSamples = max(4,min(_nBytes,maxBufferLengthBytes) / nBytesPerSample);
 			bufferLengthSamples = max(4, _nBytes / nBytesPerSample);
-			if (write_buffer != 0) delete write_buffer;  //delete the old buffer
-      write_buffer = new int16_t[bufferLengthSamples];
+			if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
+      write_buffer = new (std::nothrow) int16_t[bufferLengthSamples];
 			resetBuffer();
       return (int)write_buffer;
     }
