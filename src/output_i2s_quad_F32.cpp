@@ -87,7 +87,7 @@ int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
 void AudioOutputI2SQuad_F32::begin(void)
 {
-	Serial.println("AudioOutputI2SQuad_F32: begin: starting...");
+	//Serial.println("AudioOutputI2SQuad_F32: begin: starting...");
 	dma.begin(true); // Allocate the DMA channel first
 
 	block_ch1_1st = NULL;

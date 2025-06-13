@@ -61,7 +61,7 @@ DMAChannel AudioInputI2SHex_F32::dma(false);
 
 void AudioInputI2SHex_F32::begin(void)
 {
-	Serial.println("AudioInputI2SHex_F32: begin: starting...");
+	//Serial.println("AudioInputI2SHex_F32: begin: starting...");
 	dma.begin(true); // Allocate the DMA channel first
 
 	//AudioOutputI2SHex_F32::sample_rate_Hz = sample_rate_Hz; //these were given in the AudioSettings in the contructor
