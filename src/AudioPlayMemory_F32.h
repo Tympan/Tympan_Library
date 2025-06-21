@@ -124,6 +124,8 @@ class AudioPlayMemoryI16_F32 : public AudioStream_F32
       int state = STOPPED;
       const int16_t *data_ptr = NULL;
       uint32_t data_ind = 0;
+			uint32_t prev_data_ind = 0;
+			float32_t prev_data_value_f32 = 0.0;
       float32_t data_phase = 0.0f;
       float32_t data_phase_incr = 1.0f;
       uint32_t data_len = 0;
