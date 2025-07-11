@@ -65,25 +65,27 @@ uint32_t  AudioOutputI2SQuad_F32::ch4_offset = 0;
 bool AudioOutputI2SQuad_F32::update_responsibility = false;
 //DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
 //DMAMEM static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*4];  //pack 1 int32 into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples)
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+//DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4];  //pack 2 int16s into 1 int32 to make dense, so that 4 channels = 4*(audio_block_samples/2)
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_tx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*4];  //pack 1 int32 into 1 int32 to make dense, so that 4 channels = 4*audio_block_samples
 uint32_t * AudioOutputI2SQuad_F32::i2s_tx_buffer = i2s_default_tx_buffer;
 DMAChannel AudioOutputI2SQuad_F32::dma(false);
 
 //static const uint32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0}; //original from Teensy Audio Library
 //static const float32_t zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32/2] = {0}; //modified for F32.  Need zeros for half an audio block
-static float32_t default_zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32/2] = {0}; //modified for F32.  Need zeros for half an audio block
+//static float32_t default_zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32/2] = {0}; //modified for F32.  Need zeros for half an audio block
+static float32_t default_zerodata[MAX_AUDIO_BLOCK_SAMPLES_F32] = {0}; //modified for F32.  Need zeros for half an audio block
 float32_t * AudioOutputI2SQuad_F32::zerodata = default_zerodata;
 
 //initialize some static variables.  Likely get overwritten by constructor.
 float AudioOutputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
-//for 16-bit transfers (into a 32-bit data type) multiplied by 4 channels
-#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0])/2)
+// //for 16-bit transfers (into a 32-bit data type) multiplied by 4 channels
+// #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0])/2)
 
 
 //for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels
-//#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]))
+#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]))
 
 void AudioOutputI2SQuad_F32::begin(void)
 {
@@ -130,7 +132,7 @@ void AudioOutputI2SQuad_F32::begin(void)
 	
 		const int pinoffset = 0; // TODO: make this configurable...
 		//memset(i2s_tx_buffer, 0, sizeof(i2s_tx_buffer)); //WEA 2023-09-28: commented out because we've already initialized the array to zero when we created the array 
-		bool transferUsing32bit = false;  //32 bit from AIC doesn't work with quad?  so don't change this?
+		bool transferUsing32bit = true;  //32 bit from AIC doesn't work with quad?  so don't change this?
 		AudioOutputI2S_F32::config_i2s(transferUsing32bit,AudioOutputI2SQuad_F32::sample_rate_Hz);
 		I2S1_TCR3 = I2S_TCR3_TCE_2CH << pinoffset;
 		switch (pinoffset) {
@@ -147,14 +149,38 @@ void AudioOutputI2SQuad_F32::begin(void)
 			CORE_PIN6_CONFIG  = 3;
 		}
 		dma.TCD->SADDR = i2s_tx_buffer;
-		dma.TCD->SOFF = 2;  //is 2 in Teensy 
-		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+
+		// For 16-bit transfer, was:
+		// dma.TCD->SOFF = 2;  //is 2 in Teensy 
+		dma.TCD->SOFF = 4;  // Number of bytes per sample in i2s_tx_buffer
+
+		#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+		#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+		#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+		#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
+		// For 16-bit transfer, was
+		//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+		// or equivalently
+		//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES
+		// For 32-bit samples
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+
+		// dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
+		// 	DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |
+		// 	DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);
 		dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
 			DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |
-			DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);
+			DMA_TCD_NBYTES_MLOFFYES_NBYTES(8);
+		
 		//dma.TCD->SLAST = -sizeof(i2s_tx_buffer); //original from Teensy Audio Library
 		dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
-		dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2 + pinoffset * 4);
+
+		// Old: 
+		//  dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2 + pinoffset * 4); 
+		//    * "pinoffset * 4" shifts to TDR[pinoffset]
+		//    * "+ 2" shifts from start of int32 to start of upper int16
+		#define I2S1_TDR                (IMXRT_SAI1.TDR)
+		dma.TCD->DADDR = &(I2S1_TDR[pinoffset]);
 		dma.TCD->DOFF = 4;
 		//dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original from Teensy Audio Library (16-bit)
 		dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (assumes 16-bit?)
