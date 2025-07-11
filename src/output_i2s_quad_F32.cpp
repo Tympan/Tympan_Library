@@ -148,45 +148,55 @@ void AudioOutputI2SQuad_F32::begin(void)
 			CORE_PIN9_CONFIG  = 3;
 			CORE_PIN6_CONFIG  = 3;
 		}
+
+		// DMA
+		//   Each minor loop copies one audio sample destined for each CODEC (either 2 left or 2 right)
+		//   Major loop repeats for all samples in i2s_tx_buffer
+
 		dma.TCD->SADDR = i2s_tx_buffer;
 
-		// For 16-bit transfer, was:
-		// dma.TCD->SOFF = 2;  //is 2 in Teensy 
+		// For 16-bit samples:
+		//  dma.TCD->SOFF = 2;  //is 2 in Teensy 
+		// For 32-bit samples:
 		dma.TCD->SOFF = 4;  // Number of bytes per sample in i2s_tx_buffer
 
 		#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
 		#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
 		#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
 		#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
-		// For 16-bit transfer, was
-		//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+		// For 16-bit samples:
+		//  dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
 		// or equivalently
-		//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES
-		// For 32-bit samples
+		//  dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES
+		// For 32-bit samples:
 		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
 
+		// For 16-bit samples:
 		// dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
 		// 	DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |
 		// 	DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);
+		// For 32-bit samples:
 		dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
-			DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |
-			DMA_TCD_NBYTES_MLOFFYES_NBYTES(8);
+			DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // Restore DADDR after each minor loop (= 2 * DOFF)
+			DMA_TCD_NBYTES_MLOFFYES_NBYTES(8);   // Minor loop is 2 samples @ 4 bytes each
 		
 		//dma.TCD->SLAST = -sizeof(i2s_tx_buffer); //original from Teensy Audio Library
 		dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
 
-		// Old: 
+		// For 16-bit samples: 
 		//  dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2 + pinoffset * 4); 
 		//    * "pinoffset * 4" shifts to TDR[pinoffset]
 		//    * "+ 2" shifts from start of int32 to start of upper int16
+		// For 32-bit samples:
 		#define I2S1_TDR                (IMXRT_SAI1.TDR)
 		dma.TCD->DADDR = &(I2S1_TDR[pinoffset]);
-		dma.TCD->DOFF = 4;
+
+		dma.TCD->DOFF = 4;  // This is the separation between sequential TDR registers
 		//dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original from Teensy Audio Library (16-bit)
-		dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (assumes 16-bit?)
+		dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (2 is for stereo pair)
 		dma.TCD->DLASTSGA = -8;
 		//dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original from Teensy Audio Library (16-bit)
-		dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (assumes 16-bit?)
+		dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (2 is for stereo pair)
 		dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 		dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX);
 		dma.enable();
@@ -227,6 +237,7 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 	float32_t *src1, *src2, *src3, *src4;
 	float32_t *zeros = (float32_t *)zerodata;
 	int16_t *dest;
+#warning "THIS NEEDS ATTENTION FOR int32_t"
 	
 	//update the dma and get pointer for the destination tx buffer
 	saddr = (uint32_t)(dma.TCD->SADDR);

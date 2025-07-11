@@ -134,30 +134,34 @@ void AudioInputI2SQuad_F32::begin(void)
 		break;
 	}
 
-	// For 16-bit:
+	// DMA
+	//   Each minor loop copies one audio sample from each CODEC (either 2 left or 2 right)
+	//   Major loop repeats for audio_block_samples * 2 (stereo)
+
+	// For 16-bit samples:
 	//   dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
 	//     * "pinoffset *4" shifts to SDR[pinoffset]
 	//     * "+ 2" shifts from start of int32 to start of upper int16
 	#define I2S1_RDR                (IMXRT_SAI1.RDR)
 	dma.TCD->SADDR = &(I2S1_RDR[pinoffset]);
-	dma.TCD->SOFF = 4;
+	dma.TCD->SOFF = 4;  // This is the separation between sequential RDR registers 
 
 	#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
 	#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
 	#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
 	#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
-	// For 16-bit:
+	// For 16-bit samples:
 	//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1); 
 	// or equivalently
 	//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE(1);
-	// For 32-bit: 
+	// For 32-bit samples: 
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
 
-	// For 16-bit:
+	// For 16-bit samples:
 	// dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
 	// 	DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // Restore SADDR after each minor loop
 	// 	DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);   // Minor loop is 2 samples @ 2 bytes each
-	// For 32-bit:
+	// For 32-bit samples:
 	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
 		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // Restore SADDR after each minor loop
 		DMA_TCD_NBYTES_MLOFFYES_NBYTES(8);   // Minor loop is 2 samples @ 4 bytes each
@@ -169,13 +173,13 @@ void AudioInputI2SQuad_F32::begin(void)
 	//  dma.TCD->DOFF = 2;
 	// For 32-bit samples:
 	dma.TCD->DOFF = 4;
-	
+
 	//dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original Teensy Audio Library
 	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);  //original Teensy Audio Library
 	//dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original Teensy Audio Library
-	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows variable block length
-	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;	;  //allows variable block length
-	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //allows variable block length
+	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows variable block length (2 is for stereo pair)
+	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;  //allows variable block length
+	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //allows variable block length (2 is for stereo pair)
 	
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_RX);
