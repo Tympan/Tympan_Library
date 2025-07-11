@@ -37,7 +37,8 @@
 #include "output_i2s_F32.h"
 
 //DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*2]; //Teensy Audio original
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4]; //Teensy Audio original
+//DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4]; //Teensy Audio original
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*4]; // For 32-bit
 uint32_t *AudioInputI2SQuad_F32::i2s_rx_buffer = i2s_default_rx_buffer;
 //DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2*4];
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch1 = NULL;
@@ -52,8 +53,11 @@ DMAChannel AudioInputI2SQuad_F32::dma(false);
 //float AudioInputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 //int AudioInputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
-//for 16-bit transfers?
-#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*(sizeof(i2s_rx_buffer[0])/2))
+// //for 16-bit transfers?
+// #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*(sizeof(i2s_rx_buffer[0])/2))
+
+// For 32-bit transfers
+#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_rx_buffer[0]))
 
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
@@ -106,7 +110,7 @@ void AudioInputI2SQuad_F32::begin(void)
 
 #elif defined(__IMXRT1062__)
 	const int pinoffset = 0; // TODO: make this configurable...
-	bool transferUsing32bit = false;
+	bool transferUsing32bit = true;
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit, sample_rate_Hz);
 	I2S1_RCR3 = I2S_RCR3_RCE_2CH << pinoffset;
 	switch (pinoffset) {
@@ -129,15 +133,43 @@ void AudioInputI2SQuad_F32::begin(void)
 		IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
 		break;
 	}
-	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
+
+	// For 16-bit:
+	//   dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
+	//     * "pinoffset *4" shifts to SDR[pinoffset]
+	//     * "+ 2" shifts from start of int32 to start of upper int16
+	#define I2S1_RDR                (IMXRT_SAI1.RDR)
+	dma.TCD->SADDR = &(I2S1_RDR[pinoffset]);
 	dma.TCD->SOFF = 4;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+
+	#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+	#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+	#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+	#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
+	// For 16-bit:
+	//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1); 
+	// or equivalently
+	//dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE(1);
+	// For 32-bit: 
+	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+
+	// For 16-bit:
+	// dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
+	// 	DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // Restore SADDR after each minor loop
+	// 	DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);   // Minor loop is 2 samples @ 2 bytes each
+	// For 32-bit:
 	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
-		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // 4 samples @ 2 bytes each?
-		DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);
-	dma.TCD->SLAST = -8;   //4 samples @ 2 bytes each?
+		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // Restore SADDR after each minor loop
+		DMA_TCD_NBYTES_MLOFFYES_NBYTES(8);   // Minor loop is 2 samples @ 4 bytes each
+
+	dma.TCD->SLAST = -8;   // Restore SADDR after last major loop
 	dma.TCD->DADDR = i2s_rx_buffer;
-	dma.TCD->DOFF = 2;
+
+	// For 16-bit samples:
+	//  dma.TCD->DOFF = 2;
+	// For 32-bit samples:
+	dma.TCD->DOFF = 4;
+	
 	//dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original Teensy Audio Library
 	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);  //original Teensy Audio Library
 	//dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original Teensy Audio Library
