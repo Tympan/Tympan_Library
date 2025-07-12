@@ -29,6 +29,15 @@
  *  Converted to F32 and to variable audio block length
  *	The F32 conversion is under the MIT License.  Use at your own risk.
  */
+ 
+ /* ******************************
+ * NOTE FROM CHIP:  The DMA is configured to invoke the ISR whenever every half of an audio block
+ * So, of the audio_block_size is 128 samples, the ISR gets fired every 64 samples.
+ * This does not care about the bit-length of each sample.
+ * This does not care that this is the "quad" class that's transfering 4 channels per "sample"
+ * This code needs to be written under the assumption that the ISR is being called every half of an audio_block,
+ * Then the correct number of bytes need to be transfered (audio_block_size / 2) * n_bytes_per_sample * n_channels
+ ********************************* */
 
 #include <Arduino.h>
 #include "output_i2s_quad_F32.h"
@@ -83,7 +92,7 @@ int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 // //for 16-bit transfers (into a 32-bit data type) multiplied by 4 channels
 // #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0])/2)
 
-//for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels
+//for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels...transfering half of audio_block_samples at a time
 #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]))
 
 void AudioOutputI2SQuad_F32::begin(void)
@@ -242,11 +251,12 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	//if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) { //orig
-	if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //is the DMA copying from the first half of the tx buffer?
-		// DMA is transmitting the first half of the buffer so, here in this isr(), we must fill the second half
+	//if (saddr < (uint32_t)i2s_tx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //is the DMA copying from the first half of the tx buffer?
+	if (saddr < (uint32_t)i2s_tx_buffer + ((audio_block_samples/2)*4)) {  //we're copying half an audio block and four channels each.  One address is already 4bytes, like our 32-bit audio sampels
+	  // DMA is transmitting the first half of the buffer so, here in this isr(), we must fill the second half
 		//dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES]; //orig
 		//dest = (int16_t *)&i2s_tx_buffer[audio_block_samples]; //new, 16-bit transfers
-		dest = (int32_t *)&i2s_tx_buffer[audio_block_samples]; //new, 32-bit transfers
+		dest = (int32_t *)&i2s_tx_buffer[audio_block_samples/2*4]; //new, 32-bit transfers...we are transfering half an audio block and 4 channels each
 		if (AudioOutputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
 	} else {
 		// DMA is transmitting the second half of the buffer so, here in this isr(), we must fill the first half
@@ -300,7 +310,7 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 	//	*d++ = (int16_t)(*src4++); //right 2
 	int32_t *d = dest;  //32 bit transfers
 	//for (int i=0; i < audio_block_samples / 2; i++) {  //words for int16 data transfers?...why divided by 2?
-	for (int i=0; i < audio_block_samples; i++) { //for int32 data transfers...WEA 7/11/2025...removing this "/2" is questionable, but seems to make things better???
+	for (int i=0; i < audio_block_samples / 2; i++) { //copying half the buffer
 	  *d++ = (int32_t)(*src1++); //left 1...retrieve scaled f32 value, cast to int32 type, copy to destination
 		*d++ = (int32_t)(*src3++); //left 2  (note it is src3, not src2!!!)  ...retrieve scaled f32 value, cast to int32 type, copy to destination
 		*d++ = (int32_t)(*src2++); //right 1 (note it is src2, not src3!!!  ...retrieve scaled f32 value, cast to int32 type, copy to destination
@@ -309,7 +319,7 @@ void AudioOutputI2SQuad_F32::isr_shuffleDataBlocks(audio_block_f32_t *&block_1st
 
 #endif
 	//arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );  //clear out this number of bytes..which should equal AUDIO_BLOCK_SAMPLES/2 * 4chan * 2bytes/samp
-	arm_dcache_flush_delete(dest, I2S_BUFFER_TO_USE_BYTES / 2);  //flush the cache for all the bytes that we filled (the /2 should be correct...we filled half the overall buffer)
+	arm_dcache_flush_delete(dest, I2S_BUFFER_TO_USE_BYTES / 2);  //flush the cache for all the bytes that we filled (the /2 should be correct...we filled half the buffer)
 
 	//now, shuffle the 1st and 2nd data block for each channel
 	isr_shuffleDataBlocks(block_ch1_1st, block_ch1_2nd, ch1_offset);
