@@ -25,10 +25,36 @@
 //#include "SD.h" // was using this but we should be using sdfat
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 #include <Print.h>
+#include <vector>
+#include <string>
+#include <map>
 
 //set some constants
 #define maxBufferLengthBytes 150000    //size of big memroy buffer to smooth out slow SD write operations
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
+
+// For WAV file metadata: standard INFO tag names
+enum class InfoTags {
+  ICMT, // Comments. Provides general comments about the file or the subject of the file. 
+  IARL, // Archival Location. Indicates where the subject of the file is archived.
+  IART, // Artist. Lists the artist of the original subject of the file. For example, “Michaelangelo.”
+  ICMS, // Commissioned. Lists the name of the person or organization that commissioned the subject of the file. 
+  IDPI, // Dots Per Inch. Stores dots per inch setting of the digitizer used to produce the file, such as “ 300.”
+  IENG, // Engineer. Stores the name of the engineer who worked on the file. Separate the names by a semicolon and a blank. 
+  IKEY, // Keywords. Provides a list of keywords that refer to the file or subject of the file. Separate multiple keywords with a semicolon
+  ILGT, // Lightness. Describes the changes in lightness settings on the digitizer required to produce the file. Note that the format of this information depends on hardware used.
+  IMED, // Medium. Describes the original subject of the file, such as, “ computer image,” “ drawing,” “ lithograph,” and so forth.
+  INAM, // Name. Stores the title of the subject of the file, such as, “ Seattle From Above.”
+  IPLT, // Palette Setting. Specifies the number of colors requested when digitizing an image, such as “ 256.”
+  IPRD, // Product. Specifies the name of the title the file was originally intended for, such as “Encyclopedia of Pacific Northwest Geography.”
+  ISBJ, // Subject. Describes the conbittents of the file, such as “Aerial view of Seattle.”
+  ISFT, // Software. Identifies the name of the software package used to create the file, such as “Microsoft WaveEdit.”
+  ISHP, // Sharpness. Identifies the changes in sharpness for the digitizer required to produce the file (the format depends on the hardware used).
+  ISRC, // Source. Identifies the name of the person or organization who supplied the original subject of the file. For example, “ Trey Research.”
+  ISRF, //Source Form. Identifies the original form of the material that was digitized, such as “ slide,” “ paper,” “map,” and so forth. This is not necessarily the same as IMED.
+  ITCH // Technician. Identifies the technician who digitized the subject file. For example, “ Smith, John.”
+};
+
 
 const int DEFAULT_SDWRITE_BYTES = 512; //target size for individual writes to the SD card.  Usually 512
 //const uint64_t PRE_ALLOCATE_SIZE = 40ULL << 20;// Preallocate 40MB file.  Not used.
@@ -50,6 +76,7 @@ class SDWriter : public Print
     SDWriter(SdFs * _sd, Print* _serial_ptr) { sd = _sd; setSerial(_serial_ptr); };
     virtual ~SDWriter() { end(); }
 
+    using InfoKeyVal_t = std::map<InfoTags, std::string>;
     void setup(void) { init(); }
     virtual void init() { if (!sd->begin(SD_CONFIG)) sd->errorHalt(serial_ptr, "SDWriter: begin failed"); }
    		
@@ -59,6 +86,7 @@ class SDWriter : public Print
 		}
 
     bool openAsWAV(const char *fname);
+    bool openAsWAV(const char *fname, const InfoKeyVal_t &infoKeyVal);
     bool open(const char *fname);
     int close(void);
 		bool exists(const char *fname) { return sd->exists(fname); }
@@ -107,13 +135,18 @@ class SDWriter : public Print
     //SdFatSdio sd; //slower
 		SdFs * sd; //faster
     SdFile file;
+    bool updateWavFileSizeOnSD(void);
     boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
     Print* serial_ptr = &Serial;
     bool flag__fileIsWAV = false;
-    const int WAVheader_bytes = 44;
     float WAV_sampleRate_Hz = 44100.0;
     int WAV_nchan = 2;
+    char* pWavHeader = nullptr;  //pointer to WAV header
+    int WAVheader_bytes = 0;   //num bytes in WAV header
+
+    char* insertWavInfoComment(const InfoKeyVal_t &infoKeyVal);
+    constexpr std::string_view InfoTagToStr(InfoTags tagName);
 };
 
 //BufferedSDWriter:  This is a drived class from SDWriter.  This class assumes that

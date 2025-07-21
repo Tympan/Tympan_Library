@@ -1,11 +1,31 @@
-
 #include "SDWriter.h"
+
+// Constants for writing WAV Header INFO metadata
+constexpr size_t riffChunkSizeIdx = 4;
 
 bool SDWriter::openAsWAV(const char *fname) {
 	bool returnVal = open(fname);
 	if (isFileOpen()) { //true if file is open
 		flag__fileIsWAV = true;
-		file.write(wavHeaderInt16(0), WAVheader_bytes); //initialize assuming zero length
+		wavHeaderInt16(44);	// Build WAV header with no audio data. This results in a header of 44 bytes.
+		if ( pWavHeader && (WAVheader_bytes>0) ){
+			file.write(pWavHeader, WAVheader_bytes); //initialize assuming zero length
+		} 
+	}
+	return returnVal;
+}
+
+// Writes WAV header, including an info chunk that can hold metadata.
+bool SDWriter::openAsWAV(const char *fname, const InfoKeyVal_t &infoKeyVal) {
+	bool returnVal = open(fname);
+
+	if (isFileOpen()) { //true if file is open
+		flag__fileIsWAV = true;
+		wavHeaderInt16(44);	// Build WAV header with no audio data. This results in a header of 44 bytes.
+		insertWavInfoComment(infoKeyVal);
+		if ( pWavHeader && (WAVheader_bytes>0) ){
+			file.write(pWavHeader, WAVheader_bytes); //initialize assuming zero length
+		}
 	}
 	return returnVal;
 }
@@ -25,18 +45,44 @@ bool SDWriter::open(const char *fname) {
 		
 int SDWriter::close(void) {
 	//file.truncate(); 
-	if (flag__fileIsWAV) {
-		//re-write the header with the correct file size
-		uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
-		file.seekSet(0); //SdFat_Gre_FatLib version of seek();
-		file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
-		file.seekSet(fileSize);
-	}
+	updateWavFileSizeOnSD();  // ignore returned error;
 	file.close();
 	flag__fileIsWAV = false;
 	return 0;
 }
+
+// Updates file size specified in WAV header of open SD file
+bool SDWriter::updateWavFileSizeOnSD(void) {
+	bool okayFlag = false;  // init to error
+	uint32_t riffChunkSize = 0;
+
+	if (flag__fileIsWAV) {
+		// Write the RIFF chunk size specified in the header
+		riffChunkSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+
+		// Check that file is bigger than just the RIFF + RIFF chunk Size header
+		if (riffChunkSize>8) { 
+			riffChunkSize -= 8;
+
+			// Seek to RIFF chunk size index; Catches file not open and file too small
+			if ( file.seekSet(riffChunkSize) ) { //SdFat_Gre_FatLib version of seek(); 
+				
+				// Write RIFF chunk size
+				if ( file.write(&riffChunkSize, sizeof(uint32_t)) == sizeof(uint32_t) ) { //write header with correct length
+					
+					// Seek to end of file
+					if ( file.seekSet(file.fileSize() ) ) {
+						okayFlag = true;
+					}
+				}
+			}
+		}
+	}
+
+	return okayFlag;
+}
 		
+
 //This "write" is for compatibility with the Print interface.  Writing one
 //byte at a time is EXTREMELY inefficient and shouldn't be done
 size_t SDWriter::write(uint8_t foo)  {
@@ -68,7 +114,7 @@ size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	return return_val;
 }
 
- char* SDWriter::wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
+char* SDWriter::wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
 	//const int fileSize = bytesWritten+44;
 
 	int fsamp = (int) sampleRate_Hz;
@@ -76,7 +122,7 @@ size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	int nbytes = nbits / 8;
 	int nsamp = (fileSize - WAVheader_bytes) / (nbytes * nchan);
 
-	static char wheader[48]; // 44 for wav
+	static char wheader[44] = {0};	\\ \todo Use a single std::vector instead, to accomodate growing it for metadata
 
 	strcpy(wheader, "RIFF");
 	strcpy(wheader + 8, "WAVE");
@@ -92,9 +138,123 @@ size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	*(int32_t*)(wheader + 40) = nsamp * nchan * nbytes;
 	*(int32_t*)(wheader + 4) = 36 + nsamp * nchan * nbytes;  //what is this?  Why 36???
 
-	return wheader;
+	// Assign pointer to WAV header
+	pWavHeader = wheader;
+
+	// Update len of WAV Header
+	WAVheader_bytes = 44;
+
+	return pWavHeader;
 }
 
+
+// Insert INFO ICMT comment into WAV header stored in this class (not on SD card)
+char* SDWriter::insertWavInfoComment(const InfoKeyVal_t &infoKeyVal) {
+	static std::vector<char> newHeader;		// Static member to store header
+	uint32_t listLenBytes = 0;
+	std::string chunkName;							// Temporary storage of chunk names
+	char* pData = nullptr;
+	bool okayFlag = true;
+
+	// if WAV header does not exist, create one.
+	if ( (!pWavHeader) || (WAVheader_bytes <=0) ) {
+		wavHeaderInt16(44);
+	}
+
+	// Search for "data" string in header
+	if (WAVheader_bytes > 0) {
+		pData = strstr(pWavHeader, "data");
+	}
+
+	// Check that header exists and there are Info tags to write
+	if ( (pData) && !infoKeyVal.empty() ) {
+		
+		// Calculate size of LIST chunk
+		listLenBytes = 4;							// Start with 4bytes for "INFO"
+		for (const auto &keyVal:infoKeyVal) {
+			listLenBytes += 4 + (keyVal.second).size();	// (4bytes for key) + len of value
+		} 
+	
+	// Else error, empty infoTagArray
+	} else {
+		okayFlag = false;
+	}
+
+	// Add Info metadata
+	if ( okayFlag ) {
+		// Copy first section of existing header into dynamic array
+		newHeader.assign(pWavHeader, pData); // uses strlen to omit null character
+
+		// Append "LIST"
+		chunkName.assign("LIST");
+		newHeader.insert(newHeader.end(), chunkName.c_str(), chunkName.c_str() + sizeof(uint32_t) );
+
+		// Append LIST size
+		newHeader.resize( newHeader.size() + sizeof(uint32_t), '\n');					// expand length by 4 bytes
+		memcpy( &newHeader.back()-sizeof(int32_t), &listLenBytes, sizeof(int32_t) ); 	// copy List length to newHeader
+
+		// Append "INFO"
+		chunkName.assign("INFO");
+		newHeader.insert(newHeader.end(), chunkName.c_str(), chunkName.c_str() + sizeof(uint32_t) );
+
+		// Append INFO tagname, size, and string
+		for (const auto &keyVal:infoKeyVal) {
+			// Append tagname (without null)
+			chunkName.assign( InfoTagToStr(keyVal.first) );
+			newHeader.insert( newHeader.end(), chunkName.c_str(), chunkName.c_str() + sizeof(uint32_t) );
+
+			//Append tag size
+			uint32_t tagLenBytes = (keyVal.second).size();								// use size of string.
+			newHeader.resize( newHeader.size() + sizeof(uint32_t), 0);					// expand length and fill with 0's
+			memcpy( &newHeader.back()-sizeof(int32_t), &tagLenBytes, sizeof(int32_t) );	// copy size of string.
+
+			// Append tag string
+			newHeader.insert( newHeader.end(), (keyVal.second).c_str(), (keyVal.second).c_str() + tagLenBytes);
+		}
+
+		// Insert the data chunk (pData to end of WAV header, which excludes null byte)
+		newHeader.insert(newHeader.end(), pData, pWavHeader + WAVheader_bytes); // uses strlen to omit null character
+
+		// Assign pointer to WAV header
+		pWavHeader = newHeader.data();
+
+		// Update len of WAV Header
+		WAVheader_bytes = newHeader.size();
+
+	// Else error.  Set pointer to header to nullptr and len to 0 bytes.
+	} else {
+		pWavHeader = nullptr;
+		WAVheader_bytes = 0;
+	}
+
+	return pWavHeader;
+}
+
+
+// Access WAV file metadata tagname for the INFO chunk
+constexpr std::string_view SDWriter::InfoTagToStr(InfoTags tagName) {
+      switch (tagName) {
+ 		case InfoTags::ICMT: return "ICMT"; // Comments. Provides general comments about the file or the subject of the file. 
+   		case InfoTags::IARL: return "IARL"; // Archival Location. Indicates where the subject of the file is archived.
+   		case InfoTags::IART: return "IART"; // Artist. Lists the artist of the original subject of the file. For example, “Michaelangelo.”
+   		case InfoTags::ICMS: return "ICMS"; // Commissioned. Lists the name of the person or organization that commissioned the subject of the file. 
+   		case InfoTags::IDPI: return "IDPI"; // Dots Per Inch. Stores dots per inch setting of the digitizer used to produce the file, such as “ 300.”
+   		case InfoTags::IENG: return "IENG"; // Engineer. Stores the name of the engineer who worked on the file. Separate the names by a semicolon and a blank. 
+   		case InfoTags::IKEY: return "IKEY"; // Keywords. Provides a list of keywords that refer to the file or subject of the file. Separate multiple keywords with a semicolon
+   		case InfoTags::ILGT: return "ILGT"; // Lightness. Describes the changes in lightness settings on the digitizer required to produce the file. Note that the format of this information depends on hardware used.
+   		case InfoTags::IMED: return "IMED"; // Medium. Describes the original subject of the file, such as, “ computer image,” “ drawing,” “ lithograph,” and so forth.
+   		case InfoTags::INAM: return "INAM"; // Name. Stores the title of the subject of the file, such as, “ Seattle From Above.”
+   		case InfoTags::IPLT: return "IPLT"; // Palette Setting. Specifies the number of colors requested when digitizing an image, such as “ 256.”
+   		case InfoTags::IPRD: return "IPRD"; // Product. Specifies the name of the title the file was originally intended for, such as “Encyclopedia of Pacific Northwest Geography.”
+   		case InfoTags::ISBJ: return "ISBJ"; // Subject. Describes the conbittents of the file, such as “Aerial view of Seattle.”
+   		case InfoTags::ISFT: return "ISFT"; // Software. Identifies the name of the software package used to create the file, such as “Microsoft WaveEdit.”
+   		case InfoTags::ISHP: return "ISHP"; // Sharpness. Identifies the changes in sharpness for the digitizer required to produce the file (the format depends on the hardware used).
+   		case InfoTags::ISRC: return "ISRC"; // Source. Identifies the name of the person or organization who supplied the original subject of the file. For example, “ Trey Research.”
+   		case InfoTags::ISRF: return "ISRF"; //Source Form. Identifies the original form of the material that was digitized, such as “ slide,” “ paper,” “map,” and so forth. This is not necessarily the same as IMED.
+   		case InfoTags::ITCH: return "ITCH"; // Technician. Identifies the technician who digitized the subject file. For example, “ Smith, John.”
+		default: return "";
+	  }
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
