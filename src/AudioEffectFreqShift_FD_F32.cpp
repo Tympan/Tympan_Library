@@ -116,6 +116,9 @@ void AudioEffectFreqShift_FD_F32::update(void)
 
 	// ////////////// Do your processing here!!!
 
+	// do any preprocessing of the freq-domain data (this may do nothing)
+	preprocessFreqDomainData(complex_2N_buffer, myFFT.getNFFT());
+
 	//zero out DC and Nyquist
 	//complex_2N_buffer[0] = 0.0;  complex_2N_buffer[1] = 0.0;
 	//complex_2N_buffer[N_2] = 0.0;  complex_2N_buffer[N_2] = 0.0;  

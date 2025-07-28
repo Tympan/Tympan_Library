@@ -73,8 +73,10 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
 			return sample_rate_Hz * ((float)bin) / ((float) N_FFT);
 		}
 		
-		virtual void shiftTheBins(float32_t *complex_buffer, int NFFT, int n_shift);
-		virtual void update(void);
+		virtual void preprocessFreqDomainData(float32_t *complex_2N_buffer, int NFFT) { return; } //default to do nothing (child class can override!)
+		virtual void shiftTheBins(float32_t *complex_2N_buffer, int NFFT, int n_shift);
+		
+		void update(void) override;
 		bool enable(bool state = true) { enabled = state; return enabled;}
 		FFT_Overlapped_F32* getFFTobj(void) { return &myFFT; }
 		IFFT_Overlapped_F32* getIFFTobj(void) { return &myIFFT; }
