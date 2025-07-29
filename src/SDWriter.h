@@ -115,7 +115,7 @@ class SDWriter : public Print
 		
   protected:
     //SdFatSdio sd; //slower
-		SdFs * sd; //faster
+		SdFs * sd = nullptr; //faster
     SdFile file;
     boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
@@ -173,6 +173,7 @@ class BufferedSDWriter : public SDWriter
   		bufferLengthBytes = max(4,_nBytes);
 			write_buffer = new (std::nothrow) uint8_t[bufferLengthBytes];
 			resetBuffer();
+			//Serial.println("BufferedSDWriter: allocateBuffer: allocated " + String(bufferLengthBytes) + " after requesting " + String(_nBytes) + ", write_buffer = " + String((int)write_buffer));
       return (int)write_buffer;
     }
     void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
@@ -233,8 +234,8 @@ class BufferedSDWriter : public SDWriter
     uint32_t bufferReadInd_bytes = 0;
     uint32_t nBytesPerSample = 2;
     //int32_t bufferLengthSamples = SDWRITER_MAX_BUFFER_LENGTH_BYTES / nBytesPerSample;
-    uint32_t bufferLengthBytes = SDWRITER_MAX_BUFFER_LENGTH_BYTES;
-		uint32_t bufferEndInd_bytes = SDWRITER_MAX_BUFFER_LENGTH_BYTES / nBytesPerSample;
+    uint32_t bufferLengthBytes = 0;
+		uint32_t bufferEndInd_bytes = 0 / nBytesPerSample;
     float32_t *ptr_zeros = nullptr;
 		int ditheringMethod = 0;  //default 0 is off
 };

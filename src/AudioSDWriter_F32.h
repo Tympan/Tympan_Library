@@ -60,7 +60,7 @@ class AudioSDWriter {
 		virtual int serviceSD(void) = 0;
 
   protected:
-	  SdFs * sd;
+	  SdFs * sd = nullptr;
     STATE current_SD_state = STATE::UNPREPARED;
     int recording_count = 0;
     int numWriteChannels = 2;
@@ -133,24 +133,28 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  delete buffSDWriter;
 		}
 
-		void setup(void) { 
+		void setup(void) {
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD());
 			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16); //in SDWriter.h
 		}
 		void setup(Print *_serial_ptr) {
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD(), _serial_ptr);
 			setSerial(_serial_ptr);
 			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);  //in SDWriter.h
 		}
 		void setup(Print *_serial_ptr, const int _writeSizeBytes) {
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD(), _serial_ptr, _writeSizeBytes);
 			setSerial(_serial_ptr);
 			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);  //in SDWriter.h
 			setWriteSizeBytes(_writeSizeBytes);      
 		}
+		SdFs* getOrAllocateSD(void) { if (sd == nullptr) { return sd = new SdFs(); } else { return sd; } }
 
 		void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
 		enum class WriteDataType { INT16=(int)SDWriter::WriteDataType::INT16, FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 };
 
 		virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type);
-		virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps=-1);
+		//virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_bytes=-1);
 		
 		void setWriteSizeBytes(const int n) {  //512Bytes is most efficient for SD
 			if (buffSDWriter) buffSDWriter->setWriteSizeBytes(n);
@@ -174,12 +178,13 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		//if you want to set the audio buffer size yourself, call this method before
 		//calling startRecording().
 		int allocateBuffer(const uint32_t nBytes) {
+			stopRecording();
 			//Serial.println("AudioSDWriter_F32: buffer = " + String((int)buffSDWriter) + ", allocating buffer..." + String(nBytes));
 			if (buffSDWriter) return buffSDWriter->allocateBuffer(nBytes);
 			return -2;     
 		}
 		int allocateBuffer(void) {  // this ends up using the default buffer size
-			//Serial.println("AudioSDWriter_F32: buffer = " + String((int)buffSDWriter) + ", allocating buffer()");
+			//Serial.println("AudioSDWriter_F32: allocateBuffer: buffer = " + String((int)buffSDWriter) + ", allocating buffer()");
 			if (buffSDWriter) return buffSDWriter->allocateBuffer(); //use default buffer size
 			return -2;
 		}

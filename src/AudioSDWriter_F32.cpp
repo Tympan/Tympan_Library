@@ -5,6 +5,7 @@
 
 
 int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type) {
+	/*
 	Print *serial_ptr = &Serial1;
 	int write_nbytes = DEFAULT_SDWRITE_BYTES;
 
@@ -15,10 +16,19 @@ int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type) {
 	}
 
 	//make the full method call
-	return setWriteDataType(type, serial_ptr, write_nbytes);
+	//return setWriteDataType(type, serial_ptr, write_nbytes);
+*/
+
+	if (type == AudioSDWriter_F32::WriteDataType::INT16) {
+		if (buffSDWriter) buffSDWriter->setWriteDataType(SDWriter::WriteDataType::INT16);
+	} else if (type == AudioSDWriter_F32::WriteDataType::FLOAT32) {
+		if (buffSDWriter) buffSDWriter->setWriteDataType(SDWriter::WriteDataType::FLOAT32);
+	}
+	return 0;
 }
 
-int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps) {
+/*
+int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_bytes) {
 	stopRecording();
 	//Serial.println("AudioSDWriter_F32::setWriteDataType: buffSDWriter = " + String((int)buffSDWriter) + ", Type = " + String((int)type));
 	if (!buffSDWriter) {
@@ -30,8 +40,8 @@ int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type, P
 		buffSDWriter = new BufferedSDWriter(sd, serial_ptr, writeSizeBytes);
 		if (buffSDWriter) {
 			buffSDWriter->setNChanWAV(numWriteChannels);
-			if (bufferLength_samps >= 0) {
-				allocateBuffer(bufferLength_samps); //leave empty for default buffer size
+			if (bufferLength_bytes >= 0) {
+				allocateBuffer(bufferLength_bytes); //leave empty for default buffer size
 			} else {
 				//if we don't allocateBuffer() here, it simply lets BufferedSDWrite create it last-minute
 			}
@@ -47,11 +57,20 @@ int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type, P
 	if (buffSDWriter == NULL) return -1;
 	return 0;
 }
+*/
 
 void AudioSDWriter_F32::prepareSDforRecording(void) {
+	//Serial.println("AudioSDWriter_F32: prepareSDforRecording: current_SD_state = " + String((int)current_SD_state));
 	if (current_SD_state == STATE::UNPREPARED) {
+		//Serial.println("AudioSDWriter_F32: prepareSDforRecording: buffSDWriter = " + String((int)buffSDWriter));
 		if (buffSDWriter) {
+			//Serial.println("AudioSDWriter_F32: prepareSDforRecording: buffSDWriter->init()...");Serial.flush();
 			buffSDWriter->init(); //part of SDWriter, which is the base for BufferedSDWriter
+			//Serial.println("AudioSDWriter_F32: prepareSDforRecording: buffSDWriter->getLengthOfBuffer_bytes() = " + String(buffSDWriter->getLengthOfBuffer_bytes())); Serial.flush();
+			if (buffSDWriter->getLengthOfBuffer_bytes() == 0) {
+				//Serial.println("AudioSDWriter_F32: prepareSDforRecording: allocating buffer, default size");
+				buffSDWriter->allocateBuffer();  //if we haven't manually allocated it by now, use default buffer size
+			}
 			if (PRINT_FULL_SD_TIMING) buffSDWriter->setPrintElapsedWriteTime(true); //for debugging.  
 		}
 		current_SD_state = STATE::STOPPED;
@@ -120,7 +139,10 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 	int return_val = 0;
 
 	//check to see if the SD has been initialized
-	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+	if (current_SD_state == STATE::UNPREPARED) {
+		//Serial.println("AudioSDWriter_F32: startRecording(void): current_SD_state is UNPREPARED (" + String((int)STATE::UNPREPARED) + ").  preparing...");
+		prepareSDforRecording();
+	}
 
 	//check to see if SD is ready
 	if (current_SD_state == STATE::STOPPED) {
@@ -165,10 +187,13 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 
 int AudioSDWriter_F32::startRecording(const char* fname) {
   int return_val = 0;
-  
+	
   //check to see if the SD has been initialized
-  if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
-  
+	if (current_SD_state == STATE::UNPREPARED) {
+		//Serial.println("AudioSDWriter_F32: startRecording(fname): current_SD_state is UNPREPARED.  preparing...");
+		prepareSDforRecording();
+  }
+	
   if (current_SD_state == STATE::STOPPED) {
 	//try to open the file on the SD card
 	if (openAsWAV(fname)) { //returns TRUE if the file opened successfully

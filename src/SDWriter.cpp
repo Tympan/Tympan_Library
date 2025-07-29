@@ -184,6 +184,7 @@ bool BufferedSDWriter::sync(void) {
 //here is how you send data to this class.  this doesn't write any data, it just stores data
 void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan) {
 	if (!write_buffer) {  //try to allocate buffer, return if it doesn't work
+		//Serial.println("BufferedSDWriter: copyToWriteBuffer: write_buffer = " + String((int)write_buffer) + " so trying to allocate default size");
 		if (!allocateBuffer()) {
 			Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
 			Serial.println("    : could not allocateBuffer()");
@@ -205,13 +206,17 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	//is there room to put the data into the buffer or will we hit the end
 	if ( estFinalWriteInd_bytes >= bufferLengthBytes) { //is there room?
 		//no there is not room
+		if (bufferReadInd_bytes > bufferWriteInd_bytes) {
+			Serial.println("BufferedSDWriter: copyToWriteBuffer: setting end of buffer (" + String(bufferWriteInd_bytes) + ") shorter than read index (" + String(bufferReadInd_bytes));
+		}
+		//if (bufferWriteInd_bytes != bufferEndInd_bytes) Serial.println("BufferedSDWriter: copyToWriteBuffer: setting end of buffer to " + String(bufferWriteInd_bytes) + " vs max = " + String(bufferLengthBytes));
 		bufferEndInd_bytes = bufferWriteInd_bytes; //save the end point of the written data
-		bufferWriteInd_bytes = 0;  //reset
+		bufferWriteInd_bytes = 0;  //reset to beginning of the buffer
 
 		//recheck to see if we're going to pass by the read buffer index
 		estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * nsamps * nBytesPerSample);
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
-			Serial.println("BufferedSDWriter: WARNING2: writing past the read index. Likely hiccup in WAV.");
+			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
 		}
 	}
@@ -241,9 +246,14 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 			}
 		}
 	}
-	bufferWriteInd_bytes = foo_bufferWriteInd * nBytesPerSample;
-	bufferEndInd_bytes = max(bufferEndInd_bytes,bufferWriteInd_bytes);
-
+	bufferWriteInd_bytes = foo_bufferWriteInd * nBytesPerSample; //new write index (bytes) for next time through
+	
+	//check to see if we're using more of the avialable buffer than previously being used
+	if (bufferWriteInd_bytes > bufferEndInd_bytes) {
+		//Serial.println("BufferedSDWriter: copyToWriteBuffer: extending end from " + String(bufferEndInd_bytes) + " to " + bufferWriteInd_bytes + " (vs max length of " + String(bufferLengthBytes) + ")");
+		bufferEndInd_bytes = max(bufferEndInd_bytes,bufferWriteInd_bytes);
+	}
+	
 	//handle the case where we just wrote past the read index.  Push the read index ahead.
 	if (flag_moveReadIndexToEndOfWrite) bufferReadInd_bytes = bufferWriteInd_bytes;
 }
