@@ -71,8 +71,10 @@ void setup() {
   myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
 
   //prepare the SD writer for the format that we want and any error statements
-  audioSDWriter.setSerial(&myTympan);         //the library will print any error info to this serial stream (note that myTympan is also a serial stream)
-  audioSDWriter.setNumWriteChannels(2);       //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
+  audioSDWriter.setSerial(&myTympan);           //the library will print any error info to this serial stream (note that myTympan is also a serial stream)
+  audioSDWriter.setNumWriteChannels(2);         //this is also the built-in defaullt, but you could change it to 4 (maybe?), if you wanted 4 channels.
+  //audioSDWriter.setWriteDataType(AudioSDWriter_F32::WriteDataType::FLOAT32);  //write Float32 data to the WAV
+  //audioSDWriter.allocateBuffer(300000);      //set a larger write buffer (300KB), which is good for 4 channels and a high sample rate)
 
   Serial.println("Setup complete.");
   Serial.println();
