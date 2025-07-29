@@ -198,7 +198,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
 	if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) { //exclude starting at the same index but include ending at the same index
-		Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING1: writing past the read index."); Serial.flush();
+		Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING1: writing past the read index. Likely hiccup in WAV.");
 		flag_moveReadIndexToEndOfWrite = true;
 	}
 
@@ -211,7 +211,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		//recheck to see if we're going to pass by the read buffer index
 		estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * nsamps * nBytesPerSample);
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
-			Serial.println("BufferedSDWriter: WARNING2: writing past the read index.");  Serial.flush();
+			Serial.println("BufferedSDWriter: WARNING2: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
 		}
 	}
