@@ -41,11 +41,11 @@ void setup() {
   myTympan.volume(0.5);  //any value 0 to 1.0??
 
   //prepare SD player
-	if (audioSDPlayer.isSdCardPresent()) {
+	//if (audioSDPlayer.isSdCardPresent()) {
 		audioSDPlayer.begin();
-	} else {
-		Serial.println("WARNING: SD card is not present in your Tympan.");
-	}
+	//} else {
+	//	Serial.println("WARNING: SD card is not present in your Tympan.");
+	//}
 	
   //finish setup
   delay(2000);  //stall a second
@@ -58,15 +58,15 @@ void loop() {
 
   //start the SD player if it is not playing
   if (!audioSDPlayer.isPlaying()) { //wait until previous play is done
-		if (audioSDPlayer.isSdCardPresent()) {
+		//if (audioSDPlayer.isSdCardPresent()) {
 			//start playing audio
 			myTympan.print("Starting audio player: ");
 			myTympan.println(filename);
 			audioSDPlayer.play(filename);
-		} else {
-			Serial.println("WARNING: SD card is not present in your Tympan.");
-			delay(1000);
-		}
+		//} else {
+		//	Serial.println("WARNING: SD card is not present in your Tympan.");
+		//	delay(1000);
+		//}
   }
 
   //do other things here, if desired...like, maybe check the volume knob?

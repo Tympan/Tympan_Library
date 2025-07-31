@@ -1,11 +1,14 @@
 
 #include "SDWriter.h"
-#include "SD.h"  //used for isSdCardPresent()
 
+
+/*
+#include "SD.h"  //used for isSdCardPresent()
 int SDWriter::isSdCardPresent(void) {
-	SD.begin(BUILTIN_SDCARD);
+	if (!hasSdBegun) hasSdBegun = SD.begin(BUILTIN_SDCARD);  //this will cause problems if someone else has already started the SD
 	return SD.mediaPresent();
 }
+*/
 
 
 
