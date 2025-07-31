@@ -102,7 +102,8 @@ class SDWriter : public Print
     char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
     
 		SdFs * getSdPtr(void) { return sd; }
-	
+		virtual int isSdCardPresent(void);
+
   protected:
     //SdFatSdio sd; //slower
 		SdFs * sd; //faster

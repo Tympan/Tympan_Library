@@ -1,5 +1,12 @@
 
 #include "SDWriter.h"
+#include "SD.h"  //used for isSdCardPresent()
+
+int SDWriter::isSdCardPresent(void) {
+	SD.begin(BUILTIN_SDCARD);
+	return SD.mediaPresent();
+}
+
 
 bool SDWriter::openAsWAV(const char *fname) {
 	bool returnVal = open(fname);
