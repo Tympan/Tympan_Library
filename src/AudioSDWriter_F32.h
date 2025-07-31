@@ -234,7 +234,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			return sd;
 		}
 
-		virtual int isSdCardPresent(void) {	if (buffSDWriter) return buffSDWriter->isSdCardPresent(); return -1; }
+		//virtual int isSdCardPresent(void) {	if (buffSDWriter) return buffSDWriter->isSdCardPresent(); return -1; }
 
 	protected:
 		audio_block_f32_t *inputQueueArray[AUDIOSDWRITER_MAX_CHAN]; //up to four input channels
