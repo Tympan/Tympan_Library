@@ -152,11 +152,16 @@ void startOrStopSDRecording(float potentiometer_value) {
   //are we already recording?
   if (audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING) {
     //check to see if potentiometer is set to turn off recording
-    if (potentiometer_value < 0.45) audioSDWriter.stopRecording();
+    if (potentiometer_value < 0.45)	audioSDWriter.stopRecording();
 
   } else { //we are not already recording
     //check to see if potentiometer has been set to start recording
-    if (potentiometer_value > 0.55) audioSDWriter.startRecording();
-    
+    if (potentiometer_value > 0.55) {
+			if (audioSDWriter.isSdCardPresent()) {
+				audioSDWriter.startRecording();
+			} else {
+				Serial.println("WARNING: SD card is not present in your Tympan.");
+			}
+		}
   }
 }
