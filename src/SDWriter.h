@@ -100,7 +100,7 @@ class SDWriter : public Print
     //modified from Walter at https://github.com/WMXZ-EU/microSoundRecorder/blob/master/audio_logger_if.h
     //char* wavHeaderInt16(const uint32_t fsize) { return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize); }
     //char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
-		char* makeWavHeader(const uint32_t fsize) { return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); }
+    char* makeWavHeader(const uint32_t fsize) { return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); }
     char* makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
     
 		SdFs * getSdPtr(void) { return sd; }
