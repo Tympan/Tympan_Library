@@ -157,11 +157,11 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 }
 
 int AudioSDWriter_F32::startRecording(const char* fname) {
-	SDWriter::InfoKeyVal_t emptyInfoTag;
+	InfoKeyVal_t emptyInfoTag;
 	return startRecording(fname, emptyInfoTag);	// Start recording without additional WAV header metadata
 }
 
-int AudioSDWriter_F32::startRecording(const char* fname, const SDWriter::InfoKeyVal_t &infoKeyValMap) {
+int AudioSDWriter_F32::startRecording(const char* fname, const InfoKeyVal_t &infoKeyValMap) {
 	int return_val = 0;
 	bool okayFlag = true;
 	
