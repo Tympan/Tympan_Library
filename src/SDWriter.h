@@ -100,20 +100,21 @@ class SDWriter : public Print
     //modified from Walter at https://github.com/WMXZ-EU/microSoundRecorder/blob/master/audio_logger_if.h
     //char* wavHeaderInt16(const uint32_t fsize) { return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize); }
     //char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
-		char* makeWavHeader(const uint32_t fsize) { return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); }
+    char* makeWavHeader(const uint32_t fsize) { return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); }
     char* makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
-    
-		SdFs * getSdPtr(void) { return sd; }
-		
-		//virtual int isSdCardPresent(void);
 
-		virtual int setWriteDataType(WriteDataType type) { 
-			//Serial.println("SDWriter: setWriteDataType: type = " + String((int)type));
-			if (writeDataType != type) {
-				if (isFileOpen()) Serial.println("SDWriter: *** WARNING ***: Changing data type but WAV file is already open!");
-			}
-			return (int)(writeDataType = type); 
-		}
+    SdFs * getSdPtr(void) { return sd; }
+
+    virtual int setWriteDataType(WriteDataType type) { 
+      //Serial.println("SDWriter: setWriteDataType: type = " + String((int)type));
+      if (writeDataType != type) {
+        if (isFileOpen()) Serial.println("SDWriter: *** WARNING ***: Changing data type but WAV file is already open!");
+      }
+      return (int)(writeDataType = type); 
+    }
+
+    //virtual int isSdCardPresent(void);  //beware!  this might not work as you expect.  Consider this to be experimental!
+
 
   protected:
     //SdFatSdio sd; //slower
@@ -128,8 +129,8 @@ class SDWriter : public Print
     float WAV_sampleRate_Hz = 44100.0;
     int WAV_nchan = 2;  //default
     WriteDataType writeDataType = SDWriter::WriteDataType::INT16; // default to INT16 data in WAV files
-		char wheader[58];  //36+8=44 is big enough for INT16 header, 36+2+12+8=58 is big enough for IEEE FLOAT32 header
-		const int wheader_maxlen = 58;
+    char wheader[58];  //36+8=44 is big enough for INT16 header, 36+2+12+8=58 is big enough for IEEE FLOAT32 header
+    const int wheader_maxlen = 58;
 };
 
 //BufferedSDWriter:  This is a drived class from SDWriter.  This class assumes that
@@ -172,12 +173,12 @@ class BufferedSDWriter : public SDWriter
 
     //allocate the buffer for storing all the samples between write events
     int allocateBuffer(const int _nBytes = SDWRITER_MAX_BUFFER_LENGTH_BYTES) {
-			if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
-  		bufferLengthBytes = max(4,_nBytes);
-			write_buffer = new (std::nothrow) uint8_t[bufferLengthBytes];
-			resetBuffer();
-			//Serial.println("BufferedSDWriter: allocateBuffer: allocated " + String(bufferLengthBytes) + " after requesting " + String(_nBytes) + ", write_buffer = " + String((int)write_buffer));
-      return (int)write_buffer;
+        if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
+        bufferLengthBytes = max(4,_nBytes);
+        write_buffer = new (std::nothrow) uint8_t[bufferLengthBytes];
+        resetBuffer();
+        //Serial.println("BufferedSDWriter: allocateBuffer: allocated " + String(bufferLengthBytes) + " after requesting " + String(_nBytes) + ", write_buffer = " + String((int)write_buffer));
+        return (int)write_buffer;
     }
     void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
     void resetBuffer(void) { bufferReadInd_bytes = 0; bufferWriteInd_bytes = 0;  }
@@ -238,9 +239,9 @@ class BufferedSDWriter : public SDWriter
     uint32_t nBytesPerSample = 2;
     //int32_t bufferLengthSamples = SDWRITER_MAX_BUFFER_LENGTH_BYTES / nBytesPerSample;
     uint32_t bufferLengthBytes = 0;
-		uint32_t bufferEndInd_bytes = 0 / nBytesPerSample;
+    uint32_t bufferEndInd_bytes = 0 / nBytesPerSample;
     float32_t *ptr_zeros = nullptr;
-		int ditheringMethod = 0;  //default 0 is off
+    int ditheringMethod = 0;  //default 0 is off
 };
 
 
