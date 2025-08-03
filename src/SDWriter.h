@@ -102,18 +102,18 @@ class SDWriter : public Print
     //char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
     char* makeWavHeader(const uint32_t fsize) { return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); }
     char* makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
-    
-		SdFs * getSdPtr(void) { return sd; }
 
-		virtual int setWriteDataType(WriteDataType type) { 
-			//Serial.println("SDWriter: setWriteDataType: type = " + String((int)type));
-			if (writeDataType != type) {
-				if (isFileOpen()) Serial.println("SDWriter: *** WARNING ***: Changing data type but WAV file is already open!");
-			}
-			return (int)(writeDataType = type); 
-		}
+    SdFs * getSdPtr(void) { return sd; }
 
-		virtual int isSdCardPresent(void);
+    virtual int setWriteDataType(WriteDataType type) { 
+      //Serial.println("SDWriter: setWriteDataType: type = " + String((int)type));
+      if (writeDataType != type) {
+        if (isFileOpen()) Serial.println("SDWriter: *** WARNING ***: Changing data type but WAV file is already open!");
+      }
+      return (int)(writeDataType = type); 
+    }
+
+    virtual int isSdCardPresent(void);  //beware!  this might not work as you expect.  Consider this to be experimental!
 
   protected:
     //SdFatSdio sd; //slower
