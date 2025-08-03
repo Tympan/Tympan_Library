@@ -208,6 +208,7 @@ isPlaying	KEYWORD2
 AudioTestSignalGenerator_F32	KEYWORD1
 AudioTestSignalMeasurement_F32	KEYWORD1
 AudioTestSignalMeasurementMulti_F32	KEYWORD1
+AudioTestToneManager_F32	KEYWORD1
 AudioControlTestAmpSweep_F32	KEYWORD1
 AudioControlTestFreqSweep_F32	KEYWORD1
 

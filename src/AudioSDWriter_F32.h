@@ -42,7 +42,6 @@ class AudioSDWriter {
     STATE getState(void) {
       return current_SD_state;
     };
-    enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
     virtual int setNumWriteChannels(int n) {
       return numWriteChannels = max(1, min(n, AUDIOSDWRITER_MAX_CHAN));  //can be 1, 2 or 4 (3 might work but its behavior is unknown)
     }
@@ -61,9 +60,8 @@ class AudioSDWriter {
 		virtual int serviceSD(void) = 0;
 
   protected:
-	  SdFs * sd;
+	  SdFs * sd = nullptr;
     STATE current_SD_state = STATE::UNPREPARED;
-    WriteDataType writeDataType = WriteDataType::INT16;
     int recording_count = 0;
     int numWriteChannels = 2;
 	  String current_filename = String("Not Recording");
@@ -136,26 +134,32 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		}
 
 		void setup(void) {
-			setWriteDataType(WriteDataType::INT16, &Serial, DEFAULT_SDWRITE_BYTES);
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD());
+			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16); //in SDWriter.h
 		}
 		void setup(Print *_serial_ptr) {
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD(), _serial_ptr);
 			setSerial(_serial_ptr);
-			setWriteDataType(WriteDataType::INT16, _serial_ptr, DEFAULT_SDWRITE_BYTES);
+			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);  //in SDWriter.h
 		}
 		void setup(Print *_serial_ptr, const int _writeSizeBytes) {
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD(), _serial_ptr, _writeSizeBytes);
 			setSerial(_serial_ptr);
-			setWriteDataType(WriteDataType::INT16, _serial_ptr, _writeSizeBytes);
+			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);  //in SDWriter.h
+			setWriteSizeBytes(_writeSizeBytes);      
 		}
+		SdFs* getOrAllocateSD(void) { if (sd == nullptr) { return sd = new SdFs(); } else { return sd; } }
 
 		void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
+		enum class WriteDataType { INT16=(int)SDWriter::WriteDataType::INT16, FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 };
 
-		int setWriteDataType(WriteDataType type);
-		int setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps=-1);
-
+		virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type);
+		//virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_bytes=-1);
+		
 		void setWriteSizeBytes(const int n) {  //512Bytes is most efficient for SD
 			if (buffSDWriter) buffSDWriter->setWriteSizeBytes(n);
 		}
-		int getWriteSizeBytes(void) {  //512Bytes is most efficient for SD
+		uint32_t getWriteSizeBytes(void) {  //512Bytes is most efficient for SD
 			if (buffSDWriter) return buffSDWriter->getWriteSizeBytes();
 			return 0;
 		}
@@ -173,15 +177,19 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 
 		//if you want to set the audio buffer size yourself, call this method before
 		//calling startRecording().
-		int allocateBuffer(const int nBytes) {
+		int allocateBuffer(const uint32_t nBytes) {
+			stopRecording();
+			//Serial.println("AudioSDWriter_F32: buffer = " + String((int)buffSDWriter) + ", allocating buffer..." + String(nBytes));
 			if (buffSDWriter) return buffSDWriter->allocateBuffer(nBytes);
 			return -2;     
 		}
 		int allocateBuffer(void) {  // this ends up using the default buffer size
+			//Serial.println("AudioSDWriter_F32: allocateBuffer: buffer = " + String((int)buffSDWriter) + ", allocating buffer()");
 			if (buffSDWriter) return buffSDWriter->allocateBuffer(); //use default buffer size
 			return -2;
 		}
 		void freeBuffer(void) {
+			//Serial.println("AudioSDWriter_F32: buffer = " + String((int)buffSDWriter) + ", freeing buffer...");
 			if (buffSDWriter) buffSDWriter->freeBuffer(); // free memory allocated to buffer
 		}
 
@@ -226,16 +234,22 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			if (buffSDWriter) return buffSDWriter->isFileOpen();
 			return false;
 		}
-		int32_t getNumUnfilledSamplesInBuffer(void) { if (buffSDWriter) buffSDWriter->getNumUnfilledSamplesInBuffer(); return 0; }  //how much of the buffer is empty, in samples
-		uint32_t getNumUnfilledSamplesInBuffer_msec(void) { if (buffSDWriter) return buffSDWriter->getNumUnfilledSamplesInBuffer_msec(); return 0; }  //how much of the buffer is empty, in msec
-
+		uint32_t getNumUnfilledSamplesInBuffer(void) { 
+			if (buffSDWriter) return (buffSDWriter->getNumUnfilledBytesInBuffer())/(buffSDWriter->getBytesPerSample());  //how much of the buffer is empty, in samples
+			return 0; 
+		}  
+		uint32_t getNumUnfilledSamplesInBuffer_msec(void) { 
+			if (buffSDWriter) return buffSDWriter->getNumUnfilledBytesInBuffer_msec();   //how much of the buffer is empty, in msec
+			return 0; 
+		}
 		unsigned long getStartTimeMillis(void) { return t_start_millis; };
 		unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
 		SdFs * getSdPtr(void) { 
 			if (buffSDWriter) return buffSDWriter->getSdPtr(); 
 			return sd;
 		}
-			
+
+		//virtual int isSdCardPresent(void) {	if (buffSDWriter) return buffSDWriter->isSdCardPresent(); return -1; }
 
 	protected:
 		audio_block_f32_t *inputQueueArray[AUDIOSDWRITER_MAX_CHAN]; //up to four input channels

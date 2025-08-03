@@ -123,10 +123,15 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		// your code.
 		uint32_t readRawBytes(uint8_t *out_buffer, const uint32_t n_bytes_to_read);
 		
+		
+		//Check to see if an SD card is present
+		//virtual int isSdCardPresent(void);
+		
 	protected:
 		//SdFs sd;
 		SdFs *sd_ptr;
 		SdFile file;
+		//bool hasSdBegun = false;
 		bool consume(uint32_t size);
 		bool parse_format(void);
 		uint32_t header[10];    // temporary storage of wav header data

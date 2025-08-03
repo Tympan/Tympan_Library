@@ -21,7 +21,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // define classes to control the Tympan and the AIC_Shield
 Tympan      myTympan(TympanRev::F, audio_settings);    //do TympanRev::D or E or F
-AICShield   aicShield(TympanRev::F, AICShieldRev::A);  //do TympanRev::D or E or FE  
+AICShield   aicShield(TympanRev::F, AICShieldRev::A);  //do TympanRev::D or E or F
 
 // define audio classes
 AudioInputI2SQuad_F32         i2s_in(audio_settings);        //Digital audio *from* the Tympan AIC.

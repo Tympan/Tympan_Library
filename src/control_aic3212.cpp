@@ -883,6 +883,23 @@ namespace tlv320aic3212
         vol_dB = volume_dB(vol_dB, 1); // set right channel
         return volume_dB(vol_dB, 0);   // set left channel
     }
+		
+		float AudioControlAIC3212::get_volume_dB(int chan) {
+			int8_t vol_int = -99;
+			
+			aic_goToBook(0);
+			if (chan == 0) {
+					vol_int = aic_readPage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_LEFT_REG);
+			} else if (chan == 1) {
+					vol_int = aic_readPage(AIC3212_DAC_VOLUME_PAGE, AIC3212_DAC_VOLUME_RIGHT_REG);
+			} else {
+				return -99.0;
+			}
+			
+			float vol_dB = -99.0;
+			if (vol_int > -99) vol_dB = ((float)vol_int)/2.0f;
+			return vol_dB;			
+		}
     
     /*
     Note: Gain must be -6dB ~ +14dB

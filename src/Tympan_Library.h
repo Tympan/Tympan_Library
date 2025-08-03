@@ -51,6 +51,7 @@
 #include "AudioSummer_F32.h"
 #include "AudioSwitch_F32.h"
 #include "AudioSwitchMatrix_F32.h"
+#include "AudioTestToneManager_F32.h"
 #include "EarpieceMixer_F32.h"
 #include "EarpieceMixer_F32_UI.h"
 #include "FFT_F32.h"

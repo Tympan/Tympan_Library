@@ -30,6 +30,7 @@ int AudioPlayMemoryI16_F32::setCurrentSampleFromQueue(int ind) {
 
 	//reset the playback counters
 	data_ind = 0;
+	prev_data_ind = 99999;
 	data_phase = 0.0f;
 	
 	//Serial.println("AudioPlayMemoryI16_F32: setCurrentSampleFromQueue: queue ind = " + String(queue_ind)
@@ -52,9 +53,12 @@ void AudioPlayMemoryI16_F32::update(void) {
   if (out_block == NULL) return; //no memory available.
 
   //fill the out_block with audio
+	//unsigned long start_micros = micros();
   for (uint32_t dest_ind = 0; dest_ind < ((uint32_t)out_block->length); dest_ind++) {
 	 out_block->data[dest_ind] = getNextAudioValue(); //in this method, it will also alter the play/stop state
   }
+	//unsigned long total_micros = micros() - start_micros;
+	//if (total_micros > 5) { Serial.print("AudioPlayMemory: update: dT (micros) =");	Serial.println(total_micros);	}
 
   //transmit and release
   AudioStream_F32::transmit(out_block);
@@ -89,15 +93,26 @@ float32_t AudioPlayMemoryI16_F32::getNextAudioValue(void) {
 	}
 	
 	//if we're here, we should have data to work with.  So, let's go!
+	float32_t ret_val = 0.0;
 	
-	// get the current data value from the buffer
-	float32_t ret_val = CONVERT_I16_TO_F32(data_ptr[data_ind]);   //get the next piece of data
-	if (abs(ret_val) > 1.0f) {
-		Serial.println("AudioPlayMemory: getNextAudioValue: *** WARNING ***: sample is beyond full-scale.");
-		Serial.println("    : val = " + String(ret_val,6) + " for data value " + String(data_ptr[data_ind]) + " at sample index = " + String(data_ind));
-		Serial.println("    : continuing anyway...");
+	if (data_ind == prev_data_ind) {
+		//it's the same as last time, so just re-use it (reduce access to progmem, if that's where the data is stored
+		ret_val = prev_data_value_f32;
+		
+	} else {
+		// get the current data value from the buffer
+		ret_val = CONVERT_I16_TO_F32(data_ptr[data_ind]);   //get the next piece of data
+		if (abs(ret_val) > 1.0f) {
+			Serial.println("AudioPlayMemory: getNextAudioValue: *** WARNING ***: sample is beyond full-scale.");
+			Serial.println("    : val = " + String(ret_val,6) + " for data value " + String(data_ptr[data_ind]) + " at sample index = " + String(data_ind));
+			Serial.println("    : continuing anyway...");
+		}
+		
+		//save for next time
+		prev_data_value_f32 = ret_val;
+		prev_data_ind = data_ind;
 	}
-
+	
 	//compute the data index for next time this gets called
 	data_phase += data_phase_incr;                  //increment the phase
 	unsigned int whole_step = (unsigned int)data_phase; //have we increased a whole step yet?
@@ -105,6 +120,7 @@ float32_t AudioPlayMemoryI16_F32::getNextAudioValue(void) {
 		data_ind += whole_step;                         //increment the data index by any whole steps
 		data_phase -= (float32_t)whole_step;            //remove the whole step from the data_phase to keep it well bounded
 	}
+
 
 	return ret_val;
   }

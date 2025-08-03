@@ -258,6 +258,7 @@ namespace tlv320aic3212 {
         float volume_dB(float vol_dB);                          // set both channels to the same volume
         float volume_dB(float vol_left_dB, float vol_right_dB); // set both channels, but to their own values
         float volume_dB(float vol_left_dB, int chan);           // set each channel seperately (0 = left; 1 = right)
+				float get_volume_dB(int chan);
         float setHeadphoneGain_dB(float vol_left_dB, float vol_right_dB); // set HP volume
         float setSpeakerVolume_dB(float target_vol_dB);         // sets the volume of both Class D Speaker Outputs
 				//int muteDAC(int chan = BOTH_CHAN);  //mutes the output DAC

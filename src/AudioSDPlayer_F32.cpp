@@ -39,6 +39,8 @@
 #include "AudioSDPlayer_F32.h"
 //#include <spi_interrupt.h>
 
+//#include <SD.h> //used by isSdCardPresent()
+
 #define STATE_DIRECT_8BIT_MONO    0  // playing mono at native sample rate
 #define STATE_DIRECT_8BIT_STEREO  1  // playing stereo at native sample rate
 #define STATE_DIRECT_16BIT_MONO   2  // playing mono at native sample rate
@@ -967,3 +969,7 @@ uint32_t AudioSDPlayer_F32::lengthMillis(void)
   return ((uint64_t)tlength * b2m) >> 32;
 }
 
+//int AudioSDPlayer_F32::isSdCardPresent(void) {
+//	if (!hasSdBegun) hasSdBegun = SD.begin(BUILTIN_SDCARD);
+//	return SD.mediaPresent();
+//}
