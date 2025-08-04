@@ -61,16 +61,22 @@ class SDWriter : public Print
 			sd->end();
 		}
 		
+		void AddMetadata(const String &comment);
+		void AddMetadata(const InfoTags &infoTag, const std::string &infoString);
+		void ClearMetadata(void);
+    
 		enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
-    
-    virtual bool openAsWAV(const char *fname, const InfoKeyVal_t &infoKeyVal);
-    
-    bool openAsWAV(const char *fname) {
-      InfoKeyVal_t emptyInfoChunk;
-      return openAsWAV(fname, emptyInfoChunk);
+
+    constexpr uint16_t GetBitsPerSampType (void) {
+      switch (writeDataType) {
+        case WriteDataType::INT16:    return (16);
+        case WriteDataType::INT24:    return (24);
+        case WriteDataType::FLOAT32:  return (32);
+        default: return(32);                       // return 32-bit as default
+      }
     }
-
-
+        
+    virtual bool openAsWAV(const char *fname);
     virtual bool open(const char *fname);
     virtual int close(void);
 		bool exists(const char *fname) { return sd->exists(fname); }
@@ -116,11 +122,14 @@ class SDWriter : public Print
     }
 
     // Create WAV header with no metadata    
-    char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
-      InfoKeyVal_t emmptyInfoChunk;  // Specify empty info chunk, so metadata will not be written
-      return wavHeaderInt16(sampleRate_Hz, nchan, fileSize, emmptyInfoChunk);
+    char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize){
+      setWriteDataType(SDWriter::WriteDataType::INT16);
+      return (makeWavHeader(sampleRate_Hz, nchan, fileSize) );
     }
-    char* makeWavHeader(const uint32_t fsize) { return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); }
+
+    char* makeWavHeader(const uint32_t fsize) { 
+      return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); 
+    }
     char* makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
 
 		SdFs * getSdPtr(void) { return sd; }
@@ -146,6 +155,7 @@ class SDWriter : public Print
     float WAV_sampleRate_Hz = 44100.0;
     int WAV_nchan = 2;
     WriteDataType writeDataType = SDWriter::WriteDataType::INT16; // default to INT16 data in WAV files
+		InfoKeyVal_t infoKeyVal; // Stores WAV header LIST<INFO> key, val map to write to header when openAsWav() is called.
 
     std::vector<char> wavHeader; // buffer for buulding the header of a WAV file
     char* pWavHeader = nullptr;

@@ -1,4 +1,5 @@
 #include "SDWriter.h"
+#include <algorithm>
 
 
 /*
@@ -10,13 +11,38 @@ int SDWriter::isSdCardPresent(void) {
 */
 
 
+/**
+ * @brief Add a metadata comment under the LIST<INFO><ICMT> tag, to be written when startRecording() is called.
+ * 
+ */
+void SDWriter::AddMetadata(const String &comment) {
+	std::string commentStr( comment.c_str() );
+	AddMetadata(InfoTags::ICMT, commentStr);
+}
+
+/**
+ * @brief Add a metadata tagname and string, to be written when startRecording() is called.
+ * 
+ */
+void SDWriter::AddMetadata(const InfoTags &infoTag, const std::string &infoString) {
+	infoKeyVal.insert({infoTag, infoString});
+}
+
+/**
+ * @brief Clear the metadata buffer that startRecording uses to write metadata.
+ * 
+ */
+void SDWriter::ClearMetadata(void) {
+	infoKeyVal.clear();
+}
+
 
 bool SDWriter::openAsWAV(const char *fname) {
 	bool returnVal = open(fname);
 
 	if (isFileOpen()) { //true if file is open
 		flag__fileIsWAV = true;
-		wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, WAV_HEADER_NO_METADATA_NUM_BYTES, infoKeyVal);
+		wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, WAV_HEADER_NO_METADATA_NUM_BYTES);
 
 		// Check that WAV Header is valid
 		if ( pWavHeader && (WAVheader_bytes>0) ){
@@ -111,141 +137,98 @@ size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 }
 
 // Build WAV header.  If error, returns nullptr and sets WAVheader_bytes==0
-char* SDWriter::wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize, const InfoKeyVal_t &infoKeyVal) {
-	
-	constexpr uint16_t BitsPerSamp = 16;
-	
+char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
+	//Serial.println("SDWriter: makeWavHeader: fileSize = " + String(fileSize) + ", writeDataType = " + String((int)writeDataType)); Serial.flush(); delay(100);
+	uint16_t bitsPerSamp = GetBitsPerSampType();  // Set bits based on writeDataType
+
 	// Clear wavHeader
-	wavHeader.clear();
-	pWavHeader = nullptr; 
-	WAVheader_bytes = 0; 
+	wavHeader.clear();		// Empty char vector
+	pWavHeader = nullptr; 	// Set null pointer
+	WAVheader_bytes = 0; 	// Reset num bytes in header buffer
 
-	// Check input arguments
-	if ( (sampleRate_Hz>0) && (nchan>0) && (fileSize>8) ) {
+	// Create Riff chunk and append to WAV header.
+	Riff_Header_u riffChunk;
+	riffChunk.Riff_s.chunkLenBytes	= std::max(fileSize, 8UL) - 8;  // File length (in bytes) - 8bytes
 
-		// Create Riff chunk and append to WAV header.
-		Riff_Header_u riffChunk;
-		riffChunk.Riff_s.chunkLenBytes	= fileSize - 8;  // File length (in bytes) - 8bytes
-		std::copy(&riffChunk.byteStream[0], &riffChunk.byteStream[0] + sizeof(Riff_Header_u), std::back_inserter(wavHeader));
+	std::copy(&riffChunk.byteStream[0], &riffChunk.byteStream[0] + sizeof(Riff_Header_u), std::back_inserter(wavHeader));
 
-		// Create fmt chunk and append to WAV header.
-		Fmt_Header_u fmtChunk;
-		fmtChunk.Fmt_s.numChan 			= (uint16_t) nchan;								// # of audio channels
-		fmtChunk.Fmt_s.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;						// Sample Rate
-		fmtChunk.Fmt_s.byteRate 		= (uint32_t) (sampleRate_Hz * nchan * BitsPerSamp/8u);  // SampleRate * NumChannels * BitsPerSample/8
-		fmtChunk.Fmt_s.blockAlign		= (uint16_t) ( nchan * BitsPerSamp / sizeof(uint8_t) );	 // NumChannels * BitsPerSample/8
-		std::copy(&fmtChunk.byteStream[0], &fmtChunk.byteStream[0] + sizeof(Fmt_Header_u), std::back_inserter(wavHeader));
-
-		// If Info tag specified, build a LIST.. INFO chunk and append to WAV header. 
-		if ( !infoKeyVal.empty() ) {
-			List_Header_u listChunk;
-
-			// Calculate size of INFO subchunk by iterating through each info key
-			for (const auto &keyVal:infoKeyVal) {
-				listChunk.List_s.subChunkLenBytes += 4 + (keyVal.second).size()-1;	// (4bytes for key) + len of string
-			} 
-			// Assign List chunk length
-			listChunk.List_s.chunkLenBytes = listChunk.List_s.subChunkLenBytes + 8;	// Add 8 bytes for "INFO" and info subchunk len
-
-			// Append chunk ID, len and subchunk ID, len
-			std::copy(&listChunk.byteStream[0], &listChunk.byteStream[0] + sizeof(List_Header_u), std::back_inserter(wavHeader));
-
-			// Append info key and strings
-			for (const auto &keyVal:infoKeyVal) {
-				// Append tagname (without null terminator)
-				wavHeader.insert( 
-					wavHeader.end(), 
-					InfoTagToStr(keyVal.first).data(), 
-					InfoTagToStr(keyVal.first).data() + InfoTagToStr(keyVal.first).size() );
-					
-				//Append tag size
-				uint32_t tagLenBytes = (keyVal.second).size();								// use size of string.
-				wavHeader.insert( wavHeader.end(), (char*) &tagLenBytes, (char*) &tagLenBytes + sizeof(tagLenBytes) );
-
-				// Append tag string (without null terminator)
-				wavHeader.insert( wavHeader.end(), (keyVal.second).data(), (keyVal.second).data() + (keyVal.second).size() );
-			}
+	// Create fmt chunk (depending on selected data type)
+	switch (writeDataType) {
+		// For integer data types
+		case SDWriter::WriteDataType::INT16:
+		case SDWriter::WriteDataType::INT24: {
+			Fmt_Pcm_Header_u fmtPcm;
+			fmtPcm.Fmt_Pcm_s.numChan 			= (uint16_t) nchan;								// # of audio channels
+			fmtPcm.Fmt_Pcm_s.sampleRate_Hz 		= (uint32_t) sampleRate_Hz;						// Sample Rate
+			fmtPcm.Fmt_Pcm_s.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtPcm.Fmt_Pcm_s.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	 // NumChannels * BitsPerSample/8
+			fmtPcm.Fmt_Pcm_s.bitsPerSample		= bitsPerSamp;
+			
+			// Append to header buffer
+			std::copy(&fmtPcm.byteStream[0], &fmtPcm.byteStream[0] + sizeof(fmtPcm), std::back_inserter(wavHeader));
+			break;
 		}
+		// For Float 32 data type
+		case SDWriter::WriteDataType::FLOAT32:
+		default: {								// Default to Float32 type, though really this is ambigiuous
+			Fmt_Ieee_Header_u fmtIeee;
+			fmtIeee.Fmt_Ieee_s.numChan 			= (uint16_t) nchan;								// # of audio channels
+			fmtIeee.Fmt_Ieee_s.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;						// Sample Rate
+			fmtIeee.Fmt_Ieee_s.byteRate 		= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtIeee.Fmt_Ieee_s.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	 // NumChannels * BitsPerSample/8
+			fmtIeee.Fmt_Ieee_s.bitsPerSample	= bitsPerSamp;
 
-		// Create data chunk (with no data), and assign to WAV header.
-		Data_Header_u dataChunk;
-		dataChunk.Data_s.chunkLenBytes 	= (uint32_t)( 0 * nchan * BitsPerSamp / sizeof(uint8_t) ); 	// Number of audio bytes: NumSamples * NumChannels * BitsPerSample/8
-		std::copy(&dataChunk.byteStream[0], &dataChunk.byteStream[0] + sizeof(Data_Header_u), std::back_inserter(wavHeader));
-
-		// Update pointer to wavHeader and # of bytes.
-		pWavHeader = wavHeader.data();
-		WAVheader_bytes = wavHeader.size();
+			Fact_Header_u factChunk;			// Fact chunk parameters will be updated after closing file.
+			
+			// Append to header buffer
+			std::copy(&fmtIeee.byteStream[0], &fmtIeee.byteStream[0] + sizeof(fmtIeee), std::back_inserter(wavHeader));
+			std::copy(&factChunk.byteStream[0], &factChunk.byteStream[0] + sizeof(factChunk), std::back_inserter(wavHeader));
+			break;
+		}
 	}
+
+	// If Info tag specified, build a LIST.. INFO chunk and append to WAV header. 
+	if ( !infoKeyVal.empty() ) {
+		List_Header_u listChunk;
+
+		// Calculate size of INFO subchunk by iterating through each info key
+		for (const auto &keyVal:infoKeyVal) {
+			listChunk.List_s.subChunkLenBytes += 4 + (keyVal.second).size()-1;	// (4bytes for key) + len of string
+		} 
+		// Assign List chunk length
+		listChunk.List_s.chunkLenBytes = listChunk.List_s.subChunkLenBytes + 8;	// Add 8 bytes for "INFO" and info subchunk len
+
+		// Append chunk ID, len and subchunk ID, len
+		std::copy(&listChunk.byteStream[0], &listChunk.byteStream[0] + sizeof(List_Header_u), std::back_inserter(wavHeader));
+
+		// Append info key and strings
+		for (const auto &keyVal:infoKeyVal) {
+			// Append tagname (without null terminator)
+			wavHeader.insert( 
+				wavHeader.end(), 
+				InfoTagToStr(keyVal.first).data(), 
+				InfoTagToStr(keyVal.first).data() + InfoTagToStr(keyVal.first).size() );
+				
+			//Append tag size
+			uint32_t tagLenBytes = (keyVal.second).size();								// use size of string.
+			wavHeader.insert( wavHeader.end(), (char*) &tagLenBytes, (char*) &tagLenBytes + sizeof(tagLenBytes) );
+
+			// Append tag string (without null terminator)
+			wavHeader.insert( wavHeader.end(), (keyVal.second).data(), (keyVal.second).data() + (keyVal.second).size() );
+		}
+	} // else no info tag, so pass
+
+	// Create data chunk (with no data), and assign to WAV header.
+	Data_Header_u dataChunk;
+	dataChunk.Data_s.chunkLenBytes 	= (uint32_t)( 0 * nchan * bitsPerSamp / sizeof(uint8_t) ); 	// Number of audio bytes: NumSamples * NumChannels * BitsPerSample/8
+	std::copy(&dataChunk.byteStream[0], &dataChunk.byteStream[0] + sizeof(Data_Header_u), std::back_inserter(wavHeader));
+
+	// Update pointer to wavHeader and # of bytes.
+	pWavHeader = wavHeader.data();
+	WAVheader_bytes = wavHeader.size();
 
 	return pWavHeader;
 }
-*/
-
-char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
-	//Serial.println("SDWriter: makeWavHeader: fileSize = " + String(fileSize) + ", writeDataType = " + String((int)writeDataType)); Serial.flush(); delay(100);
-
-	//const int fileSize = bytesWritten+44;
-	int nbits = 16;   //assumes we're writing INT16 data
-	if (writeDataType == SDWriter::WriteDataType::FLOAT32) nbits = 32;
-
-	//clear the header
-	for (int i=0; i < wheader_maxlen; i++) wheader[i] = (char)0;
-
-	int fsamp = (int) sampleRate_Hz;
-	int nbytes = nbits / 8;
-	//int nsamp = (fileSize - WAVheader_bytes) / (nbytes * nchan);  //beware!  WAVheader_bytes changes with INT16 vs FLOAT32!!!
-
-	//WAV Format
-	//https://web.archive.org/web/20100325183246/http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
-
-	//Write the bytes in order to the char* string
-	strcpy(wheader, "RIFF");
-	strcpy(wheader + 8, "WAVE");
-	strcpy(wheader + 12, "fmt ");
-	if (writeDataType == SDWriter::WriteDataType::FLOAT32) {
-		*(uint32_t*)(wheader + 16) = 18; // size of this format chunk: 16 or 18 or 40  (use 16 for INT16 PCM, use 18 for IEEE Float32)
-		*(uint16_t*)(wheader + 20) = 3; // 0x0001 = WAVE_FORMAT_PCM, 0x0003 = IEEE float
-	} else {	
-		*(uint32_t*)(wheader + 16) = 16; // size of this format chunk: 16 or 18 or 40  (use 16 for INT16 PCM, use 18 for IEEE Float32)
-		*(uint16_t*)(wheader + 20) = 1; // 0x0001 = WAVE_FORMAT_PCM, 0x0003 = IEEE float
-	}
-	*(uint16_t*)(wheader + 22) = nchan; // numChannels (number of interleaved channels)
-	*(uint32_t*)(wheader + 24) = fsamp; // sample rate (number of blocks per second)
-	*(uint32_t*)(wheader + 28) = fsamp * nchan * nbytes; // data rate (bytes/sec)
-	*(uint16_t*)(wheader + 32) = nchan * nbytes; // data block size (bytes)
-	*(uint16_t*)(wheader + 34) = nbits; // bits per sample
-	int ref_byte = 34+2;
-	int index_dwSampleLength = 0;
-	if (writeDataType == SDWriter::WriteDataType::FLOAT32) {
-		//extra fields required for IEEE float32 format
-		*(uint16_t*)(wheader + ref_byte) = 0;  //size of extension of this fmt chunk...only needed for Float32
-		ref_byte = (ref_byte + 2);
-		strcpy(wheader + ref_byte, "fact");        //header for this section. Only needed for Float32
-		*(uint32_t*)(wheader + ref_byte + 4) = 4;  //size of this section. Only needed for Float32
-		//*(uint32_t*)(wheader + ref_byte + 8) = nsamp;   //dwSampleLength = num samples (in one channel)
-		index_dwSampleLength = ref_byte + 8;
-		ref_byte = ref_byte + 12;
-	}
-	strcpy(wheader + ref_byte, "data");
-	//*(uint32_t*)(wheader + ref_byte + 4) = nsamp * nchan * nbytes;  //total number of bytes in the recording...
-	WAVheader_bytes = (ref_byte + 4) + 4;
-	//*(uint32_t*)(wheader + 4) = ref_byte + (nsamp * nchan * nbytes);  //INT16: 4+24+(8 * nsamp*nchan*nbytes), IEE FLOAT = 4+(24+2)+12+(8 * nsamp*nchan*nbytes)
-
-
-	//now that we know the header size, write all fields with the number of samples
-	int nsamp = (fileSize - WAVheader_bytes) / (nbytes * nchan);  //beware!  WAVheader_bytes changes with INT16 vs FLOAT32!!!
-	if (writeDataType == SDWriter::WriteDataType::FLOAT32) *(uint32_t*)(wheader + index_dwSampleLength) = nsamp;   //dwSampleLenth = num samples (in one channel)
-	*(uint32_t*)(wheader + ref_byte + 4) = nsamp * nchan * nbytes;  //total number of bytes in the recording...
-	*(uint32_t*)(wheader + 4) = ref_byte + (nsamp * nchan * nbytes);  //INT16: 4+24+(8 * nsamp*nchan*nbytes), IEE FLOAT = 4+(24+2)+12+(8 * nsamp*nchan*nbytes)
-
-	//Serial.println("SDWriter: makeWavHeader: returning...wheader:"); Serial.flush(); delay(500);
-	//Serial.print("Header (char):"); for (int i=0; i < wheader_maxlen; i++) Serial.print(wheader[i]);	Serial.println();
-	//Serial.print("Header (HEX):"); for (int i=0; i < wheader_maxlen; i++) { Serial.print(wheader[i], HEX); Serial.println(", ");}	Serial.println();
-
-	return wheader;
-	
-}
-	
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

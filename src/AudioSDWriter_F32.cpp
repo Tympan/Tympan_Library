@@ -134,7 +134,12 @@ int AudioSDWriter_F32::deleteAllRecordings(void) {
 		
 }
 
-//int AudioSDWriter_F32::startRecording_noOverwrite(void) {
+
+/**
+ * @brief Start recording to filename "AUDIOxxx.WAV", where xxx is incremented
+ * \note If writing metadata to the WAV header, first call SDWriter::AddMetadata() 
+ * @return int 0: success; -1: failure
+ */
 int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRecording"
 	int return_val = 0;
 
@@ -185,14 +190,15 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 	return return_val;
 }
 
-int AudioSDWriter_F32::startRecording(const char* fname) {
-	InfoKeyVal_t emptyInfoTag;
-	return startRecording(fname, emptyInfoTag);	// Start recording without additional WAV header metadata
-}
 
-int AudioSDWriter_F32::startRecording(const char* fname, const InfoKeyVal_t &infoKeyValMap) {
+/**
+ * @brief Start recording to specified filename
+ * \note If writing metadata to the WAV header, first call SDWriter::AddMetadata() 
+ * @param fname Filename to write to
+ * @return int 0: success; -1: failure
+*/
+int AudioSDWriter_F32::startRecording(const char* fname) {
 	int return_val = 0;
-	bool okayFlag = true;
 	
 	// If SD has not been initialized, then initialize it
 	if (current_SD_state == STATE::UNPREPARED) {
@@ -202,15 +208,8 @@ int AudioSDWriter_F32::startRecording(const char* fname, const InfoKeyVal_t &inf
 	
 	// If SD is in the STOPPED state, then proceed
 	if (current_SD_state == STATE::STOPPED) {
-		// If INFO metadata not needed, initialize a WAV file without it
-		if ( infoKeyValMap.empty() ) {
-			okayFlag = openAsWAV(fname);
-		} else {
-			okayFlag = openAsWAV(fname, infoKeyValMap);
-		}
-
 		// If WAV file header writtern, then proceed
-		if (okayFlag) {
+		if ( openAsWAV(fname) ) {
 			if (serial_ptr) {
 				serial_ptr->print("AudioSDWriter: Opened ");
 				serial_ptr->println(fname);
