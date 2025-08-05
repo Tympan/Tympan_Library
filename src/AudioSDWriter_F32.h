@@ -195,7 +195,12 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 
 		void prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
 		void end(void) override;
-
+		
+		void AddMetadata(const String &comment) {
+			if(buffSDWriter){
+				buffSDWriter->AddMetadata(comment);
+			}
+		};
 		int startRecording(void) override;    //call this to start a WAV recording...automatically generates a filename
 		int startRecording(const char* fname) override; //or call this to specify your own filename.
 
