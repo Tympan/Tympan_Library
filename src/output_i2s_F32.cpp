@@ -295,13 +295,16 @@ void AudioOutputI2S_F32::isr(void)
 	offsetL = AudioOutputI2S_F32::block_left_offset;
 	offsetR = AudioOutputI2S_F32::block_right_offset;
 	
+	const int num_chan = 2; //this class does 2 channels of audio (left and right)
+	const int bytes_per_tx_buffer_element = 4; //it is uint32_t
 	if (transferUsing32bit) {  //data member of AudioI2SBase, which is the base class of all I2S classes (see AudioI2SBase in output_i2s_f32.h)
 		//32-bit I2S transfers
+		const int bytes_per_sample = 4;
 		
 		//if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {	//original 16-bit
-		if (saddr < (uint32_t)i2s_tx_buffer + ((audio_block_samples/2)*2)) {	  //are we transmitting the first half or second half of the buffer?  Half the block * 2 channels.  Each sample is 4 bytes, just like each element of our buffer
+		if (saddr < (uint32_t)i2s_tx_buffer + ((audio_block_samples/2)*num_chan * bytes_per_sample/bytes_per_tx_buffer_element)) {	  //are we transmitting the first half or second half of the buffer?  Half the block * 2 channels.  Each sample is 4 bytes, just like each element of our buffer
 			// DMA is transmitting the first half of the buffer so we must fill the second half
-			dest32 = (int32_t *)&i2s_tx_buffer[((audio_block_samples/2)*2)]; //this will be diff if we were to do 32-bit samples
+			dest32 = (int32_t *)&i2s_tx_buffer[((audio_block_samples/2)*num_chan * bytes_per_sample/bytes_per_tx_buffer_element)]; //this will be diff if we were to do 32-bit samples
 			if (AudioOutputI2S_F32::update_responsibility) AudioStream_F32::update_all();
 		} else {
 			// DMA is transmitting the second half of the buffer so we must fill the first half
@@ -338,12 +341,13 @@ void AudioOutputI2S_F32::isr(void)
 
 	} else {
 		//16-bit I2S transfers
+		const int bytes_per_sample = 2;
 		
 		//if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {	//original 16-bit
-		if (saddr < (uint32_t)i2s_tx_buffer + (((audio_block_samples/2)*2)/2)) {	  //are we transmitting the first half or second half of the buffer?  Half the block * 2 channels.  Each sample is 2 bytes, whihc is half of each 4-byte element of our buffer...so divide by 2
+		if (saddr < (uint32_t)i2s_tx_buffer + (((audio_block_samples/2)*num_chan)*bytes_per_sample/bytes_per_tx_buffer_element)) {	  //are we transmitting the first half or second half of the buffer?  Half the block * 2 channels.  Each sample is 2 bytes, whihc is half of each 4-byte element of our buffer...so divide by 2
 			// DMA is transmitting the first half of the buffer so we must fill the second half
 			//dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2]; //original Teensy Audio
-			dest16 = (int16_t *)&i2s_tx_buffer[(((audio_block_samples/2)*2)/2)]; //this will be diff if we were to do 32-bit samples
+			dest16 = (int16_t *)&i2s_tx_buffer[(((audio_block_samples/2)*num_chan)*bytes_per_sample/bytes_per_tx_buffer_element)]; //this will be diff if we were to do 32-bit samples
 			if (AudioOutputI2S_F32::update_responsibility) AudioStream_F32::update_all();
 		} else {
 			// DMA is transmitting the second half of the buffer so we must fill the first half
