@@ -147,6 +147,8 @@ class SDWriter : public Print
 		SdFs * sd = nullptr; //faster
     SdFile file;
     bool updateWavFileSizeOnSD(void);
+    bool SeekFileToPattern(SdFile &openFileH, const std::vector<char> &pattern);
+
     //bool hasSdBegun = false;
     boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;

@@ -74,37 +74,59 @@ int SDWriter::close(void) {
 	return 0;
 }
 
-// Updates file size specified in WAV header of open SD file
+
+/**
+ * @brief Update WAV header with file size 
+ * \note Current file pos must be at the end of the data subchunk)
+ * Writes size fields for the RIFF chunk and data subchunk
+ * @return true 
+ * @return false 
+ */
 bool SDWriter::updateWavFileSizeOnSD(void) {
+
 	bool okayFlag = false;  // init to error
-	uint32_t riffChunkSize = 0;
+	uint32_t chunkSize = 0;
 
-	if (flag__fileIsWAV) {
-		// Write the RIFF chunk size specified in the header
-		riffChunkSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+	const std::vector<char> dataPattern = {'d', 'a', 't','a'};
 
-		// Check that file is bigger than just the RIFF + RIFF chunk Size header
-		if (riffChunkSize>8) { 
-			riffChunkSize -= 8;
+	if (file) {
+		// Store current position at the end of the data subchunk
+		size_t dataIdx = file.curPosition();
 
-			// Seek to RIFF chunk size index; Catches file not open and file too small
-			if ( file.seekSet(riffChunkSize) ) { //SdFat_Gre_FatLib version of seek(); 
-				
-				// Write RIFF chunk size
-				if ( file.write(&riffChunkSize, sizeof(uint32_t)) == sizeof(uint32_t) ) { //write header with correct length
-					
-					// Seek to end of file
-					if ( file.seekSet(file.fileSize() ) ) {
-						okayFlag = true;
-					}
-				}
+		// Seek to Riff chunk len
+		file.seekSet( sizeof(uint32_t) );
+	
+		// Store the size of the file
+		chunkSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+
+		// Subtract 8 from the file size to account for ("RIFF" + RIFF LEN)
+		if (chunkSize>8) { 
+			chunkSize -= 8;
+		}
+
+		// Write RIFF len, and check returned nnum bytes written
+		if ( file.write(&chunkSize, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+			okayFlag = false;
+		}
+
+		if (okayFlag) {
+			
+			// Seek to end of "data"
+			SeekFileToPattern(file, dataPattern);
+			file.seekCur( sizeof(uint32_t) );
+
+			// Record data len
+			chunkSize = dataIdx - file.curPosition();
+
+			// Write data subchunk len
+			if ( file.write(&chunkSize, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+				okayFlag = false;
 			}
 		}
 	}
-
 	return okayFlag;
 }
-		
+
 
 //This "write" is for compatibility with the Print interface.  Writing one
 //byte at a time is EXTREMELY inefficient and shouldn't be done
@@ -231,6 +253,47 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 	return pWavHeader;
 }
 
+
+/**
+ * @brief Seeks to start of pattern. Search begins at current file position. File must be open.
+ * 
+ * @param openFileH 
+ * @param pattern 
+ * @return bool True:pattern found
+ */
+bool SDWriter::SeekFileToPattern(SdFile &openFileH, const std::vector<char> &pattern) {
+	size_t totalBytesRead = 0;					// Tracks total number of bytes read from file.
+	constexpr size_t bufferLen = 512;
+	std::vector<char> buffer(bufferLen);
+	bool foundFlag = false;
+
+	// If file open...
+	while ( file && file.isOpen() ) {
+		// Read in section of data
+		size_t bytesRead = file.read(buffer.data(), bufferLen);
+		
+		// Check for EOF
+		if (bytesRead == 0) {
+			break; // End of file
+		}
+
+		// Search for pattern
+		auto idx = std::search(buffer.begin(), buffer.begin() + bytesRead,
+			pattern.begin(), pattern.end());
+		
+		// Success if returned idx is not the last byte that was read
+		if (idx != buffer.begin() + bytesRead) {
+			foundFlag = true;
+
+			// Seek to end of pattern
+			file.seekCur(totalBytesRead + (idx - buffer.begin()) );
+			break;
+		}
+	
+		totalBytesRead += bytesRead;
+	}
+	return foundFlag;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
