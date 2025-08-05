@@ -61,6 +61,8 @@ DMAChannel AudioInputI2SHex_F32::dma(false);
 
 void AudioInputI2SHex_F32::begin(void)
 {
+	transferUsing32bit = false; //is this class ready for 32-bit transfers yet?  As of Aug 5, 2025, no, it is not.  So force to false for now.
+
 	//Serial.println("AudioInputI2SHex_F32: begin: starting...");
 	dma.begin(true); // Allocate the DMA channel first
 
@@ -73,8 +75,6 @@ void AudioInputI2SHex_F32::begin(void)
 		
 
 	const int pinoffset = 0; // TODO: make this configurable...
-	//AudioOutputI2S_F32::config_i2s();
-	bool transferUsing32bit = false;
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit, sample_rate_Hz);
 	I2S1_RCR3 = I2S_RCR3_RCE_3CH << pinoffset;
 	switch (pinoffset) {

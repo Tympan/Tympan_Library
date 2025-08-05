@@ -36,12 +36,13 @@
 
 #include <Arduino.h>
 #include <arm_math.h>
-#include "AudioStream_F32.h"
-#include "AudioStream.h"   //do we really need this? (Chip 2020-10-31)
+#include <AudioStream_F32.h>
 #include "DMAChannel.h"
-#include "input_i2s_F32.h" //for scale_i16_to_f32() and for AudioInputI2SBase_F32
+#include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
+#include <input_i2s_F32.h> //for scale_i16_to_f32() and for AudioInputI2SBase_F32
 
-class AudioInputI2SQuad_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
+
+class AudioInputI2SQuad_F32 : public AudioI2SBase, public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
@@ -61,7 +62,7 @@ public:
 		i2s_rx_buffer = rx_buff;
 		begin(); 
 	} 
-	virtual void update(void);
+	void update(void) override;
 	//static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
 	//static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
 	//static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);

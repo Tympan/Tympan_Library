@@ -48,7 +48,7 @@
 //include "memcpy_audio.h"
 #include "utility/memcpy_audio_tympan.h"
 #include <arm_math.h>
-#include "output_i2s_F32.h"  //for config_i2s() and setI2Sfreq_T3()
+#include "output_i2s_F32.h"  //for config_i2s() and setI2Sfreq_T3() and scale_f32_to_i16()
 
 //only compile this file if it is a KinetisK or IMRXT processor
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
@@ -97,9 +97,8 @@ int AudioOutputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 // #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0])/2)
 
 //for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels...later, you'll see that we'll be transfering half of audio_bock_samples at a time
-#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]) / (AudioOutputI2SQuad_F32::transferUsing32bit ? 1 : 2)) //divide in half if transferring using 16 bits
+#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_tx_buffer[0]) / (AudioI2SBase::transferUsing32bit ? 1 : 2)) //divide in half if transferring using 16 bits
 
-bool AudioOutputI2SQuad_F32::transferUsing32bit = true;  //assume we'll be using Teensy 4.x.  Config_i2s() will change to false if using Teensy 3.x
 
 void AudioOutputI2SQuad_F32::begin(void)
 {

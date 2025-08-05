@@ -70,7 +70,7 @@ DMAChannel AudioInputI2SQuad_F32::dma(false);
 // #define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*(sizeof(i2s_rx_buffer[0])/2))
 
 //for 32-bit transfers (into a 32-bit data type) multiplied by 4 channels...transfering half of audio_block_samples at a time
-#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_rx_buffer[0]) /  (AudioOutputI2SQuad_F32::transferUsing32bit ? 1 : 2)) //divide in half if transferring using 16 bits
+#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*sizeof(i2s_rx_buffer[0]) /  (AudioI2SBase::transferUsing32bit ? 1 : 2)) //divide in half if transferring using 16 bits
 
 //only compile this file if it is a KinetisK or IMRXT processor
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)

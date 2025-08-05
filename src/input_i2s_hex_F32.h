@@ -36,12 +36,12 @@
 
 #include <Arduino.h>     // github.com/PaulStoffregen/cores/blob/master/teensy4/Arduino.h
 #include <AudioStream_F32.h> // github.com/PaulStoffregen/cores/blob/master/teensy4/AudioStream.h
-//include "AudioStream.h"   //do we really need this? (from Chip)
 #include <DMAChannel.h>  // github.com/PaulStoffregen/cores/blob/master/teensy4/DMAChannel.h
-#include "input_i2s_F32.h" //for scale_i16_to_f32() and for AudioInputI2SBase_F32
+#include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
+#include <input_i2s_F32.h> //for scale_i16_to_f32() and for AudioInputI2SBase_F32
 
 
-class AudioInputI2SHex_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
+class AudioInputI2SHex_F32 : public AudioI2SBase, public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 public:
 	AudioInputI2SHex_F32(void)  { begin(); }
@@ -51,7 +51,7 @@ public:
 		audio_block_samples = settings.audio_block_samples;
 		if (flag_callBegin) begin(); 
 	}
-	virtual void update(void);
+	void update(void) override;
 	void begin(void);
 	int get_isOutOfMemory(void) { return flag_out_of_memory; }
 	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }

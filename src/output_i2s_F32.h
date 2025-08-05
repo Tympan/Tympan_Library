@@ -35,13 +35,15 @@
 
 #include <Arduino.h>
 #include <arm_math.h>
-#include "AudioStream_F32.h"
-//include "AudioStream.h"
-#include "DMAChannel.h"
-#include "input_i2s_F32.h" //for AudioInputI2S_F32
+#include <AudioStream_F32.h>  //tympan library
+#include <DMAChannel.h> 
+#include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
+#include <input_i2s_F32.h>  //tympan library
+#include <input_i2s_quad_F32.h>  //tympan library
+#include <input_i2s_hex_F32.h>  //tympan library
+#include <output_i2s_quad_F32.h> //tympan library
 
-
-class AudioOutputI2S_F32 : public AudioStream_F32
+class AudioOutputI2S_F32 : public AudioI2SBase, public AudioStream_F32
 {
 //GUI: inputs:2, outputs:0  //this line used for automatic generation of GUI node
 public:
@@ -71,16 +73,10 @@ public:
 	void sub_begin_i32(void);
 	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
-
-	#if defined(__IMXRT1062__)
 	friend class AudioInputI2SBase_F32;
-	friend class AudioInputI2S_F32;
 	friend class AudioInputI2SQuad_F32;
 	friend class AudioInputI2SHex_F32;
 	friend class AudioOutputI2SQuad_F32;
-	//friend class AudioOutputI2SOct;
-	//friend class AudioInputI2SOct;
-	#endif
 
 	static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
 	static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
