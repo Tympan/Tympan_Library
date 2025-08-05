@@ -87,6 +87,8 @@ protected:
 	static void isr(void);
 	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
 	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
+	bool transferUsing32bit = true;  //I2S transfers using 32 bit values (instead of 16-bit).  Only used for Teensy4.1 or later
+	uint32_t i2s_buffer_to_use_bytes;
 private:
 	static audio_block_f32_t *block_ch1_2nd;
 	static audio_block_f32_t *block_ch2_2nd;
