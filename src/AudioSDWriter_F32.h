@@ -151,7 +151,10 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		SdFs* getOrAllocateSD(void) { if (sd == nullptr) { return sd = new SdFs(); } else { return sd; } }
 
 		void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
-		enum class WriteDataType { INT16=(int)SDWriter::WriteDataType::INT16, FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 };
+		enum class WriteDataType { 
+			INT16=(int)SDWriter::WriteDataType::INT16, 
+			FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 
+		};
 
 		virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type);
 		//virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_bytes=-1);

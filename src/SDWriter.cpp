@@ -42,7 +42,8 @@ bool SDWriter::openAsWAV(const char *fname) {
 
 	if (isFileOpen()) { //true if file is open
 		flag__fileIsWAV = true;
-		wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, WAV_HEADER_NO_METADATA_NUM_BYTES);
+		// wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, WAV_HEADER_NO_METADATA_NUM_BYTES); to write 16-bit data
+		makeWavHeader(WAV_HEADER_NO_METADATA_NUM_BYTES);
 
 		// Check that WAV Header is valid
 		if ( pWavHeader && (WAVheader_bytes>0) ){
