@@ -41,7 +41,7 @@
 #include <input_i2s_F32.h> //for scale_i16_to_f32() and for AudioInputI2SBase_F32
 
 
-class AudioInputI2SHex_F32 : public AudioI2SBase, public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
+class AudioInputI2SHex_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 public:
 	AudioInputI2SHex_F32(void)  { begin(); }

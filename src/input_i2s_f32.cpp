@@ -64,10 +64,7 @@ int AudioInputI2SBase_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //
 void AudioInputI2S_F32::begin(void) {
 	//bool transferUsing32bit = false;
 	transferUsing32bit = false;  //is this class ready for 32-bit transfers?  As of Aug 5, 2025, no.  It is not.  So, force to false
-	begin(transferUsing32bit);
-}
 
-void AudioInputI2S_F32::begin(bool _transferUsing32bit) {
 	dma.begin(true); // Allocate the DMA channel first
 
 	AudioOutputI2S_F32::sample_rate_Hz = sample_rate_Hz; //these were given in the AudioSettings in the contructor
@@ -77,7 +74,7 @@ void AudioInputI2S_F32::begin(bool _transferUsing32bit) {
 	//block_right_1st = NULL;
 
 	// TODO: should we set & clear the I2S_RCSR_SR bit here?
-	AudioOutputI2S_F32::config_i2s(_transferUsing32bit);
+	AudioOutputI2S_F32::config_i2s(transferUsing32bit);
 
 #if defined(KINETISK)
 	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0

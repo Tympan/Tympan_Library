@@ -69,7 +69,6 @@ public:
 	
 	void update(void) override;
 	void begin(void);
-	void begin(bool);
 	void sub_begin_i32(void);
 	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
