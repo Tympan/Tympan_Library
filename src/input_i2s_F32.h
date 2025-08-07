@@ -34,12 +34,11 @@
 #define _input_i2s_f32_h_
 
 #include <Arduino.h>
-#include <arm_math.h> 
-#include "AudioStream_F32.h"
-#include "AudioStream.h"   //Do we really need this?? (Chip, 2020-10-31)
-#include "DMAChannel.h"
+#include <AudioStream_F32.h>
+#include <DMAChannel.h>
+#include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
 
-class AudioInputI2SBase_F32 : public AudioStream_F32 {
+class AudioInputI2SBase_F32 : public AudioI2SBase, public AudioStream_F32 {
 	public:
 		AudioInputI2SBase_F32(void) : AudioStream_F32(0, NULL) {};
 		virtual ~AudioInputI2SBase_F32(void) {};
@@ -77,12 +76,11 @@ public:
 		begin(); 
 	} 	
 	
-	virtual void update(void);
+	void update(void) override;
 	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
 	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
 	static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
-	void begin(void);
-	void begin(bool);
+	void begin(void) override;
 	void sub_begin_i32(void);
 	//void sub_begin_i16(void);
 	static uint32_t *i2s_rx_buffer; 
