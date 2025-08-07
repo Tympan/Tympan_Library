@@ -37,7 +37,8 @@
 
 
 //DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*3]; //Teensy original
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*6]; //The "divide by 2" is because we're fitting 16-bit samples into 32-bit slots
+//DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*6]; //The "divide by 2" is because we're fitting 16-bit samples into 32-bit slots
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*6]; //Six channels of 32-bit data
 uint32_t *AudioInputI2SHex_F32::i2s_rx_buffer = i2s_default_rx_buffer;
 audio_block_f32_t * AudioInputI2SHex_F32::block_ch1 = NULL;
 audio_block_f32_t * AudioInputI2SHex_F32::block_ch2 = NULL;
@@ -53,8 +54,7 @@ DMAChannel AudioInputI2SHex_F32::dma(false);
 //float AudioInputI2SHex_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
 //int AudioInputI2SHex_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
 
-//for 16-bit transfers?
-#define I2S_BUFFER_TO_USE_BYTES ((AudioInputI2SHex_F32::audio_block_samples)*6*(sizeof(i2s_rx_buffer[0])/2))
+#define I2S_BUFFER_TO_USE_BYTES ((AudioInputI2SHex_F32::audio_block_samples)*6*(AudioI2SBase::transferUsing32bit ? 4 : 2))
 
 
 #if defined(__IMXRT1062__)
@@ -95,15 +95,38 @@ void AudioInputI2SHex_F32::begin(void)
 			IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
 			break;
 	}
-	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
-	dma.TCD->SOFF = 4;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
-	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
-		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |  // 4 samples @ 2 bytes each?
-		DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);    
-	dma.TCD->SLAST = -12;  //6 samples @ 2 bytes each?
+
+	// DMA
+	//   Each minor loop copies one audio sample from each CODEC (either 3 left or 3 right)
+	//   Major loop repeats for audio_block_samples * 2 (stereo)	
+
+	#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+	#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+	#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+	#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
+	#define I2S1_RDR                          (IMXRT_SAI1.RDR)
+
+	if (transferUsing32bit) {
+		// For 32-bit samples:
+		dma.TCD->SADDR =  &(I2S1_RDR[pinoffset]);
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+		dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
+			DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |  // 3 rx registers @ 4 byte spacing
+			DMA_TCD_NBYTES_MLOFFYES_NBYTES(12);   // copy 3 samples @ 4 bytes each
+		dma.TCD->DOFF = 4;  // Number of bytes per sample in i2s_rx_buffer
+	} else {
+		// For 16-bit samples:
+		dma.TCD->SADDR = (void *)((uint32_t)&(I2S1_RDR[pinoffset]) + 2);  // "+ 2" to shift to start of high 16-bits in 32-bit register
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES;
+		dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
+			DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |  // 3 rx registers @ 4 byte spacing
+			DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);    // copy 3 samples @ 2 bytes each
+		dma.TCD->DOFF = 2;  // Number of bytes per sample in i2s_rx_buffer
+	}
+
+	dma.TCD->SOFF = 4;  // This is the separation between sequential RDR registers 
+	dma.TCD->SLAST = -12;  // 3 rx registers @ 4 byte spacing
 	dma.TCD->DADDR = i2s_rx_buffer;
-	dma.TCD->DOFF = 2;
 	
 //	dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;  //original from Teensy library (hex.  assumes 16 bit transfers?)
 //	dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);        //original from Teensy library (hex)
