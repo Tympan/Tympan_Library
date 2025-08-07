@@ -243,7 +243,7 @@ void AudioOutputI2S_F32::begin(void)
 	I2S0_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
 	
 #elif defined(__IMXRT1062__)
-	transferUsing32bit = true;  //is this class ready for 32-bit yet?  Aug 5, 2025, I don't think it is.  So, force to false for now.
+	transferUsing32bit = true;
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit, sample_rate_Hz);
 
 	CORE_PIN7_CONFIG  = 3;  //1:TX_DATA0
