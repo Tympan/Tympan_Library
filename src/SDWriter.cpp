@@ -36,19 +36,34 @@ void SDWriter::ClearMetadata(void) {
 	infoKeyVal.clear();
 }
 
+/**
+ * @brief Selece to write metadata before or after the audio data.
+ * \note Some WAV players have a preference to where metadata is stored, 
+ * though technically, the RIFF standard says the INFO<LIST> chunk can go
+ * anywhere after the fmt chunk * 
+ * @param metadataLoc Selects location
+ */
+void SDWriter::SetMetadataLocation(List_Info_Location metadataLoc) {
+	listInfoLoc = metadataLoc;
+}
+
 
 bool SDWriter::openAsWAV(const char *fname) {
 	bool returnVal = open(fname);
 
 	if (isFileOpen()) { //true if file is open
 		flag__fileIsWAV = true;
-		// wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, WAV_HEADER_NO_METADATA_NUM_BYTES); to write 16-bit data
-		makeWavHeader(WAV_HEADER_NO_METADATA_NUM_BYTES);
+
+		// Build WAV header buffer and update pWavHeader pointer
+		makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, 0);  // Set file size to 0 to automatically calculate header length
 
 		// Check that WAV Header is valid
 		if ( pWavHeader && (WAVheader_bytes>0) ){
 			file.write(pWavHeader, WAVheader_bytes); // Write WAV header assuming no audio data
 		}
+
+		// Mark start of data chunk to later calculate numSamples.
+		filePosAudioData = file.curPosition();
 	}
 	return returnVal;
 }
@@ -65,66 +80,134 @@ bool SDWriter::open(const char *fname) {
 	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
 	return isFileOpen();
 }
-		
-int SDWriter::close(void) {
-	//file.truncate(); 
-	updateWavFileSizeOnSD();  // ignore returned error;
-	file.close();
-	flag__fileIsWAV = false;
-	return 0;
-}
 
 
 /**
- * @brief Update WAV header with file size 
- * \note Current file pos must be at the end of the data subchunk)
- * Writes size fields for the RIFF chunk and data subchunk
- * @return true 
- * @return false 
+ * @brief Updates the WAV header for fields that rely on numSamples. The closes the file.
+ * 
+ * @return int: 0: Success; -1: Failure.  (Prior to Aug 2025, always returned 0)
  */
-bool SDWriter::updateWavFileSizeOnSD(void) {
+int SDWriter::close(void) {
+	//file.truncate(); 
+	bool okayFlag = true;
+	uint32_t numTotalSamples = 0;
 
-	bool okayFlag = false;  // init to error
-	uint32_t chunkSize = 0;
+	// Record total number of samples (samples x numChannels)
+	if (file.curPosition() > filePosAudioData) {
+		numTotalSamples = (file.curPosition() - filePosAudioData) / (uint32_t) GetBitsPerSampType();
+	// Else start of audio data was not recorded
+	} else {
+		okayFlag = false;
+	}
 
-	const std::vector<char> dataPattern = {'d', 'a', 't','a'};
+	// Clear wavHeader buffer
+	wavHeader.clear();
+	WAVheader_bytes = 0;
 
-	if (file) {
-		// Store current position at the end of the data subchunk
-		size_t dataIdx = file.curPosition();
+	// If data chunk ends on an odd byte, then pad with 0
+	if ( file && file.isOpen()) {
+		if ( file.size()%2 != 0 ) {									// If not on word boundary, ...
+			if ( file.write( (uint8_t)0 ) != sizeof(uint8_t) ) {	// Pad with zero
+				Serial.print ("Error padding WAV header");	
+				okayFlag = false;
+			} // else success
+		} // else file ends in even byte, pass
+	}
 
-		// Seek to Riff chunk len
-		file.seekSet( sizeof(uint32_t) );
-	
-		// Store the size of the file
-		chunkSize = file.fileSize();//SdFat_Gre_FatLib version of size();
-
-		// Subtract 8 from the file size to account for ("RIFF" + RIFF LEN)
-		if (chunkSize>8) { 
-			chunkSize -= 8;
-		}
-
-		// Write RIFF len, and check returned nnum bytes written
-		if ( file.write(&chunkSize, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+	// Write data chunk length
+	if (okayFlag) {
+		if (!UpdateHeaderDataChunk(file) ) {
+			Serial.println("Error writing WAV Header data chunk length.");
 			okayFlag = false;
 		}
+	}
 
-		if (okayFlag) {
-			
-			// Seek to end of "data"
-			SeekFileToPattern(file, dataPattern);
-			file.seekCur( sizeof(uint32_t) );
+	// If F32 audio update "fact" chunk for # of samples
+	if (okayFlag && writeDataType==WriteDataType::FLOAT32) {
+		if( !UpdateHeaderFactChunk(file, numTotalSamples) ) {
+			Serial.println("Error updating fact chunk.");
+			okayFlag = false;
+		}
+	} 
 
-			// Record data len
-			chunkSize = dataIdx - file.curPosition();
+	// Write LIST<INFO> metadata chunk (if it is not empty)
+	if ( okayFlag && ( !infoKeyVal.empty() ) ) {			
+		List_Header_u listChunk;	// temporary buffer to store LIST chunk header
 
-			// Write data subchunk len
-			if ( file.write(&chunkSize, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+		// Seek to end of file
+		if ( !file.seekSet( file.fileSize() ) ) {
+			okayFlag = false;
+			Serial.print("Error seeking end of file.");
+		} else {
+			// Calculate size of LIST chunk 
+			listChunk.List_s.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
+
+			// Add up all the info tag names and strings.  
+			for (auto &keyVal:infoKeyVal) {
+				//If string is odd length, pad with 0
+				if ( (keyVal.second).size()%2!=0 ){
+					(keyVal.second).push_back('\0');
+				}
+
+				// Add length of Key ID (4), Key Len (4) and len of string
+				listChunk.List_s.chunkLenBytes += 8 + (keyVal.second).size();	
+			} 
+
+			// Store chunk ID, len and subchunk ID, len in header buffer
+			std::copy(&listChunk.byteStream[0], &listChunk.byteStream[0] + sizeof(List_Header_u), std::back_inserter(wavHeader));
+
+			// Append info key and strings
+			for (const auto &keyVal:infoKeyVal) {
+				// Append tagname (without null terminator)
+				wavHeader.insert( 
+					wavHeader.end(), 
+					InfoTagToStr(keyVal.first).data(), 
+					InfoTagToStr(keyVal.first).data() + InfoTagToStr(keyVal.first).size() );
+				
+				// Append tag size
+				uint32_t tagLenBytes = (keyVal.second).size();	// use size of string
+				
+				wavHeader.insert( wavHeader.end(), (char*) &tagLenBytes, (char*) &tagLenBytes + sizeof(tagLenBytes) );
+
+				// Append tag string (without null terminator)
+				wavHeader.insert( wavHeader.end(), (keyVal.second).data(), (keyVal.second).data() + (keyVal.second).size() );
+			}
+
+			// Write WAV header to file
+			if ( wavHeader.size()>0 ) {
+				size_t bytesWritten = file.write( wavHeader.data(), wavHeader.size() ); // Write WAV header assuming no audio data
+
+				if ( bytesWritten != wavHeader.size() ) {
+					okayFlag = false;
+					Serial.println("Error writing WAV header LIST chunk"); 
+					Serial.println( String("Wrote ")+String(bytesWritten)+String(" bytes; Expected: ")+String(wavHeader.size())+String(" bytes") );
+				} // else success
+			} else {
 				okayFlag = false;
+				Serial.println( String("Error building WAV header LIST<INFO> chunk. numBytes = ") + String(wavHeader.size()) );
 			}
 		}
+		
+		// Clear the WAV metadata member (regardless of error)
+		infoKeyVal.clear();
 	}
-	return okayFlag;
+	
+	// Update RIFF chunk len
+	if (okayFlag) {
+		okayFlag = UpdateHeaderRiffChunk(file);
+	}
+
+	// Close file
+	if ( file && file.isOpen() ) {
+		file.close();
+		flag__fileIsWAV = false;
+	}
+
+	if (okayFlag) {
+		return 0;
+	} else {
+		return -1;
+	}
 }
 
 
@@ -159,9 +242,26 @@ size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	return return_val;
 }
 
-// Build WAV header.  If error, returns nullptr and sets WAVheader_bytes==0
+
+/**
+ * @brief Build char buffer with WAV header and return a pointer to the buffer
+ * 
+ * @param sampleRate_Hz Sample rate of the recording
+ * @param nchan # of audio channels
+ * @param fileSize Size of entire file.  If unknown, then set to 0 to use the calculated size of this header.
+ * @return char* pointer to the WAV header character buffer, for writing to file.
+ */
 char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
 	//Serial.println("SDWriter: makeWavHeader: fileSize = " + String(fileSize) + ", writeDataType = " + String((int)writeDataType)); Serial.flush(); delay(100);
+	
+	// Initialize chunks (some of which may not be used)
+	Riff_Header_u riffChunk;
+	Fmt_Pcm_Header_u fmtPcm;
+	Fmt_Ieee_Header_u fmtIeee;
+	Fact_Header_u factChunk;
+	List_Header_u listChunk;
+	Data_Header_u dataChunk;
+
 	uint16_t bitsPerSamp = GetBitsPerSampType();  // Set bits based on writeDataType
 
 	// Clear wavHeader
@@ -169,58 +269,101 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 	pWavHeader = nullptr; 	// Set null pointer
 	WAVheader_bytes = 0; 	// Reset num bytes in header buffer
 
-	// Create Riff chunk and append to WAV header.
-	Riff_Header_u riffChunk;
-	riffChunk.Riff_s.chunkLenBytes	= std::max(fileSize, 8UL) - 8;  // File length (in bytes) - 8bytes
+	// --- Riff chunk ---
+	riffChunk.Riff_s.chunkLenBytes = sizeof(riffChunk.Riff_s.format);
 
-	std::copy(&riffChunk.byteStream[0], &riffChunk.byteStream[0] + sizeof(Riff_Header_u), std::back_inserter(wavHeader));
-
-	// Create fmt chunk (depending on selected data type)
+	// --- fmt chunk --- 
+	// Format depends on data type
 	switch (writeDataType) {
 		// For integer data types
 		case SDWriter::WriteDataType::INT16:
 		case SDWriter::WriteDataType::INT24: {
-			Fmt_Pcm_Header_u fmtPcm;
-			fmtPcm.Fmt_Pcm_s.numChan 			= (uint16_t) nchan;								// # of audio channels
-			fmtPcm.Fmt_Pcm_s.sampleRate_Hz 		= (uint32_t) sampleRate_Hz;						// Sample Rate
+			fmtPcm.Fmt_Pcm_s.numChan 			= (uint16_t) nchan;											// # of audio channels
+			fmtPcm.Fmt_Pcm_s.sampleRate_Hz 		= (uint32_t) sampleRate_Hz;									// Sample Rate
 			fmtPcm.Fmt_Pcm_s.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
-			fmtPcm.Fmt_Pcm_s.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	 // NumChannels * BitsPerSample/8
+			fmtPcm.Fmt_Pcm_s.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
 			fmtPcm.Fmt_Pcm_s.bitsPerSample		= bitsPerSamp;
-			
-			// Append to header buffer
-			std::copy(&fmtPcm.byteStream[0], &fmtPcm.byteStream[0] + sizeof(fmtPcm), std::back_inserter(wavHeader));
+
+			// update fmt chunk size
+			riffChunk.Riff_s.chunkLenBytes += fmtPcm.Fmt_Pcm_s.chunkLenBytes;
 			break;
 		}
 		// For Float 32 data type
 		case SDWriter::WriteDataType::FLOAT32:
 		default: {								// Default to Float32 type, though really this is ambigiuous
-			Fmt_Ieee_Header_u fmtIeee;
-			fmtIeee.Fmt_Ieee_s.numChan 			= (uint16_t) nchan;								// # of audio channels
-			fmtIeee.Fmt_Ieee_s.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;						// Sample Rate
+			fmtIeee.Fmt_Ieee_s.numChan 			= (uint16_t) nchan;											// # of audio channels
+			fmtIeee.Fmt_Ieee_s.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;									// Sample Rate
 			fmtIeee.Fmt_Ieee_s.byteRate 		= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
-			fmtIeee.Fmt_Ieee_s.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	 // NumChannels * BitsPerSample/8
+			fmtIeee.Fmt_Ieee_s.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
 			fmtIeee.Fmt_Ieee_s.bitsPerSample	= bitsPerSamp;
 
-			Fact_Header_u factChunk;			// Fact chunk parameters will be updated after closing file.
-			
-			// Append to header buffer
-			std::copy(&fmtIeee.byteStream[0], &fmtIeee.byteStream[0] + sizeof(fmtIeee), std::back_inserter(wavHeader));
-			std::copy(&factChunk.byteStream[0], &factChunk.byteStream[0] + sizeof(factChunk), std::back_inserter(wavHeader));
+			// Update Fact Chunk
+			factChunk.Fact_s.numTotalSamp		= 0; // Update later on closing file
+
+			// update fmt chunk size
+			riffChunk.Riff_s.chunkLenBytes += fmtIeee.Fmt_Ieee_s.chunkLenBytes;
 			break;
 		}
 	}
 
-	// If Info tag specified, build a LIST.. INFO chunk and append to WAV header. 
-	if ( !infoKeyVal.empty() ) {
-		List_Header_u listChunk;
+	// --- INFO Chunk --- If Info tag specified, build a LIST.. INFO chunk and append to WAV header. 
+	if ( !infoKeyVal.empty() && (listInfoLoc==List_Info_Location::Before_Data) ) {
+		// Calculate size of LIST chunk 
+		listChunk.List_s.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
 
-		// Calculate size of INFO subchunk by iterating through each info key
-		for (const auto &keyVal:infoKeyVal) {
-			listChunk.List_s.subChunkLenBytes += 4 + (keyVal.second).size()-1;	// (4bytes for key) + len of string
+		// Add up all the info tag names and strings
+		for (auto &keyVal:infoKeyVal) {
+			//If string is odd length, pad with 0
+			if ( (keyVal.second).size()%2!=0 ){
+				(keyVal.second).push_back('\0');
+			}
+
+			// Add length of Key ID (4), Key Len (4) and len of string
+			listChunk.List_s.chunkLenBytes += 8 + (keyVal.second).size();	
 		} 
-		// Assign List chunk length
-		listChunk.List_s.chunkLenBytes = listChunk.List_s.subChunkLenBytes + 8;	// Add 8 bytes for "INFO" and info subchunk len
 
+		// update fmt chunk size
+		riffChunk.Riff_s.chunkLenBytes += listChunk.List_s.chunkLenBytes;
+
+	} // else no info tag, so pass
+
+
+	// --- data chunk --- 
+	// Contains no data, just the beginning chunk ID and length
+	dataChunk.Data_s.chunkLenBytes 	= (uint32_t)( 0 * nchan * bitsPerSamp / sizeof(uint8_t) ); 	// Number of audio bytes: NumSamples * NumChannels * BitsPerSample/8
+	
+	// update fmt chunk size
+	riffChunk.Riff_s.chunkLenBytes += dataChunk.Data_s.chunkLenBytes;
+
+	// If filesize specified, then override the calculated size of the RIFF Chunk
+	if (fileSize > 0) {
+		riffChunk.Riff_s.chunkLenBytes = std::max(fileSize, 8UL) - 8;  // File length (in bytes) - 8bytes
+	}  // else leave the fileSize as specified.
+
+
+	// --- WRITE CHUNKS TO BUFFER --- 
+	// Write RIFF chunk
+	std::copy(&riffChunk.byteStream[0], &riffChunk.byteStream[0] + sizeof(Riff_Header_u), std::back_inserter(wavHeader));
+
+	// Write fmt subchunk
+	switch (writeDataType) {
+		// For integer data types
+		case SDWriter::WriteDataType::INT16:
+		case SDWriter::WriteDataType::INT24: {
+			std::copy(&fmtPcm.byteStream[0], &fmtPcm.byteStream[0] + sizeof(Fmt_Pcm_Header_u), std::back_inserter(wavHeader));
+			break;
+		}
+		// For Float 32 data type
+		case SDWriter::WriteDataType::FLOAT32:
+		default: {								// Default to Float32 type, though really this is ambigiuous			
+			std::copy(&fmtIeee.byteStream[0], &fmtIeee.byteStream[0] + sizeof(Fmt_Ieee_Header_u), std::back_inserter(wavHeader));
+			std::copy(&factChunk.byteStream[0], &factChunk.byteStream[0] + sizeof(Fact_Header_u), std::back_inserter(wavHeader));
+			break;
+		}
+	}
+
+	// Write INFO chunk (if it is not empty and we want it before the data chunk)
+	if ( (!infoKeyVal.empty()) && (listInfoLoc==List_Info_Location::Before_Data) ) {
 		// Append chunk ID, len and subchunk ID, len
 		std::copy(&listChunk.byteStream[0], &listChunk.byteStream[0] + sizeof(List_Header_u), std::back_inserter(wavHeader));
 
@@ -231,19 +374,26 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 				wavHeader.end(), 
 				InfoTagToStr(keyVal.first).data(), 
 				InfoTagToStr(keyVal.first).data() + InfoTagToStr(keyVal.first).size() );
-				
-			//Append tag size
-			uint32_t tagLenBytes = (keyVal.second).size();								// use size of string.
+			
+			// Append tag size
+			uint32_t tagLenBytes = (keyVal.second).size();	// use size of string
+			
 			wavHeader.insert( wavHeader.end(), (char*) &tagLenBytes, (char*) &tagLenBytes + sizeof(tagLenBytes) );
 
 			// Append tag string (without null terminator)
 			wavHeader.insert( wavHeader.end(), (keyVal.second).data(), (keyVal.second).data() + (keyVal.second).size() );
-		}
-	} // else no info tag, so pass
 
-	// Create data chunk (with no data), and assign to WAV header.
-	Data_Header_u dataChunk;
-	dataChunk.Data_s.chunkLenBytes 	= (uint32_t)( 0 * nchan * bitsPerSamp / sizeof(uint8_t) ); 	// Number of audio bytes: NumSamples * NumChannels * BitsPerSample/8
+			// If tag string is odd # of bytes, append 0
+			if ( (tagLenBytes % 2)!=0 ) {
+				wavHeader.push_back('\0');
+			}
+		}
+
+		// Clear the INFO key so it won't be written after the data
+		infoKeyVal.clear();
+	}
+
+	// Write data chunk
 	std::copy(&dataChunk.byteStream[0], &dataChunk.byteStream[0] + sizeof(Data_Header_u), std::back_inserter(wavHeader));
 
 	// Update pointer to wavHeader and # of bytes.
@@ -255,43 +405,244 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 
 
 /**
+ * @brief Update length of data subchunk in WAV Header
+ * Returns to file position before method was called.
+ * \note Current file pos must be at the end of the audio data subchunk
+ * @param file file handle (to open WAV file)
+ * @return true Success	
+ * @return false Error
+ */
+bool SDWriter::UpdateHeaderDataChunk(SdFile &file) {
+	size_t dataLen = 0;
+	size_t dataEndPos = 0;
+	bool okayFlag = true;
+
+	// Store current position at the end of the data subchunk; then seek to start of file
+	if ( file and file.isOpen() ) {
+		dataEndPos = file.curPosition();
+		
+		// Seek to start of file
+		if( !file.seekSet( sizeof(uint32_t) ) ) {
+			okayFlag = false;
+			Serial.println("Error seeking WAV file position.");
+		}
+	
+	// Else error with file handle
+	} else {
+		okayFlag = false;
+		Serial.print("Error: Invalid WAV file handle.");
+	}
+
+	// Seek to data chunk
+	if (okayFlag) {
+		const std::vector<char> dataPattern = {'d', 'a', 't', 'a'};	// Chunk ID 
+		
+		if ( !SeekFileToPattern(file, dataPattern, false) ){
+			// Error: "data" chunk id not found
+			Serial.println("Error: Wave Header data chunk not found.");
+			okayFlag = false;
+		} 
+	}
+
+	// Check that current position leaves room for the chunk ID and len
+	if (okayFlag) {
+		if ( dataEndPos > file.curPosition() + 8 ) {
+			// Record data len
+			dataLen = dataEndPos - file.curPosition() - 8;  // exclude 8 bytes for "data" and data len
+			
+			// Seek to after the "data" chunk ID
+			if(!file.seekCur( sizeof(uint32_t) ) ){
+				Serial.println("Error seeking WAV file position.");
+				okayFlag = false;
+			}
+	
+		// ELSE Error. Call this function at the end of writing audio data
+		} else {
+			Serial.println("Error: Before calling this method, set file to end of audio 'data' chunk");
+			Serial.println( String("\tchunk ID addr: ") + String( file.curPosition() ) );
+			Serial.println( String("\tpresumed end of chunk: ") + String(dataEndPos) );
+			okayFlag = false;
+		}
+	}
+
+	// Write "data" subchunk len
+	if ( okayFlag && file.write(&dataLen, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+		Serial.println("Error: Failed to write WAV Header RIFF Len");
+		okayFlag = false;
+	}
+
+	// Return to file pos before executing this method.
+	if ( file && file.isOpen() ) {
+		if (!file.seekSet(dataEndPos) ) {		// Don't overwrite error
+			okayFlag = false;
+			Serial.println("Error seeking WAV file position.");
+		}
+	}
+
+	return okayFlag;
+}
+
+
+/**
+ * @brief Write number of samples to Fact Chunk in WAV Header.
+ * 
+ * @param file file handle (to open WAV file)
+ * @param numSamples # of samples (across all channels)
+ * @return true Success	
+ * @return false Error
+ */
+bool SDWriter::UpdateHeaderFactChunk(SdFile &file, const uint32_t &numSamples) {
+	const std::vector<char> dataPattern = {'f', 'a', 'c', 't'};	// Chunk ID 
+	bool okayFlag = true;
+
+	// Seek to "fact" chunk ID
+	if ( SeekFileToPattern(file, dataPattern, true) ) {
+		
+		// Seek to numSampPerChan
+		if (file.seekCur( 2*sizeof(uint32_t) ) ) {
+			// Write # of samples
+			if (file.write(&numSamples, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+				Serial.println("Error: Failed to write to WAV Header fact chunk");
+				okayFlag = false;
+			} // else success
+
+		} else {
+			// Error seeking file position
+			Serial.println("Error seeking WAV file position.");
+			okayFlag = false;
+		}
+	
+	// Else chunk ID "fact" not found
+	} else {
+		// Error: "fact" chunk id not found
+		Serial.println("Error: Wave Header data chunk not found.");
+		okayFlag = false;
+	}
+
+	return okayFlag;
+}
+
+
+
+
+/**
+ * @brief Writes the len of the RIFF chunk to the WAV Header
+ * Seeks to "RIFF" chunk at position-4, then write file size - 8 bytes.
+ * @param file file handle (to open WAV file)
+ * @return true Success	
+ * @return false Error 
+ */
+bool SDWriter::UpdateHeaderRiffChunk(SdFile &file) {
+	bool okayFlag = true;
+	uint32_t chunkLen = 0;
+	size_t startPos = 0;
+
+	// Store current position and get file size
+	if ( file && file.isOpen() ) {
+		startPos = file.curPosition();
+		
+		chunkLen = file.fileSize();
+
+		if( chunkLen > 8) {	// minimum 8 bytes for "RIFF" and RIFF len
+			chunkLen -= 8;
+		} else {	
+			// Error with file size
+			okayFlag = false;
+		} // else success
+
+	// Else error with file handle
+	} else {
+		okayFlag = false;
+	}
+
+	// Write RIFF len
+	if (okayFlag) {
+		// Seek to Riff chunk len, which is after the chunk ID (4 bytes)
+		if ( file.seekSet( sizeof(uint32_t) ) ) {	
+			
+			// Write RIFF len; check num bytes written
+			if ( file.write(&chunkLen, sizeof(uint32_t)) != sizeof(uint32_t) ) {		
+				// ELSE Error writing RIFF len
+				okayFlag = false;
+			}
+		
+		// Else error with file seek
+		} else {
+			okayFlag = false;
+		}
+	}
+
+	// Seek to file position when method was entered.
+	if ( file && file.isOpen() ) {
+		file.seekSet(startPos);  // Don't overwrite error
+	}
+
+	return(okayFlag);
+}
+
+
+/**
  * @brief Seeks to start of pattern. Search begins at current file position. File must be open.
  * 
  * @param openFileH 
  * @param pattern 
  * @return bool True:pattern found
  */
-bool SDWriter::SeekFileToPattern(SdFile &openFileH, const std::vector<char> &pattern) {
+bool SDWriter::SeekFileToPattern(SdFile &openFileH, const std::vector<char> &pattern, const bool &fromBeginningFlag ) {
 	size_t totalBytesRead = 0;					// Tracks total number of bytes read from file.
 	constexpr size_t bufferLen = 512;
 	std::vector<char> buffer(bufferLen);
+	size_t startPosFileBuffer = 0;
+	size_t bytesRead = 0;
+	bool okayFlag = true;
 	bool foundFlag = false;
 
-	// If file open...
-	while ( file && file.isOpen() ) {
-		// Read in section of data
-		size_t bytesRead = file.read(buffer.data(), bufferLen);
-		
-		// Check for EOF
-		if (bytesRead == 0) {
-			break; // End of file
-		}
-
-		// Search for pattern
-		auto idx = std::search(buffer.begin(), buffer.begin() + bytesRead,
-			pattern.begin(), pattern.end());
-		
-		// Success if returned idx is not the last byte that was read
-		if (idx != buffer.begin() + bytesRead) {
-			foundFlag = true;
-
-			// Seek to end of pattern
-			file.seekCur(totalBytesRead + (idx - buffer.begin()) );
-			break;
-		}
-	
-		totalBytesRead += bytesRead;
+	// If desired, start from beginning of file
+	if( file && file.isOpen() && fromBeginningFlag && !foundFlag ) {
+		okayFlag = file.seekSet(0);
 	}
+
+	if (okayFlag) {
+		// If file open...
+		while ( file && file.isOpen()  && okayFlag && !foundFlag ){
+			// Store current file position
+			startPosFileBuffer = file.curPosition();
+
+			// Read in section of data 
+			bytesRead = file.read(buffer.data(), bufferLen);
+
+			if (bytesRead != bufferLen ) {
+				Serial.println("Error reading SD file.");
+				okayFlag = false;
+			}
+
+			// Check for EOF
+			if (bytesRead != 0) {
+				// Search for pattern
+				auto idx = std::search(buffer.begin(), buffer.begin() + bytesRead,
+					pattern.begin(), pattern.end());
+				
+				// Success if returned idx is not the last byte that was read
+				if (idx != buffer.begin() + bytesRead) {
+
+					// Seek file to start of pattern
+					if ( !file.seekSet( startPosFileBuffer + idx - buffer.begin() ) ) {
+						okayFlag = false;
+						Serial.print("Error: Unable to seek to desired WAV Header position.");
+					} else {
+						foundFlag = true;
+					}
+				}
+				// Store total # of bytes read
+				totalBytesRead += bytesRead;
+
+			// Else EOF reached.  Abort.
+			} else {
+				Serial.println(" Error: end of file reached before pattern was matched.");
+				okayFlag = false;
+			}
+		} // for loop
+	} // else existing errpr
 	return foundFlag;
 }
 

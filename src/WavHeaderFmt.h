@@ -18,7 +18,7 @@
 #include <string>
 
 /* ******************************* Constexpr ********************************** */
-constexpr uint32_t WAV_HEADER_NO_METADATA_NUM_BYTES = 44;	// # of bytes of WAV Header with no metadata and no audio data.
+constexpr uint32_t WAV_HEADER_NUM_BYTES_INT16 = 44;	// # of bytes of WAV Header with no metadata and no audio data.
 
 /* WAV HEADER KEYWORDS as hex */
 constexpr uint32_t RIFF_LSB               = 0x46464952;  //"RIFF" as hex
@@ -130,7 +130,7 @@ union Fact_Header_u {
   struct __attribute__((packed)) {
     uint32_t chunkId;                             // "fact" as LSB
     uint32_t chunkLenBytes;                       // length of fact chunk
-    uint32_t numSampPerChan;                      // # of samples per channel
+    uint32_t numTotalSamp;                        // # of samples x # of channels
   } Fact_s;      
   uint8_t byteStream[sizeof(Fact_s)]  = {0};      // represented as byte array
 
@@ -138,7 +138,7 @@ union Fact_Header_u {
   Fact_Header_u() {
     Fact_s.chunkId                    = FACT_LSB;
     Fact_s.chunkLenBytes              = sizeof(Fact_Header_u)-8;        
-    Fact_s.numSampPerChan             = 0;        // To be updated
+    Fact_s.numTotalSamp               = 0;        // To be updated after audio data written
   }
 };
 
@@ -164,9 +164,8 @@ union Data_Header_u {
 union List_Header_u {
   struct __attribute__((packed)) {
     uint32_t chunkId;                               // "LIST" as LSB
-    uint32_t chunkLenBytes;                         // Length of chunk (including InfoKeyVal_t data) - 8bytes
+    uint32_t chunkLenBytes;                         // Length of chunk after this value (i.e. entire chunk - 8bytes)
     uint32_t subChunkId;                            // "INFO" as LSB
-    uint32_t subChunkLenBytes;                      // Length of subChunk (including InfoKeyVal_t) - 8bytes    
   } List_s;      
   uint8_t byteStream[sizeof(List_s)] = {0};         // represented as byte array
 
@@ -175,7 +174,6 @@ union List_Header_u {
     List_s.chunkId                  = LIST_LSB;
     List_s.chunkLenBytes            = 0;
     List_s.subChunkId               = INFO_LSB;
-    List_s.subChunkLenBytes         = 0;
   }
 };
 

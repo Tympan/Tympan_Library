@@ -69,6 +69,8 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // define classes to control the Tympan
 Tympan           myTympan(TympanRev::F, audio_settings);  //do TympanRev::D or E or F
+EarpieceShield   earpieceShield(TympanRev::F, AICShieldRev::A); //in the Tympan_Library, EarpieceShield is defined in AICShield.h
+
 SdFs             sd;                                      //because we're doing both a player and recorder, explicitly create the shared SD resource.  I'm not sure this is really necessary.
 
 
@@ -127,6 +129,7 @@ void setup() {
 
   //enable the Tympan
   myTympan.enable();
+  earpieceShield.enable();
 
   //Choose the desired input
   myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones

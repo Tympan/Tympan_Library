@@ -36,6 +36,11 @@
 const int DEFAULT_SDWRITE_BYTES = (512); //target size for individual writes to the SD card.  Usually 512
 //const uint64_t PRE_ALLOCATE_SIZE = 40ULL << 20;// Preallocate 40MB file.  Not used.
 
+enum List_Info_Location {
+  Before_Data,
+  After_Data
+};
+
 //SDWriter:  This is a class to write blocks of bytes, chars, ints or floats to
 //  the SD card.  It will write blocks of data of whatever the size, even if it is not
 //  most efficient for the SD card.  This is a base class upon which other classes
@@ -64,6 +69,7 @@ class SDWriter : public Print
 		void AddMetadata(const String &comment);
 		void AddMetadata(const InfoTags &infoTag, const std::string &infoString);
 		void ClearMetadata(void);
+    void SetMetadataLocation(List_Info_Location metadataLoc); 
     
 		enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
 
@@ -113,24 +119,25 @@ class SDWriter : public Print
     float setSampleRateWAV(float sampleRate_Hz) { return WAV_sampleRate_Hz = sampleRate_Hz; }
 		float getSampleRateWAV(void) { return WAV_sampleRate_Hz; }
 
-    char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize, const InfoKeyVal_t &infoKeyVal);
-
     // Create WAV header using default sample rate, channels    
     char * wavHeaderInt16(const uint32_t fsize) {  
-      InfoKeyVal_t emmptyInfoChunk;
-      return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize, emmptyInfoChunk);
+      return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize );
     }
 
     // Create WAV header with no metadata    
     char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize){
       setWriteDataType(SDWriter::WriteDataType::INT16);
-      return (makeWavHeader(sampleRate_Hz, nchan, fileSize) );
+      return makeWavHeader(sampleRate_Hz, nchan, fileSize);
     }
 
     char* makeWavHeader(const uint32_t fsize) { 
       return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); 
     }
     char* makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
+    
+    bool UpdateHeaderRiffChunk(SdFile &file);
+    bool UpdateHeaderDataChunk(SdFile &file);
+    bool UpdateHeaderFactChunk(SdFile &file, const uint32_t &numSamples);
 
 		SdFs * getSdPtr(void) { return sd; }
 	
@@ -146,8 +153,8 @@ class SDWriter : public Print
     //SdFatSdio sd; //slower
 		SdFs * sd = nullptr; //faster
     SdFile file;
-    bool updateWavFileSizeOnSD(void);
-    bool SeekFileToPattern(SdFile &openFileH, const std::vector<char> &pattern);
+    bool SeekFileToPattern( SdFile &openFileH, const std::vector<char> &pattern, const bool &fromBeginningFlag );
+    size_t GetWavHeaderDataLen (void);
 
     //bool hasSdBegun = false;
     boolean flagPrintElapsedWriteTime = false;
@@ -158,10 +165,12 @@ class SDWriter : public Print
     int WAV_nchan = 2;
     WriteDataType writeDataType = SDWriter::WriteDataType::INT16; // default to INT16 data in WAV files
 		InfoKeyVal_t infoKeyVal; // Stores WAV header LIST<INFO> key, val map to write to header when openAsWav() is called.
+    List_Info_Location listInfoLoc = List_Info_Location::Before_Data;   // Store WAV Header metadata before or after the data chunk
 
     std::vector<char> wavHeader; // buffer for buulding the header of a WAV file
     char* pWavHeader = nullptr;
     int WAVheader_bytes = 0;   //num bytes in WAV header
+    uint64_t filePosAudioData = 0; // File position at the start of the audio data (recorded when WAV file opened)
 };
 
 //BufferedSDWriter:  This is a drived class from SDWriter.  This class assumes that
