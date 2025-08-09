@@ -68,17 +68,35 @@ bool SDWriter::openAsWAV(const char *fname) {
 	return returnVal;
 }
 
+/**
+ * @brief Open file on SD card.  If file already exists, delete it. 
+ * 
+ * @param fname File to open
+ * @return true Success
+ * @return false Failed to delete existing file, or failed to open file
+ */
 bool SDWriter::open(const char *fname) {
+	bool okayFlag = true;
+
 	if (sd->exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
 		// The SD library writes new data to the end of the file, so to start
 		//a new recording, the old file must be deleted before new data is written.
-		sd->remove(fname);
+		okayFlag = sd->remove(fname);
 	}
-	__disable_irq();
-		file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
-	__enable_irq();
-	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
-	return isFileOpen();
+	
+	if (okayFlag) {
+		__disable_irq();
+			okayFlag = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+			//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
+		__enable_irq();
+
+		if (!okayFlag) {
+			Serial.println( String("Error: SDWriter.open() failed to open file: ") + String(fname) );
+		}
+	} else {
+		Serial.println("Error: SDWriter.open() failed to delete existing file.");
+	}
+	return ( okayFlag && isFileOpen() );
 }
 
 
