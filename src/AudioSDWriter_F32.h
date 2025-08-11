@@ -205,11 +205,22 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		 * 
 		 * @param comment Metadata comment
 		 */
-		void AddMetadata(const String &comment) {
+		void AddMetadata(const String &comment) { 
 			if(buffSDWriter){
 				buffSDWriter->AddMetadata(comment);
 			}
 		};
+
+				
+		/**
+		 * @brief Clear metadata buffer for writing to WAV header
+		 */
+		void ClearMetadata(void) { 
+			if(buffSDWriter){
+				buffSDWriter->ClearMetadata();
+			}
+		};
+
 
 		/**
 		 * @brief Set location of metadata (before or after the audio data)

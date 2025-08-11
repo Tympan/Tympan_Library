@@ -202,6 +202,12 @@ enum class InfoTags {
 using InfoKeyVal_t = std::map<InfoTags, std::string>;
 
 // Access WAV file metadata tagname for the INFO chunk
+/**
+ * @brief Converts enum tag to char array
+ * 
+ * @param tagName 
+ * @return constexpr std::string_view 
+ */
 constexpr std::string_view InfoTagToStr(InfoTags tagName) {
   switch (tagName) {
     case InfoTags::ICMT: return "ICMT"; // Comments. Provides general comments about the file or the subject of the file. 
@@ -223,6 +229,6 @@ constexpr std::string_view InfoTagToStr(InfoTags tagName) {
     case InfoTags::ISRF: return "ISRF"; //Source Form. Identifies the original form of the material that was digitized, such as “ slide,” “ paper,” “map,” and so forth. This is not necessarily the same as IMED.
     case InfoTags::ITCH: return "ITCH"; // Technician. Identifies the technician who digitized the subject file. For example, “ Smith, John.”
   default: return "";
-	  }
+	}
 }
 #endif //Wav_Header_Fmt_h

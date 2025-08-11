@@ -13,28 +13,56 @@ int SDWriter::isSdCardPresent(void) {
 
 /**
  * @brief Add a metadata comment under the LIST<INFO><ICMT> tag, to be written when startRecording() is called.
- * 
+ * \note If tag exists, appends string.  To clear, call ClearMetadata()
+ * @param comment Comment to add
  */
+
 void SDWriter::AddMetadata(const String &comment) {
 	std::string commentStr( comment.c_str() );
 	AddMetadata(InfoTags::ICMT, commentStr);
 }
 
-/**
+
+ /**
  * @brief Add a metadata tagname and string, to be written when startRecording() is called.
- * 
+ * \note If tag exists, appends string.  To clear, call ClearMetadata()
+ * @param infoTag Tag to add the comment under
+ * @param infoString  Comment to add
  */
 void SDWriter::AddMetadata(const InfoTags &infoTag, const std::string &infoString) {
-	infoKeyVal.insert({infoTag, infoString});
+	if( !infoString.empty() ) {
+		// If  key exists append String
+		if ( infoKeyVal.count(infoTag)>0 ) {
+			infoKeyVal[infoTag] += infoString;
+		
+		// Else insert comment as new key
+		} else {
+			infoKeyVal.insert({infoTag, infoString});
+		}
+	} else {
+		Serial.println("SDWriter::AddMetadata(): Error. infoTag not found.");
+	}
 }
 
+
 /**
- * @brief Clear the metadata buffer that startRecording uses to write metadata.
+ * @brief Clear all tags from metadata buffer that startRecording uses to write metadata.
  * 
  */
 void SDWriter::ClearMetadata(void) {
 	infoKeyVal.clear();
 }
+
+/**
+ * @brief Clear specfic tag from the metadata buffer.
+ * 
+ */
+void SDWriter::ClearMetadata(const InfoTags &infoTag) {
+	if ( infoKeyVal.count(infoTag)>0 ) {
+		infoKeyVal.erase(infoTag);
+	}
+}
+
 
 /**
  * @brief Selece to write metadata before or after the audio data.
