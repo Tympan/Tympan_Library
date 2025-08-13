@@ -67,9 +67,9 @@ class SDWriter : public Print
 		}
 		
 		void AddMetadata(const String &comment);
-		void AddMetadata(const InfoTags &infoTag, const std::string &infoString);
+		void AddMetadata(const Info_Tags &infoTag, const std::string &infoString);
 		void ClearMetadata(void);
-    void ClearMetadata(const InfoTags &infoTag);
+    void ClearMetadata(const Info_Tags &infoTag);
     void SetMetadataLocation(List_Info_Location metadataLoc); 
     
 		enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported

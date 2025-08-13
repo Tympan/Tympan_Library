@@ -19,7 +19,7 @@ int SDWriter::isSdCardPresent(void) {
 
 void SDWriter::AddMetadata(const String &comment) {
 	std::string commentStr( comment.c_str() );
-	AddMetadata(InfoTags::ICMT, commentStr);
+	AddMetadata(Info_Tags::ICMT, commentStr);
 }
 
 
@@ -29,7 +29,7 @@ void SDWriter::AddMetadata(const String &comment) {
  * @param infoTag Tag to add the comment under
  * @param infoString  Comment to add
  */
-void SDWriter::AddMetadata(const InfoTags &infoTag, const std::string &infoString) {
+void SDWriter::AddMetadata(const Info_Tags &infoTag, const std::string &infoString) {
 	if( !infoString.empty() ) {
 		// If  key exists append String
 		if ( infoKeyVal.count(infoTag)>0 ) {
@@ -57,7 +57,7 @@ void SDWriter::ClearMetadata(void) {
  * @brief Clear specfic tag from the metadata buffer.
  * 
  */
-void SDWriter::ClearMetadata(const InfoTags &infoTag) {
+void SDWriter::ClearMetadata(const Info_Tags &infoTag) {
 	if ( infoKeyVal.count(infoTag)>0 ) {
 		infoKeyVal.erase(infoTag);
 	}
@@ -186,7 +186,7 @@ int SDWriter::close(void) {
 			Serial.print("Error seeking end of file.");
 		} else {
 			// Calculate size of LIST chunk 
-			listChunk.List_s.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
+			listChunk.S.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
 
 			// Add up all the info tag names and strings.  
 			for (auto &keyVal:infoKeyVal) {
@@ -196,7 +196,7 @@ int SDWriter::close(void) {
 				}
 
 				// Add length of Key ID (4), Key Len (4) and len of string
-				listChunk.List_s.chunkLenBytes += 8 + (keyVal.second).size();	
+				listChunk.S.chunkLenBytes += 8 + (keyVal.second).size();	
 			} 
 
 			// Store chunk ID, len and subchunk ID, len in header buffer
@@ -316,7 +316,7 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 	WAVheader_bytes = 0; 	// Reset num bytes in header buffer
 
 	// --- Riff chunk ---
-	riffChunk.Riff_s.chunkLenBytes = sizeof(riffChunk.Riff_s.format);
+	riffChunk.S.chunkLenBytes = sizeof(riffChunk.S.format);
 
 	// --- fmt chunk --- 
 	// Format depends on data type
@@ -324,30 +324,30 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 		// For integer data types
 		case SDWriter::WriteDataType::INT16:
 		case SDWriter::WriteDataType::INT24: {
-			fmtPcm.Fmt_Pcm_s.numChan 			= (uint16_t) nchan;											// # of audio channels
-			fmtPcm.Fmt_Pcm_s.sampleRate_Hz 		= (uint32_t) sampleRate_Hz;									// Sample Rate
-			fmtPcm.Fmt_Pcm_s.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
-			fmtPcm.Fmt_Pcm_s.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
-			fmtPcm.Fmt_Pcm_s.bitsPerSample		= bitsPerSamp;
+			fmtPcm.S.numChan 			= (uint16_t) nchan;											// # of audio channels
+			fmtPcm.S.sampleRate_Hz 		= (uint32_t) sampleRate_Hz;									// Sample Rate
+			fmtPcm.S.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtPcm.S.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
+			fmtPcm.S.bitsPerSample		= bitsPerSamp;
 
 			// update fmt chunk size
-			riffChunk.Riff_s.chunkLenBytes += fmtPcm.Fmt_Pcm_s.chunkLenBytes;
+			riffChunk.S.chunkLenBytes += fmtPcm.S.chunkLenBytes;
 			break;
 		}
 		// For Float 32 data type
 		case SDWriter::WriteDataType::FLOAT32:
 		default: {								// Default to Float32 type, though really this is ambigiuous
-			fmtIeee.Fmt_Ieee_s.numChan 			= (uint16_t) nchan;											// # of audio channels
-			fmtIeee.Fmt_Ieee_s.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;									// Sample Rate
-			fmtIeee.Fmt_Ieee_s.byteRate 		= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
-			fmtIeee.Fmt_Ieee_s.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
-			fmtIeee.Fmt_Ieee_s.bitsPerSample	= bitsPerSamp;
+			fmtIeee.S.numChan 			= (uint16_t) nchan;											// # of audio channels
+			fmtIeee.S.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;									// Sample Rate
+			fmtIeee.S.byteRate 		= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtIeee.S.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
+			fmtIeee.S.bitsPerSample	= bitsPerSamp;
 
 			// Update Fact Chunk
-			factChunk.Fact_s.numTotalSamp		= 0; // Update later on closing file
+			factChunk.S.numTotalSamp		= 0; // Update later on closing file
 
 			// update fmt chunk size
-			riffChunk.Riff_s.chunkLenBytes += fmtIeee.Fmt_Ieee_s.chunkLenBytes;
+			riffChunk.S.chunkLenBytes += fmtIeee.S.chunkLenBytes;
 			break;
 		}
 	}
@@ -355,7 +355,7 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 	// --- INFO Chunk --- If Info tag specified, build a LIST.. INFO chunk and append to WAV header. 
 	if ( !infoKeyVal.empty() && (listInfoLoc==List_Info_Location::Before_Data) ) {
 		// Calculate size of LIST chunk 
-		listChunk.List_s.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
+		listChunk.S.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
 
 		// Add up all the info tag names and strings
 		for (auto &keyVal:infoKeyVal) {
@@ -365,25 +365,25 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 			}
 
 			// Add length of Key ID (4), Key Len (4) and len of string
-			listChunk.List_s.chunkLenBytes += 8 + (keyVal.second).size();	
+			listChunk.S.chunkLenBytes += 8 + (keyVal.second).size();	
 		} 
 
 		// update fmt chunk size
-		riffChunk.Riff_s.chunkLenBytes += listChunk.List_s.chunkLenBytes;
+		riffChunk.S.chunkLenBytes += listChunk.S.chunkLenBytes;
 
 	} // else no info tag, so pass
 
 
 	// --- data chunk --- 
 	// Contains no data, just the beginning chunk ID and length
-	dataChunk.Data_s.chunkLenBytes 	= (uint32_t)( 0 * nchan * bitsPerSamp / sizeof(uint8_t) ); 	// Number of audio bytes: NumSamples * NumChannels * BitsPerSample/8
+	dataChunk.S.chunkLenBytes 	= (uint32_t)( 0 * nchan * bitsPerSamp / sizeof(uint8_t) ); 	// Number of audio bytes: NumSamples * NumChannels * BitsPerSample/8
 	
 	// update fmt chunk size
-	riffChunk.Riff_s.chunkLenBytes += dataChunk.Data_s.chunkLenBytes;
+	riffChunk.S.chunkLenBytes += dataChunk.S.chunkLenBytes;
 
 	// If filesize specified, then override the calculated size of the RIFF Chunk
 	if (fileSize > 0) {
-		riffChunk.Riff_s.chunkLenBytes = std::max(fileSize, 8UL) - 8;  // File length (in bytes) - 8bytes
+		riffChunk.S.chunkLenBytes = std::max(fileSize, 8UL) - 8;  // File length (in bytes) - 8bytes
 	}  // else leave the fileSize as specified.
 
 
