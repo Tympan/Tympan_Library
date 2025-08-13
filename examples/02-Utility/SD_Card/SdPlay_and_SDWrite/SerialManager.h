@@ -10,7 +10,7 @@ extern Tympan myTympan;
 extern AudioSDPlayer_F32 audioSDPlayer;
 extern AudioSDWriter_F32 audioSDWriter;
 
-String sdPlay_filename = "AUDIO001.WAV";
+String sdPlay_filename = "Int16_Before-data.wav";
 
 class SerialManager : public SerialManagerBase  {  // see Tympan_Library for SerialManagerBase for more functions!
   public:
@@ -26,12 +26,14 @@ void SerialManager::printHelp(void) {
   Serial.println("SerialManager Help: Available Commands:");
   Serial.println(" General: No Prefix");
   Serial.println("   h    : Print this help");
-  Serial.println("   p    : SDPlay : Play file from SD card named " + sdPlay_filename);
   Serial.println("   q    : SDPlay : Stop any currnetly playing SD file");
-  Serial.println("   1/2  : SDWrite: Manually start recording (INT16), with metadata written (1) before or (2) after data chunk");
-  Serial.println("   3/4  : SDWrite: Manually start recording (32F), with metadata written (3) before or (4) after data chunk");
+  Serial.println("   1/2  : SDWrite: Start Recording (INT16), with metadata written (1) before or (2) after data chunk");
+  Serial.println("   3/4  : SDWrite: Start recording (F32), with metadata written (3) before or (4) after data chunk");
   Serial.println("   s    : SDWrite: Manually stop recording");
-  
+  Serial.println("   !/@  : SDPlay : Play (INT16), with metadata written (!) before or (@) after data chunk");  
+  Serial.println("   #/$  : SDPlay : Try playing (F32), but will error.  Use file with metadata written (#) before or ($) after data chunk");
+  Serial.println("   m    : SDPlay : Print metadata from WAV header (after file has been opened).");
+
   //Add in the printHelp() that is built-into the other UI-enabled system components.
   //The function call below loops through all of the UI-enabled classes that were
   //attached to the serialManager in the setupSerialManager() function used back
@@ -44,11 +46,28 @@ void SerialManager::printHelp(void) {
 //switch yard to determine the desired action
 bool SerialManager::processCharacter(char c) { //this is called by SerialManagerBase.respondToByte(char c)
   bool ret_val = true; //assume at first that we will find a match
+
   switch (c) {
     case 'h': 
       printHelp(); 
       break;
-    case 'p':
+    case '!':
+      sdPlay_filename = "Int16_Before-data.wav";
+      Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
+      audioSDPlayer.play(sdPlay_filename);
+      break; 
+    case '@':
+      sdPlay_filename = "Int16_After-data.wav";
+      Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
+      audioSDPlayer.play(sdPlay_filename);
+      break; 
+    case '#':
+      sdPlay_filename = "F32_Before-data.wav";
+      Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
+      audioSDPlayer.play(sdPlay_filename);
+      break; 
+     case '$':
+      sdPlay_filename = "F32_After-data.wav";
       Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
       audioSDPlayer.play(sdPlay_filename);
       break; 
@@ -57,12 +76,14 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
       audioSDPlayer.stop();
       break;
     case '1':
+      audioSDWriter.setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);
       audioSDWriter.SetMetadataLocation(List_Info_Location::Before_Data);
       audioSDWriter.AddMetadata(String("Brains!"));
       audioSDWriter.startRecording("Int16_Before-data.wav");
       Serial.println("Starting recording to SD file " + audioSDWriter.getCurrentFilename());
       break;
     case '2':
+      audioSDWriter.setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);
       audioSDWriter.SetMetadataLocation(List_Info_Location::After_Data);
       audioSDWriter.AddMetadata(String("Yumm!"));
       audioSDWriter.startRecording("Int16_After-data.wav");
@@ -72,6 +93,7 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
       audioSDWriter.setWriteDataType(AudioSDWriter_F32::WriteDataType::FLOAT32);
       audioSDWriter.SetMetadataLocation(List_Info_Location::Before_Data);
       audioSDWriter.AddMetadata(String("Delicious!"));
+      audioSDWriter.AddMetadata(String("Exquisite!"));
       audioSDWriter.startRecording("F32_Before-data.wav");
       Serial.println("Starting recording to SD file " + audioSDWriter.getCurrentFilename());
       break;
@@ -86,13 +108,15 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
       Serial.println("Stopping recording to SD file " + audioSDWriter.getCurrentFilename());
       audioSDWriter.stopRecording();
       break;
+    case 'm':
+      audioSDPlayer.printMetadata();
+
+      break;
     default:
       ret_val = SerialManagerBase::processCharacter(c);  //in here, it automatically loops over the different UI elements
       break;
   }
   return ret_val;
 }
-
-
 
 #endif
