@@ -49,8 +49,8 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 //Here is critical feature #1 for using long audio blocks: for blocks > 128 poits per channel, you
 //need to allocate your own I2S buffers
 const int n_chan = 2;  // 2 = stereo, 4 = quad.  Don't choose anything else
-uint32_t i2s_rx_buffer[audio_block_samples/2*n_chan]; //allocate the buffer for the InputI2S class
-uint32_t i2s_tx_buffer[audio_block_samples/2*n_chan]; //allocate the buffer for the OutputI2S class
+uint32_t i2s_rx_buffer[audio_block_samples*n_chan]; //allocate the buffer for the InputI2S class
+uint32_t i2s_tx_buffer[audio_block_samples*n_chan]; //allocate the buffer for the OutputI2S class
 
 
 // define classes to control the Tympan and the AIC_Shield
@@ -81,10 +81,10 @@ void setup(void)
   myTympan.enable(); 
 
   //Choose the desired input for Tympan main board
-   myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones (only on main board, not on AIC shield)
-   //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);     // use the on board microphones (only on main board, not on AIC shield)
-   //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
-   myTympan.setInputGain_dB(15.0); // set input volume, 0-47.5dB in 0.5dB setps
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones (only on main board, not on AIC shield)
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);     // use the on board microphones (only on main board, not on AIC shield)
+  //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_LINEIN); // use the microphone jack - defaults to mic bias OFF
+  myTympan.setInputGain_dB(15.0); // set input volume, 0-47.5dB in 0.5dB setps
   
   //Set the desired output volume levels
   myTympan.volume_dB(0);      // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.
