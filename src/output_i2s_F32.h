@@ -34,7 +34,6 @@
 #define output_i2s_f32_h_
 
 #include <Arduino.h>
-#include <arm_math.h>
 #include <AudioStream_F32.h>  //tympan library
 #include <DMAChannel.h> 
 #include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
@@ -50,12 +49,13 @@ public:
 	AudioOutputI2S_F32(void)                                                   : AudioOutputI2SBase_F32(2)	{ begin();} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream_F32.h
 	AudioOutputI2S_F32(const AudioSettings_F32 &settings)                      : AudioOutputI2S_F32(settings, true) {}
 	AudioOutputI2S_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioOutputI2SBase_F32(2,settings) {  if (flag_callBegin) begin(); }; 
-	//AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff)   : AudioOutputI2S_F32(settings, tx_buff, true) {}
-	//AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(2,settings)
-	//{ 
-	//	i2s_tx_buffer = tx_buff;
-	//	if (flag_callBegin) begin();  
-	//}
+	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff)   : AudioOutputI2S_F32(settings, tx_buff, true) {}
+	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(2,settings)
+	{ 
+		i2s_tx_buffer = tx_buff;
+		i2s_buffer_was_given_by_user = true;	
+		if (flag_callBegin) begin();  
+	}
 	
 	void begin(void) override;
 	friend class AudioInputI2S_F32;        //wants to call config_i2s()

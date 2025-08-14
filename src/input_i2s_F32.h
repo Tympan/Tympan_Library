@@ -46,10 +46,12 @@ public:
 	AudioInputI2S_F32(void)                                                   : AudioInputI2SBase_F32(2) { begin(); } //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream_F32.h
 	AudioInputI2S_F32(const AudioSettings_F32 &settings)                      : AudioInputI2SBase_F32(2, settings) { begin(); }
 	AudioInputI2S_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioInputI2SBase_F32(4, settings) { if (flag_callBegin) begin(); }
- 	//AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) : AudioInputI2SBase_F32(2, settings) { 
-	//	i2s_rx_buffer = rx_buff;
-	//	begin(); 
-	//} 	
+	AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff)   : AudioInputI2S_F32(settings, rx_buff, true) {}
+ 	AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff, bool flag_callBegin)   : AudioInputI2SBase_F32(2, settings) { 
+		i2s_rx_buffer = rx_buff; 
+		i2s_buffer_was_given_by_user = true;
+		if (flag_callBegin) begin(); 
+	} 	
 	
 	void begin(void) override;
 

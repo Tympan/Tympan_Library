@@ -64,7 +64,7 @@ DMAMEM __attribute__((aligned(32))) static I2S_BUFFER_TYPE i2s_default_tx_buffer
 
 void AudioOutputI2SQuad_F32::begin(void)
 {
-	i2s_tx_buffer = i2s_default_tx_buffer;
+	if (i2s_buffer_was_given_by_user == false) i2s_tx_buffer = i2s_default_tx_buffer;
 	dma.begin(true); // Allocate the DMA channel first
 
 	initPointers();

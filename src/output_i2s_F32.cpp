@@ -192,7 +192,7 @@ float AudioOutputI2S_F32::setI2SFreq_T3(const float freq_Hz) {
 
 void AudioOutputI2S_F32::begin(void)
 {
-	i2s_tx_buffer = i2s_default_tx_buffer;
+	if (i2s_buffer_was_given_by_user == false) i2s_tx_buffer = i2s_default_tx_buffer;
 	dma.begin(true); // Allocate the DMA channel first
 
 	initPointers(); //set all block_1st[] and block_2nd[] to nullptr

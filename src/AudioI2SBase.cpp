@@ -18,6 +18,7 @@ bool               AudioInputI2SBase_F32::update_responsibility = false;
 DMAChannel         AudioInputI2SBase_F32::dma(false);
 unsigned long      AudioInputI2SBase_F32::update_counter = 0;
 int                AudioInputI2SBase_F32::flag_out_of_memory = 0;
+bool               AudioInputI2SBase_F32::i2s_buffer_was_given_by_user = false;
 
 
 // define static data members...AudioOutputI2SBase_F32
@@ -29,6 +30,7 @@ uint32_t*          AudioOutputI2SBase_F32::i2s_tx_buffer = nullptr;
 bool               AudioOutputI2SBase_F32::update_responsibility = false;
 float32_t*         AudioOutputI2SBase_F32::zerodata = default_zerodata;
 DMAChannel         AudioOutputI2SBase_F32::dma(false);
+bool               AudioOutputI2SBase_F32::i2s_buffer_was_given_by_user = false;
 
 
 

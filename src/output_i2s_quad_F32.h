@@ -34,13 +34,10 @@
 #define output_i2s_quad_f32_h_
 
 #include <Arduino.h>
-#include <arm_math.h>
 #include <AudioStream_F32.h>   //tympan library
 #include <DMAChannel.h>
 #include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
-#include <input_i2s_F32.h>  //tympan library
 #include <input_i2s_quad_F32.h>  //tympan library
-#include <input_i2s_hex_F32.h>  //tympan library
 
 class AudioOutputI2SQuad_F32 : public AudioOutputI2SBase_F32
 {
@@ -49,13 +46,13 @@ public:
 	AudioOutputI2SQuad_F32(void)                                                   : AudioOutputI2SBase_F32(4) { begin();}
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings)                      : AudioOutputI2SQuad_F32(settings, true) {}
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioOutputI2SBase_F32(4,settings) {	if (flag_callBegin) begin(); }
-	//AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff)   : AudioOutputI2SQuad_F32(settings, tx_buff, true) {} 
-	//AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(4, settings)
-	//{ 
-	//	i2s_tx_buffer = tx_buff;
-	//	zerodata = new float32_t[settings.audio_block_samples/2]{0}; //Need zeros for half an audio block, just 1 channel, init to zero
-	//	if (flag_callBegin) begin(); 
-	//}
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff)   : AudioOutputI2SQuad_F32(settings, tx_buff, true) {} 
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(4, settings)
+	{ 
+		i2s_tx_buffer = tx_buff;
+		i2s_buffer_was_given_by_user = true;	
+		if (flag_callBegin) begin(); 
+	}
 
 	void begin(void) override;
 	friend class AudioInputI2SQuad_F32; //it wants to call config_i2s() (Teensy3 ony)

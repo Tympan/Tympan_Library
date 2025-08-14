@@ -33,9 +33,7 @@
 #ifndef _input_i2s_quad_f32_h_
 #define _input_i2s_quad_f32_h_
 
-
 #include <Arduino.h>
-#include <arm_math.h>
 #include <AudioStream_F32.h>
 #include "DMAChannel.h"
 #include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
@@ -48,10 +46,12 @@ public:
 	AudioInputI2SQuad_F32(void)                                                   : AudioInputI2SBase_F32(4) { begin(); }
 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings)                      : AudioInputI2SQuad_F32(settings, true) {}
 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioInputI2SBase_F32(4, settings) { if (flag_callBegin) begin(); }
- 	//AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff)   : AudioInputI2SBase_F32(4, settings)  { 
-	//	i2s_rx_buffer = rx_buff;
-	//	begin(); 
-	//} 
+ 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff)   : AudioInputI2SQuad_F32(settings, rx_buff, true) {}
+	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff, bool flag_callBegin)   : AudioInputI2SBase_F32(4, settings)  { 
+		i2s_rx_buffer = rx_buff; 
+		i2s_buffer_was_given_by_user = true;	
+		if (flag_callBegin) begin(); 
+	} 
 	void begin(void);
 
 protected:

@@ -92,7 +92,8 @@ class AudioInputI2SBase_F32 : public AudioI2SBase, public AudioStream_F32 {
 		static int n_chan;
 		static bool update_responsibility;
 		static DMAChannel dma;
-		static uint32_t *i2s_rx_buffer; 
+		static uint32_t *i2s_rx_buffer;
+		static bool i2s_buffer_was_given_by_user;
 		//
 		static audio_block_f32_t *block_ch[AUDIO_INPUT_I2S_MAX_CHAN];
 		static uint16_t block_offset;
@@ -147,6 +148,7 @@ class AudioOutputI2SBase_F32 : public AudioI2SBase, public AudioStream_F32 {
 		static bool update_responsibility;
 		static DMAChannel dma;
 		static I2S_BUFFER_TYPE *i2s_tx_buffer;
+		static bool i2s_buffer_was_given_by_user;
 		static float32_t *zerodata;
 		//
 		static audio_block_f32_t *block_1st[AUDIO_OUTPUT_I2S_MAX_CHAN];
