@@ -38,74 +38,24 @@
 #include <DMAChannel.h>
 #include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
 
-class AudioInputI2SBase_F32 : public AudioI2SBase, public AudioStream_F32 {
-	public:
-		AudioInputI2SBase_F32(void) : AudioStream_F32(0, NULL) {};
-		virtual ~AudioInputI2SBase_F32(void) {};
-		
-		virtual void begin(void) = 0;
-		virtual int get_isOutOfMemory(void) { return flag_out_of_memory; }
-		virtual void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
-	protected:
-		static float sample_rate_Hz;
-		static int audio_block_samples;
-		static int flag_out_of_memory;
-		static unsigned long update_counter;
-	private:
-};
 
 class AudioInputI2S_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
-	AudioInputI2S_F32(void) { 
-		//Serial.println("AudioInputI2S_F32: constructor 1...");
-		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use the default size
-		begin(); 
-	} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
-	AudioInputI2S_F32(const AudioSettings_F32 &settings) { 
-		//Serial.println("AudioInputI2S_F32: constructor 2...");
-		sample_rate_Hz = settings.sample_rate_Hz;
-		audio_block_samples = settings.audio_block_samples;
-		begin(); 
-	}
- 	AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) { 
-		sample_rate_Hz = settings.sample_rate_Hz;
-		audio_block_samples = settings.audio_block_samples;
-		i2s_rx_buffer = rx_buff;
-		begin(); 
-	} 	
+	AudioInputI2S_F32(void)                                                   : AudioInputI2SBase_F32(2) { begin(); } //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream_F32.h
+	AudioInputI2S_F32(const AudioSettings_F32 &settings)                      : AudioInputI2SBase_F32(2, settings) { begin(); }
+	AudioInputI2S_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioInputI2SBase_F32(4, settings) { if (flag_callBegin) begin(); }
+ 	//AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) : AudioInputI2SBase_F32(2, settings) { 
+	//	i2s_rx_buffer = rx_buff;
+	//	begin(); 
+	//} 	
 	
-	void update(void) override;
-	static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
-	static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
-	static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void) override;
-	void sub_begin_i32(void);
-	//void sub_begin_i16(void);
-	static uint32_t *i2s_rx_buffer; 
-	//friend class AudioOutputI2S_F32;
+
 protected:	
-	AudioInputI2S_F32(int dummy) {} // to be used only inside AudioInputI2Sslave !!
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr_32(void);
-	static void isr(void);
-	virtual void update_1chan(int, audio_block_f32_t *&);
-private:
-	static audio_block_f32_t *block_left_f32;
-	static audio_block_f32_t *block_right_f32;
-	static uint16_t block_offset;
-};
 
-class AudioInputI2Sslave_F32 : public AudioInputI2S_F32
-{
-public:
-	AudioInputI2Sslave_F32(void) : AudioInputI2S_F32(0) { begin(); }
-	void begin(void);
-	friend void dma_ch1_isr(void);
 };
-
 
 
 #endif
