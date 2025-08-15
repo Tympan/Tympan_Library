@@ -43,7 +43,6 @@
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
 #include "WavHeaderFmt.h"
-#include <variant>
 
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 
@@ -56,7 +55,7 @@ enum class Wav_Header_Err : uint16_t {
 	file_read_err		= 0x0002,		// Could also have reached EOF
 	file_seek_err		= 0x0003,
 	invalid_file_len	= 0x0004,
-	invalid_file_format  = 0x0005,
+	invalid_file_format = 0x0005,
 	invalid_state		= 0x0006,		// Invalid state.  Expected STATE_PARSE1
 	chunk_id_not_found  = 0x0010,
 	invalid_chunk_len   = 0x0011,
@@ -148,8 +147,9 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		const Fmt_Pcm_s& getFmtPcmHeader(void);
 		const Fmt_Ieee_s& getFmtIeeeHeader(void);
 		const Fact_s& getFactHeader(void);
+		const std::vector<Info_Tags> getInfoTagIds(void);
 		const std::string getInfoTag(const Info_Tags tagId);
-		void printMetadata(void) const;
+		void printMetadata(void);
 
 
 		//Check to see if an SD card is present

@@ -1,6 +1,4 @@
 #include "SDWriter.h"
-#include <algorithm>
-
 
 /*
 #include "SD.h"  //used for isSdCardPresent()

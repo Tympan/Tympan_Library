@@ -115,14 +115,16 @@ bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffe
 	bool okFlag = true;
 
 	if (state == STATE_NOT_BEGUN) begin();
-  //stop();
+  	//stop();
 	
 	active = false;  //from AudioStream.h.  Setting to false to prevent update() from being called.  Only for open().
 
   __disable_irq();
   file.open(filename,O_READ);   //open for reading
   __enable_irq();
-  if (!isFileOpen()) return false;
+  if (!isFileOpen()) {	
+	return false;
+  }
   
   // Store filename for reference later
   _filename = filename;
@@ -242,7 +244,7 @@ const Fact_s& AudioSDPlayer_F32::getFactHeader(void) {
 }
 
 /**
- * @brief Get the LIST<INFO> tagIDs and tag strings
+ * @brief Get the LIST<INFO> tag strings by tag ID
  * @return InfoKeyVal_t 
  */
 const std::string AudioSDPlayer_F32::getInfoTag(const Info_Tags tagId) {
@@ -253,11 +255,25 @@ const std::string AudioSDPlayer_F32::getInfoTag(const Info_Tags tagId) {
 	}
 }
 
+/**
+ * @brief Get a vector of LIST<INFO> tagIDs 
+ * \note Useful for the calling `getInfoTag()`
+ */
+const std::vector<Info_Tags> AudioSDPlayer_F32::getInfoTagIds(void) {
+	std::vector<Info_Tags> idList;
+	
+	for (const auto &id:infoTagStr) {
+		idList.push_back(id.first);
+	}
+
+	return (idList);
+}
+
 
 /**
  * @brief print WAV header information and metadata comment
  */
-void AudioSDPlayer_F32::printMetadata(void) const {
+void AudioSDPlayer_F32::printMetadata(void) {
 	// Check if filename is empty
 	if ( !_filename.empty() ){
 		Serial.print( String(_filename.c_str() ) );
@@ -767,12 +783,13 @@ bool AudioSDPlayer_F32::readHeader(void) {
 	infoTagStr.clear();	// clear map of info list tag values
 
 	debugPrint("AudioSDPlayer_F32:readHeader: begin parsing header.");
+  	
 
 	// Check correct state for parsing wav header
 	if (state != STATE_PARSE1) {
 		err = Wav_Header_Err::invalid_state;
-		Serial.println("\tAudioSDPlayer_F32:readHeader: ***Error*** unknown state = " + String(state));
-	
+		Serial.println("\t***Error*** unknown state = " + String(state));
+
 	// Else If WAV file has no header, bypass this method.
 	} else if ( (state == STATE_DIRECT_16BIT_MONO) || (state == STATE_DIRECT_16BIT_STEREO) ) {
 		return true;
@@ -780,15 +797,17 @@ bool AudioSDPlayer_F32::readHeader(void) {
 
 	// Check that file handle is valid
 	if ( !file || !file.isOpen() ) {
-		Serial.println( "\tAudioSDPlayer_F32:readHeader: ***Error*** file not instantiated");
+		Serial.println( "\t***Error*** file not instantiated.");
 		err = Wav_Header_Err::invalid_file;
 	}
 
+
  	// --- RIFF Chunk---
 	if(err == Wav_Header_Err::ok ) {
-		debugPrint("\tAudioSDPlayer_F32:readHeader: parseRiffChunk()");
+		debugPrint("\tParsing RIFF chunk.");
 		err = parseRiffChunk(file, riffChunk);
 	}
+	
 
 	/* --- FMT CHUNK --- */
 	// Read in "fmt " chunk ID and Length, to determine if audio format is 16-bit PCM or 32-bit IEEE
@@ -798,12 +817,12 @@ bool AudioSDPlayer_F32::readHeader(void) {
 		// Check "fmt " chunk ID is invalid
 		if (chunkId != FMT_LSB) {
 			err = Wav_Header_Err::chunk_id_not_found;
-			debugPrint("AudioSDPlayer_F32:readHeader: ***Error*** Chunk ID Invalid");
+			debugPrint("\t***Error*** Chunk ID invalid.");
 			debugPrint( String("\tExpected: '_fmt'; Received: ") + String(chunkId) );
 
 		// Else If length matches PCM format....
 		} else if (chunkLen == sizeof(Fmt_Pcm_Header_u) - 8) {		// - 8 to exclude chunk ID and length
-			debugPrint("\tAudioSDPlayer_F32:readHeader: parseFmtPcmChunk()");
+			debugPrint("\tParsing fmt PCM chunk.");
 			err = parseFmtPcmChunk(file, fmtPcmChunk);
 
 			// Set which audio format this header uses
@@ -822,18 +841,18 @@ bool AudioSDPlayer_F32::readHeader(void) {
 					wavAudioFormat = Wave_Format_e::Wav_Format_Ieee_Float;
 
 					/*---  Parse FACT chunk --- */
-					debugPrint("\tAudioSDPlayer_F32:readHeader: parseFactChunk()");
+					debugPrint("\tParsing FACT chunk.");
 					err = peekHeaderChunk(file, chunkId, chunkLen);
 
 					// Check for errors
 					if (chunkId != FACT_LSB) {
 						err = Wav_Header_Err::chunk_id_not_found;
-						debugPrint("AudioSDPlayer_F32:readHeader: ***Error*** Chunk ID Invalid");
+						debugPrint("\t***Error*** Chunk ID Invalid");
 						debugPrint( String("\tExpected: 'FACT'; Received: ") + String(chunkId) );
 
 					} else if (chunkLen != sizeof(Fact_Header_u) - 8) {	// Subtract 8 for chunk ID and chunk Len variables.
 						err = Wav_Header_Err::invalid_chunk_len;
-						debugPrint("\tAudioSDPlayer_F32:readHeader: ***Error*** Chunk Length Invalid");
+						debugPrint("\t***Error*** Chunk Length Invalid");
 						debugPrint( String("\tExpected: ") + String(sizeof(Fact_Header_u)) + String("Received: ") + String(chunkLen) );
 	
 					// Else parse FACT Chunk
@@ -856,18 +875,46 @@ bool AudioSDPlayer_F32::readHeader(void) {
 	/* --- FIND DATA or LIST CHUNK --- */
 	// Remaining header may consist of "data" or "INFO" chunk, in any order
 	// Does not search entire file. Jumps from chunk to chunk based on stated chunk length
+	// Ignores chunks it does not recognize.
 	bool dataChunkFound = false;
-	uint32_t audioDataFilePos = 0;
-	uint32_t shiftBytes = 0;	// If chunk ID not found, move file position up one byte and track with this.
+	uint32_t audioDataFilePos = 0;		// For storing position of data chunk to rewind to at the end of this method.
+	uint8_t maxNumChunks = 10;			// Maximum # of chunks to jump to, in case there is some erratic behavior
 
-	while ( (err == Wav_Header_Err::ok) && ( (file.curPosition() + 8 ) < file.size() ) && (shiftBytes<4) ){ // Add 8 to read chunk ID and len
-		// Clear temp nuffers
+	// Parse while no error and not EOF
+	while ( (err == Wav_Header_Err::ok) && ( (file.curPosition()+8) < file.size() ) ) { // Add 8 to read chunk ID and len
+
+		// Clear temp buffers
 		chunkId = 0;
 		chunkLen = 0;
+		bool chunkIdFound = false;
+		size_t maxShift = 3;		// max # of bytes to shift while looking for chunk ID
+		
+		// Peek at chunk ID and len
+		while ((err==Wav_Header_Err::ok) && (!chunkIdFound) ) {
+			err = peekHeaderChunk(file, chunkId, chunkLen);
 
-		// Peek at chunk ID and len to determine if next chunk is LIST or "data"
-		if ( (err = peekHeaderChunk(file, chunkId, chunkLen) ) == Wav_Header_Err::ok ) {
+			// Is valid chunk?			
+			chunkIdFound = isValidChunkId(chunkId);
+				
+			// If not, shift one byte
+			if (!chunkIdFound) {
+				if (maxShift > 0) {
+					maxShift--;
+					if (!file.seekCur(1) ) {
+						// if failed to seek, seek to end of file, ignoring error
+						file.seekEnd();
+					}
+				// Else still not found; seek to end of file. ignoring error
+				} else {
+					file.seekEnd();
+				}
+			} // else chunk found... let it pass thru
+		}
+
+		if (err == Wav_Header_Err::ok) {
+			// Try to identify chunk
 			switch(chunkId) {
+				
 				// Read LIST chunk
 				case LIST_LSB:
 					debugPrint("\tAudioSDPlayer_F32:readHeader: parseListChunk()");
@@ -894,26 +941,44 @@ bool AudioSDPlayer_F32::readHeader(void) {
 						audioDataFilePos = file.curPosition();
 						dataChunkFound = true;
 
-						// Seek to end of audio data
-						file.seekCur(dataChunk.S.chunkLenBytes);
+						// Seek to end of audio data (should not hit EOF as there should be room for another chunk)
+						if( !file.seekCur(dataChunk.S.chunkLenBytes) ) {
+							debugPrint( String("AudioSDPlayer_F32:readHeader:seekCur***Error***; filePos: ") + file.curPosition() + 
+									String("; fileSize: ") + String( file.size() ) );
+							err = Wav_Header_Err::file_seek_err;
+						}
 					}
 					break;
-				
-				// Ignore chunk and seek to end of chunk
-				default:	
-					file.seekCur(chunkLen + 8); 	// add 8 for chunk ID and length
-					break;
+
+				// Ignore chunk and jump over to next chunk
+				default:
+					debugPrint("Unknown Chunk ID: " + String(chunkId) +
+								String("\n\tfilePos: ") + String( file.curPosition() ) + 
+								String("\n\tjump # of bytes: ") + String(chunkLen + 8) +
+								String("\n\tfileSize: ") + String( file.size()) );
+					if( !file.seekCur(chunkLen + 8) ) {	// Add 8 for current id and len bytes
+						debugPrint( String("AudioSDPlayer_F32:readHeader:seekCur***Error***; Ignore chunk; filePos: ") + file.curPosition() + 
+								String("; fileSize: ") + String( file.size() ) );
+						err = Wav_Header_Err::file_seek_err;
+					}
+			} // end switch()
+
+			// Count down max number of chunks to look for
+			if (maxNumChunks > 0) {
+				maxNumChunks--;
+			} else {
+				err = Wav_Header_Err::chunk_id_not_found;
 			}
-		// Else chunk ID was not found.  Move file position up one byte to account for padding
-		} else {
-			file.seekCur(1);
-			shiftBytes++;	// Track how often we do this.
-		}
+		} // error check for peeking.  If it failed, then let it pass through.
+		
 	} // end while()
 
 	// If data chunk was found, seek to beginning of audio data
 	if (dataChunkFound) {
-		file.seekSet(audioDataFilePos);
+		if( !file.seekSet(audioDataFilePos) ){
+			err = Wav_Header_Err::file_seek_err;
+		}
+	// Else throw error
 	} else {
 		debugPrint("\tAudioSDPlayer_F32:readHeader: *** Error *** data chunk not found");
 		err = Wav_Header_Err::chunk_id_not_found;
@@ -1010,8 +1075,8 @@ bool AudioSDPlayer_F32::readHeader(void) {
  * @brief Peek at chunk ID and Length
  * 
  * @param file reference to WAV file
- * @param chhunkId buffer to populate
- * @param chunkLen buffer to populate
+ * @param chhunkId buffer to store chunkId in
+ * @param chunkLen buffer to store chunkLen in
  * @return Wav_Header_Err 
  */
  Wav_Header_Err AudioSDPlayer_F32::peekHeaderChunk(SdFile &file, uint32_t &chunkId, uint32_t &chunkLen) {
@@ -1190,25 +1255,25 @@ Wav_Header_Err AudioSDPlayer_F32::parseListChunk(SdFile &file, List_Header_u &li
 
 	// Keep reading tag and tag strings until out of bytes (according to LIST chunk header)
 	while ( (bytesLeft > sizeof(List_Tag_Header_u) ) && (err == Wav_Header_Err::ok) ) {
-		debugPrint("\tAudioSDPlayer_F32:parseListChunk(): Searching for tags: ");
-
 		List_Tag_Header_u listTagChunk;
+		std::string tagIdStr;	// temp buffer to store tag ID as string
+
 
 		// Read in tag ID and length; keep track of total bytes read
 		bytesRead = file.read( &listTagChunk.byteStream[0], sizeof(List_Tag_Header_u) );
 		bytesLeft -= bytesRead;
 
-		// Copy (uint32_t) tagID to string
-		std::string tagIdStr;	// temp buffer
-		tagIdStr.resize( sizeof(uint32_t) );  // set buffer size
-		memcpy( tagIdStr.data(), &listTagChunk.S.tagId, sizeof(uint32_t) );
-
 		// Check that read() worked
 		if (bytesRead != sizeof(List_Tag_Header_u) ) {
 			err = Wav_Header_Err::file_read_err;
+		} else { // success
+			// Copy (uint32_t) tagID to string
+			tagIdStr.resize( sizeof(uint32_t) );  // set buffer size
+			memcpy( tagIdStr.data(), &listTagChunk.S.tagId, sizeof(uint32_t) );
+		}
 
-		// Check if tag ID is recognized
-		} else if ( StrToTagId(tagIdStr) == Info_Tags::ERRO ) {
+		// If tag ID is not recognized, Error
+		if ( StrToTagId(tagIdStr) == Info_Tags::ERRO ) {
 			err = Wav_Header_Err::chunk_id_not_found;
 			debugPrint("AudioSDPlayer_F32:parseListChunk(): ***Error*** LIST<INFO> Tag ID Invalid");
 			debugPrint( String("\tReceived: ") + String(tagIdStr.c_str() ) );
@@ -1224,7 +1289,6 @@ Wav_Header_Err AudioSDPlayer_F32::parseListChunk(SdFile &file, List_Header_u &li
 
 		// Assign info string to the map of <Info_Tags, std::string>
 		if (err == Wav_Header_Err::ok) {
-			
 			// temporary buffer
 			std::string tagStrBuff;
 			tagStrBuff.resize(listTagChunk.S.tagLenBytes);

@@ -46,7 +46,7 @@ void SerialManager::printHelp(void) {
 //switch yard to determine the desired action
 bool SerialManager::processCharacter(char c) { //this is called by SerialManagerBase.respondToByte(char c)
   bool ret_val = true; //assume at first that we will find a match
-
+std::string s;
   switch (c) {
     case 'h': 
       printHelp(); 
@@ -55,21 +55,25 @@ bool SerialManager::processCharacter(char c) { //this is called by SerialManager
       sdPlay_filename = "Int16_Before-data.wav";
       Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
       audioSDPlayer.play(sdPlay_filename);
+      audioSDPlayer.printMetadata();
       break; 
     case '@':
       sdPlay_filename = "Int16_After-data.wav";
       Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
       audioSDPlayer.play(sdPlay_filename);
+      audioSDPlayer.printMetadata();
       break; 
     case '#':
       sdPlay_filename = "F32_Before-data.wav";
       Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
       audioSDPlayer.play(sdPlay_filename);
+      audioSDPlayer.printMetadata();
       break; 
      case '$':
       sdPlay_filename = "F32_After-data.wav";
       Serial.println("Received: starting SD Player for " + sdPlay_filename + "...");
       audioSDPlayer.play(sdPlay_filename);
+      audioSDPlayer.printMetadata();
       break; 
     case 'q':
       Serial.println("Received: stopping the playing of any SD files...");

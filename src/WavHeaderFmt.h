@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <array>
 
 /* ******************************* Constexpr ********************************** */
 constexpr uint32_t WAV_HEADER_NUM_BYTES_INT16 = 44;	// # of bytes of WAV Header with no metadata and no audio data.
@@ -29,6 +30,19 @@ constexpr uint32_t DATA_LSB               = 0x61746164;  //"data" as hex
 constexpr uint32_t LIST_LSB               = 0x5453494c;  //"LIST" as hex
 constexpr uint32_t INFO_LSB               = 0x4F464E49;  //"INFO" as hex
 constexpr uint32_t ICMT_LSB               = 0x544D4349;  //"ICMT" as hex
+
+// Other chunks to ignore
+constexpr uint32_t IMXL_LSB               = 0x4C4D5869;  //"iXML" as hex (ignored)
+constexpr uint32_t BEXT_LSB               = 0x74786562;  //"bext" as hex (ignored)
+constexpr uint32_t AMXL_LSB               = 0x4C4D5861;  //"aXML" as hex (ignored)
+constexpr uint32_t ID3_LSB                = 0x20336469;  //"id3 " as hex (ignored)
+constexpr uint32_t PMX_LSB                = 0x584D505F;  //"_PMX" as hex (ignored)
+
+// Possible Chunk IDs
+constexpr std::array<uint32_t, 11> acceptedChunkIds = 
+    {RIFF_LSB, WAVE_LSB, FMT_LSB, FACT_LSB, DATA_LSB, LIST_LSB, IMXL_LSB, BEXT_LSB, AMXL_LSB, ID3_LSB, PMX_LSB};
+
+bool isValidChunkId(const uint32_t &chunkIdU32);
 
 /* *******************************  Types  ********************************** */
 
@@ -256,63 +270,9 @@ enum class Info_Tags {
 using InfoKeyVal_t = std::map<Info_Tags, std::string>;
 
 /* ******************************* Globals ********************************** */
-//extern std::map<std::string, Info_Tags> StrToTagId; 
-//std::string_view InfoTagToStr(Info_Tags tagName);
 
 /* ********************************* External Functions ***********************/
-//Info_Tags StrToTagId(std::string);
-
-
-constexpr Info_Tags StrToTagId(std::string_view) {
-    if ("ICMT") return Info_Tags::ICMT;       // Comments. Provides general comments about the file or the subject of the file. 
-    else if ("IARL") return Info_Tags::IARL;  // Archival Location. Indicates where the subject of the file is archived.
-    else if ("IART") return Info_Tags::IART;  // Artist. Lists the artist of the original subject of the file. For example,Info_Tags:: : “Michaelangelo.”
-    else if ("ICMS") return Info_Tags::ICMS;  // Commissioned. Lists the name of the person or organization that commissioned the subject of the file. 
-    else if ("IDPI") return Info_Tags::IDPI;  // Dots Per Inch. Stores dots per inch setting of the digitizer used to produce the file,Info_Tags:: : such as “ 300.”
-    else if ("IENG") return Info_Tags::IENG;  // Engineer. Stores the name of the engineer who worked on the file. Separate the names by a semicolon and a blank. 
-    else if ("IKEY") return Info_Tags::IKEY;  // Keywords. Provides a list of keywords that refer to the file or subject of the file. Separate multiple keywords with a semicolon
-    else if ("ILGT") return Info_Tags::ILGT;  // Lightness. Describes the changes in lightness settings on the digitizer required to produce the file. Note that the format of this information depends on hardware used.
-    else if ("IMED") return Info_Tags::IMED;  // Medium. Describes the original subject of the file, such as, “ computer image,” “ drawing,” “ lithograph,” and so forth.
-    else if ("INAM") return Info_Tags::INAM;  // Name. Stores the title of the subject of the file, such as, “ Seattle From Above.”
-    else if ("IPLT") return Info_Tags::IPLT;  // Palette Setting. Specifies the number of colors requested when digitizing an image, such as “ 256.”
-    else if ("IPRD") return Info_Tags::IPRD;  // Product. Specifies the name of the title the file was originally intended for, such as “Encyclopedia of Pacific Northwest Geography.”
-    else if ("ISBJ") return Info_Tags::ISBJ;  // Subject. Describes the conbittents of the file, such as “Aerial view of Seattle.”
-    else if ("ISFT") return Info_Tags::ISFT;  // Software. Identifies the name of the software package used to create the file, such as “Microsoft WaveEdit.”
-    else if ("ISHP") return Info_Tags::ISHP;  // Sharpness. Identifies the changes in sharpness for the digitizer required to produce the file (the format depends on the hardware used).
-    else if ("ISRC") return Info_Tags::ISRC;  // Source. Identifies the name of the person or organization who supplied the original subject of the file. For example, “ Trey Research.”
-    else if ("ISRF") return Info_Tags::ISRF;  //Source Form. Identifies the original form of the material that was digitized, such as “ slide,” “ paper,” “map,” and so forth. This is not necessarily the same as IMED.
-    else if ("ITCH") return Info_Tags::ITCH;  // Technician. Identifies the technician who digitized the subject file. For example, “ 
-    else return Info_Tags::ERRO;
-  };
-
-
-/**
- * @brief Converts LIST<INFO> enum tagID to char array
- * @param tagName 
- * @return constexpr std::string_view 
- */
-constexpr std::string_view InfoTagToStr(Info_Tags tagName) {
-    switch (tagName) {
-        case Info_Tags::ICMT: return "ICMT"; // Comments. Provides general comments about the file or the subject of the file. 
-        case Info_Tags::IARL: return "IARL"; // Archival Location. Indicates where the subject of the file is archived.
-        case Info_Tags::IART: return "IART"; // Artist. Lists the artist of the original subject of the file. For example, “Michaelangelo.”
-        case Info_Tags::ICMS: return "ICMS"; // Commissioned. Lists the name of the person or organization that commissioned the subject of the file. 
-        case Info_Tags::IDPI: return "IDPI"; // Dots Per Inch. Stores dots per inch setting of the digitizer used to produce the file, such as “ 300.”
-        case Info_Tags::IENG: return "IENG"; // Engineer. Stores the name of the engineer who worked on the file. Separate the names by a semicolon and a blank. 
-        case Info_Tags::IKEY: return "IKEY"; // Keywords. Provides a list of keywords that refer to the file or subject of the file. Separate multiple keywords with a semicolon
-        case Info_Tags::ILGT: return "ILGT"; // Lightness. Describes the changes in lightness settings on the digitizer required to produce the file. Note that the format of this information depends on hardware used.
-        case Info_Tags::IMED: return "IMED"; // Medium. Describes the original subject of the file, such as, “ computer image,” “ drawing,” “ lithograph,” and so forth.
-        case Info_Tags::INAM: return "INAM"; // Name. Stores the title of the subject of the file, such as, “ Seattle From Above.”
-        case Info_Tags::IPLT: return "IPLT"; // Palette Setting. Specifies the number of colors requested when digitizing an image, such as “ 256.”
-        case Info_Tags::IPRD: return "IPRD"; // Product. Specifies the name of the title the file was originally intended for, such as “Encyclopedia of Pacific Northwest Geography.”
-        case Info_Tags::ISBJ: return "ISBJ"; // Subject. Describes the conbittents of the file, such as “Aerial view of Seattle.”
-        case Info_Tags::ISFT: return "ISFT"; // Software. Identifies the name of the software package used to create the file, such as “Microsoft WaveEdit.”
-        case Info_Tags::ISHP: return "ISHP"; // Sharpness. Identifies the changes in sharpness for the digitizer required to produce the file (the format depends on the hardware used).
-        case Info_Tags::ISRC: return "ISRC"; // Source. Identifies the name of the person or organization who supplied the original subject of the file. For example, “ Trey Research.”
-        case Info_Tags::ISRF: return "ISRF"; //Source Form. Identifies the original form of the material that was digitized, such as “ slide,” “ paper,” “map,” and so forth. This is not necessarily the same as IMED.
-        case Info_Tags::ITCH: return "ITCH"; // Technician. Identifies the technician who digitized the subject file. For example, “ Smith, John.”
-        default: return ("ERRO");
-	}
-};
+Info_Tags StrToTagId(std::string_view tagStr);
+std::string_view InfoTagToStr(Info_Tags tagName);
 
 #endif //Wav_Header_Fmt_h
