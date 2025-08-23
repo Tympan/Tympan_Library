@@ -41,7 +41,7 @@
 //#include <spi_interrupt.h>
 
 //#include <SD.h> //used by isSdCardPresent()
-#define DEBUG_VERBOSE_PRINTING		(false)	// Additional print statements to aid in debugging.
+#define SD_PLAYER_DEBUG_PRINTING		(false)	// Additional print statements to aid in debugging.
 
 #define STATE_DIRECT_8BIT_MONO    0  // playing mono at native sample rate
 #define STATE_DIRECT_8BIT_STEREO  1  // playing stereo at native sample rate
@@ -110,45 +110,63 @@ bool AudioSDPlayer_F32::sendFilenames(void) {
 // Here is the "open" function.  It is rare that the user will want to call this directly.
 // Basically, only use this if you are going to stream the data out over Serial rather than
 // playing the audio in real time.
-bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffer)
-{
+bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffer) {
 	bool okFlag = true;
+
+	// --- Clear buffer for parsing header ---
+	wavAudioFormat = Wave_Format_e::Wav_Format_Uninitialized;
+	memset(&riffChunk.byteStream[0], 0, sizeof(Riff_Header_u) );
+	memset(&fmtPcmChunk.byteStream[0], 0, sizeof(Fmt_Pcm_Header_u) );
+	memset(&fmtIeeeChunk.byteStream[0], 0, sizeof(Fmt_Ieee_Header_u) );
+	memset(&factChunk.byteStream [0], 0, sizeof(Fact_Header_u) );
+	memset(&listChunk.byteStream [0], 0, sizeof(List_Tag_Header_u) );
+	memset(&dataChunk.byteStream [0], 0, sizeof(Data_Header_u) );
+	infoTagStr.clear();	// clear map of info list tag values
 
 	if (state == STATE_NOT_BEGUN) begin();
   	//stop();
 	
 	active = false;  //from AudioStream.h.  Setting to false to prevent update() from being called.  Only for open().
 
-  __disable_irq();
-  file.open(filename,O_READ);   //open for reading
-  __enable_irq();
-  if (!isFileOpen()) {	
-	return false;
-  }
-  
-  // Store filename for reference later
-  _filename = filename;
-  
-  //buffer_length = 0;
-  state_play = STATE_STOP;
-  data_length = file.size(); //set to a number bigger than zero to enable the readHeader() to really read some bytes
-  
-  // Check file size
-  if (data_length <=0 ) {
-	okFlag = false;
-
-  } else {
-  	state = STATE_PARSE1;
+	__disable_irq();
+	okFlag = file.open(filename,O_READ);   //open for reading
+	__enable_irq();
+	if (!okFlag || !isFileOpen()) {	
+		return false;
+	}
 	
-	//read header ... added Chip Audette March 2024
-	buffer_read = 0;
-	buffer_write = 0;
-	state_read = READ_STATE_NORMAL;
-	readHeader();
+	// Store filename for reference later
+	_filename = filename;
+	
+	//buffer_length = 0;
+	state_play = STATE_STOP;
+	data_length = file.size(); //set to a number bigger than zero to enable the readHeader() to really read some bytes
+	
+	// Check file size
+	if (file.size() <=0 ) {
+		okFlag = false;
+
+	} else {
+		state = STATE_PARSE1;
+	
+		//read header ... added Chip Audette March 2024
+		buffer_read = 0;
+		buffer_write = 0;
+		state_read = READ_STATE_NORMAL;
+		okFlag = readHeader();
 		
 		//pre-fill the buffer?
-		if (flag_preload_buffer) fillBufferFromSD();
-  }
+		if ( okFlag && flag_preload_buffer) {
+			debugPrint("AudioSDPlayer_F32::open:fillBufferFromSD");
+
+			if(fillBufferFromSD() < 0) {
+				debugPrint("***Error*** Failed to prefill SD Buffer.");
+				okFlag = false;
+			} else {
+				debugPrint(String("Filled # of bytes: ") + String( getNumBytesInBuffer() ) );
+			}
+		} // else skip prefilling buffer.
+	}
 
   return okFlag;
 }
@@ -167,7 +185,7 @@ bool AudioSDPlayer_F32::play(const char *filename)
 //Play an already-opened file
 bool AudioSDPlayer_F32::play(void) {
 	if (isFileOpen()) {
-		Serial.println("AudioSDPlayer_F32: file was already open.  Starting playing");
+		debugPrint("AudioSDPlayer_F32: file was already open.  Starting playing");
 		active = true;  //in AudioStream.h.  Activates this instance so that update() gets called
 	} else {
 		Serial.println("AudiOSDPlayer_F32: play: cannot play file because no file has been opened.");
@@ -496,8 +514,8 @@ int AudioSDPlayer_F32::serviceSD(void) {
 }
 
 // Fill the circular buffer from the SD (should leave one block empty, however)
+//This function should be called from the Arduino loop() function.
 int AudioSDPlayer_F32::fillBufferFromSD(void) {
-	//This function should be called from the Arduino loop() function.
 	//This function loads data from the SD card into a RAM buffer, as
 	//long as there's room in the buffer to do the read
 
@@ -920,7 +938,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 					debugPrint("\tAudioSDPlayer_F32:readHeader: parseListChunk()");
 					err = parseListChunk(file, listChunk, infoTagStr);
 					if (err ==  Wav_Header_Err::ok) {
-						//debugPrint("\t\t-- Success!");
+						debugPrint("\t\t-- Success!");
 					}
 				break; 
 
@@ -937,7 +955,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 						err = Wav_Header_Err::audio_data_odd_pos;
 					} else {
 						// data chunk found. Record start of audio position
-						debugPrint("\t\t-- Success!");
+						debugPrint(String("\t\t-- Success! Position of audio data: ") + file.curPosition() );
 						audioDataFilePos = file.curPosition();
 						dataChunkFound = true;
 
@@ -976,6 +994,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 	// If data chunk was found, seek to beginning of audio data
 	if (dataChunkFound) {
 		if( !file.seekSet(audioDataFilePos) ){
+			debugPrint(String("\tAudioSDPlayer_F32:readHeader:Set file position to start of audio: ") + String(audioDataFilePos) ); 
 			err = Wav_Header_Err::file_seek_err;
 		}
 	// Else throw error
@@ -1035,9 +1054,10 @@ bool AudioSDPlayer_F32::readHeader(void) {
 				break; // valid, so do nothing
 			case Wave_Format_e::Wav_Format_Ieee_Float:
 				// IEEE F32 is invalid for SD Playback, for now.
-				err = Wav_Header_Err::invalid_file_format;
+				err = Wav_Header_Err::IEEE_format_incompatible;
 				break;
 			default: 
+			debugPrint( String("Bad Audio Format; Code: ") + String(wavAudioFormat) );
 				err = Wav_Header_Err::invalid_file_format;
 		}
 	}
@@ -1048,7 +1068,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 	
 	// Set length of header
 	debugPrint( String("\tAudioSDPlayer_F32:readHeader: Header len = ") + String( file.curPosition() ) );
-
+	
 	// If error print hex code
 	if (err != Wav_Header_Err::ok) {
 		state = STATE_STOP;
@@ -1227,7 +1247,7 @@ Wav_Header_Err AudioSDPlayer_F32::parseFactChunk(SdFile &file, Fact_Header_u &fa
  * @param infoTagStr reference to InfoKeyVal_t Map of <tag, string> to populate
  * @return Wav_Header_Err 
  */
-Wav_Header_Err AudioSDPlayer_F32::parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr) {
+Wav_Header_Err AudioSDPlayer_F32::parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr, bool checkTagIDFlag) {
 	Wav_Header_Err err = Wav_Header_Err::ok;
 
 	// Read in LIST chunk ID and Len
@@ -1258,7 +1278,6 @@ Wav_Header_Err AudioSDPlayer_F32::parseListChunk(SdFile &file, List_Header_u &li
 		List_Tag_Header_u listTagChunk;
 		std::string tagIdStr;	// temp buffer to store tag ID as string
 
-
 		// Read in tag ID and length; keep track of total bytes read
 		bytesRead = file.read( &listTagChunk.byteStream[0], sizeof(List_Tag_Header_u) );
 		bytesLeft -= bytesRead;
@@ -1273,7 +1292,7 @@ Wav_Header_Err AudioSDPlayer_F32::parseListChunk(SdFile &file, List_Header_u &li
 		}
 
 		// If tag ID is not recognized, Error
-		if ( StrToTagId(tagIdStr) == Info_Tags::ERRO ) {
+		if ( (StrToTagId(tagIdStr) == Info_Tags::ERRO) && (checkTagIDFlag) ) {
 			err = Wav_Header_Err::chunk_id_not_found;
 			debugPrint("AudioSDPlayer_F32:parseListChunk(): ***Error*** LIST<INFO> Tag ID Invalid");
 			debugPrint( String("\tReceived: ") + String(tagIdStr.c_str() ) );
@@ -1470,12 +1489,12 @@ uint32_t AudioSDPlayer_F32::lengthMillis(void)
 
 
 /**
- * @brief Print debug statements, if DEBUG_VERBOSE_PRINTING == true
+ * @brief Print debug statements, if SD_PLAYER_DEBUG_PRINTING == true
  * 
  * @param msg 
  */
 void AudioSDPlayer_F32::debugPrint(const String &msg) {
-	#if (DEBUG_VERBOSE_PRINTING == true)
+	#if (SD_PLAYER_DEBUG_PRINTING == true)
 	Serial.println(msg);
 	#endif
 }

@@ -13,16 +13,22 @@
 
 /**
  * @brief Converts tagId from string to enum Info_Tags
+ * \note Also update InfoTagToStr() and enum Info_Tags
  * @param tagStr Info tag
  * @return enum InfoTags;  if ERRO then tag not found
  */
 Info_Tags StrToTagId(std::string_view tagStr) {
-    if (tagStr == "ICMT")      {return Info_Tags::ICMT;}       // Comments. Provides general comments about the file or the subject of the file. 
+    if (tagStr == "ICMT")      {return Info_Tags::ICMT;}  // Comments. Provides general comments about the file or the subject of the file. 
     else if (tagStr == "IARL") {return Info_Tags::IARL;}  // Archival Location. Indicates where the subject of the file is archived.
     else if (tagStr == "IART") {return Info_Tags::IART;}  // Artist. Lists the artist of the original subject of the file. For example,Info_Tags:: : “Michaelangelo.”
     else if (tagStr == "ICMS") {return Info_Tags::ICMS;}  // Commissioned. Lists the name of the person or organization that commissioned the subject of the file. 
+    else if (tagStr == "ICOP") {return Info_Tags::ICOP;}  // // Copyright information about the file (e.g., "Copyright Some Company 2011")
+    else if (tagStr == "ICRD") {return Info_Tags::ICRD;}  // The date the subject of the file was created (creation date) (e.g., "2022-12-31")
+    else if (tagStr == "ICRP") {return Info_Tags::ICRP;}  // Copyright information about the file (e.g., "Copyright Some Company 2011")
+    else if (tagStr == "IDIM") {return Info_Tags::IDIM;}  // The dimensions of the original subject of the file
     else if (tagStr == "IDPI") {return Info_Tags::IDPI;}  // Dots Per Inch. Stores dots per inch setting of the digitizer used to produce the file,Info_Tags:: : such as “ 300.”
     else if (tagStr == "IENG") {return Info_Tags::IENG;}  // Engineer. Stores the name of the engineer who worked on the file. Separate the names by a semicolon and a blank. 
+    else if (tagStr == "IGNR") {return Info_Tags::IGNR;}  // The genre of the subject
     else if (tagStr == "IKEY") {return Info_Tags::IKEY;}  // Keywords. Provides a list of keywords that refer to the file or subject of the file. Separate multiple keywords with a semicolon
     else if (tagStr == "ILGT") {return Info_Tags::ILGT;}  // Lightness. Describes the changes in lightness settings on the digitizer required to produce the file. Note that the format of this information depends on hardware used.
     else if (tagStr == "IMED") {return Info_Tags::IMED;}  // Medium. Describes the original subject of the file, such as, “ computer image,” “ drawing,” “ lithograph,” and so forth.
@@ -44,6 +50,7 @@ Info_Tags StrToTagId(std::string_view tagStr) {
 
 /**
  * @brief Converts tagId from enum tagID to char array
+ * \note Also update StrToTagId() and enum Info_Tags
  * @param tagName 
  * @return constexpr std::string_view 
  */
@@ -53,8 +60,13 @@ std::string_view InfoTagToStr(Info_Tags tagName) {
         case Info_Tags::IARL: return "IARL"; // Archival Location. Indicates where the subject of the file is archived.
         case Info_Tags::IART: return "IART"; // Artist. Lists the artist of the original subject of the file. For example, “Michaelangelo.”
         case Info_Tags::ICMS: return "ICMS"; // Commissioned. Lists the name of the person or organization that commissioned the subject of the file. 
+        case Info_Tags::ICOP: return "ICOP"; // Copyright information about the file (e.g., "Copyright Some Company 2011")
+        case Info_Tags::ICRD: return "ICRD"; // The date the subject of the file was created (creation date) (e.g., "2022-12-31")
+        case Info_Tags::ICRP: return "ICRP"; // Whether and how an image was cropped
+        case Info_Tags::IDIM: return "IDIM"; // The dimensions of the original subject of the file
         case Info_Tags::IDPI: return "IDPI"; // Dots Per Inch. Stores dots per inch setting of the digitizer used to produce the file, such as “ 300.”
         case Info_Tags::IENG: return "IENG"; // Engineer. Stores the name of the engineer who worked on the file. Separate the names by a semicolon and a blank. 
+        case Info_Tags::IGNR: return "IGNR"; // The genre of the subject
         case Info_Tags::IKEY: return "IKEY"; // Keywords. Provides a list of keywords that refer to the file or subject of the file. Separate multiple keywords with a semicolon
         case Info_Tags::ILGT: return "ILGT"; // Lightness. Describes the changes in lightness settings on the digitizer required to produce the file. Note that the format of this information depends on hardware used.
         case Info_Tags::IMED: return "IMED"; // Medium. Describes the original subject of the file, such as, “ computer image,” “ drawing,” “ lithograph,” and so forth.

@@ -50,18 +50,19 @@
  * @brief Errors returned by readHeader()
  */
 enum class Wav_Header_Err : uint16_t {
-	ok					= 0x0000,
-	invalid_file		= 0x0001,
-	file_read_err		= 0x0002,		// Could also have reached EOF
-	file_seek_err		= 0x0003,
-	invalid_file_len	= 0x0004,
-	invalid_file_format = 0x0005,
-	invalid_state		= 0x0006,		// Invalid state.  Expected STATE_PARSE1
-	chunk_id_not_found  = 0x0010,
-	invalid_chunk_len   = 0x0011,
-	invalid_bit_rate 	= 0x0020,
-	audio_data_odd_pos	= 0x0021,
-	invalid_num_chan 	= 0x0030,
+	ok							= 0x0000,
+	invalid_file				= 0x0001,
+	file_read_err				= 0x0002,		// Could also have reached EOF
+	file_seek_err				= 0x0003,
+	invalid_file_len			= 0x0004,
+	invalid_file_format 		= 0x0005,
+	IEEE_format_incompatible 	= 0x0005,
+	invalid_state				= 0x0007,		// Invalid state.  Expected STATE_PARSE1
+	chunk_id_not_found  		= 0x0010,
+	invalid_chunk_len   		= 0x0011,
+	invalid_bit_rate 			= 0x0020,
+	audio_data_odd_pos			= 0x0021,
+	invalid_num_chan 			= 0x0030,
 };
 
 class AudioSDPlayer_F32 : public AudioStream_F32
@@ -191,7 +192,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 
 		constexpr static uint32_t MIN_READ_SIZE_BYTES = 512;
 		constexpr static uint32_t MAX_READ_SIZE_BYTES = min(8U*MIN_READ_SIZE_BYTES,65535U); //keep as integer multiple of MIN_READ_SIZE_BYTES
-		constexpr static uint32_t MAX_CHUNK_LEN = 1024;			// Maximum size of header chunks (not applied to data chunk)
+		constexpr static uint32_t MAX_CHUNK_LEN = 524288;		// Maximum size of header chunks (not applied to data chunk)
 
 		//uint32_t READ_SIZE_BYTES = MAX_READ_SIZE_BYTES;  //was 512...will larger reads be faster overall?
 		//uint8_t temp_buffer[MAX_READ_SIZE_BYTES];  //make same size as the above
@@ -222,7 +223,17 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		Wav_Header_Err parseFmtPcmChunk(SdFile &file, Fmt_Pcm_Header_u &fmtPcmChunk);
 		Wav_Header_Err parseFmtIeeeChunk(SdFile &file, Fmt_Ieee_Header_u &fmtIeeeChunk);
 		Wav_Header_Err parseFactChunk(SdFile &file, Fact_Header_u &factChunk);
-		Wav_Header_Err parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr);
+		Wav_Header_Err parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr, bool checkTagIDFlag);
+
+		/**
+		 * @brief Parse List Chunk, checking if tagID is valid against enum Info_Tags
+		 * @param file File to read data from
+		 * @param listChunk Where to save the parsed list chunk
+		 * @return Wav_Header_Err Check for success using (err != nullptr)
+		 */
+		Wav_Header_Err parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr) {
+			return parseListChunk(file, listChunk, infoTagStr, false);
+		}
 
 		//uint32_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
 		uint32_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps, uint16_t n_chan);

@@ -29,7 +29,6 @@ constexpr uint32_t DATA_LSB               = 0x61746164;  //"data" as hex
 
 constexpr uint32_t LIST_LSB               = 0x5453494c;  //"LIST" as hex
 constexpr uint32_t INFO_LSB               = 0x4F464E49;  //"INFO" as hex
-constexpr uint32_t ICMT_LSB               = 0x544D4349;  //"ICMT" as hex
 
 // Other chunks to ignore
 constexpr uint32_t IMXL_LSB               = 0x4C4D5869;  //"iXML" as hex (ignored)
@@ -244,15 +243,23 @@ union List_Tag_Header_u {
 };
 
 
-// INFO tags
+/**
+ * @brief Enum of LIST<INFO> tag IDs
+ * \note Also update StrToTagId() && InfoTagToStr()
+ */
 enum class Info_Tags {
   ERRO, // ERROR! no tag found
   ICMT, // Comments. Provides general comments about the file or the subject of the file. 
   IARL, // Archival Location. Indicates where the subject of the file is archived.
   IART, // Artist. Lists the artist of the original subject of the file. For example, “Michaelangelo.”
   ICMS, // Commissioned. Lists the name of the person or organization that commissioned the subject of the file. 
+  ICOP, // Copyright information about the file (e.g., "Copyright Some Company 2011")
+  ICRD, // The date the subject of the file was created (creation date) (e.g., "2022-12-31")
+  ICRP, // Whether and how an image was cropped
+  IDIM, // The dimensions of the original subject of the file
   IDPI, // Dots Per Inch. Stores dots per inch setting of the digitizer used to produce the file, such as “ 300.”
   IENG, // Engineer. Stores the name of the engineer who worked on the file. Separate the names by a semicolon and a blank. 
+  IGNR, // The genre of the subject
   IKEY, // Keywords. Provides a list of keywords that refer to the file or subject of the file. Separate multiple keywords with a semicolon
   ILGT, // Lightness. Describes the changes in lightness settings on the digitizer required to produce the file. Note that the format of this information depends on hardware used.
   IMED, // Medium. Describes the original subject of the file, such as, “ computer image,” “ drawing,” “ lithograph,” and so forth.
