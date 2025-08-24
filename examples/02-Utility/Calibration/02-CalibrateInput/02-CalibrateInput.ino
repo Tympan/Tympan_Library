@@ -32,7 +32,6 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 // Create the audio objects and then connect them
 Tympan                     myTympan(TympanRev::F,audio_settings);  //do TympanRev::D or TympanRev::E or TympanRev::F
 AudioInputI2S_F32          i2s_in(audio_settings);                 //Digital audio input from the ADC
-AudioSynthWaveform_F32     sineWave(audio_settings);   //from the Tympan_Library
 AudioCalcLeq_F32           calcInputLevel(audio_settings);         //use this to measure the input signal level
 AudioSDWriter_F32          audioSDWriter(audio_settings);          //will record the input signal
 AudioOutputI2S_F32         i2s_out(audio_settings);                //Digital audio output to the DAC.  Should always be last.
