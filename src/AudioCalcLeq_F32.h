@@ -14,6 +14,7 @@
  
  Windowed time averaging Leq for sound level meter.  Defaults to SLOW
 	* Squares the incoming signal
+	* Add to a cumulative `running_sum`
     * Compute average value of the squared signal [see note]
     * The output of the low-pass filter is the estimated level of the signal
  
@@ -24,6 +25,13 @@
    many calculations!
 
   The default calculation window is 0.125 seconds.
+
+  To get the equivalent sound level since the effect was active, use
+  `getCumLevelRms()` or `getCumLevelRms_dB`. This is cleared using resetCumLeq().
+  This function relies on counting samples, which will wrap.  To check this, call `isCumLeqValid()`
+
+  To get the peak level since the effect was active, use `getPeakLevel()`. 
+  To reset the peak level, call `resetPeakLvl()`
   
   MIT License,  Use at your own risk.
 */
@@ -46,7 +54,10 @@ class AudioCalcLeq_F32 : public AudioStream_F32
 		virtual float getMaxLevel(void) { return max_value; }
 		virtual float getMaxLevel_dB(void) { return 10.0f*log10f(max_value); }
 		virtual void  resetMaxLevel(void) { max_value = cur_value; }
-	
+		bool getCumLevelRms (float32_t &cumLeq);
+		bool getCumLevelRms_dB (float32_t &cumLeq);
+		float32_t getPeakLevel(void) const;
+		float32_t getPeakLevel_dB(void) const;
 		
 		virtual float32_t setTimeWindow_sec(float32_t window_sec) {
 			givenTimeWindow_sec = window_sec;
@@ -62,9 +73,25 @@ class AudioCalcLeq_F32 : public AudioStream_F32
 		virtual float32_t getGivenTimeWindow_sec(void) { return givenTimeWindow_sec; } //this returns the value that was first given by the user
 		virtual unsigned long getTimeWindow_samp(void) { return timeWindow_samp; }
 		virtual float32_t getSampleRate_Hz(void) { return sampleRate_Hz; }
-		virtual void clearStates(void) { running_sum = 0.0f; points_averaged = 0;}  //don't clear cur_value, however
-
+		virtual void clearStates(void) { 
+			running_sum = 0.0f; 
+			points_averaged = 0; //don't clear cur_value, however
+		}  
+		
+		virtual void resetCumLeq(void) {
+			running_sum_of_avg = 0.0f;
+			num_averages = 0;
+			cumLeqValid = true;	
+		}
 	
+		virtual void resetPeakLvl(void) {
+			peak_level_sq = 0.0f;
+		}
+
+		bool isCumLeqValid(void) const {
+			return (cumLeqValid);
+		}
+
 	protected:
 		audio_block_f32_t *inputQueueArray[1];
 		
@@ -79,10 +106,20 @@ class AudioCalcLeq_F32 : public AudioStream_F32
 		unsigned long points_averaged = 0;
 		float32_t max_value = 0.0f;
 		
+		// For Cumulative Leq
+		float32_t running_sum_of_avg = 0.0f;  	// This stores a running sum of power levels (mean_val^2)
+		unsigned long long num_averages = 0;			// # of values in `running_sum_of_avg`
+		bool cumLeqValid = true;
+		
+		// For peak level, the max across all data points since cumulative Leq began
+		float32_t peak_level_sq = 0.0f;				// peak level^2
+
 		//here are the protected methods
 		virtual unsigned long setTimeWindow_samp(unsigned long samples) {
 			timeWindow_samp = samples;
 			clearStates();  //clears the averaging states!
+			resetCumLeq(); 	//clears cumulative Leq
+			// does not call resetPeakLvl()
 			return timeWindow_samp;
 		}
 		int calcAverage(audio_block_f32_t *block);
