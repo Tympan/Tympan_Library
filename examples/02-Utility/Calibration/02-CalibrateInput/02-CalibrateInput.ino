@@ -24,12 +24,9 @@
 #include <Tympan_Library.h>
 #include "SerialManager.h"
   
-#define SINE_WAVE_TEST true                     // True: Use sine wave as input; False: Use line input  
-
 //set the sample rate and block size
 const float       sample_rate_Hz = 44100.0f ;   //24000 or 44117 or 96000 (or other frequencies in the table in AudioOutputI2S_F32)
 const int         audio_block_samples = 128;    //do not make bigger than AUDIO_BLOCK_SAMPLES from AudioStream.h (which is 128)  Must be 128 for SD recording.
-constexpr float   sineRmsLevel_dB [] = {-36.0f, -6.0f};
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // Create the audio objects and then connect them
@@ -40,7 +37,6 @@ AudioCalcLeq_F32           calcInputLevel(audio_settings);         //use this to
 AudioSDWriter_F32          audioSDWriter(audio_settings);          //will record the input signal
 AudioOutputI2S_F32         i2s_out(audio_settings);                //Digital audio output to the DAC.  Should always be last.
 
-#if SINE_WAVE_TEST == false
 //Connect the audio input to the level monitor
 AudioConnection_F32        patchcord01(i2s_in, 0, calcInputLevel, 0);    //Left input to the level monitor
 
@@ -51,19 +47,6 @@ AudioConnection_F32        patchcord03(i2s_in, 1, audioSDWriter,  1);    //Right
 //Connect the audio inputs to the audio outputs (to enable monitoring via headphones)
 AudioConnection_F32        patchcord10(i2s_in, 0, i2s_out, 0);           //Left input to left output
 AudioConnection_F32        patchcord11(i2s_in, 1, i2s_out, 1);           //Right input to right output
-
-#else //Use Sine Wave as Input
-// Connect a sine wave generator to level measurement
-AudioConnection_F32        patchCord01(sineWave, 0, calcInputLevel, 0);  //Sine wave to level monitor
-
-//Connect the sine wave to the SD recorder
-AudioConnection_F32        patchcord02(sineWave, 0, audioSDWriter,  0);    //Left input to the SD writer
-AudioConnection_F32        patchcord03(sineWave, 0, audioSDWriter,  1);    //Right input to the SD writer
-
-//Connect the sine wave to the audio outputs (to enable monitoring via headphones)
-AudioConnection_F32        patchcord10(sineWave, 0, i2s_out, 0);           //Left input to left output
-AudioConnection_F32        patchcord11(sineWave, 0, i2s_out, 1);           //Right input to right output
-#endif
 
 
 // ///////////////// Create classes for controlling the system, espcially via USB Serial and via the App        
@@ -91,9 +74,6 @@ void setup() {
   //activate the Tympan audio hardware
   myTympan.enable();        // activate the flow of audio
 
-  //set the sine wave parameters
-  sineWave.frequency(250.0f); //Hz
-  sineWave.amplitude( getSineAmp(0) ); // Amplitude of sine wave
   //Choose the desired audio input on the Tympan
   //myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on-board micropphones
   //myTympan.inputSelect(TYMPAN_INPUT_JACK_AS_MIC);    // use the microphone jack - defaults to mic bias 2.5V
@@ -132,60 +112,16 @@ void loop() {
   //service the LEDs...blink slow normally, blink fast if recording
   myTympan.serviceLEDs(millis(),audioSDWriter.getState() == AudioSDWriter::STATE::RECORDING); 
 
-  // Periodically increase sine wave amplitude
-#if SINE_WAVE_TEST == true
-  increaseSineAmplitude(millis(), 10000); //increase every 5000 msec
-#endif
-
   //periodically print the input signal levels
   if (flag_printInputLevelToUSB) printInputSignalLevels(millis(),1000);  //print every 1000 msec
 
 } //end loop()
 
 // //////////////////////////////////////// Other functions
-// Get the sine amplitude by index.
-float getSineAmp(size_t levelIdx) {
-  return (sqrtf(2.0f) * pow10f(sineRmsLevel_dB[levelIdx]/20.0f) );
-}
-
-void increaseSineAmplitude(unsigned long cur_millis, unsigned long updatePeriod_millis) {
-  static unsigned long lastUpdate_millis = 0UL;
-  static size_t ampIdx = 0;
-
-  if ( (cur_millis < lastUpdate_millis) || (cur_millis >= lastUpdate_millis + updatePeriod_millis) ) {
-    // Toggle which ampllitude level to use
-    if (ampIdx == 0) {
-      ampIdx = 1;
-
-    // Else reset back to index-0 and reset peak level
-    } else {
-      ampIdx = 0;
-      Serial.println("Reset peak level");
-      Serial.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-      calcInputLevel.resetPeakLvl();
-    }
-    // Set amplitude of sine wave
-    sineWave.amplitude( getSineAmp(ampIdx) ); // Set amplitude to 0.0f to start out
-
-    // Update timer
-    lastUpdate_millis = cur_millis;
-  }
-}
-
-
 void printInputSignalLevels(unsigned long cur_millis, unsigned long updatePeriod_millis) {
   static unsigned long lastUpdate_millis = 0UL;
   if ( (cur_millis < lastUpdate_millis) || (cur_millis >= lastUpdate_millis + updatePeriod_millis) ) {
-
-#if SINE_WAVE_TEST == true
-    float sineRmsLevel = sineWave.getAmplitude() / sqrtf(2.0f);
-    float sineRmsLevel_db = 20.0f * log10f(sineRmsLevel);
-    Serial.println("Sine RMS Level: " + String(sineRmsLevel) + " (" + String(sineRmsLevel_db) + " dB re: input FS)");
-
-    // Print Input Gain
-#else
     Serial.println("Input gain = " + String(input_gain_dB,1) + " dB");
-#endif
 
     // Print the current level (time-averaged)
     Serial.println("Measured Input = " + String(calcInputLevel.getCurrentLevel_dB(), 2) + " dB re: input FS");
