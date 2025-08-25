@@ -6,10 +6,11 @@
 #include "State.h"
 
 //externally defined objects
-extern Tympan myTympan;
-extern State myState;
-extern AudioCalcLevel_F32 calcLevel1;
-extern AudioFilterFreqWeighting_F32    freqWeight1;
+extern Tympan                        myTympan;
+extern State                         myState;
+extern AudioCalcLevel_F32            calcLevel1;
+extern AudioFilterFreqWeighting_F32  freqWeight1;
+extern AudioCalcLeqCumulative_F32    calcLevelCumulative;
 
 //functions in the main sketch that I want to call from here
 extern bool enablePrintMemoryAndCPU(bool);
@@ -47,6 +48,7 @@ void SerialManager::printHelp(void) {
   myTympan.println("   c,C: Enable/Disable printing of CPU and Memory usage");
   myTympan.println("   f,F: A-weight or C-weight");  
   myTympan.println("   t,T: FAST time constant or SLOW time constant");
+  myTympan.println("   z  : Reset (zero) the cumulative Leq calculation");
   myTympan.println("   l,L: Enable/Disable printing of loudness level to USB");
   myTympan.println("   v,V: Start/Stop sending level to TympanRemote App.");
   myTympan.println("   ],}: Start/Stop sending level to TympanRemote App Plotter.");
@@ -83,6 +85,10 @@ void SerialManager::respondToByte(char c) {
       myTympan.println("Command Received: setting to FAST time constant");
       setTimeAveragingType(State::TIME_FAST);
       updateTimeButtons();
+      break;      
+    case 'z':
+      myTympan.println("Command Received: resetting the cumulative Leq calculation");
+      calcLevelCumulative.resetCumLeq();
       break;      
     case 'T':
       myTympan.println("Command Received: setting to SLOW time constant");
