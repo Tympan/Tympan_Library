@@ -134,7 +134,12 @@ int AudioSDWriter_F32::deleteAllRecordings(void) {
 		
 }
 
-//int AudioSDWriter_F32::startRecording_noOverwrite(void) {
+
+/**
+ * @brief Start recording to filename "AUDIOxxx.WAV", where xxx is incremented
+ * \note If writing metadata to the WAV header, first call SDWriter::AddMetadata() 
+ * @return int 0: success; -1: failure
+ */
 int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRecording"
 	int return_val = 0;
 
@@ -185,43 +190,56 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 	return return_val;
 }
 
+
+/**
+ * @brief Start recording to specified filename
+ * \note If writing metadata to the WAV header, first call SDWriter::AddMetadata() 
+ * @param fname Filename to write to
+ * @return int 0: success; -1: failure
+*/
 int AudioSDWriter_F32::startRecording(const char* fname) {
-  int return_val = 0;
+	int return_val = 0;
 	
-  //check to see if the SD has been initialized
+	// If SD has not been initialized, then initialize it
 	if (current_SD_state == STATE::UNPREPARED) {
 		//Serial.println("AudioSDWriter_F32: startRecording(fname): current_SD_state is UNPREPARED.  preparing...");
 		prepareSDforRecording();
-  }
-	
-  if (current_SD_state == STATE::STOPPED) {
-	//try to open the file on the SD card
-	if (openAsWAV(fname)) { //returns TRUE if the file opened successfully
-	  if (serial_ptr) {
-		serial_ptr->print("AudioSDWriter: Opened ");
-		serial_ptr->println(fname);
-	  }
-	  
-	  //start the queues.  Then, in the serviceSD, the fact that the queues
-	  //are getting full will begin the writing
-	  buffSDWriter->resetBuffer();
-	  current_SD_state = STATE::RECORDING;
-	  setStartTimeMillis();
-	  current_filename = String(fname);
-	  
-	} else {
-	  if (serial_ptr) {
-		serial_ptr->print(F("AudioSDWriter: start: Failed to open "));
-		serial_ptr->println(fname);
-	  }
-	  return_val = -1;
 	}
-  } else {
-	if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
-	return_val = -1;
-  }
+	
+	// If SD is in the STOPPED state, then proceed
+	if (current_SD_state == STATE::STOPPED) {
+		// If WAV file header writtern, then proceed
+		if ( openAsWAV(fname) ) {
+			if (serial_ptr) {
+				serial_ptr->print("AudioSDWriter: Opened ");
+				serial_ptr->println(fname);
+			}
+		
+			//start the queues.  Then, in the serviceSD, the fact that the queues
+			//are getting full will begin the writing
+			buffSDWriter->resetBuffer();
+			current_SD_state = STATE::RECORDING;
+			setStartTimeMillis();
+			current_filename = String(fname);
+	
+		// Else error opening a new WAV file
+		} else {
+			if (serial_ptr) {
+				serial_ptr->print(F("AudioSDWriter: start: Failed to open "));
+				serial_ptr->println(fname);
+			}
+			return_val = -1;
+		}
+
+	// Else SD card not ready
+	} else {
+		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
+		return_val = -1;
+	}
+
   return return_val;
 }
+
 
 void AudioSDWriter_F32::stopRecording(void) {
   if (current_SD_state == STATE::RECORDING) {

@@ -42,8 +42,28 @@
 #include "Arduino.h"
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
+#include "WavHeaderFmt.h"
 
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
+
+/**
+ * @brief Errors returned by readHeader()
+ */
+enum class Wav_Header_Err : uint16_t {
+	ok							= 0x0000,
+	invalid_file				= 0x0001,
+	file_read_err				= 0x0002,		// Could also have reached EOF
+	file_seek_err				= 0x0003,
+	invalid_file_len			= 0x0004,
+	invalid_file_format 		= 0x0005,
+	IEEE_format_incompatible 	= 0x0005,
+	invalid_state				= 0x0007,		// Invalid state.  Expected STATE_PARSE1
+	chunk_id_not_found  		= 0x0010,
+	invalid_chunk_len   		= 0x0011,
+	invalid_bit_rate 			= 0x0020,
+	audio_data_odd_pos			= 0x0021,
+	invalid_num_chan 			= 0x0030,
+};
 
 class AudioSDPlayer_F32 : public AudioStream_F32
 {
@@ -122,8 +142,17 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		// Instead only call it from the low priority main-loop-driven part of
 		// your code.
 		uint32_t readRawBytes(uint8_t *out_buffer, const uint32_t n_bytes_to_read);
-		
-		
+
+		const Riff_s& getRiffHeader (void);
+		const Wave_Format_e& getWavFormatType(void);
+		const Fmt_Pcm_s& getFmtPcmHeader(void);
+		const Fmt_Ieee_s& getFmtIeeeHeader(void);
+		const Fact_s& getFactHeader(void);
+		const std::vector<Info_Tags> getInfoTagIds(void);
+		const std::string getInfoTag(const Info_Tags tagId);
+		void printMetadata(void);
+
+
 		//Check to see if an SD card is present
 		//virtual int isSdCardPresent(void);
 		
@@ -131,9 +160,26 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		//SdFs sd;
 		SdFs *sd_ptr;
 		SdFile file;
+		std::string _filename;
+
 		//bool hasSdBegun = false;
 		bool consume(uint32_t size);
 		bool parse_format(void);
+
+		// Stores which audio type is being read
+		Wave_Format_e wavAudioFormat = Wave_Format_e::Wav_Format_Uninitialized;
+
+		// Unions for converting bytestream to structure 
+		Riff_Header_u riffChunk;
+		Fmt_Pcm_Header_u fmtPcmChunk;
+		Fmt_Ieee_Header_u fmtIeeeChunk;
+		Fact_Header_u factChunk;
+		List_Header_u listChunk;
+		Data_Header_u dataChunk;
+		
+		// Map of Metadata as std::map<Info_Tags, std::string>
+		InfoKeyVal_t infoTagStr;
+
 		uint32_t header[10];    // temporary storage of wav header data
 		uint32_t data_length;   // number of bytes remaining in current section
 		uint32_t total_length;    // number of audio data bytes in file
@@ -146,6 +192,8 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 
 		constexpr static uint32_t MIN_READ_SIZE_BYTES = 512;
 		constexpr static uint32_t MAX_READ_SIZE_BYTES = min(8U*MIN_READ_SIZE_BYTES,65535U); //keep as integer multiple of MIN_READ_SIZE_BYTES
+		constexpr static uint32_t MAX_CHUNK_LEN = 524288;		// Maximum size of header chunks (not applied to data chunk)
+
 		//uint32_t READ_SIZE_BYTES = MAX_READ_SIZE_BYTES;  //was 512...will larger reads be faster overall?
 		//uint8_t temp_buffer[MAX_READ_SIZE_BYTES];  //make same size as the above
 		#if defined(KINETISK)
@@ -158,21 +206,39 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		uint32_t buffer_read = 0;
 		//uint16_t buffer_offset;   // where we're at consuming "buffer"
 		//uint16_t buffer_length;   // how much data is in "buffer" (512 until last read)
-		uint8_t header_offset;    // number of bytes in header[]
+		//uint8_t header_offset;    // number of bytes in header[]
 		uint8_t state;
 		uint8_t state_play;
 		uint8_t state_read;
-		uint8_t leftover_bytes;
+		//uint8_t leftover_bytes;
 		static unsigned long update_counter;
-		float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
+		float sample_rate_Hz = ( (float)AUDIO_SAMPLE_RATE_EXACT );
 		int audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
 		uint32_t updateBytes2Millis(void);
 
 		uint32_t readFromBuffer(float32_t *left_f32, float32_t *right_f32, int n_samps);
+		Wav_Header_Err peekHeaderChunk(SdFile &file, uint32_t &chunkId, uint32_t &chunkLen);
+		Wav_Header_Err parseRiffChunk(SdFile &file, Riff_Header_u &riff);
+		Wav_Header_Err parseFmtPcmChunk(SdFile &file, Fmt_Pcm_Header_u &fmtPcmChunk);
+		Wav_Header_Err parseFmtIeeeChunk(SdFile &file, Fmt_Ieee_Header_u &fmtIeeeChunk);
+		Wav_Header_Err parseFactChunk(SdFile &file, Fact_Header_u &factChunk);
+		Wav_Header_Err parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr, bool checkTagIDFlag);
+
+		/**
+		 * @brief Parse List Chunk, checking if tagID is valid against enum Info_Tags
+		 * @param file File to read data from
+		 * @param listChunk Where to save the parsed list chunk
+		 * @return Wav_Header_Err Check for success using (err != nullptr)
+		 */
+		Wav_Header_Err parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr) {
+			return parseListChunk(file, listChunk, infoTagStr, false);
+		}
+
 		//uint32_t readFromSDtoBuffer(float32_t *left_f32, float32_t *right_f32, int n);
 		uint32_t readBuffer_16bit_to_f32(float32_t *left_f32, float32_t *right_f32, uint16_t n_samps, uint16_t n_chan);
 		bool readHeader(void);
+		void debugPrint(const String &msg);
 };
 
 #endif

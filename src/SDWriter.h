@@ -20,11 +20,14 @@
 #ifndef _SDWriter_h
 #define _SDWriter_h
 
+#include "WavHeaderFmt.h"
 #include <arm_math.h>        //possibly only used for float32_t definition?
 //#include <SdFat_Gre.h>       //originally from https://github.com/greiman/SdFat  but class names have been modified to prevent collisions with Teensy Audio/SD libraries
 //#include "SD.h" // was using this but we should be using sdfat
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 #include <Print.h>
+#include <vector>
+#include <string>
 
 //set some constants
 #define SDWRITER_MAX_BUFFER_LENGTH_BYTES 150000    //size of big memroy buffer to smooth out slow SD write operations
@@ -32,6 +35,11 @@
 
 const int DEFAULT_SDWRITE_BYTES = (512); //target size for individual writes to the SD card.  Usually 512
 //const uint64_t PRE_ALLOCATE_SIZE = 40ULL << 20;// Preallocate 40MB file.  Not used.
+
+enum List_Info_Location {
+  Before_Data,
+  After_Data
+};
 
 //SDWriter:  This is a class to write blocks of bytes, chars, ints or floats to
 //  the SD card.  It will write blocks of data of whatever the size, even if it is not
@@ -58,8 +66,23 @@ class SDWriter : public Print
 			sd->end();
 		}
 		
-		enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
+		void AddMetadata(const String &comment);
+		void AddMetadata(const Info_Tags &infoTag, const std::string &infoString);
+		void ClearMetadata(void);
+    void ClearMetadata(const Info_Tags &infoTag);
+    void SetMetadataLocation(List_Info_Location metadataLoc); 
     
+		enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
+
+    constexpr uint16_t GetBitsPerSampType (void) {
+      switch (writeDataType) {
+        case WriteDataType::INT16:    return (16);
+        case WriteDataType::INT24:    return (24);
+        case WriteDataType::FLOAT32:  return (32);
+        default: return(32);                       // return 32-bit as default
+      }
+    }
+        
     virtual bool openAsWAV(const char *fname);
     virtual bool open(const char *fname);
     virtual int close(void);
@@ -97,14 +120,28 @@ class SDWriter : public Print
     float setSampleRateWAV(float sampleRate_Hz) { return WAV_sampleRate_Hz = sampleRate_Hz; }
 		float getSampleRateWAV(void) { return WAV_sampleRate_Hz; }
 
-    //modified from Walter at https://github.com/WMXZ-EU/microSoundRecorder/blob/master/audio_logger_if.h
-    //char* wavHeaderInt16(const uint32_t fsize) { return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize); }
-    //char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
-    char* makeWavHeader(const uint32_t fsize) { return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); }
+    // Create WAV header using default sample rate, channels    
+    char * wavHeaderInt16(const uint32_t fsize) {  
+      return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize );
+    }
+
+    // Create WAV header with no metadata    
+    char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize){
+      setWriteDataType(SDWriter::WriteDataType::INT16);
+      return makeWavHeader(sampleRate_Hz, nchan, fileSize);
+    }
+
+    char* makeWavHeader(const uint32_t fsize) { 
+      return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); 
+    }
     char* makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
+    
+    bool UpdateHeaderRiffChunk(SdFile &file);
+    bool UpdateHeaderDataChunk(SdFile &file);
+    bool UpdateHeaderFactChunk(SdFile &file, const uint32_t &numSamples);
 
-    SdFs * getSdPtr(void) { return sd; }
-
+		SdFs * getSdPtr(void) { return sd; }
+	
     virtual int setWriteDataType(WriteDataType type) { 
       //Serial.println("SDWriter: setWriteDataType: type = " + String((int)type));
       if (writeDataType != type) {
@@ -113,24 +150,28 @@ class SDWriter : public Print
       return (int)(writeDataType = type); 
     }
 
-    //virtual int isSdCardPresent(void);  //beware!  this might not work as you expect.  Consider this to be experimental!
-
-
   protected:
     //SdFatSdio sd; //slower
 		SdFs * sd = nullptr; //faster
     SdFile file;
+    bool SeekFileToPattern( SdFile &openFileH, const std::vector<char> &pattern, const bool &fromBeginningFlag );
+    size_t GetWavHeaderDataLen (void);
+
     //bool hasSdBegun = false;
-		boolean flagPrintElapsedWriteTime = false;
+    boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
     Print* serial_ptr = &Serial;
     bool flag__fileIsWAV = false;
-    int WAVheader_bytes = 44; //default, for Int16 data type
     float WAV_sampleRate_Hz = 44100.0;
-    int WAV_nchan = 2;  //default
+    int WAV_nchan = 2;
     WriteDataType writeDataType = SDWriter::WriteDataType::INT16; // default to INT16 data in WAV files
-    char wheader[58];  //36+8=44 is big enough for INT16 header, 36+2+12+8=58 is big enough for IEEE FLOAT32 header
-    const int wheader_maxlen = 58;
+		InfoKeyVal_t infoKeyVal; // Stores WAV header LIST<INFO> key, val map to write to header when openAsWav() is called.
+    List_Info_Location listInfoLoc = List_Info_Location::Before_Data;   // Store WAV Header metadata before or after the data chunk
+
+    std::vector<char> wavHeader; // buffer for buulding the header of a WAV file
+    char* pWavHeader = nullptr;
+    int WAVheader_bytes = 0;   //num bytes in WAV header
+    uint64_t filePosAudioData = 0; // File position at the start of the audio data (recorded when WAV file opened)
 };
 
 //BufferedSDWriter:  This is a drived class from SDWriter.  This class assumes that
