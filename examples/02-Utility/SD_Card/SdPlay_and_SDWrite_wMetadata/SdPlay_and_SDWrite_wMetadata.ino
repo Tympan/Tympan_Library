@@ -11,15 +11,17 @@
 
     What is Metadata?
       Traditionally, a WAV is thought of as a file that holds audio samples.  But, this
-      is not strictuly true.  Every WAV file will also contain basic information about
-      the format of the audio samples: sample rate, bit depth, integer vs float, and
-      number of audio channels.  This data that is about the audio data is one form of
-      "metadata".
+      not the only informat that a WAV file holds.  For example, every WAV file will also
+      contain basic information about the format of the audio samples: sample rate, 
+      bit depth, integer vs float, and the number of audio channels.  This extra data that
+      describes the main audio data is referred to as "metadata".
 
     Hacking the Metadata Feature of WAV files:
-      A WAV file is able to hold more metadata than just the sample format.  If you know
-      how to follow the metadata formatting requirements of the WAV standard, you can
-      write any type of metadata you want: numbers, text, images...anything!
+      A WAV file is able to hold more metadata than just the bare minimum described above.
+      A WAV file can hold anything you want, as long as you follow the formatting
+      requirements of the WAV standard.  You can write numbers (such as a calibraiton).
+      You can write text (such as where the audio was recorded).  You could probably
+      even write an image as metadata, if you wanted!
 
     The Tympan Library and Metadata
       The Tympan library has a classes to read from and write to WAV files: 
