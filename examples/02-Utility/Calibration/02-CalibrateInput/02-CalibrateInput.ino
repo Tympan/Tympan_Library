@@ -34,7 +34,7 @@ Tympan                     myTympan(TympanRev::F,audio_settings);  //do TympanRe
 AudioInputI2S_F32          i2s_in(audio_settings);                 //Digital audio input from the ADC
 AudioCalcLeq_F32           calcInputLevel(audio_settings);         //use this to measure the input signal level
 AudioSDWriter_F32          audioSDWriter(audio_settings);          //will record the input signal
-AudioOutputI2S_F32         i2s_out(audio_settings);                //Digital audio output to the DAC.  Should always be last.
+AudioOutputI2S_F32         i2s_out(audio_settings);  //Digital audio output to the DAC.  Should always be last.
 
 //Connect the audio input to the level monitor
 AudioConnection_F32        patchcord01(i2s_in, 0, calcInputLevel, 0);    //Left input to the level monitor
@@ -120,24 +120,14 @@ void loop() {
 void printInputSignalLevels(unsigned long cur_millis, unsigned long updatePeriod_millis) {
   static unsigned long lastUpdate_millis = 0UL;
   if ( (cur_millis < lastUpdate_millis) || (cur_millis >= lastUpdate_millis + updatePeriod_millis) ) {
-    Serial.println("Input gain = " + String(input_gain_dB,1) + " dB");
-
-    // Print the current level (time-averaged)
-    Serial.println("Measured Input = " + String(calcInputLevel.getCurrentLevel_dB(), 2) + " dB re: input FS");
-    
-    // Print the level averaged over the entire duration since starting the application
-    float32_t cumLeq = 0.0f;
-    if ( calcInputLevel.getCumLevelRms_dB(cumLeq) ) {
-      Serial.println( "Equivalent Level RMS = " + String(cumLeq) + " dB re: input FS");
-    }
-
-    // Print peak level
-    Serial.println( "Peak Level: " + String(calcInputLevel.getPeakLevel_dB()) + " dB re: input FS");
-    Serial.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
-    // Print error if Leq value is invalid
-    if ( !calcInputLevel.isCumLeqValid() ) Serial.println("Error. Leq method wrapped and was reset.");
+    Serial.print("Input gain = " + String(input_gain_dB,1) + " dB");
+    Serial.print(", Measured Input = ");
+    Serial.print(calcInputLevel.getCurrentLevel_dB(),2);
+    Serial.print(" dB re: input FS");
+    Serial.println();
 
     lastUpdate_millis = cur_millis;    
   }
 }
+
+
