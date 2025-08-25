@@ -1,55 +1,69 @@
 /*
-   SDPlay_and_SDWrite
+   SDPlay_and_SDWrite_wMetadata
    
-   Created: Chip Audette, OpenHearing, Mar 2024
-   Purpose: Read audio from SD card and Write audio to SD card at the same time.
-
-   Background: The Teensy default AudioSdPlayer does not work well when one is also
-      using the AudioSdWriter.  The issue is that the default AudioSdPlayer reads from
-      the SD card in its update() method, which is part of the interrupt-driven part of
-      the audio handling.  Being interrupt-driven, it can interrupt the SD writing that
-      is being performed by the AudioSdWriter.  This seems to cause problems.
-
-   Solution: This example uses the revised AudioSdPlayer that is in the Tympan_Library.
-      The Tympan's AudioSdPlayer moves the SD reading activities out of the update()
-      function and into a "serviceSD()" method that you have to call regularly from the
-      Arduino loop().  While it is annoying to have to remember to include the serviceSD
-      in your main loop (as shown here), it does make it possible to stream audio from
-      the SD and to the SD within the same program.  Nice!
-
-   WARNING: Be sure to use a really good SD card.  Like a SanDisk Ultra or SanDisk Extreme.
-      Poor quality SD cards might not be able to keep up with the simultaneous writing
-      and recording.
-
-   HOW TO USE:  You need to open the Serial Monitor to use this program on the Tympan.
-      So, compile and upload the sketch to the Tympan, then have the Arduino IDE open
-      the serial monitor (Tools menu -> Serial Monitor).  The Serial Monitor window
-      should show the startup text produced by the Tympan.  If it does not, send an 'h'
-      (without the quotes) to get the Tympan's help menu.  In the menu, you can see
-      the options.  The most relevant commands are:
-          * Send a 'p' (no quotes) to play a WAV file from the SD card
-          * Send a 'r' (no quotes) to start recording a WAV file on the SD card
-          * Send a 's' (no quotes) to stop recording on the SD card
-
-   WAV FILE, PLAY: This sketch assumes that you have already put a WAV file on your SD card.
-      There is an example file "PLAY1.WAV" included in the directory along with this
-      sketch.  You have to manually copy the file over to the SD card prior to running
-      the Tympan.
-
-      Alternatively, you can create your own WAV file.  You can use any program, including
-      Audacity. You can use any sample rate (the Tympan will ignore the WAV files sample rate)
-      but, for simplicity, use a sample rate of 44100 Hz.  Your WAV can be mono or stereo.
-      Your WAV can be any length.  The most crucial detail is that you must save your WAV
-      using 16-bit integer samples (not 8-bit, not 24-bit, not floating point).  Then, save
-      your WAV file as "PLAY1.WAV" and put it on your SD card.  
-      
-      If you wish to change the filename assumed by this sketch, see the variable 
-      "sdPlay_filename" in the file SerialManager.h.  
+  CREATED: Eric Yuan (based on SDPlay_and_SDWrite from Chip Audette)
   
-   WAV FILE, RECORD: If you record to the SD card using this sketch, it will create a
-      WAV file with two channels (left and right) using 16-bit integer samples.  The
-      sample rate of the WAV file will be the same as the sample rate used by the 
-      Tympan in this sketch, which is 44.1 kHz (the same as an audio CD).
+  PURPOSE: Read audio from SD card and Write audio to SD card, including text metadata
+      saved within the WAV file.  This example can both write and read metadata within
+      the WAV.
+
+  BACKGROUND:
+
+    What is Metadata?
+      Traditionally, a WAV is thought of as a file that holds audio samples.  But, this
+      is not strictuly true.  Every WAV file will also contain basic information about
+      the format of the audio samples: sample rate, bit depth, integer vs float, and
+      number of audio channels.  This data that is about the audio data is one form of
+      "metadata".
+
+    Hacking the Metadata Feature of WAV files:
+      A WAV file is able to hold more metadata than just the sample format.  If you know
+      how to follow the metadata formatting requirements of the WAV standard, you can
+      write any type of metadata you want: numbers, text, images...anything!
+
+    The Tympan Library and Metadata
+      The Tympan library has a classes to read from and write to WAV files: 
+      AudioSDPlayer and AudioSDWriter_F32.  Over time, we have improved these classes
+      so that they you can read the metadata in a WAV file or so that you can write
+      metadata to a WAV file.
+
+    Purpose of This Example Tympan Sketch
+      This example sketch allows you to play and record audio to/from the SD card
+      just like the example "SDPlay_and_SDWrite".  This new example here extends that
+      example to also allow you to read or write metadata in the SD file.
+
+    Location of Metadata in WAV file
+      The WAV file format allows for metadata to be written in the file either before
+      the audio data or after the audio data.  This Tympan example allows you to
+      read or write the meta data in either location...though you do need to specify
+      which location you want.
+
+   HOW TO USE THIS PROGRAM:  
+   
+      You need to open the Serial Monitor to use this program on the Tympan:
+          * Compile and upload the program to the Tympan
+          * Open the serial monitor from the Arduino "Tools" menu -> "Serial Monitor")
+          * The Serial Monitor window should show the startup text produced by the 
+            Tympan.  If it does not, send an 'h' (without the quotes) to get the Tympan's
+            help menu.  
+      
+      For basic SD read/write, we suggest you start with these commands
+          * Send a '1' (no quotes) to start writing a WAV file with metadata 
+            (saves the text "Brains!" within the WAV file before the audio data)
+          * After a few seconds, send a 's' (no quotes) to stop recording
+          * Send a '!' (no quotes) to play back the WAV file and to
+            read its metadata (it should print "Brains!" to the screen)
+      
+      You can continue to explore:
+          * Use '2', 's', and '@' to do the same experiment, but saving and reading the
+            data from the location in the file after the audio data
+      
+      Note that the bullets above will read/write WAV files where the audio is
+          saved as 16-bit integer values.  The Tympan can write WAV files with
+          32-bit float values (see the menu items '3' and '4'), which is great.
+          But, be aware, that the Tympan cannot yet *read* WAV files with float
+          data type.  So, in this program, menu items '#' and '$' will no work.
+          Sorry.
 
    For Tympan Rev D, program in Arduino IDE as a Teensy 3.6.
    For Tympan Rev E, program in Arduino IDE as a Teensy 4.1.
@@ -69,6 +83,7 @@ AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 // define classes to control the Tympan
 Tympan           myTympan(TympanRev::F, audio_settings);  //do TympanRev::D or E or F
+//EarpieceShield   earpieceShield(TympanRev::F, AICShieldRev::A); //in the Tympan_Library, EarpieceShield is defined in AICShield.h
 SdFs             sd;                                      //because we're doing both a player and recorder, explicitly create the shared SD resource.  I'm not sure this is really necessary.
 
 
@@ -127,6 +142,7 @@ void setup() {
 
   //enable the Tympan
   myTympan.enable();
+  //earpieceShield.enable();
 
   //Choose the desired input
   myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones
