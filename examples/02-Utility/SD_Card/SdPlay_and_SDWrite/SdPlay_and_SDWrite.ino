@@ -22,7 +22,7 @@
       and recording.
 
    HOW TO USE:  You need to open the Serial Monitor to use this program on the Tympan.
-      So, compile and uplode the sketch to the Tympan, then have the Arduino IDE open
+      So, compile and upload the sketch to the Tympan, then have the Arduino IDE open
       the serial monitor (Tools menu -> Serial Monitor).  The Serial Monitor window
       should show the startup text produced by the Tympan.  If it does not, send an 'h'
       (without the quotes) to get the Tympan's help menu.  In the menu, you can see
