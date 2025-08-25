@@ -11,6 +11,11 @@
 
 #include "AudioCalcLeqCumulative_F32.h"
 
+//define static data members
+const float32_t AudioCalcLeqCumulative_F32::CUM_LEVEL_DB_MIN_RANGE = -999.0f;
+
+//define methods...
+
 void AudioCalcLeqCumulative_F32::update(void)
 {
 	audio_block_f32_t *block;
@@ -28,8 +33,7 @@ void AudioCalcLeqCumulative_F32::update(void)
 	updateCumulativeAverage(block);
 	
 	//fill the outgoing audio block with the Leq RMS value
-	float32_t RMS_val = 0.0;
-	getCumLevelRms(RMS_val);
+	float32_t RMS_val = getCumLevelRms();
 	for (int i=0; i < block->length; i++) {	block->data[i] = RMS_val; }
 
 	//transmit the data
@@ -76,25 +80,22 @@ void AudioCalcLeqCumulative_F32::updateCumulativeAverage(audio_block_f32_t *bloc
  * @brief Get the average RMS level (Leq) since the audio effect started, or was cleared.
  * \note To clear the cumLeqValid flag, call resetCumLeq()
  * @param levelRms variable to store RMS level in
- * @return true Valid result
- * @return false Invalid result. levelRms will be set to 0.0f
+ * @return levelRMS.  returns 0.0 if invalid.
  */
-bool AudioCalcLeqCumulative_F32::getCumLevelRms (float32_t &levelRms) {
-	bool success = true;
-	levelRms = 0.0f;
+float32_t AudioCalcLeqCumulative_F32::getCumLevelRms (void) const {
+	float32_t levelRms = 0.0;
 
 	// Check that data has been collected
-	if ( (num_averages > 0) && (running_sum_of_avg > 0) ) {
+	if ( (num_averages > 0) && (running_sum_of_avg > 0.0f) ) {
 		// Take sqrt of mean of running_sum_of_avg, where running_sum_of_avg represents level^2
-		arm_sqrt_f32(running_sum_of_avg / ( (float32_t) num_averages), &levelRms);
+		levelRms = sqrtf(running_sum_of_avg / ( (float32_t) num_averages ));
 	} else {
-		success = false;
 		Serial.println("AudioCalcLeqCumulative_F32::getCumLevelRms: ***Error calculating Leq***");
 	}
 	//Serial.println( String(" running sum of avg: ") + String(running_sum_of_avg) );
 	//Serial.println( String("; num_averages: ") + String(num_averages) );
 
-	return success;
+	return levelRms;
 }
 
 
@@ -102,25 +103,22 @@ bool AudioCalcLeqCumulative_F32::getCumLevelRms (float32_t &levelRms) {
  * @brief Get the average RMS level (Leq) in dB FS, since the audio effect started, or was cleared.
  * \note To clear the cumLeqValid flag, call resetCumLeq()
  * @param levelRms_dB variable to store RMS level in
- * @return true Valid result
- * @return false Invalid result. levelRms_dB will be set to 0.0f
+ * @return levelRMS as dB value.  returns CUM_LEVEL_DB_MIN_RANGE (-999) if invalid.
  */
-bool AudioCalcLeqCumulative_F32::getCumLevelRms_dB (float32_t &levelRms_dB) {
-	bool success = true;
-	levelRms_dB = 0.0f;
+float32_t AudioCalcLeqCumulative_F32::getCumLevelRms_dB (void) const {
+	float32_t levelRms_dB = CUM_LEVEL_DB_MIN_RANGE;
 
 	// Check that data has been collected
-	if ( (num_averages > 0) && (running_sum_of_avg > 0) ) {
+	if ( (num_averages > 0) && (running_sum_of_avg > 0.0f) ) {
 		// Take mean and convert to decibels, relying on running_sum_of_avg representing level^2
 		levelRms_dB = 10.0f*log10f( running_sum_of_avg / ( (float) num_averages) );
 	} else {
-		success = false;
 		Serial.println("AudioCalcLeqCumulative_F32::getCumLevelRms_dB: ***Error calculating Leq***");
 	}
 	//Serial.println( String(" running sum of avg: ") + String(running_sum_of_avg) );
 	//Serial.println( String("; num_averages: ") + String(num_averages) );
 
-	return (success);
+	return levelRms_dB;
 }
 
 
@@ -134,8 +132,9 @@ float32_t AudioCalcLeqCumulative_F32::getPeakLevel(void) const {
 	
 	if (peak_level_sq > 0.0f) {
 		peak_level = sqrtf(peak_level_sq);
-	}  // else leave peak_level = 0.0f
-	return (peak_level);
+	}
+	
+	return peak_level;
 };
 
 
@@ -143,13 +142,14 @@ float32_t AudioCalcLeqCumulative_F32::getPeakLevel(void) const {
 /**
  * @brief Get peak level in units of dB FS, since audio effect began, or peak level was cleared. 
  * \note To reset peak level, call `resetPeakLvl()`. 
- * @return float32_t peak level in dB FS.  Returns 0.0f if peak_level_sq == 0.0f. 
+ * @return peak_level as dB value.  returns CUM_LEVEL_DB_MIN_RANGE (-999) if invalid.
  */
 float32_t AudioCalcLeqCumulative_F32::getPeakLevel_dB(void) const {
-	float32_t peak_level = 0.0f;
+	float32_t peak_level_dB = CUM_LEVEL_DB_MIN_RANGE;
 	
 	if (peak_level_sq > 0.0f) {
-		peak_level = 10.0f*log10f(peak_level_sq);
-	}  // else leave peak_level = 0.0f
-	return (peak_level);
+		peak_level_dB = 10.0f*log10f(peak_level_sq);
+	} 
+	
+	return peak_level_dB;
 };

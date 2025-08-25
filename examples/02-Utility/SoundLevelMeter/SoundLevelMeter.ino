@@ -141,11 +141,7 @@ void printLoudnessLevels(unsigned long curTime_millis, unsigned long updatePerio
     float32_t cal_factor_dB = -mic_cal_dBFS_at94dBSPL_at_0dB_gain + 94.0f - input_gain_dB;
     float32_t cur_SPL_dB = calcLevel1.getCurrentLevel_dB() + cal_factor_dB;
     float32_t max_SPL_dB = calcLevel1.getMaxLevel_dB() + cal_factor_dB;
-
-    //get the long-term running average LEQ
-    float32_t cumulative_SPL_dB;
-    calcLevelCumulative.getCumLevelRms_dB(cumulative_SPL_dB);
-    cumulative_SPL_dB += cal_factor_dB;
+    float32_t cumulative_SPL_dB = calcLevelCumulative.getCumLevelRms_dB() + cal_factor_dB;
 
     //formulate the string to print
     String msg = String(cur_SPL_dB,2) + ", " + String(max_SPL_dB,2)+ ", " + String(cumulative_SPL_dB,2);

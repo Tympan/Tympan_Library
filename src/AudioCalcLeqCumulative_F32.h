@@ -52,10 +52,11 @@ class AudioCalcLeqCumulative_F32 : public AudioStream_F32
 		virtual void updateCumulativeAverage(audio_block_f32_t *block_sq); //input is audio data that's already been squared
 				
 		//get the results
-		virtual bool getCumLevelRms (float32_t &cumLeq);
-		virtual bool getCumLevelRms_dB (float32_t &cumLeq);
-		virtual float32_t getPeakLevel(void) const;
-		virtual float32_t getPeakLevel_dB(void) const;
+		static const float32_t CUM_LEVEL_DB_MIN_RANGE;          //defined as -999.0 in the cpp file (as required for static members)
+		virtual float32_t getCumLevelRms (void) const;    //returns 0 if invalid
+		virtual float32_t getCumLevelRms_dB (void) const; //returns CUM_LEVEL_DB_MIN_RANGE if invalid
+		virtual float32_t getPeakLevel(void) const;       //returns 0 if invalid
+		virtual float32_t getPeakLevel_dB(void) const;    //returns CUM_LEVEL_DB_MIN_RANGE if invalid
 
 		//reset the running average and running peak calcluations back to zero
 		virtual void resetCumLeq(void) {
