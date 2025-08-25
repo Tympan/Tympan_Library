@@ -34,12 +34,6 @@ void SerialManager::printHelp(void) {
   Serial.println("   #/$  : SDPlay : Try playing (F32), but will error.  Use file with metadata written (#) before or ($) after data chunk");
   Serial.println("   m    : SDPlay : Print metadata from WAV header (after file has been opened).");
 
-  //Add in the printHelp() that is built-into the other UI-enabled system components.
-  //The function call below loops through all of the UI-enabled classes that were
-  //attached to the serialManager in the setupSerialManager() function used back
-  //in the main *.ino file.
-  SerialManagerBase::printHelp();  ////in here, it automatically loops over the different UI elements issuing printHelp()
-  
   Serial.println();
 }
 
