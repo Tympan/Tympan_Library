@@ -41,11 +41,11 @@ class AudioCalcLeq_F32 : public AudioStream_F32
 		}
 		
 		virtual void update(void);
-		virtual float getCurrentLevel(void) { return cur_value; } 
-		virtual float getCurrentLevel_dB(void) { return 10.0f*log10f(cur_value); } 
-		virtual float getMaxLevel(void) { return max_value; }
-		virtual float getMaxLevel_dB(void) { return 10.0f*log10f(max_value); }
-		virtual void  resetMaxLevel(void) { max_value = cur_value; }
+		virtual float getCurrentLevel(void) { return cur_value; }                   //returns the current ave signal power (not as dB)
+		virtual float getCurrentLevel_dB(void) { return 10.0f*log10f(cur_value); }  //returns the current ave signal power as dB
+		virtual float getMaxLevel(void) { return max_value; }                       //returns the max signal power (not as dB)
+		virtual float getMaxLevel_dB(void) { return 10.0f*log10f(max_value); }      //returns the max signal power as dB
+		virtual void  resetMaxLevel(void) { max_value = cur_value; }                //resets the max to zero
 	
 		
 		virtual float32_t setTimeWindow_sec(float32_t window_sec) {

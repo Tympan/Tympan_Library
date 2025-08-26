@@ -2,12 +2,19 @@
 *   SoundLevelMeter
 *
 *   Created: Chip Audette, OpenAudio, June 2018
-*            Updated June 2021 for BLE and App
-*            Updated May 2024 for Rev F and new BLE
-*   Purpose: Compute the current sound level, dBA-Fast or whatever
-*            Uses exponential time weighting.
+*            * Updated June 2021 for BLE and App
+*            * Updated May 2024 for Rev F and new BLE
+*            * Updated Aug 2025 to add cumulative Leq (ie, long-term average)
 *
-*   Uses Tympan RevC through Rev F
+*   Purpose: 
+*            * Compute the current and average sound level using a variety of metrics:
+*
+*   Options: * A-weighting or C-weighting
+*            * dBA-Fast or dBA-Slow (or whatever time scale)
+*            * Maximum since startup (or since the last reset command)
+*            * Running average loudness since startup (or last reset command)
+*
+*   Uses Tympan RevD through Rev F
 *   Uses BLE and TympanRemote App
 *
 *   MIT License.  use at your own risk.
@@ -23,17 +30,19 @@ const int audio_block_samples = 128;     //do not make bigger than AUDIO_BLOCK_S
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
-Tympan                        myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
-AudioInputI2S_F32             i2s_in(audio_settings);       //Digital audio in *from* the Teensy Audio Board ADC.
-AudioFilterFreqWeighting_F32  freqWeight1(audio_settings);  //A-weighting filter (optionally C-weighting)
-AudioCalcLevel_F32            calcLevel1(audio_settings);   //use this to square the signal
+Tympan                        myTympan(TympanRev::F, audio_settings);  //do TympanRev::D or E or F
+AudioInputI2S_F32             i2s_in(audio_settings);                  //Digital audio in *from* the Teensy Audio Board ADC.
+AudioFilterFreqWeighting_F32  freqWeight1(audio_settings);             //A-weighting filter (optionally C-weighting)
+AudioCalcLevel_F32            calcLevel1(audio_settings);              //Calc the SLOW or FAST average
+AudioCalcLeqCumulative_F32    calcLevelCumulative(audio_settings);    //Calc the long-term average
 AudioOutputI2S_F32            i2s_out(audio_settings);      //Digital audio out *to* the Teensy Audio Board DAC.
 
 //Make all of the audio connections
 AudioConnection_F32       patchCord1(i2s_in, 0, freqWeight1, 0);      //connect the Left input to frequency weighting
 AudioConnection_F32       patchCord2(freqWeight1, 0, calcLevel1, 0);  //connect the frqeuency weighting to the level time weighting
-AudioConnection_F32       patchCord3(i2s_in, 0, i2s_out, 0);      //echo the original signal to the left output
-AudioConnection_F32       patchCord4(calcLevel1, 0, i2s_out, 1);     //connect level to the right output
+AudioConnection_F32       patchCord3(freqWeight1, 0, calcLevelCumulative, 0);  //connect the frqeuency weighting to the level time weighting
+AudioConnection_F32       patchCord4(i2s_in, 0, i2s_out, 0);      //echo the original signal to the left output
+AudioConnection_F32       patchCord5(calcLevel1, 0, i2s_out, 1);     //connect level to the right output
 
 //Create BLE and serialManager
 BLE&          ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
@@ -81,7 +90,6 @@ void setup() {
   setTimeAveragingType(State::TIME_SLOW);
 
   //setup BLE
-  //setup BLE
   delay(500); myTympan.setupBLE(); delay(500); //Assumes the default Bluetooth firmware. You can override!
 
   myTympan.println("Setup complete.");
@@ -125,14 +133,18 @@ void printLoudnessLevels(unsigned long curTime_millis, unsigned long updatePerio
   if (curTime_millis < lastUpdate_millis) lastUpdate_millis = 0; //handle wrap-around of the clock
   if ((curTime_millis - lastUpdate_millis) > updatePeriod_millis) { //is it time to update the user interface?
     if (firstTime) {
-      myTympan.println("Printing: current SPL (dB), max SPL (dB)");
+      myTympan.println("Printing: current SPL (dB), max SPL (dB), cumulative LEQ (dB)");
       firstTime = false;
     }
     
+    //get the various measures of signal level
     float32_t cal_factor_dB = -mic_cal_dBFS_at94dBSPL_at_0dB_gain + 94.0f - input_gain_dB;
     float32_t cur_SPL_dB = calcLevel1.getCurrentLevel_dB() + cal_factor_dB;
     float32_t max_SPL_dB = calcLevel1.getMaxLevel_dB() + cal_factor_dB;
-    String msg = String(cur_SPL_dB,2) + ", " + String(max_SPL_dB,2);
+    float32_t cumulative_SPL_dB = calcLevelCumulative.getCumLevelRms_dB() + cal_factor_dB;
+
+    //formulate the string to print
+    String msg = String(cur_SPL_dB,2) + ", " + String(max_SPL_dB,2)+ ", " + String(cumulative_SPL_dB,2);
     
     //print the text string to the Serial
     myTympan.println(msg);
@@ -181,4 +193,8 @@ int setTimeAveragingType(int type) {
       break;
   }
   return myState.cur_time_averaging = type;
+}
+
+void resetCumulativeAverages(void) {
+  calcLevelCumulative.resetCumLeq();
 }

@@ -48,9 +48,10 @@ class AudioSDWriter {
     virtual int getNumWriteChannels(void) {
       return numWriteChannels;
     }
-		virtual String getCurrentFilename(void) { return current_filename; }
+	
+	virtual String getCurrentFilename(void) { return current_filename; }
 
-		virtual void begin(void) { prepareSDforRecording(); };  //begins SD card
+	virtual void begin(void) { prepareSDforRecording(); };  //begins SD card
     virtual void prepareSDforRecording(void) = 0;
     virtual int startRecording(void) = 0;
     virtual int startRecording(const char *) = 0;
@@ -151,7 +152,10 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		SdFs* getOrAllocateSD(void) { if (sd == nullptr) { return sd = new SdFs(); } else { return sd; } }
 
 		void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
-		enum class WriteDataType { INT16=(int)SDWriter::WriteDataType::INT16, FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 };
+		enum class WriteDataType { 
+			INT16=(int)SDWriter::WriteDataType::INT16, 
+			FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 
+		};
 
 		virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type);
 		//virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_bytes=-1);
@@ -195,9 +199,41 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 
 		void prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
 		void end(void) override;
+		
+		/**
+		 * @brief Add metadata to WAV header
+		 * 
+		 * @param comment Metadata comment
+		 */
+		void AddMetadata(const String &comment) { 
+			if(buffSDWriter){
+				buffSDWriter->AddMetadata(comment);
+			}
+		};
+
+				
+		/**
+		 * @brief Clear metadata buffer for writing to WAV header
+		 */
+		void ClearMetadata(void) { 
+			if(buffSDWriter){
+				buffSDWriter->ClearMetadata();
+			}
+		};
+
+
+		/**
+		 * @brief Set location of metadata (before or after the audio data)
+		 * 
+		 * @param metadataLoc 
+		 */
+		void SetMetadataLocation(List_Info_Location metadataLoc) {
+			buffSDWriter->SetMetadataLocation(metadataLoc); 
+		};
 
 		int startRecording(void) override;    //call this to start a WAV recording...automatically generates a filename
 		int startRecording(const char* fname) override; //or call this to specify your own filename.
+
 		//int startRecording_noOverwrite(void);
 		void stopRecording(void) override;    //call this to stop recording
 		int deleteAllRecordings(void);  //clears all AUDIOxxx.wav files from the SD card
@@ -255,10 +291,12 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		Print *serial_ptr = &Serial;
 		unsigned long t_start_millis = 0;
 
+		// Initialize WAV File
 		bool openAsWAV(const char *fname) {
 			if (buffSDWriter) return buffSDWriter->openAsWAV(fname);
 			return false;
 		}
+
 		bool open(const char *fname) {
 			if (buffSDWriter) return buffSDWriter->open(fname);
 			return false;
