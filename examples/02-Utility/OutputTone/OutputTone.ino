@@ -83,7 +83,7 @@ void loop(void)
     case START_TONE:
       amp_index++; if (amp_index == N_AMP) { amp_index = 0; iteration_count++;}
       sineWave.amplitude(tone_amp[amp_index]);
-      myTympan.print("Changing to start tone, amplitude = ");myTympan.println(tone_amp[amp_index]);
+      myTympan.print("Changing to start tone, amplitude = ");myTympan.println(tone_amp[amp_index],3);
       myTympan.setAmberLED(HIGH);
       start_time_millis = millis();
       state = PLAY_TONE;
