@@ -89,9 +89,8 @@ float32_t AudioCalcLeqCumulative_F32::getCumLevelRms (void) const {
 	if ( (num_averages > 0) && (running_sum_of_avg > 0.0f) ) {
 		// Take sqrt of mean of running_sum_of_avg, where running_sum_of_avg represents level^2
 		levelRms = sqrtf(running_sum_of_avg / ( (float32_t) num_averages ));
-	} else {
-		Serial.println("AudioCalcLeqCumulative_F32::getCumLevelRms: ***Error calculating Leq***");
-	}
+	} //else leave levelRms_dB as CUM_LEVEL_DB_MIN_RANGE
+
 	//Serial.println( String(" running sum of avg: ") + String(running_sum_of_avg) );
 	//Serial.println( String("; num_averages: ") + String(num_averages) );
 
@@ -112,9 +111,7 @@ float32_t AudioCalcLeqCumulative_F32::getCumLevelRms_dB (void) const {
 	if ( (num_averages > 0) && (running_sum_of_avg > 0.0f) ) {
 		// Take mean and convert to decibels, relying on running_sum_of_avg representing level^2
 		levelRms_dB = 10.0f*log10f( running_sum_of_avg / ( (float) num_averages) );
-	} else {
-		Serial.println("AudioCalcLeqCumulative_F32::getCumLevelRms_dB: ***Error calculating Leq***");
-	}
+	} //else leave levelRms_dB as CUM_LEVEL_DB_MIN_RANGE
 	//Serial.println( String(" running sum of avg: ") + String(running_sum_of_avg) );
 	//Serial.println( String("; num_averages: ") + String(num_averages) );
 
