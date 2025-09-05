@@ -147,6 +147,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		const Wave_Format_e& getWavFormatType(void);
 		const Fmt_Pcm_s& getFmtPcmHeader(void);
 		const Fmt_Ieee_s& getFmtIeeeHeader(void);
+		const Fmt_Ext_s& getFmtExtHeader(void);
 		const Fact_s& getFactHeader(void);
 		const std::vector<Info_Tags> getInfoTagIds(void);
 		const std::string getInfoTag(const Info_Tags tagId);
@@ -173,6 +174,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		Riff_Header_u riffChunk;
 		Fmt_Pcm_Header_u fmtPcmChunk;
 		Fmt_Ieee_Header_u fmtIeeeChunk;
+		Fmt_Ext_Header_u fmtExtChunk;
 		Fact_Header_u factChunk;
 		List_Header_u listChunk;
 		Data_Header_u dataChunk;
@@ -222,6 +224,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		Wav_Header_Err parseRiffChunk(SdFile &file, Riff_Header_u &riff);
 		Wav_Header_Err parseFmtPcmChunk(SdFile &file, Fmt_Pcm_Header_u &fmtPcmChunk);
 		Wav_Header_Err parseFmtIeeeChunk(SdFile &file, Fmt_Ieee_Header_u &fmtIeeeChunk);
+		Wav_Header_Err parseFmtExtChunk(SdFile &file, Fmt_Ext_Header_u &fmtExtChunk);
 		Wav_Header_Err parseFactChunk(SdFile &file, Fact_Header_u &factChunk);
 		Wav_Header_Err parseListChunk(SdFile &file, List_Header_u &listChunk, InfoKeyVal_t &infoTagStr, bool checkTagIDFlag);
 

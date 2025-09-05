@@ -118,6 +118,7 @@ bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffe
 	memset(&riffChunk.byteStream[0], 0, sizeof(Riff_Header_u) );
 	memset(&fmtPcmChunk.byteStream[0], 0, sizeof(Fmt_Pcm_Header_u) );
 	memset(&fmtIeeeChunk.byteStream[0], 0, sizeof(Fmt_Ieee_Header_u) );
+	memset(&fmtExtChunk.byteStream[0], 0, sizeof(Fmt_Ext_Header_u) );
 	memset(&factChunk.byteStream [0], 0, sizeof(Fact_Header_u) );
 	memset(&listChunk.byteStream [0], 0, sizeof(List_Tag_Header_u) );
 	memset(&dataChunk.byteStream [0], 0, sizeof(Data_Header_u) );
@@ -254,6 +255,14 @@ const Fmt_Ieee_s& AudioSDPlayer_F32::getFmtIeeeHeader(void) {
 }
 
 /**
+ * @brief Get the Fmt Header object, only valid if getWavFormatType() == Wave_Format_e::Wav_Format_Extensible
+ * @return Fmt_Ext_s
+ */
+const Fmt_Ext_s& AudioSDPlayer_F32::getFmtExtHeader(void) {
+	return fmtExtChunk.S;
+}
+
+/**
  * @brief Get the Fact Header object, only valid if getWavFormatType() == Wave_Format_e::Wav_Format_Ieee_Float
  * @return Fact_s 
  */
@@ -309,6 +318,13 @@ void AudioSDPlayer_F32::printMetadata(void) {
 				Serial.println( String("\t# of chan: \t ") + String(fmtIeeeChunk.S.numChan) ); 
 				Serial.println( String("\tSamp Rate (Hz): \t ") + String(fmtIeeeChunk.S.sampleRate_Hz) ); 
 				Serial.println( String("\tBits Per Sample Rate: \t ") + String(fmtIeeeChunk.S.bitsPerSample) ); 
+				break;
+
+			case Wave_Format_e::Wav_Format_Extensible:
+				Serial.println(" (Extensible Audio)");
+				Serial.println( String("\t# of chan: \t ") + String(fmtExtChunk.S.numChan) ); 
+				Serial.println( String("\tSamp Rate (Hz): \t ") + String(fmtExtChunk.S.sampleRate_Hz) ); 
+				Serial.println( String("\tBits Per Sample Rate: \t ") + String(fmtExtChunk.S.bitsPerSample) ); 
 				break;
 
 			default:
@@ -795,6 +811,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 	memset(&riffChunk.byteStream[0], 0, sizeof(Riff_Header_u) );
 	memset(&fmtPcmChunk.byteStream[0], 0, sizeof(Fmt_Pcm_Header_u) );
 	memset(&fmtIeeeChunk.byteStream[0], 0, sizeof(Fmt_Ieee_Header_u) );
+	memset(&fmtExtChunk.byteStream[0], 0, sizeof(Fmt_Ext_Header_u) );
 	memset(&factChunk.byteStream [0], 0, sizeof(Fact_Header_u) );
 	memset(&listChunk.byteStream [0], 0, sizeof(List_Tag_Header_u) );
 	memset(&dataChunk.byteStream [0], 0, sizeof(Data_Header_u) );
@@ -850,41 +867,48 @@ bool AudioSDPlayer_F32::readHeader(void) {
 	
 		// Else if length matches IEEE format
 		} else if ( chunkLen == sizeof(Fmt_Ieee_Header_u) - 8 ) {		// - 8 to exclude chunk ID and length
+			debugPrint("\tParsing fmt IEEE chunk.");
 			err = parseFmtIeeeChunk(file, fmtIeeeChunk);
 
 			// Check IEEE audio format
 			if (err == Wav_Header_Err::ok) {
-				if (fmtIeeeChunk.S.audioFmt == Wave_Format_e::Wav_Format_Ieee_Float) {
-					// Set which audio format this header uses
-					wavAudioFormat = Wave_Format_e::Wav_Format_Ieee_Float;
+				// Set which audio format this header uses
+				wavAudioFormat = Wave_Format_e::Wav_Format_Ieee_Float;
 
-					/*---  Parse FACT chunk --- */
-					debugPrint("\tParsing FACT chunk.");
-					err = peekHeaderChunk(file, chunkId, chunkLen);
+				/*---  Parse FACT chunk --- */
+				debugPrint("\tParsing FACT chunk.");
+				err = peekHeaderChunk(file, chunkId, chunkLen);
+				
+				// If FACT chunk found, parse it.  The RIFF standard is vague as to whether this is required.
+				if ( (err == Wav_Header_Err::ok) && (chunkId == FACT_LSB) && 
+						(chunkLen == sizeof(Fact_Header_u) - 8) ) {	// Subtract 8 for chunk ID and chunk Len variables.
+					err = parseFactChunk(file, factChunk);
+				}
+			} // else let err pass thru
+		
+		// Else if length matches WAV_FORMAT_EXTENSIBLE (40 bytes)
+		} else if ( chunkLen == sizeof(Fmt_Ext_Header_u) - 8 ) {		// - 8 to exclude chunk ID and length
+			debugPrint("\tParsing fmt Extensible chunk.");
+			err = parseFmtExtChunk(file, fmtExtChunk);
+			
+			if (err == Wav_Header_Err::ok) {
+				// Set which audio format this header uses
+				wavAudioFormat = Wave_Format_e::Wav_Format_Extensible;
 
-					// Check for errors
-					if (chunkId != FACT_LSB) {
-						err = Wav_Header_Err::chunk_id_not_found;
-						debugPrint("\t***Error*** Chunk ID Invalid");
-						debugPrint( String("\tExpected: 'FACT'; Received: ") + String(chunkId) );
+				/*---  Parse FACT chunk --- */
+				debugPrint("\tParsing FACT chunk.");
+				err = peekHeaderChunk(file, chunkId, chunkLen);
 
-					} else if (chunkLen != sizeof(Fact_Header_u) - 8) {	// Subtract 8 for chunk ID and chunk Len variables.
-						err = Wav_Header_Err::invalid_chunk_len;
-						debugPrint("\t***Error*** Chunk Length Invalid");
-						debugPrint( String("\tExpected: ") + String(sizeof(Fact_Header_u)) + String("Received: ") + String(chunkLen) );
-	
-					// Else parse FACT Chunk
-					} else {
-						err = parseFactChunk(file, factChunk);
-					}
-
-				} else {
-					err = Wav_Header_Err::invalid_file_format;
+				// If FACT chunk found, parse it.  The RIFF standard is vague as to whether this is required.
+				if ( (err == Wav_Header_Err::ok) && (chunkId == FACT_LSB) && 
+						(chunkLen == sizeof(Fact_Header_u) - 8) ) {	// Subtract 8 for chunk ID and chunk Len variables.
+					err = parseFactChunk(file, factChunk);
 				}
 			} // else let err pass thru
 
 		// Else length does not match PCM or IEEE format.  Could be incompatible `extensible format`.
 		} else {
+			debugPrint("\t***Error*** Invalid fmt format. Chunk Length: " + String(chunkLen) );
 			err= Wav_Header_Err::invalid_file_format;
 		}
 	}
@@ -916,6 +940,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 				
 			// If not, shift one byte
 			if (!chunkIdFound) {
+				Serial.print("Shifting: "+ String(chunkId, HEX));
 				if (maxShift > 0) {
 					maxShift--;
 					if (!file.seekCur(1) ) {
@@ -924,6 +949,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 					}
 				// Else still not found; seek to end of file. ignoring error
 				} else {
+					debugPrint("No valid chunk ID found. Skipping to end of file.");
 					file.seekEnd();
 				}
 			} // else chunk found... let it pass thru
@@ -1033,7 +1059,17 @@ bool AudioSDPlayer_F32::readHeader(void) {
 					err = Wav_Header_Err::invalid_num_chan;
 				}
 				break;
-
+			// Extensible format
+			case Wave_Format_e::Wav_Format_Extensible:
+				debugPrint("\tAudioSDPlayer_F32:readHeader: Detected Extensible audio format");
+				if ( (fmtExtChunk.S.numChan > 0) && 
+						(fmtExtChunk.S.numChan <= MAX_WAV_PLAYBACK_CHAN) ) {
+					channels = fmtExtChunk.S.numChan;
+					debugPrint( String("\tAudioSDPlayer_F32:readHeader: numChan = ") + String(channels) );
+				} else {
+					err = Wav_Header_Err::invalid_num_chan;
+				}
+				break;
 			// Error Incompatible file format
 			default:
 				err = Wav_Header_Err::invalid_file_format;
@@ -1050,14 +1086,31 @@ bool AudioSDPlayer_F32::readHeader(void) {
 	// Check audio format
 	if (err == Wav_Header_Err::ok) {
 		switch (wavAudioFormat) {
+			// PCM 
 			case Wave_Format_e::Wav_Format_Pcm:
 				break; // valid, so do nothing
+
+			// IEEE
 			case Wave_Format_e::Wav_Format_Ieee_Float:
 				// IEEE F32 is invalid for SD Playback, for now.
 				err = Wav_Header_Err::IEEE_format_incompatible;
 				break;
+
+			// Extensible
+			case Wave_Format_e::Wav_Format_Extensible:
+				// Check if subFormat field is not PCM audio
+				if (fmtExtChunk.S.subFormat != Wave_Format_e::Wav_Format_Pcm) {
+					if (fmtExtChunk.S.subFormat == Wave_Format_e::Wav_Format_Ieee_Float) {
+						err = Wav_Header_Err::IEEE_format_incompatible;
+					} else {
+						err = Wav_Header_Err::invalid_file_format;
+					}
+				} // else PCM format, which is valid
+				break;
+			
+			// Default - Error
 			default: 
-			debugPrint( String("Bad Audio Format; Code: ") + String(wavAudioFormat) );
+				debugPrint( String("Bad Audio Format; Code: ") + String(wavAudioFormat) );
 				err = Wav_Header_Err::invalid_file_format;
 		}
 	}
@@ -1217,6 +1270,35 @@ Wav_Header_Err AudioSDPlayer_F32::parseFmtIeeeChunk(SdFile &file, Fmt_Ieee_Heade
 		err = Wav_Header_Err::invalid_bit_rate;
 	}
 
+	return err;
+}
+
+
+/**
+ * @brief Parses WAV header "fmt " chunk, if audio format is EXTENSIBLE
+ * 
+ * @param file reference to WAV file
+ * @param fmtExtChunk union-struct to populate
+ * @return Wav_Header_Err 
+ */
+Wav_Header_Err AudioSDPlayer_F32::parseFmtExtChunk(SdFile &file, Fmt_Ext_Header_u &fmtExtChunk) {
+	Wav_Header_Err err = Wav_Header_Err::ok;
+
+	// Read into fmt Ext chunk
+	uint32_t bytesRead = file.read( &fmtExtChunk.byteStream[0], sizeof(Fmt_Ext_Header_u) );
+
+	if ( bytesRead != sizeof(Fmt_Ext_Header_u) ) {
+		err = Wav_Header_Err::file_read_err;
+	
+	// Check audio format is Ext
+	} else if (fmtExtChunk.S.audioFmt !=Wave_Format_e::Wav_Format_Extensible) {
+		err = Wav_Header_Err::invalid_file_format;
+
+	// Check that subformat is either PCM or IEEE
+	} else if ( (fmtExtChunk.S.subFormat != Wave_Format_e::Wav_Format_Pcm) && 
+			(fmtExtChunk.S.subFormat != Wave_Format_e::Wav_Format_Ieee_Float) )  {
+		err = Wav_Header_Err::invalid_file_format;
+	}
 	return err;
 }
 
