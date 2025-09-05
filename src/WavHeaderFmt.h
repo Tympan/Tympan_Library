@@ -62,7 +62,7 @@ enum Wave_Format_e : uint16_t {
   Wav_Format_A_Law                        = 0x0006,       // \note not compatible!!!
   Wav_Format_Mu_Law                       = 0x0007,       // \note not compatible!!!
   Wav_Format_Ieee_Float                   = 0x0003,       // IEEE Float format
-  Wav_Format_Extensible                   = 0xFFFE        // Extensible format (\note not compatible!!!)
+  Wav_Format_Extensible                   = 0xFFFE        // Extensible format
 };
 
 
@@ -156,6 +156,50 @@ union Fmt_Ieee_Header_u {
     S.bitsPerSample   = 32;
     S.wExtSize        = 0x00;                                 // Size of extension, which is 0 bytes for this IEEE format
     }
+};
+
+
+// RIFF"s FMT subchunk for WAV Format Extensible (audioFmt==0xFFFE)  Uses union to type pun bytestream.
+// Note: ensure that structures are 32-bit aligned
+typedef struct __attribute__((packed)) {
+  uint32_t chunkId;             // "fmt " as LSB
+  uint32_t chunkLenBytes;       // Expect 16 bytes (this chunk - 4 bytes)
+  uint16_t audioFmt;            // 0xFFFE WAV format extensible
+  uint16_t numChan;             // # of audio channels
+  uint32_t sampleRate_Hz;       // bits per second
+  uint32_t byteRate;            // SampleRate * NumChannels * BitsPerSample/8
+  uint16_t blockAlign;          // NumChannels * BitsPerSample/8
+  uint16_t bitsPerSample;       // 8: 8-bit;  16: 16-bit
+  uint16_t wExtSize;            // Size of the extension, which for this IEEE format, is 0 bytes.
+  uint16_t validBits;           // Precision of the container size (informational only).  I.e if the audio was converted from I16 to F32, validBits=2
+  uint32_t channelMask;         // Speaker position mask. 0: denotes standard channel mapping order
+  uint32_t subFormat;           // Specific audio format such as PCM or IEEE, see Wave_Format_e.  This is also the first part of the GUID
+  uint32_t subFormatExt[3];     // Remaining 14 bytes of the GUID
+} Fmt_Ext_s;
+
+
+union Fmt_Ext_Header_u {
+  Fmt_Ext_s S;
+  uint8_t byteStream[sizeof(Fmt_Ext_s)];   // represented as byte array
+  
+  // Initializer
+  Fmt_Ext_Header_u() {
+    S.chunkId         = FMT_LSB;
+    S.chunkLenBytes   = sizeof(Fmt_Ieee_Header_u) - 8;        // File length (in bytes) - 8bytes
+    S.audioFmt        = Wave_Format_e::Wav_Format_Extensible; // 0xFFFE
+    S.numChan         = 0;  // To be updated
+    S.sampleRate_Hz   = 0;  // To be updated
+    S.byteRate        = 0;  // To be updated
+    S.blockAlign      = 0;  // To be updated
+    S.bitsPerSample   = 0;  // To be updated
+    S.wExtSize        = 22; // Size of extension, which is 22 bytes for this extensible format
+    S.validBits       = 0;  // Informational only
+    S.channelMask     = 0;  // 0: denotes standard channel mapping order
+    S.subFormat       = 0;  // To be updated
+    S.subFormatExt[0] = {0x00001000}; // Latter part of the GUID code specified by the Extensible format. 
+    S.subFormatExt[1] = {0x800000AA}; // Latter part of the GUID code specified by the Extensible format. 
+    S.subFormatExt[2] = {0x00389B71}; // Latter part of the GUID code specified by the Extensible format. 
+  } 
 };
 
 
