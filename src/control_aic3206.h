@@ -43,7 +43,12 @@
 #define LEFT_CHAN 1
 #define RIGHT_CHAN 2
 
-
+enum class Aic_Chan_Side_e {
+	Both_Chan,
+	Left_Chan,
+	Right_Chan,
+	Disabled_Chan
+};
 
 //define AIC3206_DEFAULT_I2C_BUS 0   //bus zero is &Wire
 #define AIC3206_DEFAULT_RESET_PIN 42
@@ -116,8 +121,21 @@ public:
 	bool enableAutoMuteDAC(bool, uint8_t);
 	bool mixInput1toHPout(bool state);
 	void muteLineOut(bool state);
-	bool enableDigitalMicInputs(void) { return enableDigitalMicInputs(true); }
-	bool enableDigitalMicInputs(bool desired_state);
+	bool enableDigitalMicInputs(void) { 
+		enableDigitalMicInputs(Aic_Chan_Side_e::Both_Chan); 
+		return true; 
+	}
+	bool enableDigitalMicInputs(bool desired_state) {
+		if (desired_state) {
+			enableDigitalMicInputs(Aic_Chan_Side_e::Both_Chan);
+		} else {
+			enableDigitalMicInputs(Aic_Chan_Side_e::Disabled_Chan);
+		}
+		return desired_state;
+	};
+	
+	void enableDigitalMicInputs(Aic_Chan_Side_e chanSide);
+
 
 protected:
   TwoWire *myWire = &Wire;  //from Wire.h

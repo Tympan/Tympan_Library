@@ -104,17 +104,14 @@ void setup(void)
   myTympan.enable(); 
   earpieceShield.enable();
 
-  if (true) {
-    //Use the Tympan Earpieces
-    Serial.println("setup(): Using Tympan Earpieces as Inputs");
-    myTympan.enableDigitalMicInputs(true);
-    earpieceShield.enableDigitalMicInputs(true);
-  } else {
-    //Use the PCB mics on the main Tympan board (for debugging only)
-    Serial.println("setup(): Using Tympan Built-In PCB Mics as Inputs");
-    myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones (only on main board, not on AIC shield)
-    myTympan.setInputGain_dB(15.0); 
-  }
+  //Use the Tympan Earpieces
+  Serial.println("setup(): Using Left Tympan Earpieces as Inputs; Right PCB mic");
+  
+  myTympan.inputSelect(TYMPAN_INPUT_ON_BOARD_MIC);     // use the on board microphones (only on main board, not on AIC shield)
+  myTympan.enableDigitalMicInputs(Aic_Chan_Side_e::Left_Chan);
+  earpieceShield.enableDigitalMicInputs(Aic_Chan_Side_e::Left_Chan);
+  myTympan.setInputGain_dB(15.0); 
+
   
   //Set the desired volume levels
   myTympan.volume_dB(0.0);      // headphone amplifier.  -63.6 to +24 dB in 0.5dB steps.

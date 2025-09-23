@@ -361,31 +361,47 @@ bool AudioControlAIC3206::setMicBias(int n) {
   return false;
 }
 
-bool AudioControlAIC3206::enableDigitalMicInputs(bool desired_state) {
-	if (desired_state == true) {
+
+void AudioControlAIC3206::enableDigitalMicInputs(Aic_Chan_Side_e chanSide) {
+	// If Digital mics enabled
+	if (chanSide != Aic_Chan_Side_e::Disabled_Chan) {
 		//change the AIC's pin "MFP4" to clock input for digital microphone
 		aic_writePage(0,55,0b00001110);  //page 0, register 55, bits D4-D1 to 0111
 
 		//change the AIC's pin "MFP3" to Digital Microphone input
 		aic_writePage(0,56,0b00000010);  //page 0, register 56, bits D2-D1 to 01
-
-		//change the ADC to use the digital mic
-		aic_writePage(0,81,0b11011100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left+Right Dig Mic enabled, 1gain per word clock
-
-		return true;
+	
+	// Else digital mics disabled
 	} else {
 		//change the AIC's pin "MFP4" 
 		aic_writePage(0,55,0b00000010);  //page 0, register 55, set to "disabled" ???  is this the default state?
 
 		//change the AIC's pin "MFP3"
 		aic_writePage(0,56,0b00000010);  //page 0, register 56, set to "disabled" ???  is this the default state?
-
+		
 		//change the ADC to NOT use the digital mic
 		aic_writePage(0,81,0b11000000);  //page 0, register 81, Left+Right ADC powered, GPIO as Dig Mic In, Left+Right Dig Mic disabled, gain per word clock
+	}
 
-		return false;
+	// Enable selected channel
+	switch (chanSide) {
+		case Aic_Chan_Side_e::Both_Chan:
+			//change the ADC to use the digital mic
+			aic_writePage(0,81,0b11011100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left+Right Dig Mic enabled, 1gain per word clock
+			break;
+		case Aic_Chan_Side_e::Left_Chan:
+			aic_writePage(0,81, 0b11001000); //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left Dig Mic enabled, 1gain per word clock
+			break;
+		case Aic_Chan_Side_e::Right_Chan:
+			aic_writePage(0,81, 0b11000100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Right Dig Mic enabled, 1gain per word clock
+			break;
+		case Aic_Chan_Side_e::Disabled_Chan:
+		default:
+			// Already disabled.
+			break;
 	}
 }
+
 
 void AudioControlAIC3206::aic_reset() {
   if (debugToSerial) Serial.println("INFO: Reseting AIC");
