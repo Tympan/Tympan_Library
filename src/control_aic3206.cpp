@@ -265,7 +265,7 @@ bool AudioControlAIC3206::inputSelect(int n) {
 	
   if ( n == AudioControlAIC3206::IN1 ) {
     // USE LINE IN SOLDER PADS
-		aic_goToPage(TYMPAN_MICPGA_PAGE);
+	aic_goToPage(TYMPAN_MICPGA_PAGE);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN1 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_LEFT_NEGATIVE_REG, TYMPAN_MIC_ROUTING_NEGATIVE_CM_TO_CM1L & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
     aic_writeRegister(TYMPAN_MICPGA_RIGHT_POSITIVE_REG, TYMPAN_MIC_ROUTING_POSITIVE_IN1 & TYMPAN_MIC_ROUTING_RESISTANCE_DEFAULT);
@@ -387,13 +387,13 @@ void AudioControlAIC3206::enableDigitalMicInputs(Aic_Chan_Side_e chanSide) {
 	switch (chanSide) {
 		case Aic_Chan_Side_e::Both_Chan:
 			//change the ADC to use the digital mic
-			aic_writePage(0,81,0b11011100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left+Right Dig Mic enabled, 1gain per word clock
+			aic_writePage(0,81, 0b11011100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left+Right Dig Mic enabled, 1gain per word clock
 			break;
 		case Aic_Chan_Side_e::Left_Chan:
-			aic_writePage(0,81, 0b11001000); //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left Dig Mic enabled, 1gain per word clock
+			aic_writePage(0,81, 0b11011000); //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Left Dig Mic enabled, 1gain per word clock
 			break;
 		case Aic_Chan_Side_e::Right_Chan:
-			aic_writePage(0,81, 0b11000100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Right Dig Mic enabled, 1gain per word clock
+			aic_writePage(0,81, 0b11010100);  //page 0, register 81, Left+Right ADC powered, SCLK is Dig Mic In, Right Dig Mic enabled, 1gain per word clock
 			break;
 		case Aic_Chan_Side_e::Disabled_Chan:
 		default:
