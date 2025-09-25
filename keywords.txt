@@ -149,6 +149,10 @@ AudioMathScale_F32	KEYWORD1
 setScale	KEYWORD2
 getScale	KEYWORD2
 
+AudioMathAbs_F32	KEYWORD1
+AudioMathSquare_F32	KEYWORD1
+AudioMathSqrt_F32	KEYWORD1
+
 AudioOutputI2S_F32	KEYWORD1
 AudioOutputI2SQuad_F32	KEYWORD1
 AudioOutputUSB_F32	KEYWORD1

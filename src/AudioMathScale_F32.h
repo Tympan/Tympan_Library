@@ -19,15 +19,15 @@ class AudioMathScale_F32 : public AudioStream_F32
 {
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
   public:
-    AudioMathScale_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
-	AudioMathScale_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) {};
-	
-    void update(void);
-    float setScale(float _scale) { return scale = _scale;}
-	float getScale(void) { return scale; }
+		AudioMathScale_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
+		AudioMathScale_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) {};
+
+		void update(void) override;
+		float setScale(float _scale) { return scale = _scale;}
+		float getScale(void) { return scale; }
   private:
-    audio_block_f32_t *inputQueueArray_f32[1];
-	float32_t scale = 0.0f;
+		audio_block_f32_t *inputQueueArray_f32[1];
+		float32_t scale = 0.0f;
 };
 
 #endif
