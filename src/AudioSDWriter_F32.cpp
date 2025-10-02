@@ -40,6 +40,8 @@ int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type, P
 		buffSDWriter = new BufferedSDWriter(sd, serial_ptr, writeSizeBytes);
 		if (buffSDWriter) {
 			buffSDWriter->setNChanWAV(numWriteChannels);
+			buffSDWriter->setSampleRateWAV(sample_rate_Hz / ((float)decimation_factor)); 
+			buffSDWriter->setDecimationFactor(decimation_factor); 
 			if (bufferLength_bytes >= 0) {
 				allocateBuffer(bufferLength_bytes); //leave empty for default buffer size
 			} else {
@@ -198,23 +200,19 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
  * @return int 0: success; -1: failure
 */
 int AudioSDWriter_F32::startRecording(const char* fname) {
-	int return_val = 0;
-	
-	// If SD has not been initialized, then initialize it
-	if (current_SD_state == STATE::UNPREPARED) {
-		//Serial.println("AudioSDWriter_F32: startRecording(fname): current_SD_state is UNPREPARED.  preparing...");
-		prepareSDforRecording();
-	}
-	
-	// If SD is in the STOPPED state, then proceed
-	if (current_SD_state == STATE::STOPPED) {
-		// If WAV file header writtern, then proceed
-		if ( openAsWAV(fname) ) {
+  int return_val = 0;
+  
+  //check to see if the SD has been initialized
+  if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+  
+  if (current_SD_state == STATE::STOPPED) {
+		//try to open the file on the SD card
+		if (openAsWAV(fname)) { //returns TRUE if the file opened successfully
 			if (serial_ptr) {
 				serial_ptr->print("AudioSDWriter: Opened ");
 				serial_ptr->println(fname);
 			}
-		
+			
 			//start the queues.  Then, in the serviceSD, the fact that the queues
 			//are getting full will begin the writing
 			buffSDWriter->resetBuffer();
@@ -230,20 +228,16 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
 			}
 			return_val = -1;
 		}
-
-	// Else SD card not ready
-	} else {
+  } else {
 		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
 		return_val = -1;
-	}
-
+  }
   return return_val;
 }
 
-
 void AudioSDWriter_F32::stopRecording(void) {
   if (current_SD_state == STATE::RECORDING) {
-		__disable_irq();
+  	    __disable_irq();
 		current_SD_state = STATE::STOPPED;
 		__enable_irq();
 		

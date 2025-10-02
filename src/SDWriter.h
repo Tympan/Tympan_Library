@@ -34,7 +34,6 @@
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
 
 const int DEFAULT_SDWRITE_BYTES = (512); //target size for individual writes to the SD card.  Usually 512
-//const uint64_t PRE_ALLOCATE_SIZE = 40ULL << 20;// Preallocate 40MB file.  Not used.
 
 enum List_Info_Location {
   Before_Data,
@@ -83,9 +82,12 @@ class SDWriter : public Print
       }
     }
         
-    virtual bool openAsWAV(const char *fname);
-    virtual bool open(const char *fname);
-    virtual int close(void);
+		bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
+		bool open(const char *fname, uint64_t preAllocate_bytes);
+		bool openAsWAV(const char *fname) { return openAsWAV(fname, 0ULL); }
+		bool open(const char *fname) { return open(fname, 0ULL); };
+		int close(void);
+    
 		bool exists(const char *fname) { return sd->exists(fname); }
 		bool remove(const char *fname) { return sd->remove(fname); }
 		
@@ -93,6 +95,16 @@ class SDWriter : public Print
       if (file.isOpen()) return true;
       return false;
     }
+		virtual bool preAllocate(uint64_t preAllocate_bytes) {  //Pre allocate space for your file on the SD card
+			bool is_success = false;
+			if (isFileOpen()) {
+				is_success = file.preAllocate(preAllocate_bytes);
+				if (!is_success) Serial.println("SDWriter: preAllocate: failed to preallocate file for " + String(preAllocate_bytes) + " bytes. Continuing...");
+			} else {
+				//Serial.println("SDWriter: preAllocate: file was not open.");
+			}
+			return is_success;
+		}
 
     //This "write" is for compatibility with the Print interface.  Writing one
     //byte at a time is EXTREMELY inefficient and shouldn't be done
@@ -230,11 +242,20 @@ class BufferedSDWriter : public SDWriter
     //write buffered data if enough has accumulated
     virtual int writeBufferedData(void);
 
+		//methods related to dithering
 		virtual float32_t generateDitherNoise(const int &Ichan, const int &method);
 		int enableDithering(bool enable) { if (enable) { return setDitheringMethod(0); } else { return setDitheringMethod(2); } }
 		int setDitheringMethod(int val) { return ditheringMethod = val; }
 		int getDitheringMethod(void) { return ditheringMethod; }
 		
+		//methods relating to decimation
+		virtual uint32_t setDecimationFactor(uint32_t dec_fac) { 
+			decimation_factor = max(1U,dec_fac); 
+			decimation_counter = 0;
+			//setSampleRateWAV(getSampleRateWAV()/decimation_factor);
+			return decimation_factor;
+		}
+
 		//int32_t getLengthOfBuffer(void) { return bufferLengthSamples; }
 		uint32_t getLengthOfBuffer_bytes(void) { return bufferLengthBytes; }
 		//int32_t getNumSampsInBuffer(void) {
@@ -282,7 +303,9 @@ class BufferedSDWriter : public SDWriter
     uint32_t bufferLengthBytes = 0;
     uint32_t bufferEndInd_bytes = 0 / nBytesPerSample;
     float32_t *ptr_zeros = nullptr;
-    int ditheringMethod = 0;  //default 0 is off
+		int ditheringMethod = 0;  //default 0 is off
+		uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
+		uint32_t decimation_counter = 0;   // every time it reaches 0, it writes a sample
 };
 
 

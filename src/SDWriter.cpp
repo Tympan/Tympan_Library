@@ -74,10 +74,11 @@ void SDWriter::SetMetadataLocation(List_Info_Location metadataLoc) {
 }
 
 
-bool SDWriter::openAsWAV(const char *fname) {
+bool SDWriter::openAsWAV(const char *fname, uint64_t preAllocate_bytes) {
 	bool returnVal = open(fname);
 
 	if (isFileOpen()) { //true if file is open
+		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
 		flag__fileIsWAV = true;
 
 		// Build WAV header buffer and update pWavHeader pointer
@@ -98,10 +99,11 @@ bool SDWriter::openAsWAV(const char *fname) {
  * @brief Open file on SD card.  If file already exists, delete it. 
  * 
  * @param fname File to open
+ * @param preAllocate_bytes bytes to pre-allocate to file on SD card (set to 0 to skip this)
  * @return true Success
  * @return false Failed to delete existing file, or failed to open file
  */
-bool SDWriter::open(const char *fname) {
+bool SDWriter::open(const char *fname, uint64_t preAllocate_bytes) {
 	bool okayFlag = true;
 
 	if (sd->exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
@@ -115,9 +117,10 @@ bool SDWriter::open(const char *fname) {
 			okayFlag = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
 			//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
 		__enable_irq();
-
 		if (!okayFlag) {
 			Serial.println( String("Error: SDWriter.open() failed to open file: ") + String(fname) );
+		} else {
+			if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
 		}
 	} else {
 		Serial.println("Error: SDWriter.open() failed to delete existing file.");
@@ -132,15 +135,14 @@ bool SDWriter::open(const char *fname) {
  * @return int: 0: Success; -1: Failure.  (Prior to Aug 2025, always returned 0)
  */
 int SDWriter::close(void) {
-	//file.truncate(); 
+	file.truncate();  //truncate the file to its currently used length, in case it was pre-allocated to be larger
 	bool okayFlag = true;
 	uint32_t numTotalSamples = 0;
 
 	// Record total number of samples (samples x numChannels)
 	if (file.curPosition() > filePosAudioData) {
 		numTotalSamples = (file.curPosition() - filePosAudioData) / (uint32_t) GetBitsPerSampType();
-	// Else start of audio data was not recorded
-	} else {
+	} else {	// Else start of audio data was not recorded
 		okayFlag = false;
 	}
 
@@ -715,7 +717,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	
 
 	//how much data will we write?
-	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * nsamps * nBytesPerSample);
+	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
@@ -735,7 +737,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		bufferWriteInd_bytes = 0;  //reset to beginning of the buffer
 
 		//recheck to see if we're going to pass by the read buffer index
-		estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * nsamps * nBytesPerSample);
+		estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
 			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
@@ -757,15 +759,20 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 			float32_t val_f32 = ptr_audio[Ichan][Isamp];  //float value, scaled -1.0 to +1.0
 			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod); //add dithering, if desired
 	
-			if (writeDataType == SDWriter::WriteDataType::INT16) {
-				//convert to INT16 datatype and put in the write buffer
-				((int16_t*)write_buffer)[foo_bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
-				//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
-			} else {
-				//simply copy
-				((float32_t*)write_buffer)[foo_bufferWriteInd++] = val_f32; //copy
+			if (decimation_counter == 0UL) {			
+				if (writeDataType == SDWriter::WriteDataType::INT16) {
+					//convert to INT16 datatype and put in the write buffer
+					((int16_t*)write_buffer)[foo_bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
+					//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
+				} else {
+					//simply copy
+					((float32_t*)write_buffer)[foo_bufferWriteInd++] = val_f32; //copy
+				}
 			}
 		}
+					
+		//increment decimation counter and wrapped
+		decimation_counter++;	if (decimation_counter >= decimation_factor) decimation_counter = 0UL;
 	}
 	bufferWriteInd_bytes = foo_bufferWriteInd * nBytesPerSample; //new write index (bytes) for next time through
 	

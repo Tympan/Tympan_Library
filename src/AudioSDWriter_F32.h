@@ -174,11 +174,22 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		}
 		float setSampleRate_Hz(float fs_Hz) {
 			if ((fs_Hz > 44116.0) && (fs_Hz < 44118.0)) fs_Hz = 44100.0;  //special case for Teensy 3.x...44117 is intended to be 44100
-			if (buffSDWriter) return buffSDWriter->setSampleRateWAV(fs_Hz);
-			return fs_Hz;
+			sample_rate_Hz = fs_Hz;
+			if (buffSDWriter) {
+				buffSDWriter->setSampleRateWAV(sample_rate_Hz / ((float)decimation_factor)); 
+				buffSDWriter->setDecimationFactor(decimation_factor); 
+			}
+			return sample_rate_Hz;
 		}
-
-
+		virtual uint32_t setDecimationFactor(uint32_t dec_fac) {
+			decimation_factor = max((uint32_t)1,dec_fac);
+			if (buffSDWriter) {
+				decimation_factor = buffSDWriter->setDecimationFactor(decimation_factor);
+				buffSDWriter->setSampleRateWAV(sample_rate_Hz / ((float)decimation_factor));
+			}
+			return decimation_factor;
+		}
+		
 		//if you want to set the audio buffer size yourself, call this method before
 		//calling startRecording().
 		int allocateBuffer(const uint32_t nBytes) {
@@ -283,23 +294,48 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			return sd;
 		}
 
+		//methods to specify pre-allocation of space on the SD card for any file that is opened
+		virtual uint64_t setPreAllocateWavBytes(uint64_t bytesToPreAllocate) {
+			flag_preAllocateWavSize = true;
+			return preAllocateWavBytes = bytesToPreAllocate;
+		}
+
 		//virtual int isSdCardPresent(void) {	if (buffSDWriter) return buffSDWriter->isSdCardPresent(); return -1; }
 
 	protected:
 		audio_block_f32_t *inputQueueArray[AUDIOSDWRITER_MAX_CHAN]; //up to four input channels
-		BufferedSDWriter *buffSDWriter = 0;
+		BufferedSDWriter *buffSDWriter = nullptr;
 		Print *serial_ptr = &Serial;
-		unsigned long t_start_millis = 0;
+		unsigned long t_start_millis = 0UL;
+		float sample_rate_Hz = 44100.0;
+		uint32_t decimation_factor = 1UL;  //any value larger than 1 is decimation.  
+		bool flag_preAllocateWavSize = false;
+		uint64_t preAllocateWavBytes = 0ULL;
 
 		// Initialize WAV File
 		bool openAsWAV(const char *fname) {
-			if (buffSDWriter) return buffSDWriter->openAsWAV(fname);
-			return false;
+			bool ret_val = false;
+			if (buffSDWriter) {
+				if (flag_preAllocateWavSize) {
+					ret_val = buffSDWriter->openAsWAV(fname, preAllocateWavBytes);
+				} else {
+					ret_val = buffSDWriter->openAsWAV(fname);
+				}
+			}
+			return ret_val;
 		}
 
 		bool open(const char *fname) {
-			if (buffSDWriter) return buffSDWriter->open(fname);
-			return false;
+			bool ret_val = false;
+			if (buffSDWriter) {
+				if (flag_preAllocateWavSize) {
+					ret_val = buffSDWriter->open(fname, preAllocateWavBytes);
+				} else {
+					ret_val = buffSDWriter->open(fname);
+				}
+				if (flag_preAllocateWavSize) buffSDWriter->preAllocate(preAllocateWavBytes);
+			}
+			return ret_val;
 		}
 
 		int close(void) {
