@@ -132,7 +132,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 
 	//how much data will we write?
-	int estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter))/((int)decimation_factor);
+	int estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter)/((int)decimation_factor));
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
@@ -148,7 +148,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		bufferWriteInd = 0;  //reset
 
 		//recheck to see if we're going to pass by the read buffer index
-		estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter))/((int)decimation_factor);
+		estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter)/((int)decimation_factor));
 		if ((bufferWriteInd < bufferReadInd) && (estFinalWriteInd > bufferReadInd)) {
 			Serial.println("BufferedSDWriter_I16: WARNING: writing past the read index.");
 			flag_moveReadIndexToEndOfWrite = true;
