@@ -155,6 +155,14 @@ void setup() {
   //   pre-allocate and by how much to pre-allocate.  The default is no pre-allocation.
   audioSDWriter.setPreAllocateWavBytes(16000000ULL);  //pre-allocate about 16MB of space on the SD whenever a file is opened
 
+	//Advanced SD Writing Option: Change the WAV's data type to Float32
+	//   Normally, this class writes audio to the WAV file as data samples of type Int16. Many
+	//   WAV files use this resolution for their audio samples.  If one wants higher reslution,
+	//   however, you might want a 32-bit data type.  In this case, you can write the data
+	//   to the WAVs using the AudioSDWriter's ability to write samples using a Float32 data type.
+	//audioSDWriter.setWriteDataType(AudioSDWriter_F32::WriteDataType::FLOAT32);  //write Float32 data to the WAV
+
+
   //End of setup
   Serial.println("Setup: complete."); 
   serialManager.printHelp();
