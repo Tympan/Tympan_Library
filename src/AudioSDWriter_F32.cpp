@@ -29,6 +29,8 @@ int AudioSDWriter_F32::setWriteDataType(WriteDataType type, Print* serial_ptr, c
 		buffSDWriter = new BufferedSDWriter(sd, serial_ptr, writeSizeBytes);
 		if (buffSDWriter) {
 			buffSDWriter->setNChanWAV(numWriteChannels);
+			buffSDWriter->setSampleRateWAV(sample_rate_Hz / ((float)decimation_factor)); 
+			buffSDWriter->setDecimationFactor(decimation_factor); 
 			if (bufferLength_samps >= 0) {
 				allocateBuffer(bufferLength_samps); //leave empty for default buffer size
 			} else {
@@ -163,30 +165,30 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
   if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
   
   if (current_SD_state == STATE::STOPPED) {
-	//try to open the file on the SD card
-	if (openAsWAV(fname)) { //returns TRUE if the file opened successfully
-	  if (serial_ptr) {
-		serial_ptr->print("AudioSDWriter: Opened ");
-		serial_ptr->println(fname);
-	  }
-	  
-	  //start the queues.  Then, in the serviceSD, the fact that the queues
-	  //are getting full will begin the writing
-	  buffSDWriter->resetBuffer();
-	  current_SD_state = STATE::RECORDING;
-	  setStartTimeMillis();
-	  current_filename = String(fname);
-	  
-	} else {
-	  if (serial_ptr) {
-		serial_ptr->print(F("AudioSDWriter: start: Failed to open "));
-		serial_ptr->println(fname);
-	  }
-	  return_val = -1;
-	}
+		//try to open the file on the SD card
+		if (openAsWAV(fname)) { //returns TRUE if the file opened successfully
+			if (serial_ptr) {
+				serial_ptr->print("AudioSDWriter: Opened ");
+				serial_ptr->println(fname);
+			}
+			
+			//start the queues.  Then, in the serviceSD, the fact that the queues
+			//are getting full will begin the writing
+			buffSDWriter->resetBuffer();
+			current_SD_state = STATE::RECORDING;
+			setStartTimeMillis();
+			current_filename = String(fname);
+			
+		} else {
+			if (serial_ptr) {
+				serial_ptr->print(F("AudioSDWriter: start: Failed to open "));
+				serial_ptr->println(fname);
+			}
+			return_val = -1;
+		}
   } else {
-	if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
-	return_val = -1;
+		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
+		return_val = -1;
   }
   return return_val;
 }
@@ -194,16 +196,16 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
 void AudioSDWriter_F32::stopRecording(void) {
   __disable_irq();
   if (current_SD_state == STATE::RECORDING) {
-	current_SD_state = STATE::STOPPED;
-	__enable_irq();
-	
-	//close the file
-	//if (serial_ptr) serial_ptr->println("stopRecording: Closing SD File...");
-	close(); 
-	current_filename = String("Not Recording");
+		current_SD_state = STATE::STOPPED;
+		__enable_irq();
+		
+		//close the file
+		//if (serial_ptr) serial_ptr->println("stopRecording: Closing SD File...");
+		close(); 
+		current_filename = String("Not Recording");
 
-	//clear the buffer
-	if (buffSDWriter) buffSDWriter->resetBuffer();
+		//clear the buffer
+		if (buffSDWriter) buffSDWriter->resetBuffer();
   }
 }
 

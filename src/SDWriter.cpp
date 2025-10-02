@@ -11,16 +11,17 @@ int SDWriter::isSdCardPresent(void) {
 */
 
 
-bool SDWriter::openAsWAV(const char *fname) {
+bool SDWriter::openAsWAV(const char *fname, uint64_t preAllocate_bytes) {
 	bool returnVal = open(fname);
 	if (isFileOpen()) { //true if file is open
+		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
 		flag__fileIsWAV = true;
 		file.write(wavHeaderInt16(0), WAVheader_bytes); //initialize assuming zero length
 	}
 	return returnVal;
 }
 
-bool SDWriter::open(const char *fname) {
+bool SDWriter::open(const char *fname, uint64_t preAllocate_bytes) {
 	if (sd->exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
 		// The SD library writes new data to the end of the file, so to start
 		//a new recording, the old file must be deleted before new data is written.
@@ -28,20 +29,23 @@ bool SDWriter::open(const char *fname) {
 	}
 	__disable_irq();
 		file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+  	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
 	__enable_irq();
-	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
+		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
 	return isFileOpen();
 }
 		
 int SDWriter::close(void) {
-	//file.truncate(); 
 	if (flag__fileIsWAV) {
 		//re-write the header with the correct file size
-		uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+		//uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
+		uint32_t fileSize = file.curPosition();//SdFat_Gre_FatLib version of size();
 		file.seekSet(0); //SdFat_Gre_FatLib version of seek();
 		file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
 		file.seekSet(fileSize);
+		
 	}
+	bool truncate_ret_val = file.truncate();  //if it had be pre-allocated, this trims to the proper length
 	file.close();
 	flag__fileIsWAV = false;
 	return 0;
@@ -128,7 +132,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 
 	//how much data will we write?
-	int estFinalWriteInd = bufferWriteInd + (numChan * nsamps);
+	int estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter))/((int)decimation_factor);
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
@@ -144,7 +148,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		bufferWriteInd = 0;  //reset
 
 		//recheck to see if we're going to pass by the read buffer index
-		estFinalWriteInd = bufferWriteInd + (numChan * nsamps);
+		estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter))/((int)decimation_factor);
 		if ((bufferWriteInd < bufferReadInd) && (estFinalWriteInd > bufferReadInd)) {
 			Serial.println("BufferedSDWriter_I16: WARNING: writing past the read index.");
 			flag_moveReadIndexToEndOfWrite = true;
@@ -168,10 +172,16 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 			//add dithering, if desired
 			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod);
 	
-			//convert to INT16 datatype and put in the write buffer
-			write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
-			//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
+			//only keep the sample if the decimation counter says that this is the sample to keep
+			if (decimation_counter == 0UL) {
+				//convert to INT16 datatype and put in the write buffer
+				write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
+				//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
+			}
 		}
+					
+		//increment decimation counter and wrapped
+		decimation_counter++;	if (decimation_counter >= decimation_factor) decimation_counter = 0UL;
 	}
 
 	//handle the case where we just wrote past the read index.  Push the read index ahead.
