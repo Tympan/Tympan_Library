@@ -194,8 +194,8 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
 }
 
 void AudioSDWriter_F32::stopRecording(void) {
-  __disable_irq();
   if (current_SD_state == STATE::RECORDING) {
+	  __disable_irq();
 		current_SD_state = STATE::STOPPED;
 		__enable_irq();
 		
