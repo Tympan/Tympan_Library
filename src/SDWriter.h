@@ -60,7 +60,7 @@ class SDWriter : public Print
 		bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
 		bool open(const char *fname, uint64_t preAllocate_bytes);
 		bool openAsWAV(const char *fname) { return openAsWAV(fname, 0ULL); }
-		open(const char *fname) { return open(fname, 0ULL); };
+		bool open(const char *fname) { return open(fname, 0ULL); };
 		int close(void);
 		
 		bool exists(const char *fname) { return sd->exists(fname); }
