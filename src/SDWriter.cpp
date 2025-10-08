@@ -278,7 +278,7 @@ size_t SDWriter::write(uint8_t foo)  {
 //writing 512 is most efficient (ie 256 int16 or 128 float32
 size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	size_t return_val = 0;
-	static long long nbytesTotal = 0;
+	//static long long nbytesTotal = 0;
 	if (file.isOpen()) {
 		if (flagPrintElapsedWriteTime) { usec = 0; }
 		file.write((byte *)buff, nbytes); return_val = nbytes;
