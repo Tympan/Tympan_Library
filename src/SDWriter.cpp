@@ -278,12 +278,18 @@ size_t SDWriter::write(uint8_t foo)  {
 //writing 512 is most efficient (ie 256 int16 or 128 float32
 size_t SDWriter::write(const uint8_t *buff, int nbytes) {
 	size_t return_val = 0;
+	static long long nbytesTotal = 0;
 	if (file.isOpen()) {
 		if (flagPrintElapsedWriteTime) { usec = 0; }
 		file.write((byte *)buff, nbytes); return_val = nbytes;
 
 		//write elapsed time only to USB serial (because only that is fast enough)
-		if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec); }
+		if (flagPrintElapsedWriteTime) {
+			//float32_t writeSpd = (float32_t)usec;
+			//nbytesTotal += nbytes;
+			//float32_t writeSpd = ((float32_t)nbytes)/(float32_t)usec;
+			Serial.print("SD, us="); Serial.println(usec);
+		}
 	}
 	return return_val;
 }
@@ -721,10 +727,15 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
-	if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) { //exclude starting at the same index but include ending at the same index
+
+	// If write index is before read index 		// If final write index passes read index, then data would be overwritten
+
+	if ( (bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes) ) { //exclude starting at the same index but include ending at the same index
 		Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING1: writing past the read index. Likely hiccup in WAV.");
 		flag_moveReadIndexToEndOfWrite = true;
-	}
+		overrunFlag = true;
+		sdWriteBuffUnfilled_bytes.last = bufferReadInd_bytes - estFinalWriteInd_bytes;	// Record negative amount of bytes left.
+	} // Else the write pointer is after the read pointer. Pass for now.
 
 	//is there room to put the data into the buffer or will we hit the end
 	if ( estFinalWriteInd_bytes >= bufferLengthBytes) { //is there room?
@@ -732,6 +743,8 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		if (bufferReadInd_bytes > bufferWriteInd_bytes) {
 			Serial.println("BufferedSDWriter: copyToWriteBuffer: setting end of buffer (" + String(bufferWriteInd_bytes) + ") shorter than read index (" + String(bufferReadInd_bytes));
 		}
+		
+		// No room so have the new data start at index-0 and keep track of where the buffer should now wrap.
 		//if (bufferWriteInd_bytes != bufferEndInd_bytes) Serial.println("BufferedSDWriter: copyToWriteBuffer: setting end of buffer to " + String(bufferWriteInd_bytes) + " vs max = " + String(bufferLengthBytes));
 		bufferEndInd_bytes = bufferWriteInd_bytes; //save the end point of the written data
 		bufferWriteInd_bytes = 0;  //reset to beginning of the buffer
@@ -741,7 +754,36 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
 			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
+			overrunFlag = true;
+			sdWriteBuffUnfilled_bytes.last = bufferReadInd_bytes - estFinalWriteInd_bytes;	// Record negative amount of bytes left.
 		}
+	}
+
+	// Update how much space is left in the buffer
+	// If buffer did not over run, update the # of unfilled bytes
+	if (sdWriteBuffUnfilled_bytes.last > 0) {
+		// if read ppointer is ahead of final write pointer
+		// wwwwwwwwwW________________Rwwwwwwww:::::::::, where ':' is currently dead space in the buffer
+		if (bufferReadInd_bytes > estFinalWriteInd_bytes) {
+			sdWriteBuffUnfilled_bytes.last = bufferReadInd_bytes - estFinalWriteInd_bytes;	// Record # bytes left between write and read indices	
+	
+		// Else the write pointer is ahead of the read pointer and needs to wrap
+		// _____RwwwwwwwwwwwW__________________________
+		} else {
+			sdWriteBuffUnfilled_bytes.last = bufferLengthBytes- estFinalWriteInd_bytes + bufferReadInd_bytes;	// Record # bytes left between write and read indices	
+		}
+	}
+
+	// Record SD Write buffer stats
+	sdWriteBuffUnfilled_bytes.min = min(sdWriteBuffUnfilled_bytes.min, sdWriteBuffUnfilled_bytes.last);
+	sdWriteBuffUnfilled_bytes.nCounts++;
+	sdWriteBuffUnfilled_bytes.runningSum += (float32_t)sdWriteBuffUnfilled_bytes.last;
+
+	if (sdWriteBuffUnfilled_bytes.nCounts > 0) {
+		sdWriteBuffUnfilled_bytes.mean = sdWriteBuffUnfilled_bytes.runningSum / 
+			(float32_t)sdWriteBuffUnfilled_bytes.nCounts;
+	} else {	// Else error.  Set mean to -999.f
+		sdWriteBuffUnfilled_bytes.mean = -999.f;
 	}
 
 	//make sure no null arrays
@@ -776,7 +818,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 	bufferWriteInd_bytes = foo_bufferWriteInd * nBytesPerSample; //new write index (bytes) for next time through
 	
-	//check to see if we're using more of the avialable buffer than previously being used
+	//check to see if we're using more of the available buffer than previously being used
 	if (bufferWriteInd_bytes > bufferEndInd_bytes) {
 		//Serial.println("BufferedSDWriter: copyToWriteBuffer: extending end from " + String(bufferEndInd_bytes) + " to " + bufferWriteInd_bytes + " (vs max length of " + String(bufferLengthBytes) + ")");
 		bufferEndInd_bytes = max(bufferEndInd_bytes,bufferWriteInd_bytes);
@@ -805,13 +847,18 @@ int BufferedSDWriter::writeBufferedData(void) {
 	int return_val = 0;
 
 	//if the write pointer has wrapped around, write the data
+	// wwwwwwW________________________Rwwwwwwwww:::::
+
 	if (bufferWriteInd_bytes < bufferReadInd_bytes) { //if the buffer has wrapped around
 		//Serial.println("BuffSDI16: writing to end of buffer");
 		//return_val += write((byte *)(write_buffer+bufferReadInd),
 		//    (bufferEndInd-bufferReadInd)*sizeof(write_buffer[0]));
 		//bufferReadInd = 0;  //jump back to beginning of buffer
 
+		// How many bytes from read ptr to end of written data
 		uint32_t bytesAvail = bufferEndInd_bytes - bufferReadInd_bytes;
+
+		// If the read pointer is not at the end of the buffer, write what we can
 		if (bytesAvail > 0) {
 			uint32_t bytesToWrite = min(bytesAvail, max_writeSizeBytes);
 			if (bytesToWrite >= writeSizeBytes) {

@@ -160,8 +160,10 @@ bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffe
 		if ( okFlag && flag_preload_buffer) {
 			debugPrint("AudioSDPlayer_F32::open:fillBufferFromSD");
 
-			if(fillBufferFromSD() < 0) {
-				debugPrint("***Error*** Failed to prefill SD Buffer.");
+			auto errCode = fillBufferFromSD();
+			if(errCode < 0) {
+				debugPrint("***Error*** fillBufferFromSD: Failed to prefill SD Buffer: Error:");
+				debugPrint(String(errCode));
 				okFlag = false;
 			} else {
 				debugPrint(String("Filled # of bytes: ") + String( getNumBytesInBuffer() ) );
@@ -637,9 +639,9 @@ int AudioSDPlayer_F32::readFromSDtoBuffer(const uint16_t n_bytes_requested) {
 			
 		//read the bytes from the SD into a temporary linear buffer
 		uint8_t *start_ptr = buffer + buffer_write;
-    unsigned long dT_millis = millis();  //for timing diagnotstics
+    	elapsedMicros usec = 0;
 		int16_t bytes_read = file.read(start_ptr, n_bytes_to_read);
-    dT_millis = millis() - dT_millis;  //timing calculation
+    	unsigned long dT_millis = usec/1000UL;  //timing calculation
 		buffer_write += bytes_read; if (buffer_write >= N_BUFFER) buffer_write = 0; //wrap around as needed
 		if (bytes_read != n_bytes_to_read) file_has_data = false;
 			
@@ -940,7 +942,7 @@ bool AudioSDPlayer_F32::readHeader(void) {
 				
 			// If not, shift one byte
 			if (!chunkIdFound) {
-				Serial.print("Shifting: "+ String(chunkId, HEX));
+				debugPrint("Shifting: "+ String(chunkId, HEX));
 				if (maxShift > 0) {
 					maxShift--;
 					if (!file.seekCur(1) ) {
