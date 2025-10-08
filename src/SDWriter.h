@@ -211,9 +211,20 @@ class BufferedSDWriter : public SDWriter
     };
     ~BufferedSDWriter(void) { delete[] ptr_zeros; delete[] write_buffer; }
 		
+    /**
+     * @brief tracks how many bytes remain in the SD Write buffer after each write operation
+     */
+    struct Sd_Write_Buff_Unfilled_Bytes_s {
+      int64_t min;
+      int64_t last;
+      float32_t mean;
+      float32_t runningSum;
+      uint32_t nCounts;
+    };
+
 		bool sync(void);
 
-    //how many bytes should each write event be?  Set it here.  [July 28, 2025: Is this actually used anywhere?]
+    //how many bytes should each write event be?  Used by `writeBufferedData()` when  `getWriteSizeBytes()` is called.
     void setWriteSizeBytes(const int _writeSizeBytes) {
       writeSizeBytes = max(4, 4 * int(_writeSizeBytes/4)); //ensure at least 4 bytes long
     }
@@ -234,7 +245,15 @@ class BufferedSDWriter : public SDWriter
         return (int)write_buffer;
     }
     void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
-    void resetBuffer(void) { bufferReadInd_bytes = 0; bufferWriteInd_bytes = 0;  }
+    
+    //reset the read and write indices to the start of the buffer
+    void resetBuffer(void) { 
+      bufferReadInd_bytes = 0;
+      bufferWriteInd_bytes = 0;
+
+      // Rest stats on SD Write buffer
+      clearSdWriteBuffStats();
+    }
  
     //here is how you send data to this class.  this doesn't write any data, it just stores data
     virtual void copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan);
@@ -268,11 +287,35 @@ class BufferedSDWriter : public SDWriter
 		}
 		//int32_t getNumUnfilledSamplesInBuffer(void) { return getLengthOfBuffer() - getNumSampsInBuffer(); }  //how much of the buffer is empty, in samples
 		uint32_t getNumUnfilledBytesInBuffer(void) { return getLengthOfBuffer_bytes() - getNumBytesInBuffer(); }  //how much of the buffer is empty, in samples
-		//uint32_t getNumUnfilledSamplesInBuffer_msec(void) {
+  	bool getOverrunFlag(void) { return overrunFlag; }
+    void clearOverrunFlag(void) { overrunFlag = true; }
+
+    //uint32_t getNumUnfilledSamplesInBuffer_msec(void) {
 		//	int32_t available_buffer_samples = getNumUnfilledSamplesInBuffer();
 		//	float samples_per_msec = (WAV_sampleRate_Hz*WAV_nchan) / 1000.0f;  //these data memersare in the SDWriter class
 		//	return (uint32_t)((float)available_buffer_samples/samples_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
 		//}
+
+    /**
+     * @brief Get stats on # of unfilled bytes in the SD Write buffer
+     * @return const Sd_Write_Buff_Unfilled_Bytes_s& reference to the stats structure
+     */
+    volatile Sd_Write_Buff_Unfilled_Bytes_s& getSDWriteBuffStats(void){ 
+      return sdWriteBuffUnfilled_bytes; 
+    }
+
+    /**
+     * @brief Clear the stats on # of unfilled bytes in the SD Write buffer
+     */
+    void clearSdWriteBuffStats(void) {
+      overrunFlag = false;
+      sdWriteBuffUnfilled_bytes.min = bufferLengthBytes;
+      sdWriteBuffUnfilled_bytes.last = bufferLengthBytes;
+      sdWriteBuffUnfilled_bytes.nCounts = 0;
+      sdWriteBuffUnfilled_bytes.runningSum = 0.0f;
+      sdWriteBuffUnfilled_bytes.mean = (float32_t)bufferLengthBytes;
+    }
+
 		uint32_t getNumUnfilledBytesInBuffer_msec(void) {
 			int32_t available_buffer_bytes = getNumUnfilledBytesInBuffer();
 			float bytes_per_msec = (WAV_sampleRate_Hz * WAV_nchan * nBytesPerSample) / 1000.0f;  //these data memersare in the SDWriter class
@@ -306,7 +349,9 @@ class BufferedSDWriter : public SDWriter
 		int ditheringMethod = 0;  //default 0 is off
 		uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
 		uint32_t decimation_counter = 0;   // every time it reaches 0, it writes a sample
-};
+    volatile Sd_Write_Buff_Unfilled_Bytes_s sdWriteBuffUnfilled_bytes = {0}; //tracks how many bytes remain in the SD Write buffer after each write operation
+    volatile bool overrunFlag = false;  //set to true if the write buffer overruns
+  };
 
 
 #endif
