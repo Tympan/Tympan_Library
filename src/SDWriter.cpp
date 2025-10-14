@@ -45,7 +45,7 @@ int SDWriter::close(void) {
 		file.seekSet(fileSize);
 		
 	}
-	bool truncate_ret_val = file.truncate();  //if it had be pre-allocated, this trims to the proper length
+	file.truncate();  //if it had be pre-allocated, this trims to the proper length
 	file.close();
 	flag__fileIsWAV = false;
 	return 0;
