@@ -84,91 +84,92 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
+		virtual ~AudioEffectCompWDRC_F32() {};
 
-	//initialize with the default values
-	void setDefaultValues(void);
+		//initialize with the default values
+		virtual void setDefaultValues(void);
 
 	
 	// ////////////////////////// These are the methods where the audio processing work gets done
 
     //here is the method that is called automatically by the audio library
-    void update(void);
+    void update(void) override;
 
-	//here is a standard method for executing the guts of the algorithm without having to call update()
-	//This is the access point used by the compressor bank class, for example, since the compressor bank
-	//handles the audio_block manipulation normally done by update()
-	//
-	//This method uses audio_block_f32_t as its inputs and outputs, to be consistent with all the other
-	//"processAudioBlock()" methods that are used in many other of my audio-processing classes
-	int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block);
+		//here is a standard method for executing the guts of the algorithm without having to call update()
+		//This is the access point used by the compressor bank class, for example, since the compressor bank
+		//handles the audio_block manipulation normally done by update()
+		//
+		//This method uses audio_block_f32_t as its inputs and outputs, to be consistent with all the other
+		//"processAudioBlock()" methods that are used in many other of my audio-processing classes
+		virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block);
 
     //Here is the function that actually does all the work
-	//This method uses simply float arrays as the inptus and outputs, so that this is maximally compatible
-	//with other ways of using this class.
-     void compress(float *x, float *y, int n);
+		//This method uses simply float arrays as the inptus and outputs, so that this is maximally compatible
+		//with other ways of using this class.
+    virtual void compress(float *x, float *y, int n);
 
-	// ///////////////////////// These are the methods used to configure or otherwise interact with this class
+		// ///////////////////////// These are the methods used to configure or otherwise interact with this class
 
-    float setSampleRate_Hz(const float _fs_Hz) {return calcEnvelope.setSampleRate_Hz(_fs_Hz); }
-	float getSampleRate_Hz(void) { return calcEnvelope.getSampleRate_Hz(); }
+    virtual float setSampleRate_Hz(const float _fs_Hz) {return calcEnvelope.setSampleRate_Hz(_fs_Hz); }
+		virtual float getSampleRate_Hz(void) { return calcEnvelope.getSampleRate_Hz(); }
 
     //set all of the parameters for the compressor using the CHA_WDRC "GHA" structure
-	void configureFromGHA(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &gha) { setSampleRate_Hz(fs_Hz);  setParams_from_CHA_WDRC(&gha); }
-	void configureFromGHA(const BTNRH_WDRC::CHA_WDRC &gha) { setParams_from_CHA_WDRC(&gha); }  //assumes that the sample rate has already been set!!!
-    void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha);
-	void collectParams_into_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha);
+		virtual void configureFromGHA(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &gha) { setSampleRate_Hz(fs_Hz);  setParams_from_CHA_WDRC(&gha); }
+		virtual void configureFromGHA(const BTNRH_WDRC::CHA_WDRC &gha) { setParams_from_CHA_WDRC(&gha); }  //assumes that the sample rate has already been set!!!
+		virtual void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha);
+		virtual void collectParams_into_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha);
 	
     //set all of the user parameters for the compressor...assuming no expansion regime
     //assumes that the sample rate has already been set!!!
-	void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt);
+		virtual void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt);
 
     //set all of the user parameters for the compressor...assumes that there is an expansion regime
     //assumes that the sample rate has already been set!!!
-    void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt);
+    virtual void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt);
 
 
     //set, increment, or get the linear gain of the system
-    float setGain_dB(float linear_gain_dB) { return calcGain.setGain_dB(linear_gain_dB); }
-    float getGain_dB(void) { return calcGain.getGain_dB(); }
-	float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
-    float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
+    virtual float setGain_dB(float linear_gain_dB) { return calcGain.setGain_dB(linear_gain_dB); }
+    virtual float getGain_dB(void) { return calcGain.getGain_dB(); }
+		virtual float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
+    virtual float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 	
-	//set or get the other parameters
-	void setAttackRelease_msec(float32_t attack_ms, float32_t release_ms) {
-		calcEnvelope.setAttackRelease_msec(attack_ms, release_ms);
-	}
-	float setAttack_msec(float attack_ms) { return calcEnvelope.setAttack_msec(attack_ms); }
-	float getAttack_msec(void) { return calcEnvelope.getAttack_msec(); }
-	float setRelease_msec(float release_ms) { return calcEnvelope.setRelease_msec(release_ms); }
-	float getRelease_msec(void) { return calcEnvelope.getRelease_msec(); }
-	float setMaxdB(float32_t foo) { return calcGain.setMaxdB(foo); }
-	float getMaxdB(void) { return calcGain.getMaxdB(); }
-	float setKneeExpansion_dBSPL(float32_t _knee) { return calcGain.setKneeExpansion_dBSPL(_knee); }
-	float getKneeExpansion_dBSPL(void) { return calcGain.getKneeExpansion_dBSPL(); }
-	float setExpansionCompRatio(float32_t _cr) { return calcGain.setExpansionCompRatio(_cr); }
-	float getExpansionCompRatio(void) { return calcGain.getExpansionCompRatio(); }
-	float setKneeCompressor_dBSPL(float32_t foo) { return calcGain.setKneeCompressor_dBSPL(foo); }
-	float getKneeCompressor_dBSPL(void) { return calcGain.getKneeCompressor_dBSPL(); }
-	float setCompRatio(float32_t foo) { return calcGain.setCompRatio(foo); }
-	float getCompRatio(void) { return calcGain.getCompRatio(); }
-	float setKneeLimiter_dBSPL(float32_t foo) { return calcGain.setKneeLimiter_dBSPL(foo); }
-	float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
-	
-	float incrementAttack(float fac) { return setAttack_msec(getAttack_msec() * fac); };
-	float incrementRelease(float fac) { return setRelease_msec(getRelease_msec() * fac); };
-	float incrementMaxdB(float fac) { return setMaxdB(getMaxdB() + fac); }
-	float incrementExpCR(float fac) { return setExpansionCompRatio(max(0.1f,getExpansionCompRatio() + fac)); }
-	float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() + fac); }
-	float incrementGain_dB(float increment_dB) { return setGain_dB(getGain_dB() + increment_dB); }    
-  float incrementCompRatio(float fac) { return setCompRatio(max(0.1f, getCompRatio() + fac)); }
-	float incrementKnee(float fac) {return setKneeCompressor_dBSPL(getKneeCompressor_dBSPL() + fac);}
-	float incrementLimiter(float fac) {return setKneeLimiter_dBSPL(getKneeLimiter_dBSPL() + fac);};
-	
-	
-	// /////////////////////////////////////////////////  Here are the public data members
+		//set or get the other parameters
+		virtual void setAttackRelease_msec(float32_t attack_ms, float32_t release_ms) {
+			calcEnvelope.setAttackRelease_msec(attack_ms, release_ms);
+		}
+		virtual float setAttack_msec(float attack_ms) { return calcEnvelope.setAttack_msec(attack_ms); }
+		virtual float getAttack_msec(void) { return calcEnvelope.getAttack_msec(); }
+		virtual float setRelease_msec(float release_ms) { return calcEnvelope.setRelease_msec(release_ms); }
+		virtual float getRelease_msec(void) { return calcEnvelope.getRelease_msec(); }
+		virtual float setMaxdB(float32_t foo) { return calcGain.setMaxdB(foo); }
+		virtual float getMaxdB(void) { return calcGain.getMaxdB(); }
+		virtual float setKneeExpansion_dBSPL(float32_t _knee) { return calcGain.setKneeExpansion_dBSPL(_knee); }
+		virtual float getKneeExpansion_dBSPL(void) { return calcGain.getKneeExpansion_dBSPL(); }
+		virtual float setExpansionCompRatio(float32_t _cr) { return calcGain.setExpansionCompRatio(_cr); }
+		virtual float getExpansionCompRatio(void) { return calcGain.getExpansionCompRatio(); }
+		virtual float setKneeCompressor_dBSPL(float32_t foo) { return calcGain.setKneeCompressor_dBSPL(foo); }
+		virtual float getKneeCompressor_dBSPL(void) { return calcGain.getKneeCompressor_dBSPL(); }
+		virtual float setCompRatio(float32_t foo) { return calcGain.setCompRatio(foo); }
+		virtual float getCompRatio(void) { return calcGain.getCompRatio(); }
+		virtual float setKneeLimiter_dBSPL(float32_t foo) { return calcGain.setKneeLimiter_dBSPL(foo); }
+		virtual float getKneeLimiter_dBSPL(void) { return calcGain.getKneeLimiter_dBSPL(); }
+		
+		virtual float incrementAttack(float fac) { return setAttack_msec(getAttack_msec() * fac); };
+		virtual float incrementRelease(float fac) { return setRelease_msec(getRelease_msec() * fac); };
+		virtual float incrementMaxdB(float fac) { return setMaxdB(getMaxdB() + fac); }
+		virtual float incrementExpCR(float fac) { return setExpansionCompRatio(max(0.1f,getExpansionCompRatio() + fac)); }
+		virtual float incrementExpKnee(float fac) { return setKneeExpansion_dBSPL(getKneeExpansion_dBSPL() + fac); }
+		virtual float incrementGain_dB(float increment_dB) { return setGain_dB(getGain_dB() + increment_dB); }    
+		virtual float incrementCompRatio(float fac) { return setCompRatio(max(0.1f, getCompRatio() + fac)); }
+		virtual float incrementKnee(float fac) {return setKneeCompressor_dBSPL(getKneeCompressor_dBSPL() + fac);}
+		virtual float incrementLimiter(float fac) {return setKneeLimiter_dBSPL(getKneeLimiter_dBSPL() + fac);};
+		
+		
+		// /////////////////////////////////////////////////  Here are the public data members
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
-	AudioCompWDRCState state;
+		AudioCompWDRCState state;
 
   private:
     audio_block_f32_t *inputQueueArray[1];
@@ -193,42 +194,43 @@ class AudioEffectCompWDRC_F32_UI : public AudioEffectCompWDRC_F32, public Serial
 	public:
 		AudioEffectCompWDRC_F32_UI(void) : 	AudioEffectCompWDRC_F32(), SerialManager_UI() {	};
 		AudioEffectCompWDRC_F32_UI(const AudioSettings_F32 settings): AudioEffectCompWDRC_F32(settings), SerialManager_UI() {	};
+		virtual ~AudioEffectCompWDRC_F32_UI() {};
 		
 		// ///////// here are the methods that you must implement from SerialManager_UI
-		virtual void printHelp(void);
-		//virtual bool processCharacter(char c); //not used here
-		virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
-		virtual void setFullGUIState(bool activeButtonsOnly = false); 
+		void printHelp(void) override;
+		//bool processCharacter(char c) override; //not used here
+		bool processCharacterTriple(char mode_char, char chan_char, char data_char) override;
+		void setFullGUIState(bool activeButtonsOnly = false) override; 
 		// ///////// end of required methods
 	
 		//create the button sets for the TympanRemote's GUI
-		TR_Card* addCard_attackRelease(TR_Page *page_h);
-		TR_Card* addCard_attack(  TR_Page *page_h);
-		TR_Card* addCard_release( TR_Page *page_h); 
-		TR_Card* addCard_scaleFac(TR_Page *page_h); 
-		TR_Card* addCard_expComp( TR_Page *page_h);
-		TR_Card* addCard_expKnee( TR_Page *page_h);
-		TR_Card* addCard_linGain( TR_Page *page_h); 
-		TR_Card* addCard_compRat( TR_Page *page_h);
-		TR_Card* addCard_compKnee(TR_Page *page_h);
-		TR_Card* addCard_limKnee( TR_Page *page_h);
+		virtual TR_Card* addCard_attackRelease(TR_Page *page_h);
+		virtual TR_Card* addCard_attack(  TR_Page *page_h);
+		virtual TR_Card* addCard_release( TR_Page *page_h); 
+		virtual TR_Card* addCard_scaleFac(TR_Page *page_h); 
+		virtual TR_Card* addCard_expComp( TR_Page *page_h);
+		virtual TR_Card* addCard_expKnee( TR_Page *page_h);
+		virtual TR_Card* addCard_linGain( TR_Page *page_h); 
+		virtual TR_Card* addCard_compRat( TR_Page *page_h);
+		virtual TR_Card* addCard_compKnee(TR_Page *page_h);
+		virtual TR_Card* addCard_limKnee( TR_Page *page_h);
 		
-		TR_Card* addCards_allParams(TR_Page *page_h);
+		virtual TR_Card* addCards_allParams(TR_Page *page_h);
 
-		TR_Page* addPage_compParams(TympanRemoteFormatter *gui);
-		TR_Page* addPage_allParams(TympanRemoteFormatter *gui);
-		TR_Page* addPage_default(TympanRemoteFormatter *gui) { return addPage_allParams(gui); };
+		virtual TR_Page* addPage_compParams(TympanRemoteFormatter *gui);
+		virtual TR_Page* addPage_allParams(TympanRemoteFormatter *gui);
+		virtual TR_Page* addPage_default(TympanRemoteFormatter *gui) { return addPage_allParams(gui); };
 		
 		//methods to update the GUI fields
-		void updateCard_attack(void);
-		void updateCard_release(void); 
-		void updateCard_scaleFac(void); 
-		void updateCard_expComp(void);
-		void updateCard_expKnee(void);
-		void updateCard_linGain(void); 
-		void updateCard_compRat(void);
-		void updateCard_compKnee(void);
-		void updateCard_limKnee(void);
+		virtual void updateCard_attack(void);
+		virtual void updateCard_release(void); 
+		virtual void updateCard_scaleFac(void); 
+		virtual void updateCard_expComp(void);
+		virtual void updateCard_expKnee(void);
+		virtual void updateCard_linGain(void); 
+		virtual void updateCard_compRat(void);
+		virtual void updateCard_compKnee(void);
+		virtual void updateCard_limKnee(void);
 			
 		//here are the factors to use to increment different AudioEffectCompWDRC_F32 parameters
 		float time_incr_fac = pow(2.0,1.0/4.0);
