@@ -39,6 +39,9 @@
 #ifndef AudioSDPlayer_F32_h_
 #define AudioSDPlayer_F32_h_
 
+#pragma GCC push_options
+#pragma GCC optimize("O0")  // Disable optimization for this module only
+
 #include "Arduino.h"
 #include "AudioSettings_F32.h"
 #include "AudioStream_F32.h"
@@ -159,7 +162,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		
 	protected:
 		//SdFs sd;
-		SdFs *sd_ptr;
+		SdFs *sd_ptr = nullptr;
 		SdFile file;
 		std::string _filename;
 
@@ -243,5 +246,5 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		bool readHeader(void);
 		void debugPrint(const String &msg);
 };
-
+#pragma GCC pop_options // Drop custom compiler optimization
 #endif

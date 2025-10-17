@@ -38,6 +38,9 @@
 #include <Arduino.h>
 #include "AudioSDPlayer_F32.h"
 
+#pragma GCC push_options
+#pragma GCC optimize("O0")  // Disable optimization for this module only
+
 //#include <spi_interrupt.h>
 
 //#include <SD.h> //used by isSdCardPresent()
@@ -1582,3 +1585,4 @@ void AudioSDPlayer_F32::debugPrint(const String &msg) {
 	Serial.println(msg);
 	#endif
 }
+#pragma GCC pop_options // Drop custom compiler optimization
