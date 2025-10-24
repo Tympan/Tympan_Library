@@ -68,7 +68,7 @@ class AICShieldPins {
 								i2cBus = 0;
 								resetAIC = 35;
 							}
-							Serial.print("Shield I2C Select: "); Serial.println(pinValue+1);
+							//Serial.print("AICShieldPins: setAICShieldRev: Shield I2C Select: "); Serial.println(pinValue+1);
 							// i2cBus = 2;
 							enableStereoExtMicBias = 41;
 							CCP_atten1 = 52;  //enable attenuator #1.  Same as MOSI_2 (alt)
