@@ -142,7 +142,12 @@ size_t BLE_nRF52::send(const String &str) {
   n_sent += serialToBLE->write(EOC.c_str(), EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
   serialToBLE->flush();
 //  Serial.println("BLE_nRF52: send: sent " + String(n_sent) + " bytes");
-  delay(20); //This is to slow down the transmission to ensure we don't flood the bufers.  Can we get rid of this? 
+  //delay(20); //This is to slow down the transmission to ensure we don't flood the bufers.  Can we get rid of this? 
+	//
+	//Delay by how many characters have been sent, the Serial overhead of 8-N-1, and the baud rate to the BT module
+	//Per this math, each character (including the 8-N-1 overhead) should take about 10 microseconds each
+	delayMicroseconds(n_sent*10);  //this is approximately the time to send the characters ((n_sent*1.125)/115200)*1000000
+
 
   //BLE_TX_ptr->update(0); //added WEA DEC 30, 2023
   //if (! BLE_TX_ptr->waitForOK() ) {
@@ -233,7 +238,9 @@ size_t BLE_nRF52::sendMessage(const String &orig_s) {
       String bu = String((char)(0xF0 | lowByte(i)));
       bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
       sentBytes += (sendString(bu) - 1); 
-      delay(4); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
+			
+			//send() already includes delay(), so I'm removing this one
+      //delay(4); //20 characters characters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
   }
 
   //Serial.print("BLE: sendMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);

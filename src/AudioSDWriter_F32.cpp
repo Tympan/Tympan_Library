@@ -237,17 +237,16 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
 
 void AudioSDWriter_F32::stopRecording(void) {
   if (current_SD_state == STATE::RECORDING) {
-  	    __disable_irq();
-		current_SD_state = STATE::STOPPED;
-		__enable_irq();
-		
-		//close the file
-		//if (serial_ptr) serial_ptr->println("stopRecording: Closing SD File...");
-		close(); 
-		current_filename = String("Not Recording");
+	current_SD_state = STATE::STOPPED;
+	__enable_irq();
+	
+	//close the file
+	//if (serial_ptr) serial_ptr->println("stopRecording: Closing SD File...");
+	close(); 
+	current_filename = String("Not Recording");
 
-		//clear the buffer
-		if (buffSDWriter) buffSDWriter->resetBuffer();
+	//clear the buffer
+	if (buffSDWriter) buffSDWriter->resetBuffer();
   }
 }
 

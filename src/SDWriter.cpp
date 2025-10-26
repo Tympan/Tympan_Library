@@ -712,6 +712,12 @@ bool BufferedSDWriter::sync(void) {
 
 //here is how you send data to this class.  this doesn't write any data, it just stores data
 void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan) {
+	if( (nsamps<0) || (numChan<=0) ) {
+		Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
+		Serial.println("    : invalid input arguments.");
+		return;
+	}
+	
 	if (!write_buffer) {  //try to allocate buffer, return if it doesn't work
 		//Serial.println("BufferedSDWriter: copyToWriteBuffer: write_buffer = " + String((int)write_buffer) + " so trying to allocate default size");
 		if (!allocateBuffer()) {
@@ -723,7 +729,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	
 
 	//how much data will we write?
-	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
+	int32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
@@ -750,7 +756,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		bufferWriteInd_bytes = 0;  //reset to beginning of the buffer
 
 		//recheck to see if we're going to pass by the read buffer index
-		estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
+		estFinalWriteInd_bytes = bufferWriteInd_bytes + ((uint32_t)numChan * ( ((uint32_t)nsamps+decimation_counter)/((int)decimation_factor) ) * nBytesPerSample);
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
 			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
