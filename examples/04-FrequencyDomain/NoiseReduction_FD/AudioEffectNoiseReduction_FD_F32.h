@@ -2,18 +2,37 @@
 #ifndef _AudioEffectNoiseReduction_FD_F32_h
 #define _AudioEffectNoiseReduction_FD_F32_h
 
+/*
+  AudioEffectNoiseReduction_FD_F32 
+  Created: Chip Audette (OpenAudio)
+
+  Purpose: Reduce background noise in an audio stream.
+
+  Frequency-Domain Processing: This is a frequency-domain processing algorithm, meaning that 
+  the Tympan passes it a segment of regular audio and this algorithm uses FFT processing to
+  convert it as energy at different frequencies.
+
+  Noise vs Signal: for this algorithm, "noise" is considered any frequency component that is
+  steady in time.  "Signal" is anothing that changes in time and becomes louder than the noise.
+
+  Algorithm Approcah: This algorithm assesses the average level through time for each FFT bin.
+  This is the estimate of the noise.  It then looks at the current value (the current amount of
+  energy) in each current FFT bin.  If the bin is larger than the long-term average, it is
+  considered "signal" and is passed through unchanged.  Alternatively, if the bin is close to
+  the long-term average, it is considered "noise" and it is attenuated.
+
+  The user-set parameters of this algorithm include:
+      * the time constants for the averaging
+      * the threshold and transition width for how far the signal must be from the average level
+        to be considered "signal"
+      * the amount of attenuation if it's decided to be "noise"
+      * the amount smoothing in both time and frequency of the amount of attenuation
+
+  MIT License, Use at your own risk.
+*/
 
 #include <AudioFreqDomainBase_FD_F32.h> //from Tympan_Library: inherit all the good stuff from this!
 #include <arm_math.h>  //fast math library for our processor
-
-// THIS IS AN EXAMPLE OF HOW TO CREATE YOUR OWN FREQUENCY-DOMAIN ALGRITHMS
-// TRY TO DO YOUR OWN THING HERE! HAVE FUN!
-
-//Create an audio processing class to do the lowpass filtering in the frequency domain.
-// Let's inherit from  the Tympan_Library class "AudioFreqDomainBase_FD_F32" to do all of the 
-// audio buffering and FFT/IFFT operations.  That allows us to just focus on manipulating the 
-// FFT bins and not all of the detailed, tricky operations of going into and out of the frequency
-// domain.
 
 class AudioEffectNoiseReduction_FD_F32 : public AudioFreqDomainBase_FD_F32   //AudioFreqDomainBase_FD_F32 is in Tympan_Library
 {
