@@ -146,7 +146,7 @@ size_t BLE_nRF52::send(const String &str) {
 	//
 	//Delay by how many characters have been sent, the Serial overhead of 8-N-1, and the baud rate to the BT module
 	//Per this math, each character (including the 8-N-1 overhead) should take about 10 microseconds each
-	delayMicroseconds(n_sent*10);  //this is approximately the time to send the characters ((n_sent*1.125)/115200)*1000000
+	if(n_sent>0) delayMicroseconds(n_sent*500);  //this is approximately the time to send the characters ((n_sent*1.125)/115200)*1000000
 
 
   //BLE_TX_ptr->update(0); //added WEA DEC 30, 2023
