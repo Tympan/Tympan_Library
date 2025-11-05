@@ -75,18 +75,28 @@ void SDWriter::SetMetadataLocation(List_Info_Location metadataLoc) {
 
 
 bool SDWriter::openAsWAV(const char *fname, uint64_t preAllocate_bytes) {
-	bool returnVal = open(fname);
+	bool returnVal = false;
+	
+	// Open and preallocate if requested.  Note that open returns false if isOpen() fails
+	if (preAllocate_bytes > 0ULL) {
+		returnVal = open(fname, preAllocate_bytes);
+	} else {
+		returnVal = open(fname);
+	}
 
-	if (isFileOpen()) { //true if file is open
-		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
+	// If file opened successfully, write Wav header. ( Note that open checks isFileOpen() )
+	if (returnVal) {
 		flag__fileIsWAV = true;
 
-		// Build WAV header buffer and update pWavHeader pointer
+		// Build WAV header buffer and update pWavHeader pointer (ignore return pointer to pWavHeader)
 		makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, 0);  // Set file size to 0 to automatically calculate header length
 
 		// Check that WAV Header is valid
 		if ( pWavHeader && (WAVheader_bytes>0) ){
 			file.write(pWavHeader, WAVheader_bytes); // Write WAV header assuming no audio data
+		// Else Error
+		} else {
+			Serial.println("makeWavHeader(): ***Error*** WAV header size: " + String(WAVheader_bytes) + "bytes.");
 		}
 
 		// Mark start of data chunk to later calculate numSamples.
@@ -192,7 +202,8 @@ int SDWriter::close(void) {
 			for (auto &keyVal:infoKeyVal) {
 				//If string is odd length, pad with 0
 				if ( (keyVal.second).size()%2!=0 ){
-					(keyVal.second).push_back('\0');
+					// EYUAN 2025-1105: Use of push_back here caused Tympan crash
+					keyVal.second.resize(keyVal.second.size()+1, '\0');
 				}
 
 				// Add length of Key ID (4), Key Len (4) and len of string
@@ -345,7 +356,7 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 		default: {								// Default to Float32 type, though really this is ambigiuous
 			fmtIeee.S.numChan 			= (uint16_t) nchan;											// # of audio channels
 			fmtIeee.S.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;									// Sample Rate
-			fmtIeee.S.byteRate 		= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtIeee.S.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
 			fmtIeee.S.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
 			fmtIeee.S.bitsPerSample	= bitsPerSamp;
 
@@ -365,9 +376,18 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 
 		// Add up all the info tag names and strings
 		for (auto &keyVal:infoKeyVal) {
+			
+
+			/* For debug print statements
+			std::string_view tmpStrView = InfoTagToStr(keyVal.first);
+			std::string tmpStr(tmpStrView.data(), tmpStrView.length() );
+			Serial.print( "Key: " + String(tmpStr.c_str()) + "; NumChars: " + String(keyVal.second.length()) );
+			*/
+
 			//If string is odd length, pad with 0
 			if ( (keyVal.second).size()%2!=0 ){
-				(keyVal.second).push_back('\0');
+				// EYUAN 2025-1105: Use of push_back here caused Tympan crash
+				keyVal.second.resize(keyVal.second.size()+1, '\0');
 			}
 
 			// Add length of Key ID (4), Key Len (4) and len of string
@@ -722,8 +742,13 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 	
 
+<<<<<<< Updated upstream
 	//how much data will we write?
 	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
+=======
+	//how much data will we write? (cast from int to uint, assuming values are >= 0)
+	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (static_cast<uint32_t>(numChan) * ((static_cast<uint32_t>(nsamps)+decimation_counter)/decimation_factor) * nBytesPerSample);
+>>>>>>> Stashed changes
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
