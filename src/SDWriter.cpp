@@ -742,19 +742,13 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 	
 
-<<<<<<< Updated upstream
-	//how much data will we write?
-	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
-=======
 	//how much data will we write? (cast from int to uint, assuming values are >= 0)
 	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (static_cast<uint32_t>(numChan) * ((static_cast<uint32_t>(nsamps)+decimation_counter)/decimation_factor) * nBytesPerSample);
->>>>>>> Stashed changes
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
 
 	// If write index is before read index 		// If final write index passes read index, then data would be overwritten
-
 	if ( (bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes) ) { //exclude starting at the same index but include ending at the same index
 		Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING1: writing past the read index. Likely hiccup in WAV.");
 		flag_moveReadIndexToEndOfWrite = true;
