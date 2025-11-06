@@ -241,7 +241,7 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
 }
 
 void AudioSDWriter_F32::stopRecording(void) {
-  if (current_SD_state == STATE::RECORDING) {
+  	if (current_SD_state == STATE::RECORDING) {
   	    __disable_irq();
 		current_SD_state = STATE::STOPPED;
 		__enable_irq();
@@ -253,7 +253,7 @@ void AudioSDWriter_F32::stopRecording(void) {
 
 		//clear the buffer
 		if (buffSDWriter) buffSDWriter->resetBuffer();
-  }
+  	}
 }
 
 //update is called by the Audio processing ISR.  This update function should
