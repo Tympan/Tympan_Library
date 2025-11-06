@@ -348,6 +348,9 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 				} else {
 					ret_val = buffSDWriter->openAsWAV(fname);
 				}
+			// Else error. buffSDWriter is null. 
+			} else {
+				Serial.print("AudioSDWriter_F32::openAsWAV::***Error*** buffSDWriter is null.");
 			}
 			return ret_val;
 		}

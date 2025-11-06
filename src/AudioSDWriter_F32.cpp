@@ -200,13 +200,18 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
  * @return int 0: success; -1: failure
 */
 int AudioSDWriter_F32::startRecording(const char* fname) {
-  int return_val = 0;
+	int return_val = 0;
   
-  //check to see if the SD has been initialized
-  if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
+  	//check to see if the SD has been initialized
+  	if (current_SD_state == STATE::UNPREPARED) {
+		//if (serial_ptr) serial_ptr->println("AudioSDWriter_F32::prepareSDforRecording():");
+		prepareSDforRecording();
+  	}
   
-  if (current_SD_state == STATE::STOPPED) {
+  	if (current_SD_state == STATE::STOPPED) {
 		//try to open the file on the SD card
+		//if (serial_ptr) serial_ptr->println("AudioSDWriter_F32::startRecording:openAsWAV():" + String(fname) );
+
 		if (openAsWAV(fname)) { //returns TRUE if the file opened successfully
 			if (serial_ptr) {
 				serial_ptr->print("AudioSDWriter: Opened ");
@@ -228,16 +233,16 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
 			}
 			return_val = -1;
 		}
-  } else {
+  	} else {
 		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
 		return_val = -1;
-  }
+  	}
   return return_val;
 }
 
 void AudioSDWriter_F32::stopRecording(void) {
-  if (current_SD_state == STATE::RECORDING) {
-	    __disable_irq();
+  	if (current_SD_state == STATE::RECORDING) {
+  	    __disable_irq();
 		current_SD_state = STATE::STOPPED;
 		__enable_irq();
 		
@@ -246,9 +251,9 @@ void AudioSDWriter_F32::stopRecording(void) {
 		close(); 
 		current_filename = String("Not Recording");
 
-	//clear the buffer
-	if (buffSDWriter) buffSDWriter->resetBuffer();
-  }
+		//clear the buffer
+		if (buffSDWriter) buffSDWriter->resetBuffer();
+  	}
 }
 
 //update is called by the Audio processing ISR.  This update function should

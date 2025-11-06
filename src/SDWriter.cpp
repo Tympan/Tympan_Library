@@ -75,18 +75,28 @@ void SDWriter::SetMetadataLocation(List_Info_Location metadataLoc) {
 
 
 bool SDWriter::openAsWAV(const char *fname, uint64_t preAllocate_bytes) {
-	bool returnVal = open(fname);
+	bool returnVal = false;
+	
+	// Open and preallocate if requested.  Note that open returns false if isOpen() fails
+	if (preAllocate_bytes > 0ULL) {
+		returnVal = open(fname, preAllocate_bytes);
+	} else {
+		returnVal = open(fname);
+	}
 
-	if (isFileOpen()) { //true if file is open
-		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
+	// If file opened successfully, write Wav header. ( Note that open checks isFileOpen() )
+	if (returnVal) {
 		flag__fileIsWAV = true;
 
-		// Build WAV header buffer and update pWavHeader pointer
+		// Build WAV header buffer and update pWavHeader pointer (ignore return pointer to pWavHeader)
 		makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, 0);  // Set file size to 0 to automatically calculate header length
 
 		// Check that WAV Header is valid
 		if ( pWavHeader && (WAVheader_bytes>0) ){
 			file.write(pWavHeader, WAVheader_bytes); // Write WAV header assuming no audio data
+		// Else Error
+		} else {
+			Serial.println("makeWavHeader(): ***Error*** WAV header size: " + String(WAVheader_bytes) + "bytes.");
 		}
 
 		// Mark start of data chunk to later calculate numSamples.
@@ -192,7 +202,8 @@ int SDWriter::close(void) {
 			for (auto &keyVal:infoKeyVal) {
 				//If string is odd length, pad with 0
 				if ( (keyVal.second).size()%2!=0 ){
-					(keyVal.second).push_back('\0');
+					// EYUAN 2025-1105: Use of push_back here caused Tympan crash
+					keyVal.second.resize(keyVal.second.size()+1, '\0');
 				}
 
 				// Add length of Key ID (4), Key Len (4) and len of string
@@ -345,7 +356,7 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 		default: {								// Default to Float32 type, though really this is ambigiuous
 			fmtIeee.S.numChan 			= (uint16_t) nchan;											// # of audio channels
 			fmtIeee.S.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;									// Sample Rate
-			fmtIeee.S.byteRate 		= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtIeee.S.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
 			fmtIeee.S.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
 			fmtIeee.S.bitsPerSample	= bitsPerSamp;
 
@@ -365,9 +376,18 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 
 		// Add up all the info tag names and strings
 		for (auto &keyVal:infoKeyVal) {
+			
+
+			/* For debug print statements
+			std::string_view tmpStrView = InfoTagToStr(keyVal.first);
+			std::string tmpStr(tmpStrView.data(), tmpStrView.length() );
+			Serial.print( "Key: " + String(tmpStr.c_str()) + "; NumChars: " + String(keyVal.second.length()) );
+			*/
+
 			//If string is odd length, pad with 0
 			if ( (keyVal.second).size()%2!=0 ){
-				(keyVal.second).push_back('\0');
+				// EYUAN 2025-1105: Use of push_back here caused Tympan crash
+				keyVal.second.resize(keyVal.second.size()+1, '\0');
 			}
 
 			// Add length of Key ID (4), Key Len (4) and len of string
@@ -712,9 +732,16 @@ bool BufferedSDWriter::sync(void) {
 
 //here is how you send data to this class.  this doesn't write any data, it just stores data
 void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan) {
-	if( (nsamps<0) || (numChan<=0) ) {
-		Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
-		Serial.println("    : invalid input arguments.");
+	uint32_t numChanU32 = 0;
+	uint32_t nSampsU32 = 0; 
+	
+	if ( (numChan>0) && (nsamps>0) ) {
+		// Convert int to u32
+		numChanU32 = static_cast<uint32_t>(numChan);
+		nSampsU32 = static_cast<uint32_t>(nsamps);
+
+	} else {
+		Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***\t: invalid input arguments.");
 		return;
 	}
 	
@@ -726,16 +753,15 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 			return;
 		}
 	}
-	
 
-	//how much data will we write?
-	int32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + (numChan * ((nsamps+(int)decimation_counter)/((int)decimation_factor)) * nBytesPerSample);
+	//how much data will we write? (cast from int to uint, assuming values are >= 0)
+	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + ( numChanU32 * 
+			( ( nSampsU32 + decimation_counter ) / decimation_factor ) * nBytesPerSample );
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
 
 	// If write index is before read index 		// If final write index passes read index, then data would be overwritten
-
 	if ( (bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes) ) { //exclude starting at the same index but include ending at the same index
 		Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING1: writing past the read index. Likely hiccup in WAV.");
 		flag_moveReadIndexToEndOfWrite = true;
@@ -756,7 +782,9 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		bufferWriteInd_bytes = 0;  //reset to beginning of the buffer
 
 		//recheck to see if we're going to pass by the read buffer index
-		estFinalWriteInd_bytes = bufferWriteInd_bytes + ((uint32_t)numChan * ( ((uint32_t)nsamps+decimation_counter)/((int)decimation_factor) ) * nBytesPerSample);
+		estFinalWriteInd_bytes = bufferWriteInd_bytes + ( numChanU32 * 
+				( ( nSampsU32 + decimation_counter)/decimation_factor ) * nBytesPerSample);
+
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
 			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
@@ -793,17 +821,17 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 
 	//make sure no null arrays
-	for (int Ichan=0; Ichan < numChan; Ichan++) {
+	for (int Ichan=0; Ichan < numChanU32; Ichan++) {
 		if (!(ptr_audio[Ichan])) {
-			if (ptr_zeros == NULL) { ptr_zeros = new float32_t[nsamps](); } //creates and initializes to zero
+			if (ptr_zeros == NULL) { ptr_zeros = new float32_t[nSampsU32](); } //creates and initializes to zero
 			ptr_audio[Ichan] = ptr_zeros;
 		}
 	}
 
 	//now scale and interleave the data into the buffer
 	uint32_t foo_bufferWriteInd = bufferWriteInd_bytes / nBytesPerSample;
-	for (int Isamp = 0; Isamp < nsamps; Isamp++) {
-		for (int Ichan = 0; Ichan < numChan; Ichan++) {
+	for (int Isamp = 0; Isamp < nSampsU32; Isamp++) {
+		for (int Ichan = 0; Ichan < numChanU32; Ichan++) {
 			float32_t val_f32 = ptr_audio[Ichan][Isamp];  //float value, scaled -1.0 to +1.0
 			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod); //add dithering, if desired
 	
