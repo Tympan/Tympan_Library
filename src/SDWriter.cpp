@@ -732,9 +732,16 @@ bool BufferedSDWriter::sync(void) {
 
 //here is how you send data to this class.  this doesn't write any data, it just stores data
 void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan) {
-	if( (nsamps<0) || (numChan<=0) ) {
-		Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
-		Serial.println("    : invalid input arguments.");
+	uint32_t numChanU32 = 0;
+	uint32_t nSampsU32 = 0; 
+	
+	if ( (numChan>0) && (nsamps>0) ) {
+		// Convert int to u32
+		numChanU32 = static_cast<uint32_t>(numChan);
+		nSampsU32 = static_cast<uint32_t>(nsamps);
+
+	} else {
+		Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***\t: invalid input arguments.");
 		return;
 	}
 	
@@ -746,11 +753,10 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 			return;
 		}
 	}
-	
 
 	//how much data will we write? (cast from int to uint, assuming values are >= 0)
-	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + ( (static_cast<uint32_t> numChan) * 
-			(( (static_cast<uint32_t> nsamps) + decimation_counter)/decimation_factor) * nBytesPerSample);
+	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + ( numChanU32 * 
+			( ( nSampsU32 + decimation_counter ) / decimation_factor ) * nBytesPerSample );
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
@@ -776,8 +782,8 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		bufferWriteInd_bytes = 0;  //reset to beginning of the buffer
 
 		//recheck to see if we're going to pass by the read buffer index
-		estFinalWriteInd_bytes = bufferWriteInd_bytes + ( (static_cast<uint32_t> numChan) * 
-				( ( (static_cast<uint32_t> nsamps) + decimation_counter)/decimation_factor ) * nBytesPerSample);
+		estFinalWriteInd_bytes = bufferWriteInd_bytes + ( numChanU32 * 
+				( ( nSampsU32 + decimation_counter)/decimation_factor ) * nBytesPerSample);
 
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
 			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
@@ -815,17 +821,17 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 
 	//make sure no null arrays
-	for (int Ichan=0; Ichan < numChan; Ichan++) {
+	for (int Ichan=0; Ichan < numChanU32; Ichan++) {
 		if (!(ptr_audio[Ichan])) {
-			if (ptr_zeros == NULL) { ptr_zeros = new float32_t[nsamps](); } //creates and initializes to zero
+			if (ptr_zeros == NULL) { ptr_zeros = new float32_t[nSampsU32](); } //creates and initializes to zero
 			ptr_audio[Ichan] = ptr_zeros;
 		}
 	}
 
 	//now scale and interleave the data into the buffer
 	uint32_t foo_bufferWriteInd = bufferWriteInd_bytes / nBytesPerSample;
-	for (int Isamp = 0; Isamp < nsamps; Isamp++) {
-		for (int Ichan = 0; Ichan < numChan; Ichan++) {
+	for (int Isamp = 0; Isamp < nSampsU32; Isamp++) {
+		for (int Ichan = 0; Ichan < numChanU32; Ichan++) {
 			float32_t val_f32 = ptr_audio[Ichan][Isamp];  //float value, scaled -1.0 to +1.0
 			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod); //add dithering, if desired
 	
