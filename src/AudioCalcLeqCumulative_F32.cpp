@@ -83,13 +83,15 @@ void AudioCalcLeqCumulative_F32::updateCumulativeAverage(audio_block_f32_t *bloc
  * @return levelRMS.  returns 0.0 if invalid.
  */
 float32_t AudioCalcLeqCumulative_F32::getCumLevelRms (void) const {
-	float32_t levelRms = 0.0;
+	volatile float32_t levelRms = 0.0f;
 
+	__disable_irq();
 	// Check that data has been collected
 	if ( (num_averages > 0) && (running_sum_of_avg > 0.0f) ) {
 		// Take sqrt of mean of running_sum_of_avg, where running_sum_of_avg represents level^2
 		levelRms = sqrtf(running_sum_of_avg / ( (float32_t) num_averages ));
-	} //else leave levelRms_dB as CUM_LEVEL_DB_MIN_RANGE
+	} //else leave levelRms = 0.0f
+	__enable_irq();
 
 	//Serial.println( String(" running sum of avg: ") + String(running_sum_of_avg) );
 	//Serial.println( String("; num_averages: ") + String(num_averages) );
@@ -105,13 +107,16 @@ float32_t AudioCalcLeqCumulative_F32::getCumLevelRms (void) const {
  * @return levelRMS as dB value.  returns CUM_LEVEL_DB_MIN_RANGE (-999) if invalid.
  */
 float32_t AudioCalcLeqCumulative_F32::getCumLevelRms_dB (void) const {
-	float32_t levelRms_dB = CUM_LEVEL_DB_MIN_RANGE;
+	volatile float32_t levelRms_dB = CUM_LEVEL_DB_MIN_RANGE;
 
+	__disable_irq();
 	// Check that data has been collected
 	if ( (num_averages > 0) && (running_sum_of_avg > 0.0f) ) {
 		// Take mean and convert to decibels, relying on running_sum_of_avg representing level^2
 		levelRms_dB = 10.0f*log10f( running_sum_of_avg / ( (float) num_averages) );
 	} //else leave levelRms_dB as CUM_LEVEL_DB_MIN_RANGE
+	__enable_irq();
+
 	//Serial.println( String(" running sum of avg: ") + String(running_sum_of_avg) );
 	//Serial.println( String("; num_averages: ") + String(num_averages) );
 
@@ -125,15 +130,16 @@ float32_t AudioCalcLeqCumulative_F32::getCumLevelRms_dB (void) const {
  * @return float32_t peak level. Returns 0.0f if peak_level_sq == 0.0f.
  */
 float32_t AudioCalcLeqCumulative_F32::getPeakLevel(void) const {
-	float32_t peak_level = 0.0f;
-	
+	volatile float32_t peak_level = 0.0f;
+		
+	__disable_irq();
 	if (peak_level_sq > 0.0f) {
 		peak_level = sqrtf(peak_level_sq);
-	}
-	
+	}	
+	__enable_irq();
+
 	return peak_level;
 };
-
 
 
 /**
@@ -143,10 +149,12 @@ float32_t AudioCalcLeqCumulative_F32::getPeakLevel(void) const {
  */
 float32_t AudioCalcLeqCumulative_F32::getPeakLevel_dB(void) const {
 	float32_t peak_level_dB = CUM_LEVEL_DB_MIN_RANGE;
-	
+
+	__disable_irq();
 	if (peak_level_sq > 0.0f) {
 		peak_level_dB = 10.0f*log10f(peak_level_sq);
 	} 
-	
+	__disable_irq();
+
 	return peak_level_dB;
 };

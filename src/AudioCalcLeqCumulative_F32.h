@@ -74,10 +74,10 @@ class AudioCalcLeqCumulative_F32 : public AudioStream_F32
 		audio_block_f32_t *inputQueueArray[1];
 		
 		// Averaging states
-		float32_t running_sum_of_avg = 0.0f;  	// This stores a running sum of power levels (mean_val^2)
-		unsigned long long num_averages = 0;		// # of values in `running_sum_of_avg (64-bit value)
-		bool cumLeqValid = true;
-		float32_t peak_level_sq = 0.0f;				  // peak level^2
+		volatile float32_t running_sum_of_avg = 0.0f;  	// This stores a running sum of power levels (mean_val^2)
+		volatile unsigned long long num_averages = 0;		// # of values in `running_sum_of_avg (64-bit value)
+		volatile bool cumLeqValid = true;
+		volatile float32_t peak_level_sq = 0.0f;				  // peak level^2
 		
 };
 
