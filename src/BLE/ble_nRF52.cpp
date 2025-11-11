@@ -27,6 +27,7 @@ int printString(const String &str) {
   return printByteArray((uint8_t *)c_str,str.length());
 }
 
+
 int BLE_nRF52::begin_basic(void) {
 	//Serial.println("BLE_nRF52: begin_basic: starting begin_basic()...");
 	int ret_val = 0;
@@ -131,24 +132,40 @@ int BLE_nRF52::begin(int doFactoryReset) {
 	return ret_val;
 }
 
+
+void BLE_nRF52::setupBLE(int BT_firmware, bool printDebug, int doFactoryReset) {
+	//Serial.println("ble_nRF52: begin: PIN_IS_CONNECTED = " + String(PIN_IS_CONNECTED)); 
+	if (PIN_IS_CONNECTED >= 0) pinMode(PIN_IS_CONNECTED, INPUT); 
+	begin(doFactoryReset);
+}; 
+
 size_t BLE_nRF52::send(const String &str) {
 
   //Serial.println("BLE_local: send(string): ...);
   //printString(str);
 
   int n_sent = 0;
-  n_sent += serialToBLE->write("SEND ",5);  //out AT command set assumes that each transmission starts with "SEND "
+  n_sent += serialToBLE->write("SEND ",4+1);  //out AT command set assumes that each transmission starts with "SEND "
   n_sent += serialToBLE->write(str.c_str(), str.length());
   n_sent += serialToBLE->write(EOC.c_str(), EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
   serialToBLE->flush();
 //  Serial.println("BLE_nRF52: send: sent " + String(n_sent) + " bytes");
   delay(20); //This is to slow down the transmission to ensure we don't flood the bufers.  Can we get rid of this? 
 
-  //BLE_TX_ptr->update(0); //added WEA DEC 30, 2023
-  //if (! BLE_TX_ptr->waitForOK() ) {
-  //  Serial.println(F("BLE_local: send: Failed to send?"));
-  //}
-  //ble.println(str, HEX);
+  return str.length();
+}
+
+size_t BLE_nRF52::queue(const String &str) {
+  //Serial.println("BLE_local: queue(string): ...);
+  //printString(str);
+
+  int n_sent = 0;
+  n_sent += serialToBLE->write("QUEUE ",5+1);  //out AT command set assumes that each transmission starts with "SEND "
+  n_sent += serialToBLE->write(str.c_str(), str.length());
+  n_sent += serialToBLE->write(EOC.c_str(), EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
+  serialToBLE->flush();
+//  Serial.println("BLE_nRF52: queue: sent " + String(n_sent) + " bytes");
+
   return str.length();
 }
 
@@ -162,13 +179,28 @@ size_t BLE_nRF52::sendString(const String &s, bool print_debug) {
   return 0;   //otherwise return zero (as a form of error?)
 }
 
-size_t BLE_nRF52::sendMessage(const String &orig_s) {
+
+size_t BLE_nRF52::queueString(const String &s, bool print_debug) {
+  int ret_val = queue(s);
+  if (ret_val == (int)(s.length()) ) {
+    return ret_val;  //if send() returns non-zero, send the length of the transmission
+  } else {
+    if (print_debug) Serial.println("BLE: queueString: ERROR sending!  ret_val = " + String(ret_val) + ", string = " + s);
+  }
+  return 0;   //otherwise return zero (as a form of error?)
+}
+
+size_t BLE_nRF52::transmitMessage(const String &orig_s, bool flag_useQueue) {
   String s = orig_s;
   const int payloadLen = 18; //was 19
   size_t sentBytes = 0;
 
-  //Serial.println("BLE_nRF52: sendMessage: commanded to send: " + orig_s);
-  //send("");  send(""); //send some blanks to clear
+  //Serial.println("BLE_nRF52: transmitMessage: commanded to send: " + orig_s);
+	//if (flag_useQueue) {
+	//  queue("");  queue("");  //send some blanks to clear
+	//} else {
+  //  send("");  send(""); //send some blanks to clear
+	//
 
   //begin forming the fully-formatted string for sending to Tympan Remote App
   String header;
@@ -177,7 +209,7 @@ size_t BLE_nRF52::sendMessage(const String &orig_s) {
 
   // message length
   if (s.length() >= (0x4000 - 1))  { //we might have to add a byte later, so call subtract one from the actual limit
-      Serial.println("BLE: Message is too long!!! Aborting.");
+      Serial.println("BLE_nRF52::transmitMessage: flag_useQueueMessage is too long!!! Aborting.");
       return 0;
   }
   int lenBytes = (s.length() << 1) | 0x8001; //the 0x8001 is avoid the first message having the 2nd-to-last byte being NULL
@@ -187,7 +219,7 @@ size_t BLE_nRF52::sendMessage(const String &orig_s) {
   //check to ensure that there isn't a NULL or a CR in this header
   if ((header[6] == '\r') || (header[6] == '\0')) {
       //add a character to the end to avoid an unallowed hex code code in the header
-      Serial.println("BLE: sendMessage: ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
+      Serial.println("BLE_nRF52::transmitMessage ***WARNING*** message is being padded with a space to avoid its length being an unallowed value.");
       s.concat(' '); //append a space character
 
       //regenerate the size-related information for the header
@@ -197,7 +229,8 @@ size_t BLE_nRF52::sendMessage(const String &orig_s) {
   }
 
   if (0) {
-    Serial.println("BLE_local: sendMessage: ");
+		//print debugging info
+    Serial.println("BLE_nRF52::transmitMessage: ");
     Serial.println("    : Header length = " + String(header.length()) + " bytes");
     Serial.println("    : header (String) = " + header);
     Serial.print(  "    : header (HEX) = ");
@@ -209,34 +242,21 @@ size_t BLE_nRF52::sendMessage(const String &orig_s) {
   //send the packet with the header information
   //Question: is "buf" actually used?  It doesn't look like it.  It looks like only "header" is used.
   char buf[21];  //was 16, which was too small for the 21 bytes that seem to be provided below
-  sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6));
-  int a = sendString(header); //for V5.5, this will return an error if there is no active BT connection
-  //Serial.println("    : return value a = " + String(a));
-  if (a != 7)  {
-    //With v5, it returns an error if there is no BT connection.
-    //Checking if there is a BT connection really slows down this transaction.
-    //So, let's just suppress this error message for V5 and only allow for V7.
-    //Then, for V7, it automatically tracks the connection status via having a
-    //valid BLE_id_num.  So, only print an error message for V7 if there is indeed
-    //a valid BLE_id_num.
-    
-    //if ((BC127_firmware_ver > 6) && (BLE_id_num > 0)) {
-      Serial.println("BLE_nRF52: sendMessage: Error (a=" + String(a) + ") in sending message: " + String(header));  
-    //} 
-    //if we really do get an error, should we really try to transmit all the packets below?  Seems like we shouldn't.
-  }
-  
-
+  sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X", header.charAt(0), header.charAt(1), header.charAt(2), header.charAt(3), header.charAt(4), header.charAt(5), header.charAt(6)); 
+	int a;
+	if (flag_useQueue) { a = queueString(header); } else { a = sendString(header); } 
+  if (a != 7) Serial.println("BLE_nRF52: transmitMessage: Error (a=" + String(a) + ") in sending message: " + String(header));  
+ 
   //break up String into packets
   int numPackets = ceil(s.length() / (float)payloadLen);
   for (int i = 0; i < numPackets; i++)  {
-      String bu = String((char)(0xF0 | lowByte(i)));
-      bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
-      sentBytes += (sendString(bu) - 1); 
-      delay(4); //20 characters characcters at 9600 baud is about 2.1 msec...make at least 10% longer (if not 2x longer)
+		String bu = String((char)(0xF0 | lowByte(i)));
+		bu.concat(s.substring(i * payloadLen, (i * payloadLen) + payloadLen));
+		if (flag_useQueue) { sentBytes += (queueString(bu) - 1); } else { sentBytes += (sendString(bu) - 1); } 
+		//delay(4); //removed this line as delay() is applied in send() (within sendString) or by the BLE module itself (for queue() and queueString())
   }
 
-  //Serial.print("BLE: sendMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);
+  //Serial.print("BLE: transmitMessage: sentBytes = "); Serial.println((unsigned int)sentBytes);
   if (s.length() == sentBytes)
       return sentBytes;
 
@@ -450,7 +470,7 @@ int BLE_nRF52::getBleMac(String *reply_ptr) {
 */
 
 
-
+/*
 int BLE_nRF52::getLedMode(void) {
   sendCommand("GET LEDMODE",String(""));
   //if (simulated_Serial_to_nRF) bleUnitServiceSerial();  //for the nRF firmware, service any messages coming in the serial port from the Tympan
@@ -464,7 +484,7 @@ int BLE_nRF52::getLedMode(void) {
   } 
   return -1; //error
 }
-
+*/
 
 int BLE_nRF52::isConnected(int getMethod) {
   //Serial.println("BLE_nRF52: isConnected via method " + String(getMethod));
@@ -571,6 +591,7 @@ int BLE_nRF52::enableAdvertising(bool enable) {
   return -1; //error
 }
 
+/*
 int BLE_nRF52::setLedMode(int value) {
   sendCommand("SET LEDMODE=",String(value));
 
@@ -582,6 +603,7 @@ int BLE_nRF52::setLedMode(int value) {
   }
   return -1; //error
 }
+*/
 
 int BLE_nRF52::version(String *replyToReturn_ptr) {
   sendCommand("GET VERSION",String(""));
@@ -604,6 +626,59 @@ int BLE_nRF52::version(String *replyToReturn_ptr) {
     if (replyToReturn_ptr->length() > 0) replyToReturn_ptr->remove(0,replyToReturn_ptr->length());  //empty the return string
   }  
   return -1;
+}
+
+int BLE_nRF52::clearTxQueue(String *replyToReturn_ptr) {
+	sendCommand("CLEAR_TX_QUEUE",String(""));
+	
+	String reply;
+  recvReply(&reply); //look for reply of the format "OK 0 15000"
+  //Serial.println("BLE_nRF52: clearTxQueue: received raw reply = " + reply);
+  if (doesStartWithOK(reply)) {
+    reply.remove(0,2);  //remove the leading "OK"
+    reply.trim(); //remove leading or trailing whitespace
+    replyToReturn_ptr->remove(0,replyToReturn_ptr->length()); //empty the return string
+    replyToReturn_ptr->concat(reply);
+    return 0;
+  } else {
+    Serial.println("BLE_nRF52: clearTxQueue: failed to clear the module's TX queue.  Reply = " + reply);
+    if (replyToReturn_ptr->length() > 0) replyToReturn_ptr->remove(0,replyToReturn_ptr->length());  //empty the return string
+  }  
+  return -1;
+}
+
+
+int BLE_nRF52::sendSetForIntegerValue(const String &parameter_str, const int value) {
+	sendCommand("SET " + parameter_str + "=",String(value)); 	//send the SET command
+  String reply;  recvReply(&reply); 	//get the reply to the command
+  if (doesStartWithOK(reply)) return 0;  //success!
+
+	//fail
+  Serial.println("BLE_nRF52: sendSetForIntegerValue: failed to set " + parameter_str + ".  Reply = " + reply);
+  return -1;	 //fail
+}
+
+
+int BLE_nRF52::sendGetForIntegerValue(const String &parameter_str) {
+	sendCommand("GET " + parameter_str, String("")); 	//send the GET command
+  String reply; recvReply(&reply);  //get the reply to the command
+	if (doesStartWithOK(reply)) {     //does it start with OK?
+    reply.remove(0,2);              //remove the leading "OK"
+    reply.trim();                   //remove leading or trailing whitespace
+		return int(reply.toInt());      //extract the value and return
+  } 
+	
+	//fail
+  Serial.println("BLE_nRF52: sendGetForIntegerValue: failed to get " + parameter_str + ". Reply = " + reply);
+  return -1;
+}	
+
+int BLE_nRF52::setTxQueueDelay_msec(const int delay_msec) {
+	if ((delay_msec < 0) || (delay_msec > 99)) {
+		Serial.println("BLE_nRF52::setQueueDelay_msec: given delay_msec must be between 0 and 99 msec.  Returning.");
+		return -1; //fail
+	}
+	return sendSetForIntegerValue("DLEAY_MSEC", delay_msec);
 }
 
 

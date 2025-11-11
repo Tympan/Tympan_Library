@@ -25,59 +25,105 @@ public:
 	BLE_nRF52(HardwareSerial *sp) : serialToBLE(sp), serialFromBLE(sp) {};
 	BLE_nRF52(TympanBase *_tympan) : serialToBLE(_tympan->BT_Serial), serialFromBLE(_tympan->BT_Serial) {};
 	BLE_nRF52(void) {} //uses default serial ports set down in the protected section
-	int begin(void) override {  return begin(false); } //normal begin()
-	virtual int begin_basic(void); //only use if you're really sure that you know what you're doing
-	virtual int begin(int doFactoryReset);
-	
+
+	//setup the BLE module and start it
 	virtual void setupBLE(void) { setupBLE(10); } 
-	void setupBLE(int BT_firmware) override { setupBLE(BT_firmware,false); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+	void setupBLE(int BT_firmware) override { setupBLE(BT_firmware,false); };     //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
 	void setupBLE(int BT_firmware, bool printDebug) override { setupBLE(BT_firmware, printDebug, false); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
-	virtual void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset) {
-		//Serial.println("ble_nRF52: begin: PIN_IS_CONNECTED = " + String(PIN_IS_CONNECTED)); 
-		if (PIN_IS_CONNECTED >= 0) pinMode(PIN_IS_CONNECTED, INPUT); 
-		begin(doFactoryReset);
-	};  //to be called from the Arduino sketch's setup() routine
+	virtual void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset);  //to be called from the Arduino sketch's setup() routine
+	int begin(void) override {  return begin(false); }                            //normal begin()
+	virtual int begin_basic(void);                                                //only use if you're really sure that you know what you're doing
+	virtual int begin(int doFactoryReset);
+
+	//low-level methods to receive bytes from the BLE module via the serial link to the BLE module
+	int available(void) override { return serialFromBLE->available(); }
+	virtual int read(void) override { return serialFromBLE->read(); };
+	virtual int peek(void) override { return serialFromBLE->peek(); }
+	//virtual size_t recvMessage(String *s_ptr);
+
+	//generic methods to commands to the BLE module
+	virtual size_t sendCommand(const String &cmd,const String &data);
+	virtual size_t sendCommand(const String &cmd, const char* data, size_t data_len);
+	virtual size_t sendCommand(const String &cmd, const uint8_t* data, size_t data_len);
+
+	//helper methods for simplfying using SET or GET commands with the BLE module
+	virtual int sendSetForIntegerValue(const String &parameter_str, const int value);
+	virtual int sendGetForIntegerValue(const String &parameter_str);
+
+	//methods for doing specific actions to the BLE module or asking for specific information from the module
+	virtual int setBleName(const String &s);
+	virtual int getBleName(String *reply_ptr);
+	virtual int setBleMac(const String &s);
+	//virtual int getBleMac(const String &s);
+	int version(String *reply_ptr) override;
+	virtual int setLedMode(int val) { return sendSetForIntegerValue("LEDMODE", val); };
+	virtual int getLedMode(void) { return sendGetForIntegerValue("LEDMODE"); };
+	
+	//check connection and advertising status
+	int isConnected(void) override { return isConnected(GET_AUTO); }
+	virtual int isConnected(int method);
+	int isAdvertising(void) override;
+	int enableAdvertising(bool);
+	int PIN_IS_CONNECTED = 39;  //Tympan RevF
+	enum GET_TYPE { GET_AUTO=0, GET_VIA_SOFTWARE, GET_VIA_GPIO};
+
+	// These do nothing but are needed for compatibility with ble.h
+	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
+	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) override {}; //do nothing, already auto-advertises after disconnect
+	bool setUseFasterBaudRateUponBegin(bool enable = true) override { return enable; };
+	//end do-nothing methods
+
+	//bool simulated_Serial_to_nRF = true;
+
+
+	// /////////////////////////////////// Methods for UART-style comms over BLE to the remote device
 	
 	//send strings
 	virtual size_t send(const String &str);  //the main way to send a string 
 	virtual size_t send(const char c) { return send(String(c)); }
 	size_t sendString(const String &s, bool print_debug) override;
 	virtual size_t sendString(const String &s) { return sendString(s,false);}
-	virtual size_t sendCommand(const String &cmd,const String &data);
-	virtual size_t sendCommand(const String &cmd, const char* data, size_t data_len);
-	virtual size_t sendCommand(const String &cmd, const uint8_t* data, size_t data_len);
 
 	//send strings, but add formatting for TympanRemote App
-	size_t sendMessage(const String &s) override;
+	size_t sendMessage(const String &s) override { return transmitMessage(s, false); }; //the "false" is so that it uses SEND, not QUEUE
 	virtual size_t sendMessage(char c) { return sendMessage(String(c)); }
-	
+
+	//Define the "queue" methods, similar to the collection of "send" methods.
+	//The "send" methods send the packets immediately, and will block for a set period of time to allow them to go.
+	//The "queue" methods put the messages in the BLE module's internal queue and the BLE module handles the pacing
+	//of the messages so that the Tympan doesn't have to wait, like it does while "send" does its blocking.
+	virtual size_t queue(const String &str);  //the main way to send a string 
+	virtual size_t queue(const char c) { return queue(String(c)); }
+	virtual size_t queueString(const String &s, bool print_debug);
+	virtual size_t queueString(const String &s) { return queueString(s,false);}
+	virtual size_t queueMessage(const String &s) { return transmitMessage(s, true); }; //the "true" is so that it uses QUEUE, not SEND
+	virtual size_t queueMessage(const char c) { return queueMessage(String(c)); }
+		
 	//receive reply from BLE unit (formatted with "OK" or "FAIL")
+	unsigned long rx_timeout_millis = 2000UL;
 	virtual size_t recvReply(String *s_ptr, unsigned long timeout_mills);
 	virtual size_t recvReply(String *s_ptr) { return recvReply(s_ptr, rx_timeout_millis); }
 	static bool doesStartWithOK(const String &s);
 
-	//receive message, from Tympan Remote App (or otherwise)
-	int available(void) override { return serialFromBLE->available(); }
-	virtual int read(void) override { return serialFromBLE->read(); };
-	virtual int peek(void) override { return serialFromBLE->peek(); }
-	//virtual size_t recvMessage(String *s_ptr);
-
+	//The BLE module has its own TX queue (invoked when using the queueMessage() command (or other queue command).
+	//These methods help manage how the queue is used.  Again, this is about a queue that's on the BLE
+	//module, not a queue here on the Tympan
+	virtual int setTxQueueDelay_msec(const int delay_msec);  //a non-zero return value is a failed communication
+	virtual int getTxQueueDelay_msec(void) { return sendGetForIntegerValue("DELAY_MSEC"); }         //a negative return value is a failed communication
+	virtual int getTxQueueFreeBytes(void)  { return sendGetForIntegerValue("TX_QUEUE_FREEBYTES"); };//a negative return value is a vailed communication
+	virtual int getTxQueueNumMsgs(void)    { return sendGetForIntegerValue("TX_QUEUE_N_MSGS"); };   //a negative return value is a failed communication
+	virtual int clearTxQueue(void) { String reply_str; return clearTxQueue(&reply_str); }
+	virtual int clearTxQueue(String *reply_ptr);  //as an important side effect, this stops the BLE module from transmitting any of these queued messages
+	
+	
+	// ////////////////////////////////////// Methods for BLE-type comms (not UART-style messages) to the remote device
+		
 	//receive methods required by BLE interface
 	virtual int recv(String *s_ptr);                      // grab serial response, by line
 	virtual size_t recvBLE(String *s_ptr) { return recvBLE(s_ptr, false); };
   virtual size_t recvBLE(String *s_ptr, bool printResponse);
-
-	virtual int setBleName(const String &s);
-	virtual int getBleName(String *reply_ptr);
-	virtual int setBleMac(const String &s);
-	//virtual int getBleMac(const String &s);
-	int version(String *reply_ptr) override;
-	int isConnected(void) override { return isConnected(GET_AUTO); }
-	virtual int isConnected(int method);
-	int isAdvertising(void) override;
-	int enableAdvertising(bool);
 	
-	//preset services`
+	//preset BLE services`
 	enum PRESET_BLE_SERVICES {BLESVC_DFU=0, 
 													BLESVC_DIS=1, 
 													BLESVC_UART_TYMPAN=2, 
@@ -102,20 +148,6 @@ public:
 	virtual int notifyBle(int service_id, int char_id, const uint8_t vals[], size_t n_bytes);
 	virtual int writeBle (int service_id, int char_id, const uint8_t vals[], size_t n_bytes);
 	
-	// These do nothing but are needed for compatibility with ble.h
-	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
-	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) override {}; //do nothing, already auto-advertises after disconnect
-	bool setUseFasterBaudRateUponBegin(bool enable = true) override { return enable; };
-	//end do-nothing methods
-	
-	virtual int setLedMode(int val);
-	virtual int getLedMode(void);
-
-	unsigned long rx_timeout_millis = 2000UL;
-	//bool simulated_Serial_to_nRF = true;
-
-	int PIN_IS_CONNECTED = 39;  //Tympan RevF
-	enum GET_TYPE { GET_AUTO=0, GET_VIA_SOFTWARE, GET_VIA_GPIO};
 	
 	
 protected:
@@ -134,6 +166,10 @@ protected:
 	#endif
 	int isConnected_getViaSoftware(void);
 	int isConnected_getViaGPIO(void);
+	
+	//method holding common activities for actions relating ot SEND and QUEUE 
+	virtual size_t transmitMessage(const String &s, bool flag_useQueue);
+
 	
 	unsigned long _timeout = 2000; // timeout for recv
 };
