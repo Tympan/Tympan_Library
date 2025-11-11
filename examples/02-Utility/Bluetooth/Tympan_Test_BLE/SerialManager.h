@@ -50,12 +50,12 @@ class SerialManager  {  // see Tympan_Library for SerialManagerBase for more fun
     //factors by which to raise or lower the parameters when receiving commands from TympanRemote App
     float gainIncrement_dB = 3.0f;            //raise or lower by x dB
 
-    void setButtonState(String btnId, bool newState) {
+    void setButtonState(const String &btnId, bool newState) {
       String msg = String("STATE=BTN:" + btnId + ":1");
       //Serial.println("serialManager: setButtonState: sending = " + msg); //echo to USB Serial for debugging
       ble.sendMessage(msg);
     }
-    void setButtonText(String btnId, String text) {
+    void setButtonText(const String &btnId, const String &text) {
       String msg = String("TEXT=BTN:" + btnId + ":" + text);
       //Serial.println("serialManager: setButtonText: sending = " + msg); //echo to USB Serial for debugging
       ble.sendMessage(msg);
