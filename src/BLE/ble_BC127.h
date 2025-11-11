@@ -26,37 +26,44 @@ class BLE_BC127 : public BC127, virtual public BLE
 public:
 	BLE_BC127(HardwareSerial *sp) : BC127(sp) {}
 	BLE_BC127(TympanBase *tympan) : BC127(tympan->BT_Serial) { setPins(tympan->getPin_BT_PIO0(),tympan->getPin_BT_RST()); };
-  virtual int begin(void) { return begin(true); }
+  
+	int begin(void) override { return begin(true); }
 	virtual int begin(int doFactoryReset);
 	virtual void setupBLE() { setupBLE(7); } //default to firmware 7
-	virtual void setupBLE(int BT_firmware) { setupBLE(BT_firmware, true); }           //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
-  virtual void setupBLE(int BT_firmware, bool printDebug) { setupBLE(BT_firmware, printDebug, true); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+	void setupBLE(int BT_firmware) override { setupBLE(BT_firmware, true); }           //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
+  void setupBLE(int BT_firmware, bool printDebug) override { setupBLE(BT_firmware, printDebug, true); };            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
   void setupBLE_noFactoryReset(int BT_firmware = 7, bool printDebug = true);  //to be called from the Arduino sketch's setup() routine.  Excludes factory reset.
 	void setupBLE(int BT_firmware, bool printDebug, int doFactoryReset);  //to be called from the Arduino sketch's setup() routine.  Must define all params
+	
 	size_t sendByte(char c);
-  size_t sendString(const String &s, bool print_debug = false);
-  virtual size_t sendMessage(const String &s);
+  size_t sendString(const String &s, bool print_debug = false) override;
+  size_t sendMessage(const String &s) override;
+	size_t queueString(const String &s, bool print_debug = false) override { return sendString(s, print_debug); }; //the BC127 has no on-board queueing, so default back to send()
+  size_t queueMessage(const String &s) override { return sendMessage(s); };  //the BC127 has no on-board queueing, so default back to send()
+		
 	//size_t sendMessage(const char* c_str, const int len); //use this if you need to send super long strings (more than 1797 characters)
   virtual size_t recvMessage(String *s);
-	virtual size_t recvBLE(String *s) { return recvBLE(s, false); };
-  virtual size_t recvBLE(String *s, bool printResponse);
+	size_t recvBLE(String *s) override { return recvBLE(s, false); };
+  size_t recvBLE(String *s, bool printResponse) override;
 	bool interpretAnyOpenOrClosedMsg(String tmp, bool printDebug=false);
 	virtual int isAdvertising(bool printResponse);
-	virtual int isAdvertising(void) { return isAdvertising(false); };
+	int isAdvertising(void) override { return isAdvertising(false); };
   //virtual int isConnected(bool printResponse);
-	virtual int isConnected(void) { return BC127::isConnected(false); }
+	int isConnected(void) override { return BC127::isConnected(false); }
   bool waitConnect(int time = -1);
-	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
-	virtual void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs);
+	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
+	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis, bool printDebugMsgs) override;
 	
 	void echoBTreply(bool printDebug = false);
-	bool setUseFasterBaudRateUponBegin(bool enable = true) { return useFasterBaudRateUponBegin = enable; }
+	bool setUseFasterBaudRateUponBegin(bool enable = true) override { return useFasterBaudRateUponBegin = enable; }
 	
-	virtual int available(void) { return BC127::available(); }
-	virtual int read(void) { return BC127::read(); }
-	virtual int peek(void) { return BC127::peek(); }
-	virtual int version(String *reply) { return BC127::version(reply); }
-	virtual int getBleName(String *reply) { return BC127::getBleName(reply); }
+	int available(void) override { return BC127::available(); }
+	int read(void) override { return BC127::read(); }
+	int peek(void) override { return BC127::peek(); }
+	
+	int version(String *reply) override { return BC127::version(reply); }
+	int getBleName(String *reply) override{ return BC127::getBleName(reply); }
+	
 protected:
 	bool useFasterBaudRateUponBegin = false; //default as to whether to use faster baud rate or not
 	void setSerialBaudRate(int new_baud);
