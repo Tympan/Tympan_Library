@@ -20,12 +20,15 @@
 class BLE
 {
 public:
-	virtual int begin() = 0; 
+	virtual int begin(void) = 0; 
 	//virtual int begin(int doFactoryReset) = 0; 
 	virtual void setupBLE(int) = 0;            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
   virtual void setupBLE(int, bool) = 0;            //to be called from the Arduino sketch's setup() routine.  Includes factory reset.
   virtual size_t sendString(const String &s, bool print_debug) = 0;  // Send string as raw bytes
   virtual size_t sendMessage(const String &s) = 0;
+	virtual size_t queueString(const String &s, bool print_debug) = 0;  // same as sendString(), but will use queuing on the BLE module (if available) to free up the Tympan
+  virtual size_t queueMessage(const String &s) = 0;    // same as sendmessage(), but will use queuing on the BLE module (if available) to free up the Tympan
+
 	//virtual size_t recvMessage(String *s) = 0;
 	virtual size_t recvBLE(String *s)=0;
   virtual size_t recvBLE(String *s, bool printResponse) = 0;
