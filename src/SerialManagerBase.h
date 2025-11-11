@@ -151,10 +151,13 @@ class SerialManagerBase {
     
 		virtual void printHelp(void);
     virtual void respondToByte(char c);
-    virtual void setButtonState(String btnId, bool newState, bool sendNow = true);
-    virtual void setButtonText(String btnId, String text);
+    virtual void setButtonState(const String &btnId, bool newState, bool sendNow = true);
+    virtual void setButtonText(const String &btnId, const String &text);
     virtual void sendTxBuffer(void);
 		virtual void setFullGUIState(bool activeButtonsOnly=false); 
+		
+		virtual bool setFlagUseBleQueue(bool new_val);
+		virtual bool getFlagUseBleQueue(void) const { return flag_useBleQueue; }
 
 		enum read_state_options {
 			SINGLE_CHAR,	  STREAM_LENGTH,	  STREAM_DATA,	  QUAD_CHAR_1,	  QUAD_CHAR_2,	  QUAD_CHAR_3
@@ -189,8 +192,11 @@ class SerialManagerBase {
     String TX_string;
     char mode_char, chan_char, data_char; //for quad_char processing
 		callback_t _datastreamCallback_p = NULL;
+		bool flag_useBleQueue = false;  //flag to decide whether to use the ble->send() command or the ble->queue() command
 
 		std::vector<SerialManager_UI *> UI_element_ptr;
+		
+		//local queue for data messages (do not confuse with the TX queue that is on the BLE module itself
 		BleDataMessageQueue bleDataMessageQueue; // Like a std::queue, but limits the number of elements.  See BLE/BleTypes.h
 
 };

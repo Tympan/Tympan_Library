@@ -346,7 +346,7 @@ int SerialManagerBase::readStreamFloatArray(int idx, float* arr, int len) {
 }
 
 //Send button state.  Transmit immediate, or queue up the messages for batch transfer.
-void SerialManagerBase::setButtonState(String btnId, bool newState,bool sendNow) {
+void SerialManagerBase::setButtonState(const String &btnId, bool newState, bool sendNow) {
   
   //Create the new message
   String msg;
@@ -365,20 +365,40 @@ void SerialManagerBase::setButtonState(String btnId, bool newState,bool sendNow)
   if (sendNow) {
     sendTxBuffer();
   } else {
-    Serial.print("SerialManagerBase: queuing: "); Serial.println(msg);
+    Serial.print("SerialManagerBase: queuing locally: "); Serial.println(msg);
   }
 }
 
-void SerialManagerBase::setButtonText(String btnId, String text) {
-  String msg = "TEXT=BTN:" + btnId + ":" + text;
-  Serial.println("SerialManagerBase: sending: " + msg);
-  if (ble) ble->sendMessage(msg);
+void SerialManagerBase::setButtonText(const String &btnId, const String &text) {
+  if (ble) {
+		String msg = "TEXT=BTN:" + btnId + ":" + text;
+  	if (flag_useBleQueue) {
+			//use "queue", which pushes the msg to the TX queue on the BLE module and immediately returns without waiting
+		  Serial.println("SerialManagerBase: queuing: " + msg);
+			ble->queueMessage(msg);
+		} else {
+			//use "send", which pushes the msg to the BLE module and blocks until (we think) it has been sent
+		  Serial.println("SerialManagerBase: sending: " + msg);
+			ble->sendMessage(msg);
+		}
+	}
 }
 
 void SerialManagerBase::sendTxBuffer(void) {
   if (TX_string.length() > 0) {
+		if (flag_useBleQueue) {
+			//use "queue", which pushes the msg to the TX queue on the BLE module and immediately returns without waiting
+			Serial.println("SerialManagerBase: queuing: " + TX_string);
+			ble->queueMessage(TX_string);
+		} else {
+			//use "send", which pushes the msg to the BLE module and blocks until (we think) it has been sent
     Serial.println("SerialManagerBase: sending: " + TX_string);
-    if (ble) ble->sendMessage(TX_string);  //send the message
+			ble->sendMessage(TX_string);
+		}
   }
   TX_string.remove(0,TX_string.length()); //clear out the string
+}
+
+bool SerialManagerBase::setFlagUseBleQueue(bool new_val) {
+	return flag_useBleQueue = new_val;
 }
