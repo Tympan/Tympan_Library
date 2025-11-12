@@ -141,7 +141,7 @@ void BLE_nRF52::setupBLE(int BT_firmware, bool printDebug, int doFactoryReset) {
 
 size_t BLE_nRF52::send(const String &str) {
 
-  //Serial.println("BLE_local: send(string): ...);
+  //Serial.println("BLE_nRF52: send: " + str);
   //printString(str);
 
   int n_sent = 0;
@@ -156,7 +156,7 @@ size_t BLE_nRF52::send(const String &str) {
 }
 
 size_t BLE_nRF52::queue(const String &str) {
-  //Serial.println("BLE_local: queue(string): ...);
+  //Serial.println("BLE_nRF52: queue: " + str);
   //printString(str);
 
   int n_sent = 0;
@@ -164,6 +164,7 @@ size_t BLE_nRF52::queue(const String &str) {
   n_sent += serialToBLE->write(str.c_str(), str.length());
   n_sent += serialToBLE->write(EOC.c_str(), EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
   serialToBLE->flush();
+	delay(1);  //I still get errors during longer transmissions with no delay
 //  Serial.println("BLE_nRF52: queue: sent " + String(n_sent) + " bytes");
 
   return str.length();
@@ -265,6 +266,7 @@ size_t BLE_nRF52::transmitMessage(const String &orig_s, bool flag_useQueue) {
 
 size_t BLE_nRF52::sendCommand(const String &cmd, const String &data) {
   size_t len = 0;
+	Serial.println("BLE_nRF52::sendCommand(String, String): " + cmd + data);
 	
   //usualy something like cmd="SET NAME=" with data = "MY_NAME"
   //or something like cmd="GET NAME" with data =''
@@ -281,7 +283,7 @@ size_t BLE_nRF52::sendCommand(const String &cmd, const String &data) {
 size_t BLE_nRF52::sendCommand(const String &cmd, const char* data, size_t data_len) {
 	if (0) {
 		//print out the command, for debugging
-		Serial.print("BLE_nRF52: sendCommand: sending: " + cmd);
+		Serial.print("BLE_nRF52: sendCommand(string, char*,size_t): sending: " + cmd);
 		for (size_t i=0; i<data_len;i++) Serial.write(data[i]);
 		Serial.println();
 	}
@@ -289,6 +291,7 @@ size_t BLE_nRF52::sendCommand(const String &cmd, const char* data, size_t data_l
 }
 
 size_t BLE_nRF52::sendCommand(const String &cmd, const uint8_t* data, size_t data_len) {
+	//Serial.print("BLE_nRF52: sendCommand(String,uint8,size_t): " + cmd); for (size_t i=0; i<data_len; i++) { Serial.write(data[i]); }; Serial.println();
   size_t len = 0;
 	len += serialToBLE->write( cmd.c_str(), cmd.length() );
 	len += serialToBLE->write(data,data_len);
@@ -297,7 +300,7 @@ size_t BLE_nRF52::sendCommand(const String &cmd, const uint8_t* data, size_t dat
 }
 
 
-size_t BLE_nRF52::recvReply(String *reply_ptr, unsigned long timeout_millis) {
+int BLE_nRF52::recvReply(String *reply_ptr, unsigned long timeout_millis) {
   unsigned long max_millis = millis() + timeout_millis;
   bool waiting_for_EOC = true;
   bool waiting_for_O_or_F = true;
@@ -319,6 +322,7 @@ size_t BLE_nRF52::recvReply(String *reply_ptr, unsigned long timeout_millis) {
       }
     }
   }
+	bool flag_timedOut = (waiting_for_EOC == true);
 
   //clear out additional trailing whitespace from the stream
   while (serialFromBLE->available()) {
@@ -334,9 +338,11 @@ size_t BLE_nRF52::recvReply(String *reply_ptr, unsigned long timeout_millis) {
 
   //remove leading or trailing white space from the reply itself
   reply_ptr->trim();
-
+	
+		
   //Serial.println("BLE_nRF52: recvReply: reply: " + *reply_ptr);
-  return reply_ptr->length();
+	if (flag_timedOut) return -1;
+  return (int)reply_ptr->length();
 }
 
 
@@ -412,11 +418,15 @@ int BLE_nRF52::setBleName(const String &s) {
   //if (simulated_Serial_to_nRF) bleUnitServiceSerial();  //for the nRF firmware, service any messages coming in the serial port from the Tympan
   
   String reply;
-  recvReply(&reply);
+  int ret_val = recvReply(&reply);
   if (doesStartWithOK(reply)) {  
     return 0;
   } else {
-    Serial.println("BLE_nRF52: setBleName: failed to set the BLE name.  Reply = " + reply);
+		if (ret_val == -1) {
+			Serial.println("BLE_nRF52: setBleName: recvReply() timed out.  Failed to set the BLE name.  Reply = " + reply);
+		} else {
+			Serial.println("BLE_nRF52: setBleName: Failed to set the BLE name.  Reply = " + reply);
+		}
   }
   return -1;
 }
@@ -606,11 +616,12 @@ int BLE_nRF52::setLedMode(int value) {
 */
 
 int BLE_nRF52::version(String *replyToReturn_ptr) {
+	Serial.println("BLE_nRF52::version: sending GET VERSION...");
   sendCommand("GET VERSION",String(""));
   //if (simulated_Serial_to_nRF) bleUnitServiceSerial();  //for the nRF firmware, service any messages coming in the serial port from the Tympan
   
   String reply;
-  recvReply(&reply); //look for "OK MY_NAME"
+  int ret_val = recvReply(&reply); //look for "OK MY_NAME"
   //Serial.println("BLE_nRF52: version: received raw reply = " + reply);
   if (doesStartWithOK(reply)) {
     reply.remove(0,2);  //remove the leading "OK"
@@ -621,10 +632,15 @@ int BLE_nRF52::version(String *replyToReturn_ptr) {
     replyToReturn_ptr->remove(0,replyToReturn_ptr->length()); //empty the return string
     replyToReturn_ptr->concat(reply);
     return 0;
-  } else {
-    Serial.println("BLE_nRF52: version: failed to get the BLE firmware version.  Reply = " + reply);
-    if (replyToReturn_ptr->length() > 0) replyToReturn_ptr->remove(0,replyToReturn_ptr->length());  //empty the return string
-  }  
+  }
+	
+	//if we're here, it hasn't worked
+	if (ret_val == -1) {
+		Serial.println("BLE_nRF52: version: recvReply() timed out.  Failed to get the BLE firmware version.  Reply = " + reply);
+	} else {
+		Serial.println("BLE_nRF52: version: Failed to get the BLE firmware version.  Reply = " + reply);
+	}
+	if (replyToReturn_ptr->length() > 0) replyToReturn_ptr->remove(0,replyToReturn_ptr->length());  //empty the return string
   return -1;
 }
 
@@ -632,7 +648,7 @@ int BLE_nRF52::clearTxQueue(String *replyToReturn_ptr) {
 	sendCommand("CLEAR_TX_QUEUE",String(""));
 	
 	String reply;
-  recvReply(&reply); //look for reply of the format "OK 0 15000"
+  int ret_val = recvReply(&reply); //look for reply of the format "OK 0 15000"
   //Serial.println("BLE_nRF52: clearTxQueue: received raw reply = " + reply);
   if (doesStartWithOK(reply)) {
     reply.remove(0,2);  //remove the leading "OK"
@@ -640,28 +656,40 @@ int BLE_nRF52::clearTxQueue(String *replyToReturn_ptr) {
     replyToReturn_ptr->remove(0,replyToReturn_ptr->length()); //empty the return string
     replyToReturn_ptr->concat(reply);
     return 0;
-  } else {
-    Serial.println("BLE_nRF52: clearTxQueue: failed to clear the module's TX queue.  Reply = " + reply);
-    if (replyToReturn_ptr->length() > 0) replyToReturn_ptr->remove(0,replyToReturn_ptr->length());  //empty the return string
-  }  
-  return -1;
+  }
+	
+	//if we're here, it hasn't worked
+	if (ret_val == -1) {
+		Serial.println("BLE_nRF52: clearTxQueue: recvReply() timed out.  Failed to clear the module's TX queue.  Reply = " + reply);
+	} else {
+		Serial.println("BLE_nRF52: clearTxQueue: Failed to clear the module's TX queue.  Reply = " + reply);
+	}
+	if (replyToReturn_ptr->length() > 0) replyToReturn_ptr->remove(0,replyToReturn_ptr->length());  //empty the return string
+	return -1;
 }
 
 
 int BLE_nRF52::sendSetForIntegerValue(const String &parameter_str, const int value) {
-	sendCommand("SET " + parameter_str + "=",String(value)); 	//send the SET command
-  String reply;  recvReply(&reply); 	//get the reply to the command
+	//Serial.print("BLE_nRF52::sendSetForIntegerValue: starting using " + parameter_str + " " + String(value)); Serial.print(", which was given as value "); Serial.println(value);
+	sendCommand("SET " + parameter_str + "=", String(value)); 	//send the SET command
+  String reply;  
+	int ret_val = recvReply(&reply); 	//get the reply to the command
   if (doesStartWithOK(reply)) return 0;  //success!
 
 	//fail
-  Serial.println("BLE_nRF52: sendSetForIntegerValue: failed to set " + parameter_str + ".  Reply = " + reply);
-  return -1;	 //fail
+	if (ret_val == -1)  {
+		Serial.println("BLE_nRF52: sendSetForIntegerValue: recvReply() timed out.  Failed to set " + parameter_str + ".  Reply = " + reply);
+	} else {
+		Serial.println("BLE_nRF52: sendSetForIntegerValue: Failed to set " + parameter_str + ".  Reply = " + reply);
+  }
+	return -1;	 //fail
 }
 
 
 int BLE_nRF52::sendGetForIntegerValue(const String &parameter_str) {
 	sendCommand("GET " + parameter_str, String("")); 	//send the GET command
-  String reply; recvReply(&reply);  //get the reply to the command
+  String reply; 
+	int ret_val = recvReply(&reply);  //get the reply to the command
 	if (doesStartWithOK(reply)) {     //does it start with OK?
     reply.remove(0,2);              //remove the leading "OK"
     reply.trim();                   //remove leading or trailing whitespace
@@ -669,7 +697,11 @@ int BLE_nRF52::sendGetForIntegerValue(const String &parameter_str) {
   } 
 	
 	//fail
-  Serial.println("BLE_nRF52: sendGetForIntegerValue: failed to get " + parameter_str + ". Reply = " + reply);
+	if (ret_val == -1)  {
+		Serial.println("BLE_nRF52: sendSetForIntegerValue: recvReply() timed out.  Failed to get " + parameter_str + ".  Reply = " + reply);
+	} else {
+		Serial.println("BLE_nRF52: sendSetForIntegerValue: Failed to get " + parameter_str + ".  Reply = " + reply);
+  }
   return -1;
 }	
 
@@ -679,6 +711,54 @@ int BLE_nRF52::setTxQueueDelay_msec(const int delay_msec) {
 		return -1; //fail
 	}
 	return sendSetForIntegerValue("DELAY_MSEC", delay_msec);
+}
+
+int BLE_nRF52::getModuleBufferOverflows(int max_allowed_out_vals, int *out_vals, int *num_out_vals) {
+	sendCommand("GET BUFF_OVERFLOWS", String("")); 	//send the GET command
+  String reply; 
+	int ret_val = recvReply(&reply);  //get the reply to the command
+	//Serial.println("BLE_nRF52::getModuleBufferOverflows: reply = " + reply);
+	
+	//if reply is OK, retried the unknown number of integer values that might be present
+	if (doesStartWithOK(reply)) {     //does it start with OK?
+    reply.remove(0,2);              //remove the leading "OK"
+    reply.trim();                   //remove leading or trailing whitespace
+		int n_vals = 0;
+		while ((reply.length() > 0) && (n_vals < max_allowed_out_vals)) {
+			reply.trim(); //remove leading or trailing whitespace
+			if (reply.length() > 0) {
+				int ind_white = reply.indexOf(" ");
+				if (ind_white < 0) {
+					//no white space, so try to interpret the remaining string
+					if ((reply[0] >= '0') && (reply[0] <= '9')) {
+						out_vals[n_vals] = reply.toInt();
+						n_vals++;
+					}
+					reply.remove(0); //clear out the string
+				} else {
+					//extract the substring
+					String foo_str = (reply.substring(0, ind_white)).trim();
+					if (foo_str.length() > 0) {
+						if ((foo_str[0] >= '0') && (foo_str[0] <= '9')) {
+							out_vals[n_vals] = foo_str.toInt();
+							n_vals++;
+						}
+					}
+					reply.remove(0,ind_white); //remove the token that we just analyzed
+				}
+			}	
+		}
+		*num_out_vals = n_vals;
+		return 0;
+  } 
+	
+	//fail
+	if (ret_val == -1)  {
+		Serial.println("BLE_nRF52: getModuleBufferOverflows: recvReply() timed out.  Failed to get BUFF_OVERFLOWS. Reply = " + reply);
+	} else {
+		Serial.println("BLE_nRF52: getModuleBufferOverflows: Failed to get BUFF_OVERFLOWS.  Reply = " + reply);
+  }
+  return -1;
 }
 
 

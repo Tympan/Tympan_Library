@@ -42,7 +42,7 @@ public:
 	//virtual size_t recvMessage(String *s_ptr);
 
 	//generic methods to commands to the BLE module
-	virtual size_t sendCommand(const String &cmd,const String &data);
+	virtual size_t sendCommand(const String &cmd, const String &data);
 	virtual size_t sendCommand(const String &cmd, const char* data, size_t data_len);
 	virtual size_t sendCommand(const String &cmd, const uint8_t* data, size_t data_len);
 
@@ -66,9 +66,10 @@ public:
 	virtual int isConnected(int method);
 	int PIN_IS_CONNECTED = 39;  //Tympan RevF
 	enum GET_TYPE { GET_AUTO=0, GET_VIA_SOFTWARE, GET_VIA_GPIO};
-	int setConnectionInterval_msec(int val) { Serial.println("ble_nRF52: setConnectionInterval_msec: setting to " + String(val)); return sendSetForIntegerValue("CONN_INTERVAL", val); };
+	int setConnectionInterval_msec(int val) { return sendSetForIntegerValue("CONN_INTERVAL", val); };
 	int getConnectionInterval_msec(void) { return sendGetForIntegerValue("CONN_INTERVAL"); }
-	
+	int clearModuleBufferOverflows(void) { return sendSetForIntegerValue("BUFF_OVERFLOWS", 0); }
+	int getModuleBufferOverflows(int max_allowed_out_vals, int *out_vals, int *num_out_vals);
 
 	// These do nothing but are needed for compatibility with ble.h
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
@@ -104,8 +105,8 @@ public:
 		
 	//receive reply from BLE unit (formatted with "OK" or "FAIL")
 	unsigned long rx_timeout_millis = 2000UL;
-	virtual size_t recvReply(String *s_ptr, unsigned long timeout_mills);
-	virtual size_t recvReply(String *s_ptr) { return recvReply(s_ptr, rx_timeout_millis); }
+	virtual int recvReply(String *s_ptr, unsigned long timeout_mills);  //returns number of bytes received.  -1 is a time-out
+	virtual int recvReply(String *s_ptr) { return recvReply(s_ptr, rx_timeout_millis); } //returns number of bytes received.  -1 is a time-out
 	static bool doesStartWithOK(const String &s);
 
 	//The BLE module has its own TX queue (invoked when using the queueMessage() command (or other queue command).
