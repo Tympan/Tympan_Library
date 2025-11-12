@@ -60,12 +60,13 @@ public:
 	virtual int getLedMode(void) { return sendGetForIntegerValue("LEDMODE"); };
 	
 	//check connection and advertising status
-	int isConnected(void) override { return isConnected(GET_AUTO); }
-	virtual int isConnected(int method);
 	int isAdvertising(void) override;
 	int enableAdvertising(bool);
+	int isConnected(void) override { return isConnected(GET_AUTO); }
+	virtual int isConnected(int method);
 	int PIN_IS_CONNECTED = 39;  //Tympan RevF
 	enum GET_TYPE { GET_AUTO=0, GET_VIA_SOFTWARE, GET_VIA_GPIO};
+	int getConnectionInterval_msec(void) { return sendGetForIntegerValue("CONN_INTERVAL"); }
 
 	// These do nothing but are needed for compatibility with ble.h
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
