@@ -113,6 +113,7 @@ void SerialManager::printHelp(void) {
   Serial.println("    t:   BLE: Get 'Advertising' status via software");
   Serial.println("    f/F: BLE: Set 'Advertising' to ON (f) or OFF (F)");
   Serial.println("    g/G: BLE: Get 'Connected' status via software (g) or GPIO (G)");
+  Serial.println("    i:   BLE: Get 'Connection Interval' of BLE module's current connection.");
   Serial.println("    m:   BLE: Get 'LED Mode' setting (0=OFF, 1=AUTO)");
   Serial.println("    b/B: BLE: Set 'LED Mode' to AUTO (b) or OFF (B)");
   Serial.println("    J:   Send JSON for the GUI for the Tympan Remote App");
@@ -254,6 +255,14 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
         Serial.println("serialManager: BLE: Connected (via GPIO) = " + String(val));
         setButtonText("isConn_g", String(val ? "YES" : "NO"));
         setButtonText("isConn_s", String(""));
+      }
+      break;
+    case 'i':
+      val = ble.getConnectionInterval_msec();
+      if (val < 0) {
+        Serial.println("SerialManager: ble.getConnectionInterval_msec() error code = " + String(val) + ".  Is it connected via BLE?");
+      } else {
+        Serial.println("SerialManager: ble.getConnectionInterval_msec returned = " + String(val) + " msec");
       }
       break;
     case 'v':

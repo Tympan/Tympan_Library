@@ -58,13 +58,14 @@ bool isBleFirmwareRevisionOK(bool flag_printInfoToSerial) { //returns true if OK
   if (flag_printInfoToSerial) Serial.println("isBleFirmwareRevisionOK: BLE Firmware Version is: " + version_string_reply);
 
   //find first index that is a digit
-  unsigned int ind = 0;
+  int ind = 0;
   int str_len =  (int)version_string_reply.length(); //length() returns unsigned int, which is annoying for doing our subtraction operation later
   while (ind < str_len) {
     char c = version_string_reply[ind];
-    if ((c >= '0') || (c <= '9')) break;
+    if ((c >= '0') && (c <= '9')) break;  //find first digit
     ind++;
   }
+  //Serial.println("isBleFirmwareRevisionOK: evaluating from index " + String(ind) + " which is " + version_string_reply.substring(ind));
   if ((str_len - ind) < 5) return flag_firmwareVersionOK;  //must be of format x.x.x, so must be at least 5 digits long
 
   //check against the requirement for 0.5.0 or higher
