@@ -678,7 +678,7 @@ int BLE_nRF52::setTxQueueDelay_msec(const int delay_msec) {
 		Serial.println("BLE_nRF52::setQueueDelay_msec: given delay_msec must be between 0 and 99 msec.  Returning.");
 		return -1; //fail
 	}
-	return sendSetForIntegerValue("DLEAY_MSEC", delay_msec);
+	return sendSetForIntegerValue("DELAY_MSEC", delay_msec);
 }
 
 
