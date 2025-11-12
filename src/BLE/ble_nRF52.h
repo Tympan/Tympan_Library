@@ -66,7 +66,9 @@ public:
 	virtual int isConnected(int method);
 	int PIN_IS_CONNECTED = 39;  //Tympan RevF
 	enum GET_TYPE { GET_AUTO=0, GET_VIA_SOFTWARE, GET_VIA_GPIO};
+	int setConnectionInterval_msec(int val) { Serial.println("ble_nRF52: setConnectionInterval_msec: setting to " + String(val)); return sendSetForIntegerValue("CONN_INTERVAL", val); };
 	int getConnectionInterval_msec(void) { return sendGetForIntegerValue("CONN_INTERVAL"); }
+	
 
 	// These do nothing but are needed for compatibility with ble.h
 	void updateAdvertising(unsigned long curTime_millis, unsigned long updatePeriod_millis = 5000) override { updateAdvertising(curTime_millis, updatePeriod_millis, false); }
