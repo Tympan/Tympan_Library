@@ -81,12 +81,22 @@ bool isBleFirmwareRevisionOK(bool flag_printInfoToSerial) { //returns true if OK
   return flag_firmwareVersionOK;
 }
 
+// void printAnyCommsFromBleSerial(void) {
+//   if (Serial7.available()) {
+//     Serial.print("From Serial7: ");
+//     while (Serial7.available() > 0) {
+//       Serial.print(Serial7.read());
+//     }
+//   }
+// }
+
 // define the setup() function, the function that is called once when the device is booting
 void setup() {
   //begin the serial comms (for debugging)
   //Serial.begin(115200);  //USB Serial.  This begin() isn't really needed on Teensy. 
   myTympan.beginBluetoothSerial(); //should use the correct Serial port and the correct baud rate
-  delay(1000);
+  //Serial7.attachRTS(1); Serial7.attachCTS(0); //pins per Tympan RevF schematic
+  delay(500);  //give the BLE module time to wake up?
   Serial.println("Tympan_Test_BLE_nRF52: Starting setup()...");
 
   //allocate the dynamic memory for audio processing blocks
@@ -106,7 +116,7 @@ void setup() {
 
   //setup BLE
   myTympan.setupBLE();
-
+  
   //get BLE version (to make sure it's new enough)
   bool printInfoToSerial = true;
   flag_useBleQueue = isBleFirmwareRevisionOK(printInfoToSerial);
@@ -125,13 +135,40 @@ void loop() {
   //respond to in coming serial messages via BLE
   if (ble.available() > 0) {
     String msgFromBle; ble.recvBLE(&msgFromBle);    //get BLE messages (removing non-payload messages)
-    //serialManager.respondToByte(msgFromBle[i]); //interpet each character of the message
-    //Serial.print(msgFromBle);
-    for (unsigned int i=0; i < msgFromBle.length(); i++) {
-      if (msgFromBle[i] == 'J') {
-        serialManager.respondToByte(msgFromBle[i]);
+    if (1) {
+      //fully functioning
+      for (unsigned int i=0; i < msgFromBle.length(); i++) serialManager.respondToByte(msgFromBle[i]); //interpet each character of the message
+    } else {
+      //protective
+      if (0) {
+        //simply convey the raw characters to the screen
+        Serial.print(msgFromBle);
       } else {
-        Serial.print(msgFromBle[i]);
+        //or, print one character per line in a potentially more-legible way
+
+        if ((msgFromBle.length() == 1) && ((msgFromBle[0] == '\r') || (msgFromBle[0] == '\n'))) {
+          // skip printing this message
+        } else {
+          //print the message
+          bool flag_anyPrintable = false;
+          for (unsigned int i=0; i<msgFromBle.length(); i++) {
+            char c = msgFromBle[i];
+            if ((c >= '!') && (c <= '~')) flag_anyPrintable = true; //ascii table says that these bounds should catch all printable        
+          }
+          if (flag_anyPrintable) {
+            Serial.println("loop(): BLE: " + msgFromBle);
+          } else {
+            Serial.print("loop(): BLE (all are white): HEX values = ");
+            for (unsigned int i=0; i<msgFromBle.length(); i++) {
+              Serial.print(" 0x"); 
+              if (((int)msgFromBle[i]) < 16) Serial.print(0);
+              Serial.print(msgFromBle[i],HEX);
+            }
+            Serial.println();
+          }
+          //if it is a 'J', act on it
+          if ((msgFromBle.length() == 1) && ((msgFromBle[0] == 'J') || (msgFromBle[0] == 'j'))) serialManager.respondToByte(msgFromBle[0]);
+        }
       }
     }
   }

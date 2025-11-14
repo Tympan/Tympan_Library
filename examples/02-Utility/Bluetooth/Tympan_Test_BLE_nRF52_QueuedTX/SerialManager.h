@@ -68,13 +68,38 @@ void sendLotsOfData(int approx_num_bytes) {
 
     //send the message string
     if (flag_useBleQueue) {
-      ble.queueMessage(msg);
+      //ble.queueMessage(msg);
+      ble.queueString(msg);
     } else {
-      Serial.println("SerialManager: sendLotsOfData: queueMessage() not supported by your BLE module firmware.  Using sendMessage().");
-      ble.sendMessage(msg);
+      //Serial.println("SerialManager: sendLotsOfData: queueMessage() not supported by your BLE module firmware.  Using sendMessage().");
+      //ble.sendMessage(msg);
+      Serial.println("SerialManager: sendLotsOfData: queueString() not supported by your BLE module firmware.  Using sendString().");
+      ble.sendString(msg);
+      //if (ble.available() > 0) {
+      //  String msgFromBle; ble.recvBLE(&msgFromBle);    //get BLE messages (removing non-payload messages)
+      //  Serial.println("sendLotsOfData (sent " + String(total_sent) + "): WARNING: received from BLE:" + msgFromBle);
+      //}
+      if (Serial7.available()) {
+        Serial.print("sendLotsOfData (" + String(total_sent) + "): Recvd: ");
+        while (Serial7.available()) Serial.print((char)Serial7.read());
+        Serial.println();
+      }
     }
     total_sent += msg.length();
+    packet_counter++; //for next loop
   }
+  Serial.println("sendLotsOfData: Finished sending. Sent " + String(total_sent) + ", Stalling a bit to look for return messages..");
+  unsigned int req_silence_msec = 1000;
+  unsigned int ref_msec = millis();
+  while (millis() < (ref_msec + req_silence_msec)) {
+    if (Serial7.available()) {
+      Serial.print("sendLotsOfData end wait: Recvd: ");
+      while (Serial7.available()) Serial.print((char)Serial7.read());
+      Serial.println();
+      ref_msec = millis(); //reset the timer
+    }
+  }
+  Serial.println("sendLotsOfData: Totally Finished.");
 }
 
 
@@ -114,6 +139,8 @@ void SerialManager::printHelp(void) {
   Serial.println("    f/F: BLE: Set 'Advertising' to ON (f) or OFF (F)");
   Serial.println("    g/G: BLE: Get 'Connected' status via software (g) or GPIO (G)");
   Serial.println("    i:   BLE: Get 'Connection Interval' of BLE module's current connection.");
+  Serial.println("    o/O: BLE: Set 'Connection Interval' to (o) 10msec or (O) 20msec.");
+  Serial.println("    z/Z: BLE: Get (z) or clear (X) the number of oveflows of BLE module's internal buffers.");
   Serial.println("    m:   BLE: Get 'LED Mode' setting (0=OFF, 1=AUTO)");
   Serial.println("    b/B: BLE: Set 'LED Mode' to AUTO (b) or OFF (B)");
   Serial.println("    J:   Send JSON for the GUI for the Tympan Remote App");
@@ -123,7 +150,7 @@ void SerialManager::printHelp(void) {
   Serial.println("    w  : BLE QUEUE: Get the messages currently in the queue");
   Serial.println("    W  : BLE QUEUE: Get the free bytes in the queue");
   Serial.println("    e  : BLE QUEUE: Clear the queue (stop them from being transmitted.");
-  Serial.println("    a/A : Send many messages to be queued: (a) 1 kB, (A) 50kB");
+  Serial.println("    a/A : Send many messages to be queued: (a) 5kB, (A) 50kB");
   Serial.println();
 }
 
@@ -265,6 +292,43 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
         Serial.println("SerialManager: ble.getConnectionInterval_msec returned = " + String(val) + " msec");
       }
       break;
+    case 'o':
+      val = ble.setConnectionInterval_msec(10);
+      if (val != 0) {
+        Serial.println("SerialManager: ble.setConnectionInterval_msec() error code = " + String(val));
+      } else {
+        Serial.println("SerialManager: ble.setConnectionInterval_msec set to 10 msec. Actual value realized by connection might differ.");
+      }
+      break;
+    case 'O':
+      val = ble.setConnectionInterval_msec(20);
+      if (val != 0) {
+        Serial.println("SerialManager: ble.setConnectionInterval_msec() error code = " + String(val));
+      } else {
+        Serial.println("SerialManager: ble.setConnectionInterval_msec set to 20 msec. Actual value realized by connection might differ.");
+      }
+      break;
+    case 'z':
+      {
+        int max_vals_allowed = 10;
+        int overflow_vals[max_vals_allowed];
+        int n_vals_returned;
+        val = ble.getModuleBufferOverflows(max_vals_allowed, &(overflow_vals[0]), &n_vals_returned);
+        if (val < 0) {
+          Serial.println("SerialManager: ble.getModuleBufferOverflows() error code = " + String(val));
+        } else {
+          Serial.print("SerialManager: ble.getModuleBufferOverflows returned = "); for (int i=0; i<n_vals_returned; i++) { Serial.print(overflow_vals[i]); Serial.print(", ");} Serial.println();
+        }
+      }
+      break;
+    case 'Z':
+      val = ble.clearModuleBufferOverflows();
+      if (val != 0) {
+        Serial.println("SerialManager: ble.clearModuleBufferOverflows() error code = " + String(val));
+      } else {
+        Serial.println("SerialManager: ble.clearModuleBufferOverflows returned = " + String(val));
+      }
+      break;
     case 'v':
       {
         String version;
@@ -302,8 +366,8 @@ bool SerialManager::processCharacter(char c) {  //this is called by SerialManage
       Serial.println("serialManager: BLE Module's Queue: cleared TX queue (Reply = " +String(val) + ")");
       break;  
     case 'a':
-      Serial.println("serialManager: Sending about 1 kB of packets to be queued by the module");
-      sendLotsOfData(1000);
+      Serial.println("serialManager: Sending about 5 kB of packets to be queued by the module");
+      sendLotsOfData(5000);
       break;
     case 'A':
       Serial.println("serialManager: Sending about 50 kB of packets to be queued by the module");
@@ -358,8 +422,7 @@ void SerialManager::createTympanRemoteLayout(void) {
         card_h->addButton("-","K","",           4);  //displayed string, command, button ID, button width (out of 12)
         card_h->addButton("","","gainIndicator",4);  //displayed string (blank for now), command (blank), button ID, button width (out of 12)
         card_h->addButton("+","k","",           4);   //displayed string, command, button ID, button width (out of 12)
-
-
+  
     //Add an example card where one of the buttons will indicate "on" or "off"
 //    card_h = page_h->addCard(String("CPU Usage (%)"));
 //      card_h->addButton("Start", "c", "cpuStart", 4);  //label, command, id, width...we'll light this one up if we're showing CPU usage
@@ -374,9 +437,9 @@ void SerialManager::createTympanRemoteLayout(void) {
 
 // Print the layout for the Tympan Remote app, in a JSON-ish string
 void SerialManager::printTympanRemoteLayout(void) {
-    Serial.println("SerialManager: printTympanRemoteLayout: sending JSON...");
     if (myGUI.get_nPages() < 1) createTympanRemoteLayout();  //create the GUI, if it hasn't already been created
     String s = myGUI.asString();
+    Serial.println("SerialManager: printTympanRemoteLayout: sending JSON..." + String(s.length()) + " characters in the payload");
     Serial.println(s);
     if (flag_useBleQueue) {
       ble.queueMessage(s); //ble is held by SerialManagerBase
