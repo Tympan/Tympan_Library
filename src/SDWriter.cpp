@@ -821,7 +821,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	}
 
 	//make sure no null arrays
-	for (int Ichan=0; Ichan < numChanU32; Ichan++) {
+	for (uint32_t Ichan=0; Ichan < numChanU32; Ichan++) {
 		if (!(ptr_audio[Ichan])) {
 			if (ptr_zeros == NULL) { ptr_zeros = new float32_t[nSampsU32](); } //creates and initializes to zero
 			ptr_audio[Ichan] = ptr_zeros;
@@ -830,10 +830,10 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 
 	//now scale and interleave the data into the buffer
 	uint32_t foo_bufferWriteInd = bufferWriteInd_bytes / nBytesPerSample;
-	for (int Isamp = 0; Isamp < nSampsU32; Isamp++) {
-		for (int Ichan = 0; Ichan < numChanU32; Ichan++) {
+	for (uint32_t Isamp = 0; Isamp < nSampsU32; Isamp++) {
+		for (uint32_t Ichan = 0; Ichan < numChanU32; Ichan++) {
 			float32_t val_f32 = ptr_audio[Ichan][Isamp];  //float value, scaled -1.0 to +1.0
-			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod); //add dithering, if desired
+			if (ditheringMethod > 0) val_f32 += generateDitherNoise( (int)Ichan,ditheringMethod); //add dithering, if desired
 	
 			if (decimation_counter == 0UL) {			
 				if (writeDataType == SDWriter::WriteDataType::INT16) {
