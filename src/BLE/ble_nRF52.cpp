@@ -2,6 +2,19 @@
 #include "BLE/ble_nRF52.h"
 
 
+void BLE_nRF52::printAnyCommsFromBleSerial(void) {
+	if (serialFromBLE == nullptr) {
+		Serial.println("ble_nRF52: printAnycommsFromBleSerial: serialFromBLE is nullptr.");
+		return;
+	}
+  if (serialFromBLE->available()) {
+    Serial.print("ble_nRF52: from Serial7: ");
+    while (serialFromBLE->available() > 0) {
+      Serial.print(serialFromBLE->read());
+    }
+  }
+}
+
 char foo_digit2ascii(uint8_t digit) {
   return ( digit + ((digit) < 10 ? '0' : ('A'-10)) );
 }
@@ -31,20 +44,26 @@ int printString(const String &str) {
 int BLE_nRF52::begin_basic(void) {
 	//Serial.println("BLE_nRF52: begin_basic: starting begin_basic()...");
 	int ret_val = 0;
+	int local_err_code=0;
 	
 	//THIS IS THE KEY ACTIVITY:  Send begin() command to the BLE module
 	String begin_reply;
-	sendCommand("BEGIN ","1");delay(5);
-  recvReply(&begin_reply); 
+	sendEOC(); sendEOC(); sendEOC();
+	sendCommand(String("BEGIN "),String("1"));delay(5);
+  local_err_code = recvReply(&begin_reply); 
+	//Serial.println("ble_nRF52: begin_basic: BEGIN local_err_code = " + String(local_err_code) + ", string = " + begin_reply);
 	if (doesStartWithOK(begin_reply)) {  
 		//it's good!
+		//Serial.println("ble_nRF52: begin: OK received: " + begin_reply);
 		ret_val = 0; 
 	} else { 
 		//we didn't get an OK response.  it could be because the firmware is too old
 		String version_str;
-		int err_code = version(&version_str);
+		Serial.println("ble_nRF52: begin_basic: trouble with BEGIN, asking VERSION...");
+		local_err_code = version(&version_str);
+		Serial.println("ble_nRF52: begin_basic: VERSION local_err_code = " + String(local_err_code) + ", string = " + begin_reply);
 		bool suppress_warning_because_firmware_is_old = false;
-		if (err_code == 0) {
+		if (local_err_code == 0) {
 			//we got the version info.
 			//
 			//strip off the leading text by finding the first space
@@ -77,13 +96,15 @@ int BLE_nRF52::begin_basic(void) {
 
 
 int BLE_nRF52::begin(int doFactoryReset) {
-	//Serial.println("BLE_nRF52: begin: starting begin()...");
+	Serial.println("BLE_nRF52: begin: starting begin()...");
 	int ret_val = -1;
 	
 	String reply;  //we might need this later
 	//clear the incoming Serial buffer	
 	delay(2000);  //the UART serial link seems to drop the messages if we wait any less time than this
-	while (serialFromBLE->available()) serialFromBLE->read();
+	//while (serialFromBLE->available()) serialFromBLE->read();  //clear the serial
+	#warning remove the next line of code after debugging
+  printAnyCommsFromBleSerial();
 	
 	//if desired, send command to get the BLE version
 	if (0) {
@@ -134,7 +155,7 @@ int BLE_nRF52::begin(int doFactoryReset) {
 
 
 void BLE_nRF52::setupBLE(int BT_firmware, bool printDebug, int doFactoryReset) {
-	//Serial.println("ble_nRF52: begin: PIN_IS_CONNECTED = " + String(PIN_IS_CONNECTED)); 
+	//Serial.println("ble_nRF52: setupBLE: PIN_IS_CONNECTED = " + String(PIN_IS_CONNECTED)); 
 	if (PIN_IS_CONNECTED >= 0) pinMode(PIN_IS_CONNECTED, INPUT); 
 	begin(doFactoryReset);
 }; 
@@ -149,8 +170,9 @@ size_t BLE_nRF52::send(const String &str) {
   n_sent += serialToBLE->write(str.c_str(), str.length());
   n_sent += serialToBLE->write(EOC.c_str(), EOC.length());  // our AT command set on the nRF52 assumes that each command ends in a '\r'
   serialToBLE->flush();
-//  Serial.println("BLE_nRF52: send: sent " + String(n_sent) + " bytes");
-  delay(20); //This is to slow down the transmission to ensure we don't flood the bufers.  Can we get rid of this? 
+	//  Serial.println("BLE_nRF52: send: sent " + String(n_sent) + " bytes");
+  //delay(20); //This is to slow down the transmission to ensure we don't flood the buffers.  Can we get rid of this? 
+	delay(1); //This is to slow down the transmission to ensure we don't flood the buffers.  Can we get rid of this? 
 
   return str.length();
 }
@@ -266,7 +288,7 @@ size_t BLE_nRF52::transmitMessage(const String &orig_s, bool flag_useQueue) {
 
 size_t BLE_nRF52::sendCommand(const String &cmd, const String &data) {
   size_t len = 0;
-	Serial.println("BLE_nRF52::sendCommand(String, String): " + cmd + data);
+	//Serial.println("BLE_nRF52::sendCommand(String, String): " + cmd + data);
 	
   //usualy something like cmd="SET NAME=" with data = "MY_NAME"
   //or something like cmd="GET NAME" with data =''
@@ -323,7 +345,7 @@ int BLE_nRF52::recvReply(String *reply_ptr, unsigned long timeout_millis) {
     }
   }
 	bool flag_timedOut = (waiting_for_EOC == true);
-
+	
   //clear out additional trailing whitespace from the stream
   while (serialFromBLE->available()) {
     int n_removed = 0;
@@ -616,8 +638,7 @@ int BLE_nRF52::setLedMode(int value) {
 */
 
 int BLE_nRF52::version(String *replyToReturn_ptr) {
-	Serial.println("BLE_nRF52::version: sending GET VERSION...");
-  sendCommand("GET VERSION",String(""));
+	sendCommand("GET VERSION",String(""));
   //if (simulated_Serial_to_nRF) bleUnitServiceSerial();  //for the nRF firmware, service any messages coming in the serial port from the Tympan
   
   String reply;

@@ -41,6 +41,8 @@ public:
 	virtual int peek(void) override { return serialFromBLE->peek(); }
 	//virtual size_t recvMessage(String *s_ptr);
 
+	void printAnyCommsFromBleSerial(void); //debugging use only!
+
 	//generic methods to commands to the BLE module
 	virtual size_t sendCommand(const String &cmd, const String &data);
 	virtual size_t sendCommand(const String &cmd, const char* data, size_t data_len);
@@ -81,6 +83,8 @@ public:
 
 
 	// /////////////////////////////////// Methods for UART-style comms over BLE to the remote device
+	
+	virtual void sendEOC(void) { serialToBLE->write(EOC.c_str(), EOC.length()); }
 	
 	//send strings
 	virtual size_t send(const String &str);  //the main way to send a string 
