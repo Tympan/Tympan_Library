@@ -94,6 +94,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		virtual bool play(void);    //plays a file that has already been opened
 		virtual bool open(const String &filename) { return open(filename.c_str(),true); } //"open" opens the file but does NOT activate using update()
 		virtual bool open(const char *filename, bool flag_preload_buffer);  //"open" opens the file but does NOT activate using update()
+		virtual void closeFile(void) { if (isFileOpen()) file.close(); };
 		virtual void stop(void);
 		virtual bool isPlaying(void);
 		virtual uint32_t positionMillis(void);
@@ -108,7 +109,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		virtual bool isFileOpen(void) {
 			if (file.isOpen()) return true;
 			return false;
-		}  
+		}		
 		virtual void setSdPtr(SdFs *ptr) { sd_ptr = ptr; }
 		virtual bool sendFilenames(void);
 

@@ -30,7 +30,7 @@ class AudioEffectFade_F32 : public AudioStream_F32
         };
 
     void fadeIn_msec(float msec) {
-      if (msec < 0.0001) {
+      if (msec < 0.001) {
         //too small, just snap in
         cur_amp = 1.0;
         is_active = false;
@@ -41,7 +41,7 @@ class AudioEffectFade_F32 : public AudioStream_F32
       }
     }
     void fadeOut_msec(float msec) {
-      if (msec < 0.0001) {
+      if (msec < 0.001) {
         //too small, just snap out
         cur_amp = 0.0;
         is_active = false;
@@ -51,6 +51,7 @@ class AudioEffectFade_F32 : public AudioStream_F32
         is_active = true;   
       }  
     }
+		float setLevel(float val) { is_active = false;  return cur_amp = max(0.f, min(1.f, val)); }
 
     //here's the method that does all the work
     virtual void update(void);
