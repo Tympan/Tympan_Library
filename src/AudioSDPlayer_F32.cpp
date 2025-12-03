@@ -111,6 +111,7 @@ bool AudioSDPlayer_F32::open(const char *filename, const bool flag_preload_buffe
   //stop();
 	
 	active = false;  //from AudioStream.h.  Setting to false to prevent update() from being called.  Only for open().
+	closeFile();
 
   __disable_irq();
   file.open(filename,O_READ);   //open for reading
@@ -160,7 +161,8 @@ bool AudioSDPlayer_F32::play(void) {
 
 void AudioSDPlayer_F32::stop(void)
 {
-  if (state == STATE_NOT_BEGUN) begin();
+  //if (state == STATE_NOT_BEGUN) begin();
+	if (state == STATE_NOT_BEGUN) return;
 
   __disable_irq();
   if (state != STATE_STOP) {
@@ -174,11 +176,12 @@ void AudioSDPlayer_F32::stop(void)
 
     //if (b1) AudioStream_F32::release(b1);
     //if (b2) AudioStream_F32::release(b2);
-    file.close();
 
   } else {
     __enable_irq();
   }
+	
+	closeFile();
 
 }
 
