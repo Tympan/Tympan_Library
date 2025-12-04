@@ -49,8 +49,20 @@ class SDWriter : public Print
     SDWriter(SdFs * _sd, Print* _serial_ptr) { sd = _sd; setSerial(_serial_ptr); };
     virtual ~SDWriter() { end(); }
 
-    void setup(void) { init(); }
-    virtual void init() { if (!sd->begin(SD_CONFIG)) sd->errorHalt(serial_ptr, "SDWriter: begin failed"); }
+		//return true if OK
+    bool setup(void) { return init(); }
+		
+		//return true if OK
+    virtual bool init() {
+			bool is_ok = false;
+			//Serial.println("SDWriter: init: std->begin(SD_CONFIG)...");
+			if (!sd->begin(SD_CONFIG)) {
+				//sd->errorHalt(serial_ptr, "SDWriter: begin failed");
+				if (serial_ptr) serial_ptr->println("SDWriter: init: *** WARNING ***: sd.begin() failed.");
+				return is_ok = false;
+			}
+			return is_ok = true;
+		}
    		
 		virtual void end() {
 			if (isFileOpen()) close();

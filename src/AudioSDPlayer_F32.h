@@ -68,7 +68,7 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 		//}
 
 		void init(void);
-		virtual void begin(void);  //begins SD card
+		virtual bool begin(void);  //begins SD card.  Returns true if OK.
 		virtual bool play(const String &filename) { return play(filename.c_str()); } //"play" opens the file and activates for using update()
 		virtual bool play(const char *filename);  //"play" opens the file and activates for using update()
 		virtual bool play(void);    //plays a file that has already been opened

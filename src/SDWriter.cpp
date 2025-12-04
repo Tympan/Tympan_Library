@@ -22,13 +22,18 @@ bool SDWriter::openAsWAV(const char *fname, uint64_t preAllocate_bytes) {
 }
 
 bool SDWriter::open(const char *fname, uint64_t preAllocate_bytes) {
+	//Serial.println("SDWriter::open: opening " + String(fname));
+	//Serial.println("SDWriter::open: sd->exists(fname) = " + String(sd->exists(fname)));
+	
 	if (sd->exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
 		// The SD library writes new data to the end of the file, so to start
 		//a new recording, the old file must be deleted before new data is written.
+		//Serial.println("SDWriter::open: removing file: " + String(fname));
 		sd->remove(fname);
 	}
 	__disable_irq();
-		file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+		int foo_val = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+		//Serial.println("SDWriter::open: file.open() returns " + String(foo_val));
   	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
 	__enable_irq();
 		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);

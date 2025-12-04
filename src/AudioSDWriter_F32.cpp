@@ -43,14 +43,20 @@ int AudioSDWriter_F32::setWriteDataType(WriteDataType type, Print* serial_ptr, c
 	if (buffSDWriter == NULL) { return -1; } else { return 0; };
 }
 
-void AudioSDWriter_F32::prepareSDforRecording(void) {
+bool AudioSDWriter_F32::prepareSDforRecording(void) {
+	bool is_ok = false;
 	if (current_SD_state == STATE::UNPREPARED) {
 		if (buffSDWriter) {
-			buffSDWriter->init(); //part of SDWriter, which is the base for BufferedSDWriter_I16
+			//Serial.println("AudioSDWriter_F32::prepareSDforRecording: calling buffSDWriter->init()");
+			bool foo_is_ok = buffSDWriter->init(); //part of SDWriter, which is the base for BufferedSDWriter_I16
+			if (foo_is_ok == false) {
+				return is_ok = false;
+			}
 			if (PRINT_FULL_SD_TIMING) buffSDWriter->setPrintElapsedWriteTime(true); //for debugging.  
 		}
 		current_SD_state = STATE::STOPPED;
 	}
+	return is_ok = true;
 }
 
 void AudioSDWriter_F32::end(void) {
@@ -60,12 +66,18 @@ void AudioSDWriter_F32::end(void) {
 }
 
 int AudioSDWriter_F32::deleteAllRecordings(void) {
+	
 	//loop through all file names and erase if existing
-	int return_val = 0;
+	int err_code = 0;
 
 	//check to see if the SD has been initialized
-	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
-
+	if (current_SD_state == STATE::UNPREPARED) {
+		bool foo_is_ok = prepareSDforRecording();
+		if (foo_is_ok == false) {
+			return err_code = -2;
+		}
+	}
+		
 	//check to see if SD is ready
 	if (current_SD_state == STATE::STOPPED) {
 		bool done = false;
@@ -102,17 +114,17 @@ int AudioSDWriter_F32::deleteAllRecordings(void) {
 	} else {
 		//SD subsystem is in the wrong state to start recording
 		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: clear: not in correct state to start."));
-		return_val = -1;
+		err_code = -1;
 	}
 	
 
-	return return_val;
+	return err_code;
 		
 }
 
 //int AudioSDWriter_F32::startRecording_noOverwrite(void) {
 int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRecording"
-	int return_val = 0;
+	int err_code = 0;
 
 	//check to see if the SD has been initialized
 	if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
@@ -139,7 +151,7 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 					done = false;
 				} else {
 					//open the file
-					return_val = startRecording(fname);
+					err_code = startRecording(fname);
 					done = true;
 				}
 			} else {
@@ -152,14 +164,14 @@ int AudioSDWriter_F32::startRecording(void) {	  //make this the default "startRe
 	} else {
 		//SD subsystem is in the wrong state to start recording
 		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
-		return_val = -1;
+		err_code = -1;
 	}
 	
-	return return_val;
+	return err_code;
 }
 
 int AudioSDWriter_F32::startRecording(const char* fname) {
-  int return_val = 0;
+  int err_code = 0;
   
   //check to see if the SD has been initialized
   if (current_SD_state == STATE::UNPREPARED) prepareSDforRecording();
@@ -184,13 +196,13 @@ int AudioSDWriter_F32::startRecording(const char* fname) {
 				serial_ptr->print(F("AudioSDWriter: start: Failed to open "));
 				serial_ptr->println(fname);
 			}
-			return_val = -1;
+			err_code = -1;
 		}
   } else {
 		if (serial_ptr) serial_ptr->println(F("AudioSDWriter: start: not in correct state to start."));
-		return_val = -1;
+		err_code = -1;
   }
-  return return_val;
+  return err_code;
 }
 
 void AudioSDWriter_F32::stopRecording(void) {

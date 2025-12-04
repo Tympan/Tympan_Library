@@ -51,10 +51,10 @@ class AudioSDWriter {
     }
 		virtual String getCurrentFilename(void) { return current_filename; }
 
-		virtual void begin(void) { prepareSDforRecording(); };  //begins SD card
-    virtual void prepareSDforRecording(void) = 0;
-    virtual int startRecording(void) = 0;
-    virtual int startRecording(const char *) = 0;
+		virtual bool begin(void) { return prepareSDforRecording(); };  //begins SD card.  Returns true if OK
+    virtual bool prepareSDforRecording(void) = 0;  //Returns true if OK
+    virtual int startRecording(void) = 0;          //Returns error code.  OK is zero.
+    virtual int startRecording(const char *) = 0;  //Returns error code.  OK is zero.
 		//virtual int startRecording_noOverwrite(void) = 0;
     virtual void stopRecording(void) = 0;
 		virtual void end(void) = 0;
@@ -196,7 +196,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			if (buffSDWriter) buffSDWriter->freeBuffer(); // free memory allocated to buffer
 		}
 
-		void prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
+		bool prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
 		void end(void) override;
 
 		int startRecording(void) override;    //call this to start a WAV recording...automatically generates a filename
