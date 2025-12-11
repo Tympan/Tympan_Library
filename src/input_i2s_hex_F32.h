@@ -34,41 +34,31 @@
 #ifndef _input_i2s_hex_f32_h_
 #define _input_i2s_hex_f32_h_
 
-#include <Arduino.h>     // github.com/PaulStoffregen/cores/blob/master/teensy4/Arduino.h
+#include <Arduino.h>         // github.com/PaulStoffregen/cores/blob/master/teensy4/Arduino.h
 #include <AudioStream_F32.h> // github.com/PaulStoffregen/cores/blob/master/teensy4/AudioStream.h
-#include <DMAChannel.h>  // github.com/PaulStoffregen/cores/blob/master/teensy4/DMAChannel.h
-#include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
-#include <input_i2s_F32.h> //for scale_i16_to_f32() and for AudioInputI2SBase_F32
+#include <DMAChannel.h>      // github.com/PaulStoffregen/cores/blob/master/teensy4/DMAChannel.h
+#include <AudioI2SBase.h>    //tympan library, for AudioI2SBase
 
 
 class AudioInputI2SHex_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 public:
-	AudioInputI2SHex_F32(void)  { begin(); }
-	AudioInputI2SHex_F32(const AudioSettings_F32 &settings) : AudioInputI2SHex_F32(settings, true) {}
-	AudioInputI2SHex_F32(const AudioSettings_F32 &settings, bool flag_callBegin) { 
-		sample_rate_Hz = settings.sample_rate_Hz;
-		audio_block_samples = settings.audio_block_samples;
+	AudioInputI2SHex_F32(void)                                                   : AudioInputI2SBase_F32(6) { begin(); }
+	AudioInputI2SHex_F32(const AudioSettings_F32 &settings)                      : AudioInputI2SHex_F32(settings, true) {}
+	AudioInputI2SHex_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioInputI2SBase_F32(6, settings) { if (flag_callBegin) begin(); }
+	AudioInputI2SHex_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff)   : AudioInputI2SHex_F32(settings, rx_buff, true) {}
+	AudioInputI2SHex_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff, bool flag_callBegin)   : AudioInputI2SBase_F32(6, settings)  { 
+		i2s_rx_buffer = rx_buff; 
+		i2s_buffer_was_given_by_user = true;	
 		if (flag_callBegin) begin(); 
-	}
-	void update(void) override;
+	} 
 	void begin(void);
 	int get_isOutOfMemory(void) { return flag_out_of_memory; }
 	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
-	static uint32_t *i2s_rx_buffer; 
+
 protected:
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr(void);
-	virtual void update_1chan(int, unsigned long, audio_block_f32_t *&);
-private:
-	static audio_block_f32_t *block_ch1;
-	static audio_block_f32_t *block_ch2;
-	static audio_block_f32_t *block_ch3;
-	static audio_block_f32_t *block_ch4;
-	static audio_block_f32_t *block_ch5;
-	static audio_block_f32_t *block_ch6;
-	static uint32_t block_offset;
+
+
 };
 
 

@@ -34,72 +34,32 @@
 #define output_i2s_quad_f32_h_
 
 #include <Arduino.h>
-#include <arm_math.h>
 #include <AudioStream_F32.h>   //tympan library
 #include <DMAChannel.h>
 #include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
-#include <input_i2s_F32.h>  //tympan library
 #include <input_i2s_quad_F32.h>  //tympan library
-#include <input_i2s_hex_F32.h>  //tympan library
 
-class AudioOutputI2SQuad_F32 : public AudioI2SBase, public AudioStream_F32
+class AudioOutputI2SQuad_F32 : public AudioOutputI2SBase_F32
 {
+	//GUI: inputs:4, outputs:0  //this line used for automatic generation of GUI node
 public:
-	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { 
-		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use default
-		begin();
-	}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioOutputI2SQuad_F32(settings, true) {}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray)
+	AudioOutputI2SQuad_F32(void)                                                   : AudioOutputI2SBase_F32(4) { begin();}
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings)                      : AudioOutputI2SQuad_F32(settings, true) {}
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioOutputI2SBase_F32(4,settings) {	if (flag_callBegin) begin(); }
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff)   : AudioOutputI2SQuad_F32(settings, tx_buff, true) {} 
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(4, settings)
 	{ 
-		sample_rate_Hz = settings.sample_rate_Hz;
-		audio_block_samples = settings.audio_block_samples;
-		if (flag_callBegin) begin(); 	
-	}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2SQuad_F32(settings, tx_buff, true) {} 
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray) { 
-		sample_rate_Hz = settings.sample_rate_Hz;
-		audio_block_samples = settings.audio_block_samples;
 		i2s_tx_buffer = tx_buff;
-		zerodata = new float32_t[settings.audio_block_samples/2]{0}; //Need zeros for half an audio block, just 1 channel, init to zero
+		i2s_buffer_was_given_by_user = true;	
 		if (flag_callBegin) begin(); 
 	}
-	void update(void) override;
-	void begin(void);
-	friend class AudioInputI2SBase_F32;
-	friend class AudioInputI2S_F32;
-	friend class AudioInputI2SQuad_F32;
-	friend class AudioInputI2SHex_F32;
-	//static void scale_f32_to_i16( float32_t *p_f32, float32_t *p_i16, int len) ;
-	//static void scale_f32_to_i24( float32_t *p_f32, float32_t *p_i16, int len) ;
-	//static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
-	static uint32_t *i2s_tx_buffer;
+
+	void begin(void) override;
+	friend class AudioInputI2SQuad_F32; //it wants to call config_i2s() (Teensy3 ony)
+
 protected: 
 	static void config_i2s(void);
-	static audio_block_f32_t *block_ch1_1st;
-	static audio_block_f32_t *block_ch2_1st;
-	static audio_block_f32_t *block_ch3_1st;
-	static audio_block_f32_t *block_ch4_1st;
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr(void);
-	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
-	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
 
-private:
-	static audio_block_f32_t *block_ch1_2nd;
-	static audio_block_f32_t *block_ch2_2nd;
-	static audio_block_f32_t *block_ch3_2nd;
-	static audio_block_f32_t *block_ch4_2nd;
-	static uint32_t ch1_offset;
-	static uint32_t ch2_offset;
-	static uint32_t ch3_offset;
-	static uint32_t ch4_offset;
-	audio_block_f32_t *inputQueueArray[4];
-	static float sample_rate_Hz;
-	static int audio_block_samples;
-	volatile uint8_t enabled = 1;
-	static float32_t *zerodata;
 
 };
 
