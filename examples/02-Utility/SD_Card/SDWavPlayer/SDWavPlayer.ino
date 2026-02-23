@@ -69,6 +69,9 @@ void loop() {
 		//}
   }
 
+  // service the SD card player, to ensure that the play buffer is full of audio!
+  audioSDPlayer.serviceSD();  
+
   //do other things here, if desired...like, maybe check the volume knob?
 
 
