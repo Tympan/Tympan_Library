@@ -7,8 +7,8 @@
 
 */
 
-#ifndef _filter_iir_f32
-#define _filter_iir_f32
+#ifndef _AudioFilterBiquad_F32
+#define _AudioFilterBiquad_F32
 
 #include <Arduino.h>
 #include <arm_math.h>
