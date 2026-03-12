@@ -16,7 +16,7 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
     AudioFreqDomainBase_FD_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
     AudioFreqDomainBase_FD_F32(const AudioSettings_F32 &settings) :
         AudioStream_F32(1, inputQueueArray_f32) {  
-			sample_rate_Hz = settings.sample_rate_Hz;
+			setSampleRate_Hz(settings.sample_rate_Hz);
 			audio_block_samples = settings.audio_block_samples;
 	}
     AudioFreqDomainBase_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT) : 
@@ -43,6 +43,7 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
 
 	virtual int getNFFT(void) { return myFFT.getNFFT();}
 	virtual int getBlockLength_samples(void) { return audio_block_samples; }
+	virtual float setSampleRate_Hz(const float val_Hz) { sample_rate_Hz = val_Hz; return getSampleRate_Hz;}
 	virtual float getSampleRate_Hz(void) { return sample_rate_Hz; }
 	
 	//the rate at which overlapped FFTs are computed is the same (per how we set up these FFT
