@@ -83,7 +83,7 @@ public:
 	static float applyLimitsOnVolumeSetting(float vol_dB);  //uses limits (using the limits on the DAC gain in the AIC)
 	float volume_dB(float vol_dB);  //set both channels to the same volume (via the DAC output volume)
 	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels (via the DAC output volume), but to their own values
-	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
+	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (LEFT_CHAN, RIGHT_CHAN, or BOTH_CHAN)
 	float setDacGain_dB(float gain_dB) { return setDacGain_dB(gain_dB, gain_dB); }
 	float setDacGain_dB(float gain_left_dB, float gain_right_dB) { return volume_dB(gain_left_dB, gain_right_dB); } 
 	float setHeadphoneGain_dB(float gain_dB) { return setHeadphoneGain_dB(gain_dB, gain_dB); }
@@ -93,7 +93,8 @@ public:
 	int muteHeadphone(int chan = BOTH_CHAN);   //mutes the headphone driver
 	int unmuteHeadphone(int chan = BOTH_CHAN); //unmutes the headphone driver
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
-	bool inputSelect(int n);
+	bool inputSelect(int n) { return inputSelect(n, BOTH_CHAN); }
+	bool inputSelect(int n, int channel);
 	float applyLimitsOnInputGainSetting(float gain_dB);
 	float setInputGain_dB(float gain_dB);   //set both channels to the same gain
 	float setInputGain_dB(float gain_dB, int chan); //set each channel seperately (0 = left; 1 = right)
