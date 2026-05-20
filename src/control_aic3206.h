@@ -36,7 +36,8 @@
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
 #define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
 #define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out
-#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
+#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out differential
+#define TYMPAN_OUTPUT_LEFT2HP_AND_R2DIFFLO 5    //DAC left to headphone left (right is muted), DAC right to line out differential
 
 
 #define BOTH_CHAN 0

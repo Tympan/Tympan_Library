@@ -816,7 +816,39 @@ bool AudioControlAIC3206::outputSelect(int n, bool flag_full) {
 
 		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Diff Headphone Jack and Line out");
 		return true;
-  } 
+  } else if (n == TYMPAN_OUTPUT_LEFT2HP_AND_R2DIFFLO) {
+		//send the left audio to the heaphone
+		//keep the right headphone muted
+		//send the right audio to the line-out jack as a differential between LO-left and LO-right
+
+		aic_goToPage(1);
+		aic_writeRegister(12, 0b00001000); //Page 1, route Left DAC Pos to Headphone Left
+		aic_writeRegister(13, 0b00000000); //Page 1, route nothing to Headphone Right
+		aic_writeRegister(14, 0b00010000); //Page 1, route Right DAC Neg to Lineout Left
+		aic_writeRegister(15, 0b00001000); //Page 1, route Right DAC Pos to Lineout Right
+
+		if (flag_full) aic_writePage(0, 63, 0xD6); // 0x3F // Power up LDAC/RDAC
+
+		aic_goToPage(1);
+		aic_writeRegister(18, 0); //Page 1, unmute LOL Driver, 0 gain
+		aic_writeRegister(19, 0); //Page 1, unmute LOR Driver, 0 gain
+		aic_writeRegister(16, 0); //Page 1, unmute HPL Driver, 0 gain
+		aic_writeRegister(17, 0b01000000); //Page 1, muted HPR driver
+
+		if (flag_full) {
+			aic_writePage(1, 9, 0b00101100);       // Power up HPL, power down HPR, power up both LOL/LOR drivers
+
+			delay(50);
+			aic_goToPage(TYMPAN_DAC_SETTINGS_PAGE);  //switch page
+			aic_writeAddress(TYMPAN_DAC_VOLUME_LEFT_REG,  0); // default to 0 dB
+			aic_writeAddress(TYMPAN_DAC_VOLUME_RIGHT_REG, 0); // default to 0 dB
+			aic_writeAddress(64,0);  // 0x40 // Unmute LDAC/RDAC
+			//aic_writePage(0, 64, 0); // 0x40 // Unmute LDAC/RDAC
+		}
+
+		if (debugToSerial) Serial.println("AudioControlAIC3206: Set Audio Output to Diff Headphone Jack and Line out");
+		return true;
+  }	
   Serial.print("AudioControlAIC3206: ERROR: Unable to Select Output - Value not supported: ");
   Serial.println(n);
   return false;
