@@ -82,6 +82,10 @@ void AudioSettings_F32::processorUsageMaxReset(void) {
 }
 
 unsigned long AudioSettings_F32::millis(void) {
+	// return milliseconds as counted by the number of calls to AudioStream_F32::update_all() 
+	// instead of the regular millis() that is based on the CPU clock.  This is perhaps better
+	// if the processor is being put to sleep (such as via "asm volatile("wfi");"), which
+	// means that the typical Arduino "millis()" will not be accurate anymore.
 	uint32_t n_audio_blocks = AudioStream_F32::update_counter;
 	double millis_per_block = ((double)audio_block_samples / (double)sample_rate_Hz) * 1000.0;
 	return (unsigned long)((n_audio_blocks * millis_per_block)+0.5);
