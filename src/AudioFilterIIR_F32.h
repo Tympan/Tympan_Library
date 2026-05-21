@@ -21,8 +21,10 @@ class AudioFilterIIR_F32 : public AudioStream_F32
 //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node  
 //GUI: shortName:filter_IIR
 	public:
-		AudioFilterIIR_F32(void): AudioStream_F32(1,inputQueueArray) { initCoefficientsToPassthru();  }
-		AudioFilterIIR_F32(const AudioSettings_F32 &settings): AudioStream_F32(1,inputQueueArray) { initCoefficientsToPassthru(); }
+		AudioFilterIIR_F32(void): AudioStream_F32(1,inputQueueArray) { setInstanceName(); initCoefficientsToPassthru();  }
+		AudioFilterIIR_F32(const AudioSettings_F32 &settings): AudioStream_F32(1,inputQueueArray) { setInstanceName(); initCoefficientsToPassthru(); }
+		
+		void setInstanceName(void) { instanceName = "AudioFilterIIR_F32"; }
 		
 		//initialize the coefficients to simply pass the audio through unaffected
 		void initCoefficientsToPassthru(void) {

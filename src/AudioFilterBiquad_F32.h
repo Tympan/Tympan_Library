@@ -81,12 +81,15 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
 //GUI: shortName:IIR
   public:
     AudioFilterBiquad_F32(void): AudioFilterBase_F32(), coeff_p(IIR_F32_PASSTHRU) {
+			setInstanceName();
       setSampleRate_Hz(AUDIO_SAMPLE_RATE_EXACT);
       clearCoeffArray();
     }
     AudioFilterBiquad_F32(const AudioSettings_F32 &settings): AudioFilterBase_F32(settings), coeff_p(IIR_F32_PASSTHRU) {
+			setInstanceName();
       setSampleRate_Hz(settings.sample_rate_Hz);
     }
+		void setInstanceName(void) { instanceName = "AudioFilterBiquad_F32"; }
 
     virtual void begin(const float32_t *cp, int _n_stages = 1) {
       coeff_p = cp;

@@ -41,8 +41,10 @@
 
 class AudioInputI2SBase_F32 : public AudioStream_F32 {
 	public:
-		AudioInputI2SBase_F32(void) : AudioStream_F32(0, NULL) {};
-		virtual ~AudioInputI2SBase_F32(void) {};
+		AudioInputI2SBase_F32(void) : AudioStream_F32(0, NULL) { setInstanceName(); };
+		virtual ~AudioInputI2SBase_F32(void) { setInstanceName(); };
+		
+		void setInstanceName(void) { instanceName = "AudioInputI2SBase_F32"; }
 		
 		virtual void begin(void) = 0;
 		virtual int get_isOutOfMemory(void) { return flag_out_of_memory; }

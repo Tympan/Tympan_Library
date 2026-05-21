@@ -31,14 +31,21 @@ class AudioEffectCompDecWDRC_F32 : public AudioStream_F32
 	//GUI: shortName: CompressWDRC
   public:
     AudioEffectCompDecWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
-      setSampleRate_Hz(AUDIO_SAMPLE_RATE);
+      setInstanceName();
+			setSampleRate_Hz(AUDIO_SAMPLE_RATE);
       setDefaultValues();
     }
 
     AudioEffectCompDecWDRC_F32(AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
-      setSampleRate_Hz(settings.sample_rate_Hz);
+      setInstanceName();
+			setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
+		void setInstanceName(void) { 
+			instanceName = "AudioEffectCompDecWDRC_F32";
+			calcEnvelope.instanceName = instanceName + "--Envelope";
+			calcGain.instanceName  = instanceName + "--WDRC_Gain";
+		}
 
     //here is the method called automatically by the audio library
     void update(void) {

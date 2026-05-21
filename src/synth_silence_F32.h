@@ -23,10 +23,13 @@ class AudioSynthSilence_F32 : public AudioStream_F32
 //GUI: inputs:0, outputs:1 //this line used for automatic generation of GUI node
 //GUI: shortName:silence  //this line used for automatic generation of GUI node
 public:
-	AudioSynthSilence_F32() : AudioStream_F32(0, NULL) { } //uses default AUDIO_SAMPLE_RATE from AudioStream.h
+	AudioSynthSilence_F32() : AudioStream_F32(0, NULL) { setInstanceName(); } //uses default AUDIO_SAMPLE_RATE from AudioStream.h
 	AudioSynthSilence_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) {
+		setInstanceName();
 		setSampleRate_Hz(settings.sample_rate_Hz);
 	}
+	
+	void setInstanceName(void) { instanceName = "AudioOutputI2SQuad_F32"; }
 
 	void setSampleRate_Hz(const float &fs_Hz) {
 		sample_rate_Hz = fs_Hz;

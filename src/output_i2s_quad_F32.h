@@ -48,24 +48,30 @@ class AudioOutputI2SQuad_F32 : public AudioStream_F32
 {
 public:
 	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { 
+		setInstanceName(); 
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use default
 		begin();
 	}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioOutputI2SQuad_F32(settings, true) {}
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioOutputI2SQuad_F32(settings, true) { setInstanceName(); }
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray)
 	{ 
+		setInstanceName(); 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		if (flag_callBegin) begin(); 	
 	}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2SQuad_F32(settings, tx_buff, true) {} 
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2SQuad_F32(settings, tx_buff, true) { setInstanceName(); } 
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray) { 
-		sample_rate_Hz = settings.sample_rate_Hz;
+		 setInstanceName(); 
+		 sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_tx_buffer = tx_buff;
 		zerodata = new float32_t[settings.audio_block_samples/2]{0}; //Need zeros for half an audio block, just 1 channel, init to zero
 		if (flag_callBegin) begin(); 
 	}
+	
+	void setInstanceName(void) { instanceName = "AudioOutputI2SQuad_F32"; }
+		
 	virtual void update(void);
 	void begin(void);
 	friend class AudioInputI2SBase_F32;

@@ -46,24 +46,29 @@ class AudioOutputI2S_F32 : public AudioStream_F32
 //GUI: inputs:2, outputs:0  //this line used for automatic generation of GUI node
 public:
 	AudioOutputI2S_F32(void) : AudioStream_F32(2, inputQueueArray)	{ 
+		setInstanceName();
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //set size to default
 		begin();
 	} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
-	AudioOutputI2S_F32(const AudioSettings_F32 &settings) : AudioOutputI2S_F32(settings, true) {}
+	AudioOutputI2S_F32(const AudioSettings_F32 &settings) : AudioOutputI2S_F32(settings, true) { setInstanceName(); }
 	AudioOutputI2S_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioStream_F32(2, inputQueueArray)
 	{ 
+		setInstanceName();
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples; //set size to given value
 		if (flag_callBegin) begin(); 	
 	}
 	
-	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2S_F32(settings, tx_buff, true) { }
+	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2S_F32(settings, tx_buff, true) {setInstanceName(); }
 	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioStream_F32(2, inputQueueArray) { 
+		setInstanceName();
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_tx_buffer = tx_buff;
 		if (flag_callBegin) begin();  
 	}
+	
+	void setInstanceName(void) { instanceName = "AudioOutputI2S_F32"; }
 	
 	void update(void) override;
 	void begin(void);

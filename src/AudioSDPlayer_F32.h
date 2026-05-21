@@ -50,18 +50,23 @@ class AudioSDPlayer_F32 : public AudioStream_F32
 	//GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes  
 	public:
 		AudioSDPlayer_F32(void) : AudioStream_F32(0, NULL), sd_ptr(NULL) { 
+			setInstanceName();
 			init();
 		}
 		AudioSDPlayer_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(NULL) { 
+			setInstanceName();
 			init();
 			setSampleRate_Hz(settings.sample_rate_Hz);
 			setBlockSize(settings.audio_block_samples);
 		}
 		AudioSDPlayer_F32(SdFs * _sd,const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL), sd_ptr(_sd) { 	 
+			setInstanceName();
 			init();
 			setSampleRate_Hz(settings.sample_rate_Hz);
 			setBlockSize(settings.audio_block_samples);
 		}
+		
+		void setInstanceName(void) { instanceName = "AudioSDPlayer_F32"; }
 
 		//~AudioSDPlayer_F32(void) {
 		//	delete sd_ptr;

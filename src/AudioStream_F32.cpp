@@ -261,8 +261,14 @@ void AudioConnection_F32::connect(void) {
 	Serial.println("    : Done."); Serial.flush();
 }	
  */
+ 
+ void AudioStream_F32::printAllInstances(void) {
+	 bool flag_printProcessorUsage = false;
+	 float processorUsage_divideFac = 1.0;  //ignored if the flag above is false
+	 printAllInstances_common(flag_printProcessorUsage, processorUsage_divideFac);
+ }
 
-void AudioStream_F32::printAllInstances(void) {
+void AudioStream_F32::printAllInstances_common(const bool flag_printProcessorUsage, const float processorUsage_divideFac) {
 	AudioStream_F32 *p;
 	//AudioStream_F32 *p_next;
 	
@@ -283,6 +289,14 @@ void AudioStream_F32::printAllInstances(void) {
 			} else {		
 				Serial.print(", Not Active");
 			}
+			
+			if (flag_printProcessorUsage) {
+				Serial.print(", CPU% ");
+				Serial.print( float(p->cpu_cycles)/processorUsage_divideFac, 1);
+				Serial.print("/");
+				Serial.print( float(p->cpu_cycles_max)/processorUsage_divideFac, 1);
+			}	
+			
 			//Serial.print(", Next p = ");
 			//p_next = p->next_update;
 			//Serial.print((uint32_t)p_next);
@@ -290,12 +304,23 @@ void AudioStream_F32::printAllInstances(void) {
 			//	Serial.print(" = ");
 			//	Serial.print(p_next->instanceName);
 			//}
+			
 		} else {	
 			Serial.print(", null p.");
 		}
 		Serial.println();
 	}
 	Serial.println("    : Done.");Serial.flush();
+}
+
+void AudioStream_F32::printAllProcessorUsage(void) {
+	AudioSettings_F32 foo_audio_settings; // assume defaut sample rate and block size
+	printAllProcessorUsage(foo_audio_settings.get_cpu_load_divide_fac());
+}
+
+void AudioStream_F32::printAllProcessorUsage(const float divide_fac) {
+  bool flag_printProcessorUsage = true;
+	printAllInstances_common(flag_printProcessorUsage, divide_fac);
 }
 
 bool AudioStream_F32::putBlockInInputQueue(audio_block_f32_t *block, unsigned int ind) {

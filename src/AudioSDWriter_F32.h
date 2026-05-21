@@ -79,12 +79,14 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+			setInstanceName();
 		  setup();
 		}
 		AudioSDWriter_F32(const AudioSettings_F32 &settings) :
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+			setInstanceName();
 		  setup(); 
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -92,6 +94,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr);
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -99,6 +102,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr, _writeSizeBytes); 
 		  setSampleRate_Hz(settings.sample_rate_Hz); 
 		}
@@ -106,12 +110,14 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup();
 		}
 		AudioSDWriter_F32(SdFs * _sd,const AudioSettings_F32 &settings) :
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(); 
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -119,6 +125,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr);
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -126,6 +133,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr, _writeSizeBytes); 
 		  setSampleRate_Hz(settings.sample_rate_Hz); 
 		}
@@ -134,6 +142,8 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  //stopRecording();
 		  delete buffSDWriter;
 		}
+
+		void setInstanceName(void) { instanceName = "AudioSDWriter_F32"; }
 
 		void setup(void) {
 			setWriteDataType(WriteDataType::INT16, &Serial, DEFAULT_SDWRITE_BYTES);
