@@ -2,24 +2,27 @@
 #include "synth_waveform_F32.h"
 
 void AudioSynthWaveform_F32::update(void) {
-	block_counter++;
-	
-  //get input block (the modulation of the frequency)
-  audio_block_f32_t *lfo_block = receiveReadOnly_f32(0);
-  
-  //get output block
-  audio_block_f32_t *block_new = allocate_f32();
-  if (!block_new) { AudioStream_F32::release(lfo_block); return; } //could not allocate block.  So, release memory and return.
-  
-  //process the audio to fill the output block with data samples
-	processAudioBlock(lfo_block, block_new);
-  
-	//updat ethe counter on the new block
-  block_new->id = block_counter;
+	if (active) {  // active is in AudioStream.h.  It turns out that update() will never get called if active is false.  So, this "if" should be redundent
+		//Serial.println("AudioSynthWaveform_F32: update()");
+		block_counter++;
+		
+		//get input block (the modulation of the frequency)
+		audio_block_f32_t *lfo_block = receiveReadOnly_f32(0);
+		
+		//get output block
+		audio_block_f32_t *block_new = allocate_f32();
+		if (!block_new) { AudioStream_F32::release(lfo_block); return; } //could not allocate block.  So, release memory and return.
+		
+		//process the audio to fill the output block with data samples
+		processAudioBlock(lfo_block, block_new);
+		
+		//updat ethe counter on the new block
+		block_new->id = block_counter;
 
-  AudioStream_F32::transmit(block_new);
-  AudioStream_F32::release(block_new);
-  AudioStream_F32::release(lfo_block);
+		AudioStream_F32::transmit(block_new);
+		AudioStream_F32::release(block_new);
+		AudioStream_F32::release(lfo_block);
+	}
 }
 
 

@@ -32,8 +32,9 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 			MOD_MODE_PER_OCT=0,
 			MOD_MODE_PER_HZ
 		};
-
-		AudioSynthWaveform_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32), 
+		
+		AudioSynthWaveform_F32(const AudioSettings_F32 &settings) : AudioSynthWaveform_F32(settings, false) {};
+		AudioSynthWaveform_F32(const AudioSettings_F32 &settings, const bool start_isActive) : AudioStream_F32(1, inputQueueArray_f32), 
 			_PI(2*acos(0.0f)),
 			twoPI(2 * _PI),
 			sample_rate_Hz(AUDIO_SAMPLE_RATE_EXACT),
@@ -49,13 +50,16 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 			_CurrentPortamentoSample(0),
 			_NotesPlaying(0)
 		{		
+			setActive(start_isActive);
+			setInstanceName();
 			setSampleRate(settings.sample_rate_Hz);
 			setAudioBlockSamples(settings.audio_block_samples);
+			
 		}
 		
                 
-	
-    AudioSynthWaveform_F32(void) : AudioStream_F32(1, inputQueueArray_f32),  //uses default AUDIO_SAMPLE_RATE and AUDIO_BLOCK_SAMPLES from AudioStream.h
+		AudioSynthWaveform_F32(void) : AudioSynthWaveform_F32(false) {};
+    AudioSynthWaveform_F32(const bool start_isActive) : AudioStream_F32(1, inputQueueArray_f32),  //uses default AUDIO_SAMPLE_RATE and AUDIO_BLOCK_SAMPLES from AudioStream.h
 				_PI(2*acos(0.0f)),
 				twoPI(2 * _PI),
 				sample_rate_Hz(AUDIO_SAMPLE_RATE_EXACT),
@@ -68,7 +72,13 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 				_PortamentoIncrement(0.0f),
 				_PortamentoSamples(0),
 				_CurrentPortamentoSample(0),
-				_NotesPlaying(0) {};
+				_NotesPlaying(0) 
+		{
+			setActive(start_isActive);
+			setInstanceName();
+		};
+
+		void setInstanceName(void) { instanceName = "AudioSynthWaveform_F32"; }
 
 		void frequency(float32_t freq) {
 			float32_t nyquist = sample_rate_Hz/2.f;
