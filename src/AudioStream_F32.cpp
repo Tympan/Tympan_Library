@@ -9,6 +9,8 @@ uint32_t AudioStream_F32::f32_memory_pool_available_mask[6];
 uint8_t AudioStream_F32::f32_memory_used = 0;
 uint8_t AudioStream_F32::f32_memory_used_max = 0;
 
+Print *AudioStream_F32::print_ptr = &Serial;  //user can override this at any time
+
 //added 2021-02-17
 const int AudioStream_F32::maxInstanceCounting = 120;
 //bool AudioStream_F32::printUpdate = false;
@@ -61,7 +63,7 @@ void AudioStream_F32::allocate_f32_memory(const unsigned int num, const AudioSet
 			if (f32_memory_pool[f32_memory_pool.size()-1]->data == NULL) fail_count++;
 		}
 	}
-	if (fail_count>0) Serial.println("AudioStream_F32::allocate_f32_memory: *** ERROR ***: Failed to allocate " + String(fail_count) + " blocks of audio memory (out of " + String(num) + ").");
+	if (fail_count>0) print_ptr->println("AudioStream_F32::allocate_f32_memory: *** ERROR ***: Failed to allocate " + String(fail_count) + " blocks of audio memory (out of " + String(num) + ").");
 }
 
 // Allocate and set up the pool of audio data blocks
@@ -117,7 +119,7 @@ audio_block_f32_t * AudioStream_F32::allocate_f32(void)
     p++; avail = *p; if (avail) break;
     p++; avail = *p; if (avail) break;
     __enable_irq();
-    //Serial.println("alloc_f32:null");
+    //print_ptr->println("alloc_f32:null");
     return NULL;
   } while (0);
   n = __builtin_clz(avail);
@@ -130,8 +132,8 @@ audio_block_f32_t * AudioStream_F32::allocate_f32(void)
   block = f32_memory_pool[(index << 5) + (31 - n)];
   block->ref_count = 1;
   if (used > f32_memory_used_max) f32_memory_used_max = used;
-  //Serial.print("alloc_f32:");
-  //Serial.println((uint32_t)block, HEX);
+  //print_ptr->print("alloc_f32:");
+  //print_ptr->println((uint32_t)block, HEX);
   return block;
 }
 
@@ -149,8 +151,8 @@ void AudioStream_F32::release(audio_block_f32_t *block)
   if (block->ref_count > 1) {
     block->ref_count--;
   } else {
-    //Serial.print("release_f32:");
-    //Serial.println((uint32_t)block, HEX);
+    //print_ptr->print("release_f32:");
+    //print_ptr->println((uint32_t)block, HEX);
     f32_memory_pool_available_mask[index] |= mask;
     f32_memory_used--;
   }
@@ -168,20 +170,20 @@ void AudioStream_F32::transmit(audio_block_f32_t *block, unsigned char index)
 {
 	//if (!block) return; //maybe using this will get rid of a lot of problems.  Or it'll mask problems?
 
-  //Serial.print("AudioStream_F32: transmit().  start...index = ");Serial.println(index);
+  //print_ptr->print("AudioStream_F32: transmit().  start...index = ");print_ptr->println(index);
   for (AudioConnection_F32 *c = destination_list_f32; c != NULL; c = c->next_dest) {
-  	//Serial.print("  : loop1, c->src_index = ");Serial.println(c->src_index);
+  	//print_ptr->print("  : loop1, c->src_index = ");print_ptr->println(c->src_index);
     if (c->src_index == index) {
-    	//Serial.println("  : if1");
+    	//print_ptr->println("  : if1");
       if (c->dst.inputQueue_f32[c->dest_index] == NULL) {
-      	//Serial.println("  : if2");
+      	//print_ptr->println("  : if2");
         c->dst.inputQueue_f32[c->dest_index] = block;
         block->ref_count++;
-        //Serial.print("  : block->ref_count = "); Serial.println(block->ref_count);
+        //print_ptr->print("  : block->ref_count = "); print_ptr->println(block->ref_count);
       }
     }
   } 
-  //Serial.println("AudioStream_F32: transmit(). finished.");
+  //print_ptr->println("AudioStream_F32: transmit(). finished.");
 }
 
 // Receive block from an input.  The block's data
@@ -239,26 +241,26 @@ void AudioConnection_F32::connect(void) {
 	AudioStream_F32 *p;
 
 	int count=0;
-	Serial.println("AudioStream_F32: printNextUpdatePointers:");
+	print_ptr->println("AudioStream_F32: printNextUpdatePointers:");
 	
 	for (p = first_update; p; p = p->next_update) {
-		Serial.print("  : "); 
-		Serial.print(count++); 
-		Serial.print(", ");
-		Serial.print(p->instanceName);
+		print_ptr->print("  : "); 
+		print_ptr->print(count++); 
+		print_ptr->print(", ");
+		print_ptr->print(p->instanceName);
 		if (p->active) {
-			Serial.print(", Active. Next p = ");
-			Serial.print((uint32_t)(p->next_update));
-			Serial.println(", Done.");
+			print_ptr->print(", Active. Next p = ");
+			print_ptr->print((uint32_t)(p->next_update));
+			print_ptr->println(", Done.");
 		} else {			
-			Serial.print(", Not Active, ");
-			Serial.print(p->instanceName);
-			Serial.print(", Next p = "); 
-			Serial.print((uint32_t)(p->next_update));
-			Serial.println(", Done.");					
+			print_ptr->print(", Not Active, ");
+			print_ptr->print(p->instanceName);
+			print_ptr->print(", Next p = "); 
+			print_ptr->print((uint32_t)(p->next_update));
+			print_ptr->println(", Done.");					
 		}
 	}
-	Serial.println("    : Done."); Serial.flush();
+	print_ptr->println("    : Done."); print_ptr->flush();
 }	
  */
  
@@ -272,45 +274,45 @@ void AudioStream_F32::printAllInstances_common(const bool flag_printProcessorUsa
 	AudioStream_F32 *p;
 	//AudioStream_F32 *p_next;
 	
-	Serial.print("AudioStream_F32: printAllInstances: "); Serial.print(numInstances); Serial.println("...");
+	print_ptr->print("AudioStream_F32: printAllInstances: "); print_ptr->print(numInstances); print_ptr->println("...");
 	
 	for (int i=0; i < numInstances; i++) {
 		p = allInstances[i];
-		Serial.print("    : ");
-		Serial.print(i);
-		Serial.print(", ");
-		Serial.print((uint32_t)p);
+		print_ptr->print("    : ");
+		print_ptr->print(i);
+		print_ptr->print(", ");
+		print_ptr->print((uint32_t)p);
 		
 		if ((uint32_t)p != 0) { 
-			Serial.print(", ");
-			Serial.print(p->instanceName);
+			print_ptr->print(", ");
+			print_ptr->print(p->instanceName);
 			if (p->active) {
-				Serial.print(", Active");
+				print_ptr->print(", Active");
 			} else {		
-				Serial.print(", Not Active");
+				print_ptr->print(", Not Active");
 			}
 			
 			if (flag_printProcessorUsage) {
-				Serial.print(", CPU% ");
-				Serial.print( float(p->cpu_cycles)/processorUsage_divideFac, 1);
-				Serial.print("/");
-				Serial.print( float(p->cpu_cycles_max)/processorUsage_divideFac, 1);
+				print_ptr->print(", CPU% ");
+				print_ptr->print( float(p->cpu_cycles)/processorUsage_divideFac, 1);
+				print_ptr->print("/");
+				print_ptr->print( float(p->cpu_cycles_max)/processorUsage_divideFac, 1);
 			}	
 			
-			//Serial.print(", Next p = ");
+			//print_ptr->print(", Next p = ");
 			//p_next = p->next_update;
-			//Serial.print((uint32_t)p_next);
+			//print_ptr->print((uint32_t)p_next);
 			//if ((uint32_t)p_next != 0) {
-			//	Serial.print(" = ");
-			//	Serial.print(p_next->instanceName);
+			//	print_ptr->print(" = ");
+			//	print_ptr->print(p_next->instanceName);
 			//}
 			
 		} else {	
-			Serial.print(", null p.");
+			print_ptr->print(", null p.");
 		}
-		Serial.println();
+		print_ptr->println();
 	}
-	Serial.println("    : Done.");Serial.flush();
+	print_ptr->println("    : Done.");print_ptr->flush();
 }
 
 void AudioStream_F32::printAllProcessorUsage(void) {

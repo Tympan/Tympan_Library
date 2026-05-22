@@ -155,6 +155,9 @@ class AudioStream_F32 : public AudioStream {
 		//moved from protected to public to enable AudioForwarder_F32 to work
     void transmit(audio_block_f32_t *block, unsigned char index = 0);
 		
+		// where should this class print its output?
+		static Print *print_ptr;  //user can override this at any time simply by re-assigning...initial definition is in AudioStream_F32.cpp
+		
   protected:
     //bool active_f32;
     unsigned char num_inputs_f32;
