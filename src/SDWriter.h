@@ -16,9 +16,9 @@
  * MIT License.  Use at your own risk.
 */
 
-
 #ifndef _SDWriter_h
 #define _SDWriter_h
+
 
 #include <arm_math.h>        //possibly only used for float32_t definition?
 //#include <SdFat_Gre.h>       //originally from https://github.com/greiman/SdFat  but class names have been modified to prevent collisions with Teensy Audio/SD libraries
@@ -27,7 +27,13 @@
 #include <Print.h>
 
 //set some constants
-#define maxBufferLengthBytes 150000    //size of big memroy buffer to smooth out slow SD write operations
+#if defined(KINETISK)
+	//Tympan Rev A-D
+	#define defaultBufferLengthBytes 75000    //size of big memroy buffer to smooth out slow SD write operations
+#else
+	//Tympan Rev E-F
+	#define defaultBufferLengthBytes 150000    //size of big memroy buffer to smooth out slow SD write operations
+#endif	
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
 
 const int DEFAULT_SDWRITE_BYTES = 512; //target size for individual writes to the SD card.  Usually 512
@@ -181,14 +187,27 @@ class BufferedSDWriter : public SDWriter
     int getWriteSizeBytes(void) { return (getWriteSizeSamples() * nBytesPerSample); }
     int getWriteSizeSamples(void) { return writeSizeSamples;  }
 
-
     //allocate the buffer for storing all the samples between write events...returns 0 if it failed to allocate
-    int allocateBuffer(const int _nBytes = maxBufferLengthBytes) {
-			//bufferLengthSamples = max(4,min(_nBytes,maxBufferLengthBytes) / nBytesPerSample);
-			bufferLengthSamples = max(4, _nBytes / nBytesPerSample);
+		int allocateBuffer(void) { 
+			bool flag_shrinkIfNeeded = true;
+			return allocateBuffer(defaultBufferLengthBytes, flag_shrinkIfNeeded);
+		}
+		int allocateBuffer(const int _nBytes) {
+			bool flag_shrinkIfNeeded = false;
+			return allocateBuffer(_nBytes, flag_shrinkIfNeeded);	
+		}				
+    int allocateBuffer(const int _nBytes, bool flag_shrinkIfNeeded) {
+			//Serial.print("SDWriter: allocateBuffer(nBytes, flag_shrinkIfNeeded)..."); Serial.print(_nBytes); Serial.print(", "); Serial.println(flag_shrinkIfNeeded);
+			const int32_t min_len_samples = 4;
+			bufferLengthSamples = max(min_len_samples, _nBytes / nBytesPerSample);
 			if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
-      write_buffer = new (std::nothrow) int16_t[bufferLengthSamples];
-			resetBuffer();
+			write_buffer = nullptr;
+			while ( (write_buffer == 0) && (bufferLengthSamples >= min_len_samples) ) {
+				write_buffer = new (std::nothrow) int16_t[bufferLengthSamples];
+				//Serial.print("SDWriter: allocateBuffer: tried "); Serial.print(bufferLengthSamples); Serial.print(", result = "); Serial.println((int)write_buffer);
+				if (write_buffer == 0) bufferLengthSamples /= 2;  //shrink the buffer that we're requesting fo when we loop again
+			}
+			if (write_buffer != 0) resetBuffer();
       return (int)write_buffer;
     }
     void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
@@ -232,8 +251,8 @@ class BufferedSDWriter : public SDWriter
     int32_t bufferWriteInd = 0;
     int32_t bufferReadInd = 0;
     const int nBytesPerSample = 2;
-    int32_t bufferLengthSamples = maxBufferLengthBytes / nBytesPerSample;
-    int32_t bufferEndInd = maxBufferLengthBytes / nBytesPerSample;
+    int32_t bufferLengthSamples = defaultBufferLengthBytes / nBytesPerSample;
+    int32_t bufferEndInd = defaultBufferLengthBytes / nBytesPerSample;
     float32_t *ptr_zeros = nullptr;
 		int ditheringMethod = 0;  //default 0 is off
 		uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
