@@ -59,45 +59,45 @@ class SDWriter : public Print
     bool setup(void) { return init(); }
 		
 		//return true if OK
-	virtual bool init() {
-		bool is_ok = false;
-		//Serial.println("SDWriter: init: std->begin(SD_CONFIG)...");
-		if (!sd->begin(SD_CONFIG)) {
-			//sd->errorHalt(serial_ptr, "SDWriter: begin failed");
-			if (serial_ptr) serial_ptr->println("SDWriter: init: *** WARNING ***: sd.begin() failed.");
-			return is_ok = false;
+		virtual bool init() {
+			bool is_ok = false;
+			//Serial.println("SDWriter: init: std->begin(SD_CONFIG)...");
+			if (!sd->begin(SD_CONFIG)) {
+				//sd->errorHalt(serial_ptr, "SDWriter: begin failed");
+				if (serial_ptr) serial_ptr->println("SDWriter: init: *** WARNING ***: sd.begin() failed.");
+				return is_ok = false;
+			}
+			return is_ok = true;
 		}
-		return is_ok = true;
-	}
    		
-	virtual void end() {
-		if (isFileOpen()) close();
-		sd->end();
-	}
-
-	bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
-	bool open(const char *fname, uint64_t preAllocate_bytes);
-	bool openAsWAV(const char *fname) { return openAsWAV(fname, 0ULL); }
-	bool open(const char *fname) { return open(fname, 0ULL); };
-	int close(void);
-
-	bool exists(const char *fname) { return sd->exists(fname); }
-	bool remove(const char *fname) { return sd->remove(fname); }
-		
-    bool isFileOpen(void) {
-      if (file.isOpen()) return true;
-      return false;
-    }
-	virtual bool preAllocate(uint64_t preAllocate_bytes) {  //Pre allocate space for your file on the SD card
-		bool is_success = false;
-		if (isFileOpen()) {
-			is_success = file.preAllocate(preAllocate_bytes);
-			if (!is_success) Serial.println("SDWriter: preAllocate: failed to preallocate file for " + String(preAllocate_bytes) + " bytes. Continuing...");
-		} else {
-			//Serial.println("SDWriter: preAllocate: file was not open.");
+		virtual void end() {
+			if (isFileOpen()) close();
+			sd->end();
 		}
-		return is_success;
-	}
+
+		bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
+		bool open(const char *fname, uint64_t preAllocate_bytes);
+		bool openAsWAV(const char *fname) { return openAsWAV(fname, 0ULL); }
+		bool open(const char *fname) { return open(fname, 0ULL); };
+		int close(void);
+
+		bool exists(const char *fname) { return sd->exists(fname); }
+		bool remove(const char *fname) { return sd->remove(fname); }
+		
+		bool isFileOpen(void) {
+			if (file.isOpen()) return true;
+			return false;
+		}
+		virtual bool preAllocate(uint64_t preAllocate_bytes) {  //Pre allocate space for your file on the SD card
+			bool is_success = false;
+			if (isFileOpen()) {
+				is_success = file.preAllocate(preAllocate_bytes);
+				if (!is_success) serial_ptr->println("SDWriter: preAllocate: failed to preallocate file for " + String(preAllocate_bytes) + " bytes. Continuing...");
+			} else {
+				//Serial.println("SDWriter: preAllocate: file was not open.");
+			}
+			return is_success;
+		}
 
     //This "write" is for compatibility with the Print interface.  Writing one
     //byte at a time is EXTREMELY inefficient and shouldn't be done
@@ -131,14 +131,13 @@ class SDWriter : public Print
     }
     char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
     
-	SdFs * getSdPtr(void) { return sd; }
+		SdFs * getSdPtr(void) { return sd; }
 
-	//virtual int isSdCardPresent(void);
-
+		//virtual int isSdCardPresent(void);
 
   protected:
     //SdFatSdio sd; //slower
-	SdFs * sd; //faster
+		SdFs * sd; //faster
     SdFile file;
     //bool hasSdBegun = false;
 		boolean flagPrintElapsedWriteTime = false;
@@ -254,9 +253,9 @@ class BufferedSDWriter : public SDWriter
     int32_t bufferLengthSamples = defaultBufferLengthBytes / nBytesPerSample;
     int32_t bufferEndInd = defaultBufferLengthBytes / nBytesPerSample;
     float32_t *ptr_zeros = nullptr;
-	int ditheringMethod = 0;  //default 0 is off
-	uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
-	uint32_t decimation_counter = 0;   // every time it reaches 0, it writes a sample
+		int ditheringMethod = 0;  //default 0 is off
+		uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
+		uint32_t decimation_counter = 0;   // every time it reaches 0, it writes a sample
 };
 
 

@@ -4,7 +4,7 @@
 
 
 int AudioSDWriter_F32::setWriteDataType(WriteDataType type) {
-	Print *serial_ptr = &Serial1;
+	Print *serial_ptr = &Serial;
 	int write_nbytes = DEFAULT_SDWRITE_BYTES;
 
 	//get info from previous objects
@@ -37,7 +37,7 @@ int AudioSDWriter_F32::setWriteDataType(WriteDataType type, Print* serial_ptr, c
 				//if we don't allocateBuffer() here, it simply lets BufferedSDWrite create it last-minute
 			}
 		} else {
-			Serial.print("AudioSDWriter_F32: setWriteDataType: *** ERROR *** Could not create buffered SD writer.");
+			serial_ptr->print("AudioSDWriter_F32: setWriteDataType: *** ERROR *** Could not create buffered SD writer.");
 		}
 	}
 	if (buffSDWriter == NULL) { return -1; } else { return 0; };
@@ -356,15 +356,15 @@ int AudioSDWriter_F32::serviceSD_withWarnings(void) {
 		//bool criteria2 = (dT_millis > 20) && (buffer_fill_frac > 0.7f);
     bool criteria2 = ((dT_millis > 25) && (remaining_time_sec < 0.100));
 		if (criteria1 || criteria2) {
-			Serial.print("AudioSDWriter_F32: Warning: long write: ");
-			Serial.print(dT_millis); Serial.print(" msec");
-			Serial.print(" for "); Serial.print(bytes_written); Serial.print(" bytes");
-			//Serial.print(" at "); Serial.print(((float)bytes_written)/((float)(dT_millis)),1);Serial.print(" kB/sec");
-			Serial.print(", buffer is " ); Serial.print(buffSDWriter->getNumSampsInBuffer());
-			Serial.print("/"); Serial.print(buffSDWriter->getLengthOfBuffer());
-			Serial.print(" used = "); Serial.print(100.0f*buffer_empty_frac, 2); Serial.print("% open");
-			Serial.print(" = ");Serial.print((int)(remaining_time_sec*1000)); Serial.print(" msec remain.");
-			Serial.println();
+			serial_ptr->print("AudioSDWriter_F32: Warning: long write: ");
+			serial_ptr->print(dT_millis); serial_ptr->print(" msec");
+			serial_ptr->print(" for "); serial_ptr->print(bytes_written); serial_ptr->print(" bytes");
+			//serial_ptr->print(" at "); serial_ptr->print(((float)bytes_written)/((float)(dT_millis)),1);serial_ptr->print(" kB/sec");
+			serial_ptr->print(", buffer is " ); serial_ptr->print(buffSDWriter->getNumSampsInBuffer());
+			serial_ptr->print("/"); serial_ptr->print(buffSDWriter->getLengthOfBuffer());
+			serial_ptr->print(" used = "); serial_ptr->print(100.0f*buffer_empty_frac, 2); serial_ptr->print("% open");
+			serial_ptr->print(" = ");serial_ptr->print((int)(remaining_time_sec*1000)); serial_ptr->print(" msec remain.");
+			serial_ptr->println();
     }
   }
   return bytes_written;
@@ -377,8 +377,8 @@ void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SBase_F32 &i2s_in) {
 	if (i2s_in.get_isOutOfMemory()) {
 		float approx_time_sec = ((float)(millis()-getStartTimeMillis()))/1000.0;
 		if (approx_time_sec > 0.1) {
-		  Serial.print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
-		  Serial.println(approx_time_sec);
+		  serial_ptr->print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
+		  serial_ptr->println(approx_time_sec);
 		}
 	}
   i2s_in.clear_isOutOfMemory();
@@ -391,8 +391,8 @@ void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SBase_F32 &i2s_in) {
 //	if (i2s_in.get_isOutOfMemory()) {
 //		float approx_time_sec = ((float)(millis()-getStartTimeMillis()))/1000.0;
 //		if (approx_time_sec > 0.1) {
-//			Serial.print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
-//			Serial.println(approx_time_sec);
+//			serial_ptr->print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
+//			serial_ptr->println(approx_time_sec);
 //		}
 //	}
 //	i2s_in.clear_isOutOfMemory();
@@ -404,8 +404,8 @@ void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SBase_F32 &i2s_in) {
 //	if (i2s_in.get_isOutOfMemory()) {
 //		float approx_time_sec = ((float)(millis()-getStartTimeMillis()))/1000.0;
 //		if (approx_time_sec > 0.1) {
-//			Serial.print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
-//			Serial.println(approx_time_sec);
+//			serial_ptr->print("SD Write Warning: there was a hiccup in the writing. ");//  Approx Time (sec): ");
+//			serial_ptr->println(approx_time_sec);
 //		}
 //	}
 //	i2s_in.clear_isOutOfMemory();
@@ -418,8 +418,8 @@ void AudioSDWriter_F32::checkMemoryI2S(AudioInputI2SBase_F32 &i2s_in) {
 
 void AudioSDWriter_F32_UI::printHelp(void) {
 	String prefix = getPrefix();  //getPrefix() is in SerialManager_UI.h, unless it is over-ridden in this class somewhere
-	Serial.println(F(" AudioSDWriter: Prefix = ") + prefix);
-	Serial.println(F("   r,s,d: SD record/stop/deleteAll")); 
+	serial_ptr->println(F(" AudioSDWriter: Prefix = ") + prefix);
+	serial_ptr->println(F("   r,s,d: SD record/stop/deleteAll")); 
 };
 
 
@@ -431,17 +431,17 @@ bool AudioSDWriter_F32_UI::processCharacterTriple(char mode_char, char chan_char
 	return_val = true;  //assume that we will find this character
 	switch (data_char) {    
 		case 'r':
-			Serial.println("AudioSDWriter_F32_UI: begin SD recording");
+			serial_ptr->println("AudioSDWriter_F32_UI: begin SD recording");
 			startRecording(); 			//AudioSDWriter_F32 method
 			setSDRecordingButtons();	//update the GUI buttons
 			break;
 		case 's':
-			Serial.println("AudioSDWriter_F32_UI: stop SD recording");
+			serial_ptr->println("AudioSDWriter_F32_UI: stop SD recording");
 			stopRecording(); 			//AudioSDWriter_F32 method
 			setSDRecordingButtons();	//update the GUI buttons
 			break;
 		case 'd':
-			Serial.println("AudioSDWriter_F32_UI: deleting all recordings");
+			serial_ptr->println("AudioSDWriter_F32_UI: deleting all recordings");
 		    stopRecording();			//AudioSDWriter_F32 method
 			deleteAllRecordings();		//AudioSDWriter_F32 method
 			setSDRecordingButtons();    //update the GUI buttons

@@ -32,12 +32,12 @@ bool SDWriter::open(const char *fname, uint64_t preAllocate_bytes) {
 		sd->remove(fname);
 	}
 	__disable_irq();
-		//int foo_val = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
-		file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
-		//Serial.println("SDWriter::open: file.open() returns " + String(foo_val));
-  	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
+	//int foo_val = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+	file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+	//Serial.println("SDWriter::open: file.open() returns " + String(foo_val));
+	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
 	__enable_irq();
-		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
+	if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
 	return isFileOpen();
 }
 		
@@ -49,7 +49,6 @@ int SDWriter::close(void) {
 		file.seekSet(0); //SdFat_Gre_FatLib version of seek();
 		file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
 		file.seekSet(fileSize);
-		
 	}
 	file.truncate();  //if it had be pre-allocated, this trims to the proper length
 	file.close();
@@ -62,7 +61,6 @@ int SDWriter::close(void) {
 size_t SDWriter::write(uint8_t foo)  {
 	size_t return_val = 0;
 	if (file.isOpen()) {
-
 		// write one audio byte.  Very inefficient.
 		if (flagPrintElapsedWriteTime) { usec = 0; }
 		file.write((byte *) (&foo), 1); //write one value
@@ -131,8 +129,8 @@ bool BufferedSDWriter::sync(void) {
 void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan) {
 	if (!write_buffer) {  //try to allocate buffer, return if it doesn't work
 		if (!allocateBuffer()) {
-			Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
-			Serial.println("    : could not allocateBuffer()");
+			serial_ptr->println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
+			serial_ptr->println("    : could not allocateBuffer()");
 			return;
 		}
 	}
@@ -143,7 +141,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
 	if ((bufferWriteInd < bufferReadInd) && (estFinalWriteInd > bufferReadInd)) {
-		Serial.println("BufferedSDWriter_I16: WARNING: writing past the read index.");
+		serial_ptr->println("BufferedSDWriter_I16: WARNING: writing past the read index.");
 		flag_moveReadIndexToEndOfWrite = true;
 	}
 
@@ -156,7 +154,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		//recheck to see if we're going to pass by the read buffer index
 		estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter)/((int)decimation_factor));
 		if ((bufferWriteInd < bufferReadInd) && (estFinalWriteInd > bufferReadInd)) {
-			Serial.println("BufferedSDWriter_I16: WARNING: writing past the read index.");
+			serial_ptr->println("BufferedSDWriter_I16: WARNING: writing past the read index.");
 			flag_moveReadIndexToEndOfWrite = true;
 		}
 	}
