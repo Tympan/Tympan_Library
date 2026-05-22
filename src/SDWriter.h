@@ -59,45 +59,45 @@ class SDWriter : public Print
     bool setup(void) { return init(); }
 		
 		//return true if OK
-    virtual bool init() {
-			bool is_ok = false;
-			//Serial.println("SDWriter: init: std->begin(SD_CONFIG)...");
-			if (!sd->begin(SD_CONFIG)) {
-				//sd->errorHalt(serial_ptr, "SDWriter: begin failed");
-				if (serial_ptr) serial_ptr->println("SDWriter: init: *** WARNING ***: sd.begin() failed.");
-				return is_ok = false;
-			}
-			return is_ok = true;
+	virtual bool init() {
+		bool is_ok = false;
+		//Serial.println("SDWriter: init: std->begin(SD_CONFIG)...");
+		if (!sd->begin(SD_CONFIG)) {
+			//sd->errorHalt(serial_ptr, "SDWriter: begin failed");
+			if (serial_ptr) serial_ptr->println("SDWriter: init: *** WARNING ***: sd.begin() failed.");
+			return is_ok = false;
 		}
+		return is_ok = true;
+	}
    		
-		virtual void end() {
-			if (isFileOpen()) close();
-			sd->end();
-		}
+	virtual void end() {
+		if (isFileOpen()) close();
+		sd->end();
+	}
 
-		bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
-		bool open(const char *fname, uint64_t preAllocate_bytes);
-		bool openAsWAV(const char *fname) { return openAsWAV(fname, 0ULL); }
-		bool open(const char *fname) { return open(fname, 0ULL); };
-		int close(void);
-		
-		bool exists(const char *fname) { return sd->exists(fname); }
-		bool remove(const char *fname) { return sd->remove(fname); }
+	bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
+	bool open(const char *fname, uint64_t preAllocate_bytes);
+	bool openAsWAV(const char *fname) { return openAsWAV(fname, 0ULL); }
+	bool open(const char *fname) { return open(fname, 0ULL); };
+	int close(void);
+
+	bool exists(const char *fname) { return sd->exists(fname); }
+	bool remove(const char *fname) { return sd->remove(fname); }
 		
     bool isFileOpen(void) {
       if (file.isOpen()) return true;
       return false;
     }
-		virtual bool preAllocate(uint64_t preAllocate_bytes) {  //Pre allocate space for your file on the SD card
-			bool is_success = false;
-			if (isFileOpen()) {
-				is_success = file.preAllocate(preAllocate_bytes);
-				if (!is_success) Serial.println("SDWriter: preAllocate: failed to preallocate file for " + String(preAllocate_bytes) + " bytes. Continuing...");
-			} else {
-				//Serial.println("SDWriter: preAllocate: file was not open.");
-			}
-			return is_success;
+	virtual bool preAllocate(uint64_t preAllocate_bytes) {  //Pre allocate space for your file on the SD card
+		bool is_success = false;
+		if (isFileOpen()) {
+			is_success = file.preAllocate(preAllocate_bytes);
+			if (!is_success) Serial.println("SDWriter: preAllocate: failed to preallocate file for " + String(preAllocate_bytes) + " bytes. Continuing...");
+		} else {
+			//Serial.println("SDWriter: preAllocate: file was not open.");
 		}
+		return is_success;
+	}
 
     //This "write" is for compatibility with the Print interface.  Writing one
     //byte at a time is EXTREMELY inefficient and shouldn't be done
@@ -131,14 +131,14 @@ class SDWriter : public Print
     }
     char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
     
-		SdFs * getSdPtr(void) { return sd; }
+	SdFs * getSdPtr(void) { return sd; }
 
-		//virtual int isSdCardPresent(void);
+	//virtual int isSdCardPresent(void);
 
 
   protected:
     //SdFatSdio sd; //slower
-		SdFs * sd; //faster
+	SdFs * sd; //faster
     SdFile file;
     //bool hasSdBegun = false;
 		boolean flagPrintElapsedWriteTime = false;
@@ -175,7 +175,7 @@ class BufferedSDWriter : public SDWriter
     };
     ~BufferedSDWriter(void) { delete[] ptr_zeros; delete[] write_buffer; }
 		
-		bool sync(void);
+	bool sync(void);
 
     //how many bytes should each write event be?  Set it here
     void setWriteSizeBytes(const int _writeSizeBytes) {
@@ -188,27 +188,27 @@ class BufferedSDWriter : public SDWriter
     int getWriteSizeSamples(void) { return writeSizeSamples;  }
 
     //allocate the buffer for storing all the samples between write events...returns 0 if it failed to allocate
-		int allocateBuffer(void) { 
-			bool flag_shrinkIfNeeded = true;
-			return allocateBuffer(defaultBufferLengthBytes, flag_shrinkIfNeeded);
-		}
-		int allocateBuffer(const int _nBytes) {
-			bool flag_shrinkIfNeeded = false;
-			return allocateBuffer(_nBytes, flag_shrinkIfNeeded);	
-		}				
+	int allocateBuffer(void) { 
+		bool flag_shrinkIfNeeded = true;
+		return allocateBuffer(defaultBufferLengthBytes, flag_shrinkIfNeeded);
+	}
+	int allocateBuffer(const int _nBytes) {
+		bool flag_shrinkIfNeeded = false;
+		return allocateBuffer(_nBytes, flag_shrinkIfNeeded);	
+	}				
     int allocateBuffer(const int _nBytes, bool flag_shrinkIfNeeded) {
-			//Serial.print("SDWriter: allocateBuffer(nBytes, flag_shrinkIfNeeded)..."); Serial.print(_nBytes); Serial.print(", "); Serial.println(flag_shrinkIfNeeded);
-			const int32_t min_len_samples = 4;
-			bufferLengthSamples = max(min_len_samples, _nBytes / nBytesPerSample);
-			if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
-			write_buffer = nullptr;
-			while ( (write_buffer == 0) && (bufferLengthSamples >= min_len_samples) ) {
-				write_buffer = new (std::nothrow) int16_t[bufferLengthSamples];
-				//Serial.print("SDWriter: allocateBuffer: tried "); Serial.print(bufferLengthSamples); Serial.print(", result = "); Serial.println((int)write_buffer);
-				if (write_buffer == 0) bufferLengthSamples /= 2;  //shrink the buffer that we're requesting fo when we loop again
-			}
-			if (write_buffer != 0) resetBuffer();
-      return (int)write_buffer;
+		//Serial.print("SDWriter: allocateBuffer(nBytes, flag_shrinkIfNeeded)..."); Serial.print(_nBytes); Serial.print(", "); Serial.println(flag_shrinkIfNeeded);
+		const int32_t min_len_samples = 4;
+		bufferLengthSamples = max(min_len_samples, _nBytes / nBytesPerSample);
+		if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
+		write_buffer = nullptr;
+		while ( (write_buffer == 0) && (bufferLengthSamples >= min_len_samples) ) {
+			write_buffer = new (std::nothrow) int16_t[bufferLengthSamples];
+			//Serial.print("SDWriter: allocateBuffer: tried "); Serial.print(bufferLengthSamples); Serial.print(", result = "); Serial.println((int)write_buffer);
+			if (write_buffer == 0) bufferLengthSamples /= 2;  //shrink the buffer that we're requesting fo when we loop again
+		}
+		if (write_buffer != 0) resetBuffer();
+		return (int)write_buffer;
     }
     void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
     void resetBuffer(void) { bufferReadInd = 0; bufferWriteInd = 0;  }
@@ -219,31 +219,31 @@ class BufferedSDWriter : public SDWriter
     //write buffered data if enough has accumulated
     virtual int writeBufferedData(void);
 
-		//methods related to dithering
-		virtual float32_t generateDitherNoise(const int &Ichan, const int &method);
-		int enableDithering(bool enable) { if (enable) { return setDitheringMethod(0); } else { return setDitheringMethod(2); } }
-		int setDitheringMethod(int val) { return ditheringMethod = val; }
-		int getDitheringMethod(void) { return ditheringMethod; }
-		
-		//methods relating to decimation
-		virtual uint32_t setDecimationFactor(uint32_t dec_fac) { 
-			decimation_factor = max(1U,dec_fac); 
-			decimation_counter = 0;
-			//setSampleRateWAV(getSampleRateWAV()/decimation_factor);
-			return decimation_factor;
-		}
-		
-		int32_t getLengthOfBuffer(void) { return bufferLengthSamples; }
-		int32_t getNumSampsInBuffer(void) {
-			if (bufferReadInd <= bufferWriteInd) return bufferWriteInd-bufferReadInd;
-			return getLengthOfBuffer() - bufferReadInd + bufferWriteInd;
-		}
-		int32_t getNumUnfilledSamplesInBuffer(void) { return getLengthOfBuffer() - getNumSampsInBuffer(); }  //how much of the buffer is empty, in samples
-		uint32_t getNumUnfilledSamplesInBuffer_msec(void) {
-			int32_t available_buffer_samples = getNumUnfilledSamplesInBuffer();
-			float samples_per_msec = (WAV_sampleRate_Hz*WAV_nchan) / 1000.0f;  //these data memersare in the SDWriter class
-			return (uint32_t)((float)available_buffer_samples/samples_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
-		}
+	//methods related to dithering
+	virtual float32_t generateDitherNoise(const int &Ichan, const int &method);
+	int enableDithering(bool enable) { if (enable) { return setDitheringMethod(0); } else { return setDitheringMethod(2); } }
+	int setDitheringMethod(int val) { return ditheringMethod = val; }
+	int getDitheringMethod(void) { return ditheringMethod; }
+
+	//methods relating to decimation
+	virtual uint32_t setDecimationFactor(uint32_t dec_fac) { 
+		decimation_factor = max(1U,dec_fac); 
+		decimation_counter = 0;
+		//setSampleRateWAV(getSampleRateWAV()/decimation_factor);
+		return decimation_factor;
+	}
+
+	int32_t getLengthOfBuffer(void) { return bufferLengthSamples; }
+	int32_t getNumSampsInBuffer(void) {
+		if (bufferReadInd <= bufferWriteInd) return bufferWriteInd-bufferReadInd;
+		return getLengthOfBuffer() - bufferReadInd + bufferWriteInd;
+	}
+	int32_t getNumUnfilledSamplesInBuffer(void) { return getLengthOfBuffer() - getNumSampsInBuffer(); }  //how much of the buffer is empty, in samples
+	uint32_t getNumUnfilledSamplesInBuffer_msec(void) {
+		int32_t available_buffer_samples = getNumUnfilledSamplesInBuffer();
+		float samples_per_msec = (WAV_sampleRate_Hz*WAV_nchan) / 1000.0f;  //these data memersare in the SDWriter class
+		return (uint32_t)((float)available_buffer_samples/samples_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
+	}
 	
   protected:
     int writeSizeSamples = 0;
@@ -254,9 +254,9 @@ class BufferedSDWriter : public SDWriter
     int32_t bufferLengthSamples = defaultBufferLengthBytes / nBytesPerSample;
     int32_t bufferEndInd = defaultBufferLengthBytes / nBytesPerSample;
     float32_t *ptr_zeros = nullptr;
-		int ditheringMethod = 0;  //default 0 is off
-		uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
-		uint32_t decimation_counter = 0;   // every time it reaches 0, it writes a sample
+	int ditheringMethod = 0;  //default 0 is off
+	uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
+	uint32_t decimation_counter = 0;   // every time it reaches 0, it writes a sample
 };
 
 
