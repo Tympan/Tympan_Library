@@ -32,7 +32,8 @@ bool SDWriter::open(const char *fname, uint64_t preAllocate_bytes) {
 		sd->remove(fname);
 	}
 	__disable_irq();
-		int foo_val = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+		//int foo_val = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+		file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
 		//Serial.println("SDWriter::open: file.open() returns " + String(foo_val));
   	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
 	__enable_irq();
