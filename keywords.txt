@@ -100,6 +100,8 @@ AudioEffectMultiBandWDRC_F32_UI	KEYWORD1
 AudioEffectMultiBandWDRC_IIR_F32_UI	KEYWORD1
 StereoContainerWDRC_UI	KEYWORD1
 
+AudioEffectNoiseReduction_FD_F32	KEYWORD1
+
 AudioEffectPitchShift_FD_F32	KEYWORD1
 setScaleFac	KEYWORD2
 getScaleFac	KEYWORD2

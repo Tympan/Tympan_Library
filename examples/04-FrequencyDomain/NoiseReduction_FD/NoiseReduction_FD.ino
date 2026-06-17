@@ -18,20 +18,20 @@
 // This example code is in the public domain (MIT License)
 
 #include <Tympan_Library.h>
-#include "AudioEffectNoiseReduction_FD_F32.h"  //the local file holding your custom function
+#include "AudioEffectNoiseReduction_local.h"  //the local version of this class so that you can see what it does
 #include "SerialManager.h"
 #include "State.h"
 
 //set the sample rate and block size
-const float sample_rate_Hz = 44100.f;   //24000 or 44117 (or other frequencies in the table in AudioOutputI2S_F32)
-const int audio_block_samples = 32;       //for freq domain processing choose a power of 2 (16, 32, 64, 128) but no higher than 128
-const int FFT_overlap_factor = 4;         //2 is 50% overlap, 4 is 75% overlap
+const float sample_rate_Hz = 44100.f;   // Choose your desired sample rate (up to 96000)
+const int audio_block_samples = 32;     // Choose the length of each block of audio (for freq domain processing choose a power of 8, 16, 32, 64, 128)
+const int FFT_overlap_factor = 4;       // Choose 2 for 50% overlap for FFT.  Choose 4 for 75% overlap for FFT.  The total FFT length is FFT_overlap_factor*audio_block_samples
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 
 //create audio library objects for handling the audio
 Tympan                       myTympan(TympanRev::F, audio_settings);   //do TympanRev::D or E or F
-AudioInputI2S_F32            i2s_in(audio_settings);                //Digital audio *from* the Tympan AIC.
-AudioEffectNoiseReduction_FD_F32    noiseReduction(audio_settings); //create an example frequency-domain processing block
+AudioInputI2S_F32            i2s_in(audio_settings);                   //Digital audio *from* the Tympan AIC.
+AudioEffectNoiseReduction_FD_F32_local    noiseReduction(audio_settings); //do the noise reduction processing in the frequency domain
 AudioEffectGain_F32          gain_L(audio_settings);                //Applies digital gain to audio data.
 AudioOutputI2S_F32           i2s_out(audio_settings);               //Digital audio *to* the Tympan AIC.
 
