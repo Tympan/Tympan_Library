@@ -43,16 +43,17 @@
 #include <input_i2s_hex_F32.h>  //tympan library
 #include <output_i2s_quad_F32.h> //tympan library
 
-class AudioOutputI2S_F32 : public AudioI2SBase, public AudioStream_F32
+class AudioOutputI2S_F32 : public AudioOutputI2SBase_F32 
+// public AudioI2SBase, public AudioStream_F32
 {
 //GUI: inputs:2, outputs:0  //this line used for automatic generation of GUI node
 public:
-	AudioOutputI2S_F32(void) : AudioStream_F32(2, inputQueueArray)	{ 
+	AudioOutputI2S_F32(void) : AudioOutputI2SBase_F32(2, inputQueueArray)	{ 
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //set size to default
 		begin();
 	} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
 	AudioOutputI2S_F32(const AudioSettings_F32 &settings) : AudioOutputI2S_F32(settings, true) {}
-	AudioOutputI2S_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioStream_F32(2, inputQueueArray)
+	AudioOutputI2S_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioOutputI2SBase_F32(2, inputQueueArray)
 	{ 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples; //set size to given value
@@ -60,7 +61,7 @@ public:
 	}
 	
 	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2S_F32(settings, tx_buff, true) { }
-	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioStream_F32(2, inputQueueArray) { 
+	AudioOutputI2S_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(2, inputQueueArray) { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_tx_buffer = tx_buff;
@@ -68,7 +69,7 @@ public:
 	}
 	
 	void update(void) override;
-	void begin(void);
+	void begin(void) override;
 	void sub_begin_i32(void);
 	void sub_begin_i16(void);
 	friend class AudioInputI2S_F32;
@@ -83,7 +84,7 @@ public:
 	static float setI2SFreq_T3(const float);
 	static uint32_t *i2s_tx_buffer;
 protected:
-	AudioOutputI2S_F32(int dummy): AudioStream_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
+	AudioOutputI2S_F32(int dummy): AudioOutputI2SBase_F32(2, inputQueueArray) {} // to be used only inside AudioOutputI2Sslave !!
 	static void config_i2s(void);
 	static void config_i2s(bool);
 	static void config_i2s(float);

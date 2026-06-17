@@ -42,22 +42,22 @@
 #include <input_i2s_quad_F32.h>  //tympan library
 #include <input_i2s_hex_F32.h>  //tympan library
 
-class AudioOutputI2SQuad_F32 : public AudioI2SBase, public AudioStream_F32
+class AudioOutputI2SQuad_F32 : public AudioOutputI2SBase_F32
 {
 public:
-	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { 
+	AudioOutputI2SQuad_F32(void) : AudioOutputI2SBase_F32(4, inputQueueArray) { 
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use default
 		begin();
 	}
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioOutputI2SQuad_F32(settings, true) {}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray)
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioOutputI2SBase_F32(4, inputQueueArray)
 	{ 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		if (flag_callBegin) begin(); 	
 	}
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2SQuad_F32(settings, tx_buff, true) {} 
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray) { 
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(4, inputQueueArray) { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_tx_buffer = tx_buff;
@@ -65,7 +65,7 @@ public:
 		if (flag_callBegin) begin(); 
 	}
 	void update(void) override;
-	void begin(void);
+	void begin(void) override;
 	friend class AudioInputI2SBase_F32;
 	friend class AudioInputI2S_F32;
 	friend class AudioInputI2SQuad_F32;

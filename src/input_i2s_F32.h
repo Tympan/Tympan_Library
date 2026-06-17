@@ -43,7 +43,6 @@ class AudioInputI2SBase_F32 : public AudioI2SBase, public AudioStream_F32 {
 		AudioInputI2SBase_F32(void) : AudioStream_F32(0, NULL) {};
 		virtual ~AudioInputI2SBase_F32(void) {};
 		
-		virtual void begin(void) = 0;
 		virtual int get_isOutOfMemory(void) { return flag_out_of_memory; }
 		virtual void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
 	protected:
