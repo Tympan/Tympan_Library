@@ -45,31 +45,30 @@ class AudioInputI2SQuad_F32 : public AudioInputI2SBase_F32  //which also inherit
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
-	AudioInputI2SQuad_F32(void) { 
+	AudioInputI2SQuad_F32(void) : AudioInputI2SBase_F32() { 
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
+		setInstanceName();
 		begin(); 
 	}
-	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioInputI2SQuad_F32(settings, true) {}
-	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) {
+	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioInputI2SQuad_F32(settings, true) { }
+	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioInputI2SBase_F32() {
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
+		setInstanceName();
 		if (flag_callBegin) begin(); 
 	}
- 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) { 
+ 	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) : AudioInputI2SBase_F32() { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_rx_buffer = rx_buff;
+		setInstanceName();
 		begin(); 
 	} 
 	virtual void update(void);
-	//static void scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) ;
-	//static void scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) ;
-	//static void scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len);
 	void begin(void);
-	//void begin(bool);
-	//int get_isOutOfMemory(void) { return flag_out_of_memory; }
-	//void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
 	static uint32_t *i2s_rx_buffer; 
+
+	void setInstanceName(void) override { instanceName = "AudioInputI2SQuad_F32"; } 
 protected:
 	static bool update_responsibility;
 	static DMAChannel dma;

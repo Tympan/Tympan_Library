@@ -44,11 +44,12 @@
 class AudioInputI2SHex_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
 public:
-	AudioInputI2SHex_F32(void)  { begin(); }
+	AudioInputI2SHex_F32(void) : AudioInputI2SBase_F32() { setInstanceName(); begin(); }
 	AudioInputI2SHex_F32(const AudioSettings_F32 &settings) : AudioInputI2SHex_F32(settings, true) {}
-	AudioInputI2SHex_F32(const AudioSettings_F32 &settings, bool flag_callBegin) { 
+	AudioInputI2SHex_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioInputI2SBase_F32() { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
+		setInstanceName(); 
 		if (flag_callBegin) begin(); 
 	}
 	virtual void update(void);
@@ -56,6 +57,7 @@ public:
 	int get_isOutOfMemory(void) { return flag_out_of_memory; }
 	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
 	static uint32_t *i2s_rx_buffer; 
+	void setInstanceName(void) override { instanceName = "AudioInputI2SHexF32"; }
 protected:
 	static bool update_responsibility;
 	static DMAChannel dma;
