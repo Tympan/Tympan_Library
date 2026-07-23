@@ -16,7 +16,6 @@
  * MIT License.  Use at your own risk.
 */
 
-
 #ifndef _SDWriter_h
 #define _SDWriter_h
 
@@ -30,7 +29,13 @@
 #include <string>
 
 //set some constants
-#define SDWRITER_MAX_BUFFER_LENGTH_BYTES 150000    //size of big memroy buffer to smooth out slow SD write operations
+#if defined(KINETISK)
+	//Tympan Rev A-D
+	#define SDWRITER_MAX_BUFFER_LENGTH_BYTES 75000    //size of big memroy buffer to smooth out slow SD write operations
+#else
+	//Tympan Rev E-F
+	#define SDWRITER_MAX_BUFFER_LENGTH_BYTES 150000    //size of big memroy buffer to smooth out slow SD write operations
+#endif	
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
 
 const int DEFAULT_SDWRITE_BYTES = (512); //target size for individual writes to the SD card.  Usually 512
@@ -57,8 +62,20 @@ class SDWriter : public Print
     SDWriter(SdFs * _sd, Print* _serial_ptr) { sd = _sd; setSerial(_serial_ptr); };
     virtual ~SDWriter() { end(); }
 
-    virtual void setup(void) { init(); }
-    virtual void init() { if (!sd->begin(SD_CONFIG)) sd->errorHalt(serial_ptr, "SDWriter: begin failed"); }
+		//return true if OK
+    virtual bool setup(void) { return init(); }
+		
+		//return true if OK
+		virtual bool init() {
+			bool is_ok = false;
+			//Serial.println("SDWriter: init: std->begin(SD_CONFIG)...");
+			if (!sd->begin(SD_CONFIG)) {
+				//sd->errorHalt(serial_ptr, "SDWriter: begin failed");
+				if (serial_ptr) serial_ptr->println("SDWriter: init: *** WARNING ***: sd.begin() failed.");
+				return is_ok = false;
+			}
+			return is_ok = true;
+		}
    		
 		virtual void end() {
 			if (isFileOpen()) close();
@@ -91,15 +108,15 @@ class SDWriter : public Print
 		bool exists(const char *fname) { return sd->exists(fname); }
 		bool remove(const char *fname) { return sd->remove(fname); }
 		
-    bool isFileOpen(void) {
-      if (file.isOpen()) return true;
-      return false;
-    }
+		bool isFileOpen(void) {
+			if (file.isOpen()) return true;
+			return false;
+		}
 		virtual bool preAllocate(uint64_t preAllocate_bytes) {  //Pre allocate space for your file on the SD card
 			bool is_success = false;
 			if (isFileOpen()) {
 				is_success = file.preAllocate(preAllocate_bytes);
-				if (!is_success) Serial.println("SDWriter: preAllocate: failed to preallocate file for " + String(preAllocate_bytes) + " bytes. Continuing...");
+				if (!is_success) serial_ptr->println("SDWriter: preAllocate: failed to preallocate file for " + String(preAllocate_bytes) + " bytes. Continuing...");
 			} else {
 				//Serial.println("SDWriter: preAllocate: file was not open.");
 			}
@@ -236,14 +253,28 @@ class BufferedSDWriter : public SDWriter
 
 
     //allocate the buffer for storing all the samples between write events
-    int allocateBuffer(const int _nBytes = SDWRITER_MAX_BUFFER_LENGTH_BYTES) {
-        if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
-        bufferLengthBytes = max(4,_nBytes);
+    int allocateBuffer(void) { 
+		  bool flag_shrinkIfNeeded = true;
+		  return allocateBuffer(SDWRITER_MAX_BUFFER_LENGTH_BYTES, flag_shrinkIfNeeded);
+	  }	
+    int allocateBuffer(const int _nBytes) {
+      bool flag_shrinkIfNeeded = false;
+      return allocateBuffer(_nBytes, flag_shrinkIfNeeded);	
+    }	
+    int allocateBuffer(const int _nBytes, bool flag_shrinkIfNeeded) {
+      if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
+      min_len_bytes = 4*4;  // max of single sample for 4 channels at max of 4 bytes per sample
+      bufferLengthBytes = max(min_len_bytes,_nBytes);
+      write_buffer = nullptr;
+      while ( (write_buffer == 0) && (bufferLengthBytes >= min_len_bytes) ) {
         write_buffer = new (std::nothrow) uint8_t[bufferLengthBytes];
-        resetBuffer();
-        //Serial.println("BufferedSDWriter: allocateBuffer: allocated " + String(bufferLengthBytes) + " after requesting " + String(_nBytes) + ", write_buffer = " + String((int)write_buffer));
-        return (int)write_buffer;
+        //Serial.print("SDWriter: allocateBuffer: tried "); Serial.print(bufferLengthSamples); Serial.print(", result = "); Serial.println((int)write_buffer);
+        if (write_buffer == 0) bufferLengthBytes /= 2;  //shrink the buffer that we're requesting fo when we loop again
+      }
+      if (write_buffer != 0) resetBuffer();
+      return (int)write_buffer;
     }
+
     void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
     
     //reset the read and write indices to the start of the buffer

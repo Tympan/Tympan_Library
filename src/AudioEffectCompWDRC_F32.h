@@ -76,14 +76,22 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 //GUI: shortName: CompressWDRC
   public:
     AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+			setInstanceName();
       setSampleRate_Hz(AUDIO_SAMPLE_RATE);  //use the default sample rate from the Teensy Audio library
       setDefaultValues();
     }
 
     AudioEffectCompWDRC_F32(const AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+      setInstanceName();
       setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
+		void setInstanceName(void) { 
+			instanceName = "AudioEffectCompWDRC_F32"; 
+			calcEnvelope.instanceName = instanceName + "--Envelope";
+			calcGain.instanceName  = instanceName + "--WDRC_Gain";
+		}
+		
 		virtual ~AudioEffectCompWDRC_F32() {};
 
 		//initialize with the default values

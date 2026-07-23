@@ -3,7 +3,7 @@
 //#include <arm_math.h>
 
 int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT) {
-  sample_rate_Hz = settings.sample_rate_Hz;
+  setSampleRate_Hz(settings.sample_rate_Hz);
   audio_block_samples = settings.audio_block_samples;
   //int N_FFT;  //it's in the header file
 

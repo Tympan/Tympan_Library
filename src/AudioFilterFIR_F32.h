@@ -25,9 +25,11 @@ class AudioFilterFIR_F32 : public AudioFilterBase_F32
 //GUI: shortName:filter_FIR
 	public:
 		AudioFilterFIR_F32(void): AudioFilterBase_F32(), 
-			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) {	}
+			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) { setInstanceName();	}
 		AudioFilterFIR_F32(const AudioSettings_F32 &settings): AudioFilterBase_F32(settings),
-			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) {	}
+			coeff_p(FIR_F32_PASSTHRU), n_coeffs(1), configured_block_size(0) { setInstanceName();	}
+			
+		void setInstanceName(void) { instanceName = "AudioFilterFIR_F32"; }
 			
 		//initialize the FIR filter by giving it the filter coefficients
 		bool begin(void) { return begin(coeff_passthru, 1, AUDIO_BLOCK_SAMPLES); }

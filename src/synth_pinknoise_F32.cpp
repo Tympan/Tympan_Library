@@ -82,7 +82,7 @@ const uint8_t AudioSynthNoisePink_F32::pnmask[256] = {
 
 void AudioSynthNoisePink_F32::update(void)
 {
-	audio_block_t *block;
+	//audio_block_t *block;
 	audio_block_f32_t *block_f32;
 	uint32_t *p, *end;
 	int32_t n1, n2;

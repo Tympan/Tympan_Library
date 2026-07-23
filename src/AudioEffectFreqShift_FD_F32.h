@@ -43,15 +43,18 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
 //GUI: shortName:freq_shift
   public:
     //constructors...a few different options.  The usual one should be: AudioEffectFreqShift_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT)
-    AudioEffectFreqShift_FD_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
+    AudioEffectFreqShift_FD_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setInstanceName(); };
     AudioEffectFreqShift_FD_F32(const AudioSettings_F32 &settings) :
       AudioStream_F32(1, inputQueueArray_f32) {
+			setInstanceName();
       sample_rate_Hz = settings.sample_rate_Hz;
     }
     AudioEffectFreqShift_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT) :
       AudioStream_F32(1, inputQueueArray_f32) {
+			setInstanceName();
       setup(settings, _N_FFT);
     }
+		void setInstanceName(void) { instanceName = "AudioEffectFreqShift_FD_F32"; }
 
     //destructor...release all of the memory that has been allocated
     virtual ~AudioEffectFreqShift_FD_F32(void) {

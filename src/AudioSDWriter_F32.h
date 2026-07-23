@@ -51,10 +51,10 @@ class AudioSDWriter {
 	
 	virtual String getCurrentFilename(void) { return current_filename; }
 
-	virtual void begin(void) { prepareSDforRecording(); };  //begins SD card
-    virtual void prepareSDforRecording(void) = 0;
-    virtual int startRecording(void) = 0;
-    virtual int startRecording(const char *) = 0;
+	virtual bool begin(void) { return prepareSDforRecording(); };  //begins SD card.  Returns true if OK
+    virtual bool prepareSDforRecording(void) = 0;  //Returns true if OK
+    virtual int startRecording(void) = 0;          //Returns error code.  OK is zero.
+    virtual int startRecording(const char *) = 0;  //Returns error code.  OK is zero.
 		//virtual int startRecording_noOverwrite(void) = 0;
     virtual void stopRecording(void) = 0;
 		virtual void end(void) = 0;
@@ -78,12 +78,14 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+			setInstanceName();
 		  setup();
 		}
 		AudioSDWriter_F32(const AudioSettings_F32 &settings) :
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+			setInstanceName();
 		  setup(); 
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -91,6 +93,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr);
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -98,6 +101,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr, _writeSizeBytes); 
 		  setSampleRate_Hz(settings.sample_rate_Hz); 
 		}
@@ -105,12 +109,14 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup();
 		}
 		AudioSDWriter_F32(SdFs * _sd,const AudioSettings_F32 &settings) :
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(); 
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -118,6 +124,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr);
 		  setSampleRate_Hz(settings.sample_rate_Hz);
 		}
@@ -125,6 +132,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  AudioSDWriter(_sd),
 		  AudioStream_F32(AUDIOSDWRITER_MAX_CHAN, inputQueueArray)
 		{ 
+		  setInstanceName();
 		  setup(_serial_ptr, _writeSizeBytes); 
 		  setSampleRate_Hz(settings.sample_rate_Hz); 
 		}
@@ -133,6 +141,8 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		  //stopRecording();
 		  delete buffSDWriter;
 		}
+
+		void setInstanceName(void) { instanceName = "AudioSDWriter_F32"; }
 
 		void setup(void) {
 			buffSDWriter = new BufferedSDWriter(getOrAllocateSD());
@@ -208,7 +218,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			if (buffSDWriter) buffSDWriter->freeBuffer(); // free memory allocated to buffer
 		}
 
-		void prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
+		bool prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
 		void end(void) override;
 		
 		/**

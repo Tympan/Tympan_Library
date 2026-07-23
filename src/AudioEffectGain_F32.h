@@ -20,8 +20,10 @@ class AudioEffectGain_F32 : public AudioStream_F32
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node  
   public:
     //constructor
-    AudioEffectGain_F32(void) : AudioStream_F32(1, inputQueueArray_f32) {};
-	AudioEffectGain_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) {};
+    AudioEffectGain_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setInstanceName(); }
+		AudioEffectGain_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) { setInstanceName(); }
+
+		void setInstanceName(void) { instanceName = "AudioEffectGain_F32"; }
 
     //here's the method that does all the work
     virtual void update(void) {

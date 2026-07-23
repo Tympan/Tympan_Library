@@ -22,8 +22,10 @@ class AudioSwitch4_F32 : public AudioStream_F32 {
 //GUI: inputs:1, outputs:4  //this line used for automatic generation of GUI node
 //GUI: shortName:Switch4
 public:
-  AudioSwitch4_F32() : AudioStream_F32(1, inputQueueArray) { setDefaultValues(); }
-	AudioSwitch4_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray) { setDefaultValues(); }
+  AudioSwitch4_F32() : AudioStream_F32(1, inputQueueArray) { setInstanceName(); setDefaultValues(); }
+	AudioSwitch4_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray) { setInstanceName(); setDefaultValues(); }
+	
+	void setInstanceName(void) { instanceName = "AudioSwitch4_F32"; }
 	
 	void setDefaultValues(void) {
 		outputChannel = 0;

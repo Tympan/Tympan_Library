@@ -141,7 +141,9 @@ class AudioStream_F32 : public AudioStream {
 		static int numInstances; 
 		static const int maxInstanceCounting;
 		//static void printNextUpdatePointers(void); 
-		static void printAllInstances(void);
+		static void printAllInstances(void);       //step through each AudioStream_F32 instances and print the names (in the order used by update_all()?)
+		static void printAllProcessorUsage(void);  //step through each AudioStream_F32 instances and print the CPU usage (assume default scaling to % CPU)
+		static void printAllProcessorUsage(const float divide_fac);  //use this if you specified your own sample rate or block size; get the divide_fac from your AudioSettings_F32 instance.
 		String instanceName = String("NotNamed");
 		
 		static void reset_update_counter(void) { update_counter = 0; }
@@ -152,6 +154,9 @@ class AudioStream_F32 : public AudioStream {
 		
 		//moved from protected to public to enable AudioForwarder_F32 to work
     void transmit(audio_block_f32_t *block, unsigned char index = 0);
+		
+		// where should this class print its output?
+		static Print *print_ptr;  //user can override this at any time simply by re-assigning...initial definition is in AudioStream_F32.cpp
 		
   protected:
     //bool active_f32;
@@ -167,6 +172,8 @@ class AudioStream_F32 : public AudioStream {
 		static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }   //stop the global "update" process...not per instance, global!
 		static void update_all(void) { update_counter++; AudioStream::update_all(); }											//force th execution of the global "update" process...not per instance, global!
 		static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
+		
+		static void printAllInstances_common(const bool flag_printProcessorUsage, const float processorUsage_divideFac);
 		
   private:
     AudioConnection_F32 *destination_list_f32;

@@ -273,7 +273,6 @@ int SDWriter::close(void) {
 size_t SDWriter::write(uint8_t foo)  {
 	size_t return_val = 0;
 	if (file.isOpen()) {
-
 		// write one audio byte.  Very inefficient.
 		if (flagPrintElapsedWriteTime) { usec = 0; }
 		file.write((byte *) (&foo), 1); //write one value
@@ -748,8 +747,8 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 	if (!write_buffer) {  //try to allocate buffer, return if it doesn't work
 		//Serial.println("BufferedSDWriter: copyToWriteBuffer: write_buffer = " + String((int)write_buffer) + " so trying to allocate default size");
 		if (!allocateBuffer()) {
-			Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
-			Serial.println("    : could not allocateBuffer()");
+			serial_ptr->println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
+			serial_ptr->println("    : could not allocateBuffer()");
 			return;
 		}
 	}
@@ -786,7 +785,7 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 				( ( nSampsU32 + decimation_counter)/decimation_factor ) * nBytesPerSample);
 
 		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
-			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
+			serial_ptr->println("BufferedSDWriter: copyToWriteBuffer: WARNING: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
 			overrunFlag = true;
 			sdWriteBuffUnfilled_bytes.last = bufferReadInd_bytes - estFinalWriteInd_bytes;	// Record negative amount of bytes left.

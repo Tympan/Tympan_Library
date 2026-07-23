@@ -72,17 +72,19 @@ unsigned long AudioSDPlayer_F32::update_counter = 0;
 void AudioSDPlayer_F32::init(void) {
   state = STATE_NOT_BEGUN;
 }
-void AudioSDPlayer_F32::begin(void)
+bool AudioSDPlayer_F32::begin(void)
 {
+	bool is_ok = false;
   if (state == STATE_NOT_BEGUN) {
-	if (sd_ptr == NULL) {
-		//Serial.println("AudioSDPlayer_F32: creating new SdFs.");
-		sd_ptr = new SdFs();
-	}
+		if (sd_ptr == NULL) {
+			//Serial.println("AudioSDPlayer_F32: creating new SdFs.");
+			sd_ptr = new SdFs();
+		}
+		//Serial.println("AudioSDPlayer_F32: begin: calling sd_ptr->begin(SD_CONFIG)...");
     if (!(sd_ptr->begin(SD_CONFIG))) {
-      Serial.println("AudioSDPlayer_F32: cannot open SD.");
-      return;
-    }
+			Serial.println("AudioSDPlayer_F32: begin: *** WARNING ***: sd.begin() failed.");
+			return is_ok = false;;
+		}
   }
   
   state = STATE_STOP;
@@ -99,6 +101,8 @@ void AudioSDPlayer_F32::begin(void)
   } */
 
   update_counter = 0;
+	
+	return is_ok = true;
 }
 
 bool AudioSDPlayer_F32::sendFilenames(void) {
@@ -188,8 +192,8 @@ bool AudioSDPlayer_F32::play(const char *filename)
 
 //Play an already-opened file
 bool AudioSDPlayer_F32::play(void) {
-	if (isFileOpen()) {
-		debugPrint("AudioSDPlayer_F32: file was already open.  Starting playing");
+	if (isFileOpen() || (getNumBytesInBuffer() > 0)) { //is a file open or is data in the play buffer?
+		Serial.println("AudioSDPlayer_F32: file was already open.  Starting playing");
 		active = true;  //in AudioStream.h.  Activates this instance so that update() gets called
 	} else {
 		Serial.println("AudiOSDPlayer_F32: play: cannot play file because no file has been opened.");
@@ -1476,12 +1480,14 @@ bool AudioSDPlayer_F32::parse_format(void)
 	  //do nothing.  assume good.
   } else if (sample_rate_Hz == 22050) {
     //b2m = B2M_22050;
-    num |= 4;
+    //num |= 4;
   } else if (sample_rate_Hz == 11025) {
     //b2m = B2M_11025;
-    num |= 4;
+    //num |= 4; //force resampling (which isn't supported...yet)//commented out 2025-12-03 to support all sample rates without resampling
   } else {
-    return false;
+		//changed 2025-12-03 to allow any sample rate (the file's sample rate is ignored, so it doesn't really matter)
+		//num |= 4; //force resampling (which isn't supported...yet)  //commented out 2025-12-03 to support all sample rates without resampling
+    //return false;  //old behavior.  now we're allowing all sample rates
   }
 
   //channels = header[0] >> 16;
@@ -1513,7 +1519,6 @@ bool AudioSDPlayer_F32::parse_format(void)
   // return false.  Do any real wav files have unexpected
   // values in these other fields?
   state_play = num;
-
   return true;
 }
 

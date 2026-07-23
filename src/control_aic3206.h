@@ -36,7 +36,8 @@
 #define TYMPAN_OUTPUT_HEADPHONE_JACK_OUT 1  //DAC left and right to headphone left and right
 #define TYMPAN_OUTPUT_LINE_OUT 2 //DAC left and right to lineout left and right
 #define TYMPAN_OUTPUT_HEADPHONE_AND_LINE_OUT 3  //DAC left and right to both headphone and line out
-#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out
+#define TYMPAN_OUTPUT_LEFT2DIFFHP_AND_R2DIFFLO 4 //DAC left to differential headphone, DAC right to line out differential
+#define TYMPAN_OUTPUT_LEFT2HP_AND_R2DIFFLO 5    //DAC left to headphone left (right is muted), DAC right to line out differential
 
 
 #define BOTH_CHAN 0
@@ -83,7 +84,7 @@ public:
 	static float applyLimitsOnVolumeSetting(float vol_dB);  //uses limits (using the limits on the DAC gain in the AIC)
 	float volume_dB(float vol_dB);  //set both channels to the same volume (via the DAC output volume)
 	float volume_dB(float vol_left_dB, float vol_right_dB); //set both channels (via the DAC output volume), but to their own values
-	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (0 = left; 1 = right)
+	float volume_dB(float vol_left_dB, int chan); //set each channel seperately (LEFT_CHAN, RIGHT_CHAN, or BOTH_CHAN)
 	float setDacGain_dB(float gain_dB) { return setDacGain_dB(gain_dB, gain_dB); }
 	float setDacGain_dB(float gain_left_dB, float gain_right_dB) { return volume_dB(gain_left_dB, gain_right_dB); } 
 	float setHeadphoneGain_dB(float gain_dB) { return setHeadphoneGain_dB(gain_dB, gain_dB); }
@@ -93,7 +94,8 @@ public:
 	int muteHeadphone(int chan = BOTH_CHAN);   //mutes the headphone driver
 	int unmuteHeadphone(int chan = BOTH_CHAN); //unmutes the headphone driver
 	bool inputLevel(float n);  //dummy to be compatible with Teensy Audio Library
-	bool inputSelect(int n);
+	bool inputSelect(int n) { return inputSelect(n, BOTH_CHAN); }
+	bool inputSelect(int n, int channel);
 	float applyLimitsOnInputGainSetting(float gain_dB);
 	float setInputGain_dB(float gain_dB);   //set both channels to the same gain
 	float setInputGain_dB(float gain_dB, int chan); //set each channel seperately (0 = left; 1 = right)

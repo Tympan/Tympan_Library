@@ -40,8 +40,10 @@
 
 class AudioInputI2SBase_F32 : public AudioI2SBase, public AudioStream_F32 {
 	public:
-		AudioInputI2SBase_F32(void) : AudioStream_F32(0, NULL) {};
-		virtual ~AudioInputI2SBase_F32(void) {};
+		AudioInputI2SBase_F32(void) : AudioStream_F32(0, NULL) { setInstanceName(); };
+		virtual ~AudioInputI2SBase_F32(void) { setInstanceName(); };
+		
+		virtual void setInstanceName(void) { instanceName = "AudioInputI2SBase_F32"; }
 		
 		virtual void begin(void) = 0;
 		virtual int get_isOutOfMemory(void) { return flag_out_of_memory; }
@@ -58,21 +60,24 @@ class AudioInputI2S_F32 : public AudioInputI2SBase_F32  //which also inherits fr
 {
 //GUI: inputs:0, outputs:2  //this line used for automatic generation of GUI nodes
 public:
-	AudioInputI2S_F32(void) { 
+	AudioInputI2S_F32(void) : AudioInputI2SBase_F32() { 
 		//Serial.println("AudioInputI2S_F32: constructor 1...");
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use the default size
+		setInstanceName();
 		begin(); 
 	} //uses default AUDIO_SAMPLE_RATE and BLOCK_SIZE_SAMPLES from AudioStream.h
-	AudioInputI2S_F32(const AudioSettings_F32 &settings) { 
+	AudioInputI2S_F32(const AudioSettings_F32 &settings) : AudioInputI2SBase_F32() { 
 		//Serial.println("AudioInputI2S_F32: constructor 2...");
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
+		setInstanceName();
 		begin(); 
 	}
- 	AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) { 
+ 	AudioInputI2S_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) : AudioInputI2SBase_F32() { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_rx_buffer = rx_buff;
+		setInstanceName();
 		begin(); 
 	} 	
 	
@@ -85,6 +90,7 @@ public:
 	//void sub_begin_i16(void);
 	static uint32_t *i2s_rx_buffer; 
 	//friend class AudioOutputI2S_F32;
+	void setInstanceName(void) override { instanceName = "AudioInputI2S_F32"; }
 protected:	
 	AudioInputI2S_F32(int dummy) {} // to be used only inside AudioInputI2Sslave !!
 	static bool update_responsibility;
