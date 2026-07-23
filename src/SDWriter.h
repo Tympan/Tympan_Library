@@ -262,9 +262,10 @@ class BufferedSDWriter : public SDWriter
       return allocateBuffer(_nBytes, flag_shrinkIfNeeded);	
     }	
     int allocateBuffer(const int _nBytes, bool flag_shrinkIfNeeded) {
+			if (_nBytes < 0) return 0;
       if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
-      min_len_bytes = 4*4;  // max of single sample for 4 channels at max of 4 bytes per sample
-      bufferLengthBytes = max(min_len_bytes,_nBytes);
+      uint32_t min_len_bytes = 4*4;  // max of single sample for 4 channels at max of 4 bytes per sample
+      bufferLengthBytes = (uint32_t)max(min_len_bytes,(uint32_t)_nBytes);
       write_buffer = nullptr;
       while ( (write_buffer == 0) && (bufferLengthBytes >= min_len_bytes) ) {
         write_buffer = new (std::nothrow) uint8_t[bufferLengthBytes];

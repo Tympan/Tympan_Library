@@ -61,7 +61,8 @@ int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type, P
 }
 */
 
-void AudioSDWriter_F32::prepareSDforRecording(void) {
+bool AudioSDWriter_F32::prepareSDforRecording(void) {
+	bool is_ok = false;
 	//Serial.println("AudioSDWriter_F32: prepareSDforRecording: current_SD_state = " + String((int)current_SD_state));
 	if (current_SD_state == STATE::UNPREPARED) {
 		//Serial.println("AudioSDWriter_F32: prepareSDforRecording: buffSDWriter = " + String((int)buffSDWriter));
@@ -387,7 +388,7 @@ int AudioSDWriter_F32::serviceSD_withWarnings(void) {
 
   if ( bytes_written > 0 ) {
     
-		//if slow, issue warning
+		// decide if we've been slow in writing
     bool criteria1 = (dT_millis > 150);
 		uint32_t bytes_filled = buffSDWriter->getNumBytesInBuffer();
 		uint32_t buffer_len_bytes = buffSDWriter->getLengthOfBuffer_bytes();
@@ -397,13 +398,15 @@ int AudioSDWriter_F32::serviceSD_withWarnings(void) {
   	float buffer_empty_frac = ((float)bytes_empty)/((float)buffer_len_bytes);
 		//bool criteria2 = (dT_millis > 20) && (buffer_fill_frac > 0.7f);
     bool criteria2 = ((dT_millis > 40) && (remaining_time_sec < 0.080));
+		
+		// if we've been slow, issue a warning
 		if (criteria1 || criteria2) {
 			serial_ptr->print("AudioSDWriter_F32: Warning: long write: ");
 			serial_ptr->print(dT_millis); serial_ptr->print(" msec");
 			serial_ptr->print(" for "); serial_ptr->print(bytes_written); serial_ptr->print(" bytes");
 			//serial_ptr->print(" at "); serial_ptr->print(((float)bytes_written)/((float)(dT_millis)),1);serial_ptr->print(" kB/sec");
-			serial_ptr->print(", buffer is " ); serial_ptr->print(buffSDWriter->getNumSampsInBuffer());
-			serial_ptr->print("/"); serial_ptr->print(buffSDWriter->getLengthOfBuffer());
+			serial_ptr->print(", buffer is " ); serial_ptr->print(bytes_filled);
+			serial_ptr->print("/"); serial_ptr->print(buffer_len_bytes);
 			serial_ptr->print(" used = "); serial_ptr->print(100.0f*buffer_empty_frac, 2); serial_ptr->print("% open");
 			serial_ptr->print(" = ");serial_ptr->print((int)(remaining_time_sec*1000)); serial_ptr->print(" msec remain.");
 			serial_ptr->println();
