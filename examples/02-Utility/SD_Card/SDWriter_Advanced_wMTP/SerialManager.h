@@ -34,7 +34,7 @@ void SerialManager::printHelp(void) {
   Serial.println(" General: No Prefix");
   Serial.println("   h: Print this help");
   Serial.println("   w: Switch Input to PCB Mics");
-  Serial.println("   W: Switch Input to Headset Mics");
+  Serial.println("   W: Switch Input to MicIn on the Mic Jack");
   Serial.println("   e: Switch Input to LineIn on the Mic Jack");
   Serial.println("   i: Input: Increase gain by " + String(gainIncrement_dB) + " dB");
   Serial.println("   I: Input: Decrease gain by " + String(gainIncrement_dB) + " dB");
@@ -43,7 +43,7 @@ void SerialManager::printHelp(void) {
   #if defined(USE_MTPDISK) || defined(USB_MTPDISK_SERIAL)  //detect whether "MTP Disk" or "Serial + MTP Disk" were selected in the Arduino IDE
     #if defined(__IMXRT1062__)
       //only for Teensy 4
-      Serial.println("   |: Reboot the headset (do before entering MTP mode)");
+      Serial.println("   |: Reboot the Tympan (often required before entering MTP mode)");
     #endif
     Serial.println("   >: Start MTP mode to read SD from PC");
   #endif
