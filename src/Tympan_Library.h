@@ -51,6 +51,7 @@
 #include "AudioRateDecimator_F32.h"
 #include "AudioRateInterpolator_F32.h"
 #include "AudioSettings_F32.h"
+#include "AudioStreamComposite_F32.h"
 #include "AudioSummer_F32.h"
 #include "AudioSwitch_F32.h"
 #include "AudioSwitchMatrix_F32.h"
