@@ -86,6 +86,7 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
       setSampleRate_Hz(settings.sample_rate_Hz);
       setDefaultValues();
     }
+		
 		void setInstanceName(void) { 
 			instanceName = "AudioEffectCompWDRC_F32"; 
 			calcEnvelope.instanceName = instanceName + "--Envelope";
@@ -96,9 +97,10 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
 		//initialize with the default values
 		virtual void setDefaultValues(void);
+		virtual void setDefautValues_passThru(void);
 
 	
-	// ////////////////////////// These are the methods where the audio processing work gets done
+		// ////////////////////////// These are the methods where the audio processing work gets done
 
     //here is the method that is called automatically by the audio library
     void update(void) override;
@@ -115,6 +117,13 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 		//This method uses simply float arrays as the inptus and outputs, so that this is maximally compatible
 		//with other ways of using this class.
     virtual void compress(float *x, float *y, int n);
+
+		//You can bypass this algorithm (it'll pass the input directly to the output)
+		//As a way to save CPU if you don't actually want any compression or level monitoring.
+		//You can also use "setActive(false)" (from AudioStream_F32) which will stop the algorithm
+		//so hard that it doesn't even pass the input audio.
+		virtual bool bypass(bool _bypass = true) { return is_bypassed = _bypass; }
+    virtual bool get_is_bypassed(void)       { return is_bypassed;}
 
 		// ///////////////////////// These are the methods used to configure or otherwise interact with this class
 
@@ -173,14 +182,17 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 		virtual float incrementKnee(float fac) {return setKneeCompressor_dBSPL(getKneeCompressor_dBSPL() + fac);}
 		virtual float incrementLimiter(float fac) {return setKneeLimiter_dBSPL(getKneeLimiter_dBSPL() + fac);};
 		
+
 		
 		// /////////////////////////////////////////////////  Here are the public data members
     AudioCalcEnvelope_F32 calcEnvelope;
     AudioCalcGainWDRC_F32 calcGain;
 		AudioCompWDRCState state;
-
+		
+			
   private:
     audio_block_f32_t *inputQueueArray[1];
+    bool is_bypassed = false;   //this turns off the aglorithm but has it pass the input data to the output
 };
 
 

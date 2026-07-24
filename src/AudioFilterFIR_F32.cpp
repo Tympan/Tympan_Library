@@ -81,8 +81,12 @@ int AudioFilterFIR_F32::processAudioBlock(const audio_block_f32_t *block, audio_
 		begin(coeff_p, n_coeffs, block->length);  //initialize with same coefficients, just a new block length
 	}
 	
-	//apply the FIR
-	arm_fir_f32(&fir_inst, block->data, block_new->data, block->length);
+	if (is_bypassed) {
+		for (int i=0; i<block->length; i++) block_new->data[i] = block->data[i]; //copy input to output
+	} else {
+		//apply the FIR
+		arm_fir_f32(&fir_inst, block->data, block_new->data, block->length);
+	}
 	
 	//copy info about the block
 	block_new->length = block->length;

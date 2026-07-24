@@ -54,17 +54,16 @@ class AudioFilterBase_F32 : public AudioStream_F32 {
 
     virtual int processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new) = 0;
 
-    virtual bool enable(bool enable = true) {
-      if (enable == true) {
-        //if (is_armed) {  //don't allow it to enable if it can't actually run the filters
-        is_enabled = enable;
-        return get_is_enabled();
-        //}
-      }
-      is_enabled = false;
-      return get_is_enabled();
-    }
+		// Filters can have three ways of bypassing them:
+		//   * via setActive(false), which is universally available via AudioStream_F32.  This 
+		//     stops its processing and as no output at all (thereby stopping any AudioStream 
+		//     audio processing classes that come after this filter).
+		//   * via enable(false), which has a similar effect as setActive(false) [we should not
+		//		 have added this feature.  Use setActive() or bypass() instead.]
+		//   * via bypass(true), which stops the processing but does copy the input audio to the output
+    virtual bool enable(bool enable = true)  { return is_enabled = enable; }
     virtual bool bypass(bool _bypass = true) { return is_bypassed = _bypass; }
+		
     virtual bool get_is_enabled(void)        { return is_enabled; }
     virtual bool get_is_bypassed(void)       { return is_bypassed;}
     
@@ -102,19 +101,18 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
       coeff_p = NULL;
       enable(false);
     }
-	virtual bool resetState(void) { return initFilter();}  //returns is_ok
-	virtual bool initFilter(void) 
-	{
-		bool is_ok = false;
-		if (coeff_p && (coeff_p != IIR_F32_PASSTHRU) && n_stages <= IIR_MAX_STAGES) {
-			//https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html
-			arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, (float32_t *)coeff_p,  &StateF32[0]);
-			is_ok = true;
-		}
-		return is_ok;
+		virtual bool resetState(void) { return initFilter();}  //returns is_ok
+		virtual bool initFilter(void) 
+		{
+			bool is_ok = false;
+			if (coeff_p && (coeff_p != IIR_F32_PASSTHRU) && n_stages <= IIR_MAX_STAGES) {
+				//https://www.keil.com/pack/doc/CMSIS/DSP/html/group__BiquadCascadeDF1.html
+				arm_biquad_cascade_df1_init_f32(&iir_inst, n_stages, (float32_t *)coeff_p,  &StateF32[0]);
+				is_ok = true;
+			}
+			return is_ok;
     }
 			
-
     virtual void clearCoeffArray(void) {
       for (int i = 0; i < IIR_MAX_STAGES * 5; i++) coeff[i] = 0.0;
       coeff[0] = 1.0f; //makes this be a simple pass-thru
@@ -222,23 +220,29 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
     float increment_crossover_freq(float incr_fac);
     float increment_filter_q(float incr_fac);
 
-    virtual void update(void);
-    virtual int processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new);
+    void update(void) override;
+    int processAudioBlock(const audio_block_f32_t *block, audio_block_f32_t *block_new) override;
     virtual float getCutoffFrequency_Hz(void) {  return cutoff_Hz;  }
     virtual float getQ(void) {  return q;  }
     virtual float getBW_Hz(void);
 
-    bool enable(bool enable = true) {
+		// Filters can have three ways of bypassing them:
+		//   * via setActive(false), which is universally available via AudioStream_F32.  This 
+		//     stops its processing and as no output at all (thereby stopping any AudioStream 
+		//     audio processing classes that come after this filter).
+		//   * via enable(false), which has a similar effect as setActive(false) [we should not
+		//		 have added this feature.  Use setActive() or bypass() instead.]
+		//   * via bypass(true), which stops the processing but does copy the input audio to the output
+    bool enable(bool enable = true) override {
       if (enable == true) {
         if (is_armed) {  //don't allow it to enable if it can't actually run the filters
-          is_enabled = enable;
+          is_enabled = enable;   //see parent class
           return get_is_enabled();
         }
       }
       is_enabled = false;  //see parent class
       return get_is_enabled();
     }
-    //bool get_is_enabled(void) { return is_enabled; }
 
     virtual void setupFromSettings(AudioFilterBiquad_F32_settings &state); //loads values from "state"
     virtual void getSettings(AudioFilterBiquad_F32_settings *settings);       //puts result into "state"
@@ -262,7 +266,7 @@ class AudioFilterBiquad_F32 : public AudioFilterBase_F32
 
     // pointer to current coefficients or NULL or FIR_PASSTHRU
     const float32_t *coeff_p;
-	int n_stages = 1;
+		int n_stages = 1;
 
     // ARM DSP Math library filter instance
     arm_biquad_casd_df1_inst_f32 iir_inst;
@@ -314,10 +318,10 @@ class AudioFilterBiquad_F32_UI : public AudioFilterBiquad_F32, public SerialMana
 
 
     // ///////// here are the methods that you must implement from SerialManager_UI
-    virtual void printHelp(void);
-    //virtual bool processCharacter(char c); //not used here
-    virtual bool processCharacterTriple(char mode_char, char chan_char, char data_char);
-    virtual void setFullGUIState(bool activeButtonsOnly = false);
+    void printHelp(void) override;
+    //bool processCharacter(char c) override; //not used here
+    bool processCharacterTriple(char mode_char, char chan_char, char data_char) override;
+    void setFullGUIState(bool activeButtonsOnly = false) override;
 
 
     float freq_increment_fac = powf(2.0, 1.0 / 12.0); //how much to multiply the crossover frequency by when shifting up or down

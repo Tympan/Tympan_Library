@@ -73,10 +73,26 @@ void AudioEffectCompWDRC_F32::setDefaultValues(void) {
 	setParams_from_CHA_WDRC(&gha);
 }
 
+void AudioEffectCompWDRC_F32::setDefautValues_passThru(void) {
+	state.setCompressor(this);
+	
+	//set values that result in audio passthrough
+	setDefaultValues();  //set to known starting pointe
+	setExpansionCompRatio(1.0);  //causes the expansion regime to have no effect
+	setCompRatio(1.0);           //causes the compression regime to have no effect
+	setKneeLimiter_dBSPL(getMaxdB() + 10.0);  //putting the limiter knee above the max_dB level should make it never come into ply
+}	
+
 void AudioEffectCompWDRC_F32::update(void) {
 	//receive the input audio data
 	audio_block_f32_t *block = AudioStream_F32::receiveReadOnly_f32();
 	if (block == NULL) return;
+
+	if (is_bypassed) {
+			AudioStream_F32::transmit(block); // send the output
+			AudioStream_F32::release(block);
+			return;
+	}
 
 	//allocate memory for the output of our algorithm
 	audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
