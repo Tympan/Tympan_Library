@@ -8,19 +8,21 @@ int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const 
 	int prev_N_FFT = N_FFT;
 	if (prev_N_FFT != _N_FFT) {
 		N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-		if (N_FFT < 1) return N_FFT;
+		if (N_FFT < 1) {
+			if (flag_printDebug) print_ptr->println("AudioEffectFreqShift_FD_F32: FAILED setting up myFFT for N_FFT = " + String(_N_FFT) + "...");
+			return N_FFT;
+		}
 		N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-		if (N_FFT < 1) return N_FFT;
+		if (N_FFT < 1) {
+			if (flag_printDebug) print_ptr->println("AudioEffectFreqShift_FD_F32: FAILED setting up myIFFT for N_FFT = " + String(_N_FFT) + "...");
+			return N_FFT;
+		}
 	}
 
 	//decide windowing
-	//Serial.println("AudioEffectFreqShift_FD_F32: setting myFFT to use hanning...");
 	(myFFT.getFFTObject())->useHanningWindow(); //applied prior to FFT
 	#if 1
-	if (myIFFT.getNBuffBlocks() > 3) {
-	  //Serial.println("AudioEffectFormantShiftFD_F32: setting myIFFT to use hanning...");
-	  (myIFFT.getIFFTObject())->useHanningWindow(); //window again after IFFT
-	}
+		if (myIFFT.getNBuffBlocks() > 3) (myIFFT.getIFFTObject())->useHanningWindow(); //window again after IFFT
 	#endif
 
 	//decide how much overlap is happening
@@ -44,21 +46,26 @@ int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const 
 	}
 		
 
-	#if 0
-	//print info about setup
-	Serial.println("AudioEffectFreqShift_FD_F32: FFT parameters...");
-	Serial.print("    : N_FFT = "); Serial.println(N_FFT);
-	Serial.print("    : audio_block_samples = "); Serial.println(settings.audio_block_samples);
-	Serial.print("    : FFT N_BUFF_BLOCKS = "); Serial.println(myFFT.getNBuffBlocks());
-	Serial.print("    : IFFT N_BUFF_BLOCKS = "); Serial.println(myIFFT.getNBuffBlocks());
-	Serial.print("    : FFT use window = "); Serial.println(myFFT.getFFTObject()->get_flagUseWindow());
-	Serial.print("    : IFFT use window = "); Serial.println((myIFFT.getIFFTObject())->get_flagUseWindow());
-	#endif
+	if (flag_printDebug) {
+		//print info about setup
+		print_ptr->println("AudioEffectFreqShift_FD_F32: FFT parameters...");
+		print_ptr->print("    : Requested N_FFT = "); print_ptr->println(_N_FFT);
+		print_ptr->print("    : Actual N_FFT = "); print_ptr->println(N_FFT);
+		print_ptr->print("    : audio_block_samples = "); print_ptr->println(settings.audio_block_samples);
+		print_ptr->print("    : FFT N_BUFF_BLOCKS = "); print_ptr->println(myFFT.getNBuffBlocks());
+		print_ptr->print("    : IFFT N_BUFF_BLOCKS = "); print_ptr->println(myIFFT.getNBuffBlocks());
+		print_ptr->print("    : FFT use window = "); print_ptr->println(myFFT.getFFTObject()->get_flagUseWindow());
+		print_ptr->print("    : IFFT use window = "); print_ptr->println((myIFFT.getIFFTObject())->get_flagUseWindow());
+		delay(30);  //give time for the print_ptr to spool out on slower systems
+	}
 
 	//allocate memory to hold frequency domain data
 	if (prev_N_FFT != _N_FFT) {
-		if (complex_2N_buffer) delete[] complex_2N_buffer;
+		if (complex_2N_buffer != nullptr) delete[] complex_2N_buffer;
 		complex_2N_buffer = new float32_t[2 * N_FFT];
+		if (complex_2N_buffer == nullptr) {
+			if (flag_printDebug) print_ptr->println("AudioEffectFreqShift_FD_F32: ...failed.");
+		}
 	}
 
 	//we're done.  return!

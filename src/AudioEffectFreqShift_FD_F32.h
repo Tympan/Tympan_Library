@@ -98,11 +98,11 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
 		FFT_Overlapped_F32* getFFTobj(void) { return &myFFT; }
 		IFFT_Overlapped_F32* getIFFTobj(void) { return &myIFFT; }
 
-
+		bool flag_printDebug = false;
 
   protected:
     int enabled = 0;
-    float32_t *complex_2N_buffer;
+    float32_t *complex_2N_buffer = nullptr;
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;

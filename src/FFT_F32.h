@@ -39,31 +39,36 @@ class FFT_F32
     }
     virtual int setup(const int _N_FFT, const int _is_IFFT) {
       if (!is_valid_N_FFT(_N_FFT)) {
-        Serial.println(F("FFT_F32: *** ERROR ***"));
-        Serial.print(F("    : Cannot use N_FFT = ")); Serial.println(N_FFT);
-        Serial.print(F("    : Must be power of 2 between 16 and 2048"));
+        print_ptr->println(F("FFT_F32: setup: *** ERROR ***"));
+        print_ptr->print(F("    : Cannot use N_FFT = ")); print_ptr->println(N_FFT);
+        print_ptr->print(F("    : Must be power of 2 between 16 and 2048"));
         return -1;
       }
       N_FFT = _N_FFT;
       is_IFFT = _is_IFFT;
 
-	  if ((N_FFT == 16) || (N_FFT == 64) || (N_FFT == 256) || (N_FFT == 1024) || (N_FFT == 4096)) {
-        arm_cfft_radix4_init_f32(&fft_inst_r4, N_FFT, is_IFFT, 1); //set up the FFT (or IFFT) 
+			if ((N_FFT == 16) || (N_FFT == 64) || (N_FFT == 256) || (N_FFT == 1024) || (N_FFT == 4096)) {
+				arm_cfft_radix4_init_f32(&fft_inst_r4, N_FFT, is_IFFT, 1); //set up the FFT (or IFFT) 
         is_rad4 = 1;
       } else {
-        arm_cfft_radix2_init_f32(&fft_inst_r2, N_FFT, is_IFFT, 1); //setup up the FFT (or IFFT)
+				arm_cfft_radix2_init_f32(&fft_inst_r2, N_FFT, is_IFFT, 1); //setup up the FFT (or IFFT)
       }
-	  
+		 
       //allocate window
-	  if (window != NULL) delete window;
-      window = new float[N_FFT];
-      if (is_IFFT) {
-        useRectangularWindow(); //default to no windowing for IFFT
-      } else {
-        useHanningWindow(); //default to windowing for FFT
-      }
+			if (window != nullptr) delete window;
+			window = new float[N_FFT];
+			
+			//create the windowing function
+			if (is_IFFT) {
+				useRectangularWindow(); //default to no windowing for IFFT
+			} else {
+				useHanningWindow(); //default to windowing for FFT
+			}
+			
+			//print_ptr->println("FFT_F32: setup: complete, N_FFT = " + String(N_FFT));
       return N_FFT;
     }
+		
     static int is_valid_N_FFT(const int N) {
        if ((N == 16) || (N == 32) || (N == 64) || (N == 128) || 
         (N == 256) || (N == 512) || (N==1024) || (N==2048) || (N==4096)) {  //larger than 4096 not supported by ARM FFT functions
@@ -75,21 +80,21 @@ class FFT_F32
 
     virtual void useRectangularWindow(void) {
       flag__useWindow = 0; //set to zero to actually skip the multiplications (saves CPU)
-      if (window != NULL) {
-        for (int i=0; i < N_FFT; i++) window[i] = 1.0; 
-      } else {
-		  Serial.println("FFT_F32: useRectangularWindow: *** ERROR ***: memory for 'window' has not been allocated.");
-		  flag__useWindow = 0;
-	  }
+			if (window != NULL) {
+				for (int i=0; i < N_FFT; i++) window[i] = 1.0; 
+			} else {
+				print_ptr->println("FFT_F32: useRectangularWindow: *** ERROR ***: memory for 'window' has not been allocated.");
+				flag__useWindow = 0;
+			}
     }
     virtual void useHanningWindow(void) {
       flag__useWindow = 1;
       if (window != NULL) {
         for (int i=0; i < N_FFT; i++) window[i] = 0.5*(1.0 - cos(2.0*M_PI*(float)i/((float)N_FFT)));
       } else {
-		  Serial.println("FFT_F32: useHanningWindow: *** ERROR ***: memory for 'window' has not been allocated.");
-		  flag__useWindow = 0;
-	  }
+				print_ptr->println("FFT_F32: useHanningWindow: *** ERROR ***: memory for 'window' has not been allocated.");
+				flag__useWindow = 0;
+			}
     }
     
     virtual void applyWindowToRealPartOfComplexVector(float32_t *complex_2N_buffer) {
@@ -138,11 +143,15 @@ class FFT_F32
     virtual int getNFFT(void) { return N_FFT; };
     int get_flagUseWindow(void) { return flag__useWindow; };
 
+		// where should this class print its output?
+		Print *print_ptr = &Serial;  //user can override this at any time simply by re-assigning in your own code
+	
+
   protected:
     int N_FFT=0;
     int is_IFFT=0;
     int is_rad4=0;
-    float *window;
+    float *window=nullptr;
     int flag__useWindow=0;
     arm_cfft_radix4_instance_f32 fft_inst_r4;
     arm_cfft_radix2_instance_f32 fft_inst_r2;
