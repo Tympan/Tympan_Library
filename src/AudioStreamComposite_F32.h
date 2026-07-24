@@ -12,6 +12,7 @@
 #define AudioStreamComposite_F32_h
 
 #include <Tympan_Library.h>
+#include <AudioSwitchMatrix_F32.h>
 #include <vector>
 #include <Audio.h>  //for AudioNoInterrupts() and AudioInterrupts()
 
