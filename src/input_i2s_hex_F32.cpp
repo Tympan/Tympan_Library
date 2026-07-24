@@ -311,6 +311,16 @@ void AudioInputI2SHex_F32::begin(void)
 {
 }
 
+void AudioInputI2SHex_F32::isr(void)
+{
+}
 
+void AudioInputI2SHex_F32::update_1chan(int chan, unsigned long counter, audio_block_f32_t *&out_block)
+{
+}
+	
+void AudioInputI2SHex_F32::update(void)
+{
+}
 
 #endif
