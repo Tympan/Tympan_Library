@@ -80,9 +80,25 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
 		virtual void shiftTheBins(float32_t *complex_2N_buffer, int NFFT, int n_shift);
 		
 		void update(void) override;
+
+		//To save CPU when not using this algorithm, you can enable/disable the algorithm
+		//using the method below.  Using this enable() method, the processing will be bypassed
+		//but the input audio will be copied over to the output.
+		//
+		//In contrast, you could use "setActive(false)" universally part of AudioStream_F32
+		//which will prevent the processing from being called.  In the case of setActive(),
+		//however, the algorithm won't even pass the input to the output; it'll have no output,
+		//which will naturally stop all processing by subsequent audio processing classes, too.
+		//
+		//So, choose which behavior you want and enjoy!
 		bool enable(bool state = true) { enabled = state; return enabled;}
+		
+
+
 		FFT_Overlapped_F32* getFFTobj(void) { return &myFFT; }
 		IFFT_Overlapped_F32* getIFFTobj(void) { return &myIFFT; }
+
+
 
   protected:
     int enabled = 0;
