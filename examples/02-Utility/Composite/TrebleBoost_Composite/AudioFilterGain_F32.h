@@ -4,17 +4,32 @@
 
 #include <Tympan_Library.h>
 
-// For a normal audio-processing class, you would inheret from AudioStream_F32, which has most of the underlying
+// INTRODUCTION: For a normal audio-processing class, you would inheret from AudioStream_F32, which has most of the underlying
 // plumbing.  Here for a composite audio class, you need a bit more plumbing, so you need to inhereit from
 // AudioStreamComposite_F32 instead. 
 //
-// Then, inside the constructor, you instantiate all of the smaller audio processing classes that you'll be
+// CONSTRUCTOR: Inside the constructor, you instantiate all of the smaller audio processing classes that you'll be
 // joining together here in this composite class.  You'll also instantiate all of the AudioConnection_F32
 // objects that join them together.
 //
-// In the creation of these classes, the first class should always be "startNode = new AudioSwitchMatrix4_F32()"
+// FIRST AND LAST: In the creation of these classes, the first class should always be "startNode = new AudioSwitchMatrix4_F32()"
 // and the last class should always be "endNode = new AudioForwarder4_F32(audio_settings, this);".  This is auio
 // audio gets injected into and pulled out of the composite class.
+//
+// NO UPDATE METHOD? You might note that, unlike every AudioStream audio processing class, this example of an AudioStreamComposite
+// class has no update() method.  That's because there is an update() method already in AudioStreamComposite_F32, which
+// we inherit.  It is this built-in update() method that handles all the fancy handling of audio_blocks to make this
+// compositing work.  As always, you can override this method when writing your own composite class, but you'll want to
+// be sure that you know how to feed the audio_blocks into "startNode" correctly.
+//
+// HOW DOES UPDATE WORK?  With Tympan (and Teensy) the update() method of each AudioStream object is called in the order
+// that the AudioStream classes were instantiated.  In the case of this composite class, the overall composite class
+// is created and then its constructor creates whatever AudioStream classes you've instantiated (via the "new" keyword)
+// in the constructor that you wrote.  The last object that you instantiate should be "endNode", which needs to be an
+// AudioForwarder4_F32.  This is a special class that puts its output into the output of the composite class that owns
+// it (see the "this" keyword when instantiating the AudioForwarder4_F32 in the constructor below).  By using this
+// AudioForwarder to put the outgoing audio into the composite class's output, it is in the write place for any
+// outgoing AudioConnection_F32 patchCords to get the data for subsequent audio processing.
 //
 class AudioFilterGain_F32 : public AudioStreamComposite_F32 {  // AudioStreamComposite_F32 is in the Tympan_Library
   public:
