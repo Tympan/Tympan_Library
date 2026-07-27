@@ -294,7 +294,14 @@ void AudioStream_F32::printAllInstances_common(const bool flag_printProcessorUsa
 			
 			if (flag_printProcessorUsage) {
 				print_ptr->print(", CPU% ");
-				print_ptr->print( float(p->cpu_cycles)/processorUsage_divideFac, 1);
+				if (p->active) {
+					print_ptr->print( float(p->cpu_cycles)/processorUsage_divideFac, 1);
+				} else {
+					// if the algorithm is NOT active, then (unfortunately) AudioStream does not set cpu_cycles 
+					// to zero...it holds its old value from when it was active.  So, to overcome this,
+          // let's force it to look like the zero cpu cycles that it ought to be
+					print_ptr->print( 0.0f , 1);
+				}	
 				print_ptr->print("/");
 				print_ptr->print( float(p->cpu_cycles_max)/processorUsage_divideFac, 1);
 			}	
