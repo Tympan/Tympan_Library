@@ -21,70 +21,85 @@
 class AudioSummer4_F32 : public AudioStream_F32 {
 	//GUI: inputs:4, outputs:1  //this line used for automatic generation of GUI node
 	//GUI: shortName:Summer4
+	protected:
+	    static const int N_CHAN = 4;
 	public:
-		AudioSummer4_F32() : AudioStream_F32(4, inputQueueArray) { setInstanceName(); setDefaultValues(); }
-		AudioSummer4_F32(const AudioSettings_F32 &settings) : AudioStream_F32(4, inputQueueArray) { setInstanceName(); setDefaultValues(); }
+		AudioSummer4_F32() : AudioStream_F32(N_CHAN, inputQueueArray) { setInstanceName(); setDefaultValues(); }
+		AudioSummer4_F32(const AudioSettings_F32 &settings) : AudioStream_F32(N_CHAN, inputQueueArray) { setInstanceName(); setDefaultValues(); }
 		
 		void setInstanceName(void) { instanceName = "AudioSummer4_F32"; }
 		
 		void setDefaultValues(void) {
-			for (int i=0; i<4; i++) flag_useChan[i] = true;
+			for (int i=0; i<N_CHAN; i++) flag_useChan[i] = true;
 		}
 	
-    virtual void update(void);
-		virtual int processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
+		void update(void) override;
+		virtual int processData(audio_block_f32_t *audio_in[N_CHAN], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
 
-    int enableChannel(unsigned int channel, bool enable = true) {
-      if ((channel >= 4) || (channel < 0)) return -1;
-      return (int) (flag_useChan[channel] = enable);
-    }
-		void mute(void) { for (int i=0; i < 4; i++) enableChannel(i,false); };  //mute all channels
+		//enableChannel() activates a channel without turning off the other channels
+		int enableChannel(unsigned int channel, bool enable = true) {
+			if ((channel >= N_CHAN) || (channel < 0)) return -1;
+			return (int)(flag_useChan[channel] = enable);
+		}
+
+		//mute() deactivates all channels
+		void mute(void) { for (int i=0; i < N_CHAN; i++) enableChannel(i,false); };  //mute all channels
 	
+		//switchChannel() activates a channel while de-activating all the other channels
 		int switchChannel(unsigned int channel) { 
 			//mute all channels except the given one.  Set the given one to 1.0.
-			if ((channel >= 4) || (channel < 0)) return -1;
+			if ((channel >= N_CHAN) || (channel < 0)) return -1;
 			mute(); 
 			enableChannel(channel);
 			return channel;
 		} 
 
   private:
-    audio_block_f32_t *inputQueueArray[4];
-    bool flag_useChan[4];
+    audio_block_f32_t *inputQueueArray[N_CHAN];
+	bool flag_useChan[N_CHAN];
+
 };
 
 class AudioSummer8_F32 : public AudioStream_F32 {
 	//GUI: inputs:8, outputs:1  //this line used for automatic generation of GUI node
-	//GUI: shortName:Summer4
+	//GUI: shortName:Summer8
+	protected:
+	    static const int N_CHAN = 8;
 	public:
-    AudioSummer8_F32() : AudioStream_F32(8, inputQueueArray) { setInstanceName(); setDefaultValues(); }
-		AudioSummer8_F32(const AudioSettings_F32 &settings) : AudioStream_F32(8, inputQueueArray) { setInstanceName(); setDefaultValues(); }
+    	AudioSummer8_F32() : AudioStream_F32(N_CHAN, inputQueueArray) { setInstanceName(); setDefaultValues(); }
+		AudioSummer8_F32(const AudioSettings_F32 &settings) : AudioStream_F32(N_CHAN, inputQueueArray) { setInstanceName(); setDefaultValues(); }
 		
 		void setInstanceName(void) { instanceName = "AudioSummer8_F32"; }
 		
 		void setDefaultValues(void) {
-			for (int i=0; i<8; i++) flag_useChan[i] = true;
+			for (int i=0; i<N_CHAN; i++) flag_useChan[i] = true;
 		}
 		
-    virtual void update(void);
+		void update(void) override;
+		virtual int processData(audio_block_f32_t *audio_in[N_CHAN], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
 
-    int enableChannel(unsigned int channel, bool enable = true) {
-      if ((channel >= 8) || (channel < 0)) return -1;
-      return (int) (flag_useChan[channel] = enable);
-    }
-		void mute(void) { for (int i=0; i < 8; i++) enableChannel(i,false); };  //mute all channels
+
+		//enableChannel() activates a channel without turning off the other channels
+		int enableChannel(unsigned int channel, bool enable = true) {
+			if ((channel >= N_CHAN) || (channel < 0)) return -1;
+			return (int)(flag_useChan[channel] = enable);
+		}
+
+		//mute() deactivates all channels
+		void mute(void) { for (int i=0; i < N_CHAN; i++) enableChannel(i,false); };  //mute all channels
 		
+		//switchChannel() activates a channel while de-activating all the other channels
 		int switchChannel(unsigned int channel) { 
 			//mute all channels except the given one.  Set the given one to 1.0.
-			if ((channel >= 8) || (channel < 0)) return -1;
+			if ((channel >= N_CHAN) || (channel < 0)) return -1;
 			mute(); 
 			enableChannel(channel);
 			return channel;
 		} 
 
   private:
-    audio_block_f32_t *inputQueueArray[8];
-    bool flag_useChan[8];
+    audio_block_f32_t *inputQueueArray[N_CHAN];
+    bool flag_useChan[N_CHAN];
 };
 
 

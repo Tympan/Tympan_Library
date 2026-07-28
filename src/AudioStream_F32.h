@@ -96,27 +96,27 @@ class AudioConnection_F32
 
 
 class AudioStream_F32 : public AudioStream {
-  public:
-    AudioStream_F32(unsigned char n_input_f32, audio_block_f32_t **iqueue) : 
-			AudioStream(1, inputQueueArray_i16), num_inputs_f32(n_input_f32), inputQueue_f32(iqueue)
-		{
-      //active_f32 = false;
-      destination_list_f32 = NULL;
-      for (int i=0; i < n_input_f32; i++) {
-        inputQueue_f32[i] = NULL;
-      }
-			if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
-    };
-    //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
-    //static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
-    static void initialize_f32_memory(const unsigned int num);
-	  static void initialize_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
-	
-    //virtual void update(audio_block_f32_t *) = 0; 
-    static uint8_t f32_memory_used;
-    static uint8_t f32_memory_used_max;
-    static audio_block_f32_t * allocate_f32(void);
-    static void release(audio_block_f32_t * block);
+	public:
+		AudioStream_F32(unsigned char n_input_f32, audio_block_f32_t **iqueue) : 
+				AudioStream(1, inputQueueArray_i16), num_inputs_f32(n_input_f32), inputQueue_f32(iqueue)
+			{
+			//active_f32 = false;
+			destination_list_f32 = NULL;
+			for (int i=0; i < n_input_f32; i++) {
+			inputQueue_f32[i] = NULL;
+			}
+				if (numInstances < AudioStream_F32::maxInstanceCounting) allInstances[numInstances++] = this;
+		};
+		//static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num);
+		//static void initialize_f32_memory(audio_block_f32_t *data, unsigned int num, const AudioSettings_F32 &settings);
+		static void initialize_f32_memory(const unsigned int num);
+		static void initialize_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
+
+		//virtual void update(audio_block_f32_t *) = 0; 
+		static uint8_t f32_memory_used;
+		static uint8_t f32_memory_used_max;
+		static audio_block_f32_t * allocate_f32(void);
+		static void release(audio_block_f32_t * block);
 	
 		//Control the global update_all() process handled by the underlying AudioStream class.
 		//These affect the *global* audio processing behavior, not the per-instance behavior.
@@ -151,20 +151,20 @@ class AudioStream_F32 : public AudioStream {
 		
 		//added to enable AudioStreamComposite_F32 to put its inputs into another AudioStream_F32 inputs
 		bool putBlockInInputQueue(audio_block_f32_t *block, unsigned int ind);
-		
+
 		//moved from protected to public to enable AudioForwarder_F32 to work
-    void transmit(audio_block_f32_t *block, unsigned char index = 0);
-		
+		void transmit(audio_block_f32_t *block, unsigned char index = 0);
+
 		// where should this class print its output?
 		static Print *print_ptr;  //user can override this at any time simply by re-assigning...initial definition is in AudioStream_F32.cpp
 		
-  protected:
-    //bool active_f32;
-    unsigned char num_inputs_f32;
-    audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
-    audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
-    friend class AudioConnection_F32;
-	
+	protected:
+		//bool active_f32;
+		unsigned char num_inputs_f32;
+		audio_block_f32_t * receiveReadOnly_f32(unsigned int index = 0);
+		audio_block_f32_t * receiveWritable_f32(unsigned int index = 0);  
+		friend class AudioConnection_F32;
+
 		//Control the global update_all() process handled by the underlying AudioStream class.
 		//These affect the *global* audio processing behavior, not the per-instance behavior.
 		//The methods below should only be used with care...like in the I2S classes.
@@ -172,17 +172,17 @@ class AudioStream_F32 : public AudioStream {
 		static bool update_stop(void) { AudioStream::update_stop(); return isAudioProcessing = false; }   //stop the global "update" process...not per instance, global!
 		static void update_all(void) { update_counter++; AudioStream::update_all(); }											//force th execution of the global "update" process...not per instance, global!
 		static bool isAudioProcessing; //try to keep the same as AudioStream::update_scheduled, which is private and inaccessible to me :(
-		
+
 		static void printAllInstances_common(const bool flag_printProcessorUsage, const float processorUsage_divideFac);
-		
-  private:
-    AudioConnection_F32 *destination_list_f32;
-    audio_block_f32_t **inputQueue_f32;
-    virtual void update(void) = 0;
-    audio_block_t *inputQueueArray_i16[1];  //two for stereo
-    //static audio_block_f32_t *f32_memory_pool;
-    static std::vector<audio_block_f32_t *> f32_memory_pool;
-    static uint32_t f32_memory_pool_available_mask[6];
+
+	private:
+		AudioConnection_F32 *destination_list_f32;
+		audio_block_f32_t **inputQueue_f32;
+		virtual void update(void) = 0;
+		audio_block_t *inputQueueArray_i16[1];  //two for stereo
+		//static audio_block_f32_t *f32_memory_pool;
+		static std::vector<audio_block_f32_t *> f32_memory_pool;
+		static uint32_t f32_memory_pool_available_mask[6];
 		static void allocate_f32_memory(const unsigned int num);
 		static void allocate_f32_memory(const unsigned int num, const AudioSettings_F32 &settings);
 };
