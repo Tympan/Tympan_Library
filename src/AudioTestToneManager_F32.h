@@ -21,12 +21,16 @@ class AudioTestToneManager_F32 : public AudioStream_F32 {
     AudioTestToneManager_F32(void) : AudioStream_F32(0, NULL) {
       setAudioBlockSamples(AUDIO_BLOCK_SAMPLES);
       setSampleRate_Hz(AUDIO_SAMPLE_RATE);
+      setInstanceName();
     }
     AudioTestToneManager_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) {
       setAudioBlockSamples(settings.audio_block_samples);
       setSampleRate_Hz(settings.sample_rate_Hz);
+      setInstanceName();
     }
     virtual ~AudioTestToneManager_F32(void) {}
+
+    virtual void setInstanceName(void) { instanceName = "AudioTestToneManager_F32"; } //set default instance name
 
     enum STATE {STATE_STOPPED = 0, STATE_TONE = 1, STATE_SILENCE = 2};
 

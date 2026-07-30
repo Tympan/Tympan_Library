@@ -75,12 +75,15 @@ class AudioPlayMemoryI16_F32 : public AudioStream_F32
 {
 //GUI: inputs:0, outputs:1  //this line used for automatic generation of GUI nodes 
   public:
-    AudioPlayMemoryI16_F32(void) : AudioStream_F32(0, NULL) { }
+    AudioPlayMemoryI16_F32(void) : AudioStream_F32(0, NULL) { setInstanceName(); }
     AudioPlayMemoryI16_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL)
     { 
       setSampleRate_Hz(settings.sample_rate_Hz);  
 	  setDataSampleRate_Hz(settings.sample_rate_Hz); 
+	  setInstanceName(); 
     }
+
+	virtual void setInstanceName(void) { instanceName = "AudioPlayMemoryI16"; } //set default name
 	
 	// here are the play methods.  Here's where you tell it to start playing (and what to play)
 	virtual bool play(AudioPlayMemoryQueue _playQueue) { 

@@ -59,7 +59,7 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 		
                 
 		AudioSynthWaveform_F32(void) : AudioSynthWaveform_F32(false) {};
-    AudioSynthWaveform_F32(const bool start_isActive) : AudioStream_F32(1, inputQueueArray_f32),  //uses default AUDIO_SAMPLE_RATE and AUDIO_BLOCK_SAMPLES from AudioStream.h
+    	AudioSynthWaveform_F32(const bool start_isActive) : AudioStream_F32(1, inputQueueArray_f32),  //uses default AUDIO_SAMPLE_RATE and AUDIO_BLOCK_SAMPLES from AudioStream.h
 				_PI(2*acos(0.0f)),
 				twoPI(2 * _PI),
 				sample_rate_Hz(AUDIO_SAMPLE_RATE_EXACT),
