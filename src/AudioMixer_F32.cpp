@@ -1,12 +1,12 @@
 #include "AudioMixer_F32.h"
 
-void AudioMixer4_F32::update(void) {
+void AudioMixerBase_F32::update(void) {
   audio_block_f32_t *in, *out=NULL;
 
 	
   //get the first available channel
-  int channel = 0;
-  while  (channel < 4) {
+  unsigned int channel = 0U;
+  while  (channel < N_CHAN) {
 	  out = receiveWritable_f32(channel);
 	  if (out) break;
 	  channel++;
@@ -16,7 +16,7 @@ void AudioMixer4_F32::update(void) {
   
   //add in the remaining channels, as available
   channel++;
-  while  (channel < 4) {
+  while  (channel < N_CHAN) {
     in = receiveReadOnly_f32(channel);
     if (in) {
 		audio_block_f32_t *tmp = allocate_f32();
@@ -62,16 +62,16 @@ void AudioMixer4_F32::update(void) {
 */
 
 //Note audio_in can be read-only as none of the operations are in-place
-int AudioMixer4_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out) {
+int AudioMixerBase_F32::processData(audio_block_f32_t *audio_in[], audio_block_f32_t *audio_out) {
 	if (audio_out == NULL) return -1;
 	bool firstValidAudio = true;
 	audio_block_f32_t *tmp = allocate_f32();	
 	if (tmp == NULL) return -1;  //no memory!
-	int num_channels_mixed = 0;
+	unsigned int num_channels_mixed = 0U;
 	
 	
 	//loop over channels
-	for (int channel = 0; channel < 4; channel++) {
+	for (unsigned int channel = 0; channel < N_CHAN; channel++) {
 		if (audio_in[channel] != NULL) {  //is it valid audio
 		
 			if (firstValidAudio) {
@@ -94,102 +94,102 @@ int AudioMixer4_F32::processData(audio_block_f32_t *audio_in[4], audio_block_f32
 	AudioStream_F32::release(tmp); 
 	
 	//we're done!
-	return num_channels_mixed;
+	return static_cast<int>(num_channels_mixed);
 }
 
-// ////////////////////////////////////////////////////////////////////////////
+// // ////////////////////////////////////////////////////////////////////////////
 
-void AudioMixer8_F32::update(void) {
+// void AudioMixer8_F32::update(void) {
 		
-  audio_block_f32_t *in;
-  audio_block_f32_t *out=allocate_f32();
-  if (out == NULL) return;  //there was no memory available
+//   audio_block_f32_t *in;
+//   audio_block_f32_t *out=allocate_f32();
+//   if (out == NULL) return;  //there was no memory available
 
-  //get the first available channel
-  int channel = 0;
-  while  (channel < 8) {
-	  in = receiveReadOnly_f32(channel);
-	  if (in != NULL) break;
-	  channel++;
-  }
-  if (in == NULL) {AudioStream_F32::release(out); return;}  //there was no data available.  so exit.
+//   //get the first available channel
+//   int channel = 0;
+//   while  (channel < N_CHAN) {
+// 	  in = receiveReadOnly_f32(channel);
+// 	  if (in != NULL) break;
+// 	  channel++;
+//   }
+//   if (in == NULL) {AudioStream_F32::release(out); return;}  //there was no data available.  so exit.
   
-  //process the first channel
-  arm_scale_f32(in->data, multiplier[channel], out->data, in->length);  //there was data, so scale it per the multiplier
-  out->length = in->length;
-  AudioStream_F32::release(in);
+//   //process the first channel
+//   arm_scale_f32(in->data, multiplier[channel], out->data, in->length);  //there was data, so scale it per the multiplier
+//   out->length = in->length;
+//   AudioStream_F32::release(in);
   
   
-  //add in the remaining channels, as available
-  channel++;
-  while  (channel < 8) {
-    in = receiveReadOnly_f32(channel);
-    if (in != NULL) {
-		audio_block_f32_t *tmp = allocate_f32();
+//   //add in the remaining channels, as available
+//   channel++;
+//   while  (channel < N_CHAN) {
+//     in = receiveReadOnly_f32(channel);
+//     if (in != NULL) {
+// 		audio_block_f32_t *tmp = allocate_f32();
 
-		arm_scale_f32(in->data, multiplier[channel], tmp->data, tmp->length);
-		arm_add_f32(out->data, tmp->data, out->data, tmp->length);
+// 		arm_scale_f32(in->data, multiplier[channel], tmp->data, tmp->length);
+// 		arm_add_f32(out->data, tmp->data, out->data, tmp->length);
 
-		AudioStream_F32::release(tmp);
-		AudioStream_F32::release(in);
-	} else {
-		//do nothing, this vector is empty
-	}
-	channel++;
-  }
+// 		AudioStream_F32::release(tmp);
+// 		AudioStream_F32::release(in);
+// 	} else {
+// 		//do nothing, this vector is empty
+// 	}
+// 	channel++;
+//   }
 
-  if (out != NULL) {
-    AudioStream_F32::transmit(out);
-    AudioStream_F32::release(out);
-  }
+//   if (out != NULL) {
+//     AudioStream_F32::transmit(out);
+//     AudioStream_F32::release(out);
+//   }
 
-}
+// }
 
-// ////////////////////////////////////////////////////////////////////////////
+// // ////////////////////////////////////////////////////////////////////////////
 
 
-void AudioMixer16_F32::update(void) {
+// void AudioMixer16_F32::update(void) {
 		
-  audio_block_f32_t *in;
-  audio_block_f32_t *out=allocate_f32();
-  if (out == NULL) return;  //there was no memory available
+//   audio_block_f32_t *in;
+//   audio_block_f32_t *out=allocate_f32();
+//   if (out == NULL) return;  //there was no memory available
 
-  //get the first available channel
-  int channel = 0;
-  while  (channel < n_chan) {
-	  in = receiveReadOnly_f32(channel);
-	  if (in != NULL) break;
-	  channel++;
-  }
-  if (in == NULL) {AudioStream_F32::release(out); return;}  //there was no data available.  so exit.
+//   //get the first available channel
+//   int channel = 0;
+//   while  (channel < N_CHAN) {
+// 	  in = receiveReadOnly_f32(channel);
+// 	  if (in != NULL) break;
+// 	  channel++;
+//   }
+//   if (in == NULL) {AudioStream_F32::release(out); return;}  //there was no data available.  so exit.
   
-  //process the first channel
-  arm_scale_f32(in->data, multiplier[channel], out->data, in->length);  //there was data, so scale it per the multiplier
-  out->length = in->length;
-  AudioStream_F32::release(in);
+//   //process the first channel
+//   arm_scale_f32(in->data, multiplier[channel], out->data, in->length);  //there was data, so scale it per the multiplier
+//   out->length = in->length;
+//   AudioStream_F32::release(in);
   
   
-  //add in the remaining channels, as available
-  channel++;
-  while  (channel < n_chan) {
-    in = receiveReadOnly_f32(channel);
-    if (in != NULL) {
-		audio_block_f32_t *tmp = allocate_f32();
+//   //add in the remaining channels, as available
+//   channel++;
+//   while  (channel < N_CHAN) {
+//     in = receiveReadOnly_f32(channel);
+//     if (in != NULL) {
+// 		audio_block_f32_t *tmp = allocate_f32();
 
-		arm_scale_f32(in->data, multiplier[channel], tmp->data, tmp->length);
-		arm_add_f32(out->data, tmp->data, out->data, tmp->length);
+// 		arm_scale_f32(in->data, multiplier[channel], tmp->data, tmp->length);
+// 		arm_add_f32(out->data, tmp->data, out->data, tmp->length);
 
-		AudioStream_F32::release(tmp);
-		AudioStream_F32::release(in);
-	} else {
-		//do nothing, this vector is empty
-	}
-	channel++;
-  }
+// 		AudioStream_F32::release(tmp);
+// 		AudioStream_F32::release(in);
+// 	} else {
+// 		//do nothing, this vector is empty
+// 	}
+// 	channel++;
+//   }
 
-  if (out != NULL) {
-    AudioStream_F32::transmit(out);
-    AudioStream_F32::release(out);
-  }
+//   if (out != NULL) {
+//     AudioStream_F32::transmit(out);
+//     AudioStream_F32::release(out);
+//   }
 
-}
+// }
