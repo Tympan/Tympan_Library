@@ -15,12 +15,12 @@ void AudioTestToneManager_F32::startNextTone(void) {
 	remaining_samples_needed = (int)(0.5+curToneParams.dur_sec*sample_rate_Hz);
 	current_state = AudioTestToneManager_F32::STATE_TONE;
 	if (flag_printChangesToSerial) {
-		Serial.print("AudioTestToneManager_F32: starting tone ");
-		Serial.print(curToneIndex+1); Serial.print(" of "); Serial.print(allToneParams.size());
-		Serial.print(" at ");  Serial.print(curToneParams.freq_Hz); Serial.print(" Hz");
-		Serial.print(" at ");  Serial.print(curToneParams.amp,3); Serial.print(" amplitude");
-		Serial.print(" for "); Serial.print(curToneParams.dur_sec); Serial.print(" sec");
-		Serial.println();
+		print_ptr->print("AudioTestToneManager_F32: starting tone ");
+		print_ptr->print(curToneIndex+1); print_ptr->print(" of "); print_ptr->print(allToneParams.size());
+		print_ptr->print(" at ");  print_ptr->print(curToneParams.freq_Hz); print_ptr->print(" Hz");
+		print_ptr->print(" at ");  print_ptr->print(curToneParams.amp,3); print_ptr->print(" amplitude");
+		print_ptr->print(" for "); print_ptr->print(curToneParams.dur_sec); print_ptr->print(" sec");
+		print_ptr->println();
 	}
 	return;
 }
@@ -29,10 +29,10 @@ void AudioTestToneManager_F32::startSilence(void) {
 	current_state = AudioTestToneManager_F32::STATE_SILENCE;
 	remaining_samples_needed = (int)(0.5+silenceBetweenTones_sec*sample_rate_Hz);
 	if (flag_printChangesToSerial) {
-		Serial.print("AudioTestToneManager_F32: starting silence ");
-		Serial.print(curToneIndex+1); Serial.print(" of "); Serial.print(allToneParams.size());
-		Serial.print(" for ");  Serial.print(silenceBetweenTones_sec);  Serial.print(" sec");
-		Serial.println();
+		print_ptr->print("AudioTestToneManager_F32: starting silence ");
+		print_ptr->print(curToneIndex+1); print_ptr->print(" of "); print_ptr->print(allToneParams.size());
+		print_ptr->print(" for ");  print_ptr->print(silenceBetweenTones_sec);  print_ptr->print(" sec");
+		print_ptr->println();
 	}
 }
 

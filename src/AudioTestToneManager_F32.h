@@ -57,7 +57,7 @@ class AudioTestToneManager_F32 : public AudioStream_F32 {
     virtual void stopTest(void) {
       current_state = AudioTestToneManager_F32::STATE_STOPPED;
       remaining_samples_needed = 0;
-      if (flag_printChangesToSerial) Serial.println("AudioTestToneManager_F32: test ended.");
+      if (flag_printChangesToSerial) print_ptr->println("AudioTestToneManager_F32: test ended.");
     }
 
     virtual void startNextTone(void);
@@ -91,6 +91,8 @@ class AudioTestToneManager_F32 : public AudioStream_F32 {
     std::vector<AudioTestTone_Params> allToneParams;
     int curToneIndex = 0;
     bool flag_printChangesToSerial = true;
+
+    Print *print_ptr = &Serial;
 
   protected:
     float sample_rate_Hz = AUDIO_SAMPLE_RATE;
