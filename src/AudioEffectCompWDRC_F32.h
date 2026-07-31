@@ -89,8 +89,8 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 		
 		void setInstanceName(void) { 
 			instanceName = "AudioEffectCompWDRC_F32"; 
-			calcEnvelope.instanceName = instanceName + "--Envelope";
-			calcGain.instanceName  = instanceName + "--WDRC_Gain";
+			calcEnvelope.instanceName = instanceName + "_Envelope";
+			calcGain.instanceName  = instanceName + "_WDRC_Gain";
 		}
 		
 		virtual ~AudioEffectCompWDRC_F32() {};

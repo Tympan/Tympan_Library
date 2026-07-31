@@ -143,6 +143,13 @@ class AudioStreamComposite_F32: public AudioStream_F32 {
       return active;
     }
     virtual void setup_fromSetActive(void) {}  //override this as desired in your derived class
+		
+		//if you have set a custom instanceName for this compoasite class, you might want to automatically
+		//rename the sub-elements using your newly given name as a prefix to the sub-elements.
+		virtual void setInstanceName_subElements_auto(void) {
+			startNode->instanceName = instanceName + "_SwitchMatrix";
+			endNode->instanceName = instanceName + "_AudioForwarder";
+		}
   
     // ///////////////////////////////////////////////// Convenince methods for easing interaction with main program
 
