@@ -17,71 +17,78 @@
 
 class AudioEffectGain_F32 : public AudioStream_F32
 {
-  //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node  
-  public:
-    //constructor
-    AudioEffectGain_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setInstanceName(); }
+	//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node  
+	public:
+		//constructor
+		AudioEffectGain_F32(void) : AudioStream_F32(1, inputQueueArray_f32) { setInstanceName(); }
 		AudioEffectGain_F32(const AudioSettings_F32 &settings) : AudioStream_F32(1, inputQueueArray_f32) { setInstanceName(); }
 
 		void setInstanceName(void) { instanceName = "AudioEffectGain_F32"; }
 
-    //here's the method that does all the work
-    virtual void update(void) {
+		//here's the method that does all the work
+		void update(void) override {
+			//get input block
+			audio_block_f32_t *block;
+			block = AudioStream_F32::receiveReadOnly_f32();
+			if (block == NULL) return;
 
-		//get input block
-		audio_block_f32_t *block;
-		block = AudioStream_F32::receiveReadOnly_f32();
-		if (block == NULL) return;
-		
-		//allocate memory for the output of our algorithm
-		audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
-		if (out_block == NULL) { AudioStream_F32::release(block); return; }
+			if (is_bypassed) {
+				AudioStream_F32::transmit(block); // send the IIR output
+				AudioStream_F32::release(block);
+				return;
+			}
+			
+			//allocate memory for the output of our algorithm
+			audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
+			if (out_block == NULL) { AudioStream_F32::release(block); return; }
 
-		//apply the gain
-		processAudioBlock(block, out_block);
+			//apply the gain
+			processAudioBlock(block, out_block);
 
-		//transmit the block and be done
-		AudioStream_F32::transmit(out_block);
-		AudioStream_F32::release(out_block);
-		AudioStream_F32::release(block);
-    }
-	
-	virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block) {
-		if ((block == NULL) || (out_block == NULL)) return -1;  //-1 is error
-	
-		//apply the gain
-		//for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) block->data[i] = gain * (block->data[i]); //non DSP way to do it
-		arm_scale_f32(block->data, gain, out_block->data, block->length); //use ARM DSP for speed!
-		
-		out_block->id = block->id;
-		out_block->length = block->length;
+			//transmit the block and be done
+			AudioStream_F32::transmit(out_block);
+			AudioStream_F32::release(out_block);
+			AudioStream_F32::release(block);
+		}
 
-		return 0;
-	}
+		virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block) {
+			if ((block == NULL) || (out_block == NULL)) return -1;  //-1 is error
 
-    //methods to set parameters of this module
-    virtual float setGain(float g) { return gain = g;}
-    virtual float setGain_dB(float gain_dB) {
-      float gain = pow(10.0, gain_dB / 20.0);
-      setGain(gain);
-      return getGain_dB();
-    }
+			//apply the gain
+			//for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) block->data[i] = gain * (block->data[i]); //non DSP way to do it
+			arm_scale_f32(block->data, gain, out_block->data, block->length); //use ARM DSP for speed!
+			
+			out_block->id = block->id;
+			out_block->length = block->length;
 
-	//increment the linear gain
-    virtual float incrementGain_dB(float increment_dB) {
-      return setGain_dB(getGain_dB() + increment_dB);
-    }    
-	
-    virtual void setSampleRate_Hz(const float _fs_Hz) {};  //unused.  included for interface compatability with fancier gain algorithms
-	virtual float getCurrentLevel_dB(void) { return 0.0; };  //meaningless.  included for interface compatibility with fancier gain algorithms
-	
-    //methods to return information about this module
-    virtual float getGain(void) { return gain; }
-    virtual float getGain_dB(void) { return 20.0*log10(gain); }
+			return 0;
+		}
+
+		//methods to set parameters of this module
+		virtual float setGain(float g) { return gain = g;}
+		virtual float setGain_dB(float gain_dB) {
+			float gain = pow(10.0, gain_dB / 20.0);
+			setGain(gain);
+			return getGain_dB();
+		}
+
+		//increment the linear gain
+		virtual float incrementGain_dB(float increment_dB) {
+			return setGain_dB(getGain_dB() + increment_dB);
+		}    
+
+		virtual void setSampleRate_Hz(const float _fs_Hz) {};  //unused.  included for interface compatability with fancier gain algorithms
+		virtual float getCurrentLevel_dB(void) { return 0.0; };  //meaningless.  included for interface compatibility with fancier gain algorithms
+
+		//methods to return information about this module
+		virtual float getGain(void) { return gain; }
+		virtual float getGain_dB(void) { return 20.0*log10(gain); }
     
-  protected:
-    audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
-    float gain = 1.0; //default value
+		virtual bool bypass(bool _bypass) { return is_bypassed = _bypass; }	
+	protected:
+		audio_block_f32_t *inputQueueArray_f32[1]; //memory pointer for the input to this module
+		float gain = 1.0; //default value
+		bool is_bypassed = false;  //default value
 };
 
 

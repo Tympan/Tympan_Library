@@ -23,7 +23,7 @@ class AudioCalcLevel_F32 : public AudioFilterTimeWeighting_F32
 		AudioCalcLevel_F32(void) : AudioFilterTimeWeighting_F32() {}		
 		
 		AudioCalcLevel_F32(const AudioSettings_F32 &settings) : AudioFilterTimeWeighting_F32(settings) {}
-		virtual void update(void);
+		void update(void) override;
 		virtual float getCurrentLevel(void) { return cur_value; } 
 		virtual float getCurrentLevel_dB(void) { return 10.0f*log10f(cur_value); } 
 		virtual float getMaxLevel(void) { return max_value; }

@@ -14,15 +14,21 @@
 void AudioCalcLevel_F32::update(void)
 {
   audio_block_f32_t *block;
-
   block = AudioStream_F32::receiveWritable_f32();
   if (!block) return;
+
+  if (is_bypassed) {
+    for (size_t i=0; i < block->length; i++) block->data[i] = 0.0f;  //zero out the data
+    AudioStream_F32::transmit(block); // send the IIR output
+    AudioStream_F32::release(block);
+    return;
+  }
   
   //square the incoming audio data
   for (int i=0; i < block->length; i++) block->data[i] *= block->data[i];
 
   //apply filter (from AudioFilterTimeWeighting)
-  applyFilterInPlace(block->data, block->length);
+  applyFilterInPlace(block->data, block->length); //from its parent, AudioFilterTimeWeighting_F32
   
   //save last value
   cur_value = block->data[(block->length)-1]; //get the last value

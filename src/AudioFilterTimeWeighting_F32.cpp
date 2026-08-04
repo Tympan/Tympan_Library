@@ -18,6 +18,13 @@ void AudioFilterTimeWeighting_F32::update(void)
   block = AudioStream_F32::receiveWritable_f32();
   if (!block) return;
 
+  if (is_bypassed) {
+    for (size_t i=0; i < block->length; i++) block->data[i] = 0.0f;  //zero out the data
+    AudioStream_F32::transmit(block); // send the IIR output
+    AudioStream_F32::release(block);
+    return;
+  }
+
   //apply filter
   applyFilterInPlace(block->data,block->length);
   

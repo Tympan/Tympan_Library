@@ -35,15 +35,17 @@ class AudioFilterTimeWeighting_F32 : public AudioStream_F32
 		virtual float32_t getTimeConst_sec(void) { return timeConst_sec; }
 		virtual float32_t getSampleRate_Hz(void) { return sampleRate_Hz; }
 		virtual void clearStates(void) { prev_val = 0.0f; }
-		virtual void update(void);
+		void update(void) override;
 		virtual void applyFilterInPlace(float32_t *, int);
 	
+		virtual bool bypass(bool _bypass) { return is_bypassed = _bypass; }
 	protected:
 		audio_block_f32_t *inputQueueArray[1];
 		float32_t timeConst_sec = TIME_CONST_SLOW;
 		float32_t sampleRate_Hz = AUDIO_SAMPLE_RATE_EXACT;
 		float32_t alpha = 0.0f;
 		float32_t prev_val = 0.0f;
+		bool is_bypassed = false;
 		
 		virtual void computeFilterCoefficients(void) {
 			//https://dsp.stackexchange.com/questions/10544/exponential-average-with-time-constant-of-slow-fast-and-impulse
