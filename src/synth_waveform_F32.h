@@ -20,14 +20,14 @@
 
 class AudioSynthWaveform_F32 : public AudioStream_F32
 {
-  //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
-  public:
-    enum OscillatorMode {
-        OSCILLATOR_MODE_SINE = 0,
-        OSCILLATOR_MODE_SAW,
-        OSCILLATOR_MODE_SQUARE,
-        OSCILLATOR_MODE_TRIANGLE
-    };
+	//GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
+	public:
+		enum OscillatorMode {
+			OSCILLATOR_MODE_SINE = 0,
+			OSCILLATOR_MODE_SAW,
+			OSCILLATOR_MODE_SQUARE,
+			OSCILLATOR_MODE_TRIANGLE
+		};
 		enum ModMode {
 			MOD_MODE_PER_OCT=0,
 			MOD_MODE_PER_HZ
@@ -99,52 +99,52 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 			_PhaseIncrement = _Frequency * twoPI / sample_rate_Hz;
 		}
 
-    void amplitude(float32_t n) {
-        if (n < 0.0f) n = 0.0f;
-        _magnitude = n;
-    }
-
-    void begin(short t_type) {
-        _Phase = 0.0f;
-        oscillatorMode(t_type);
-    }
-
-    void begin(float32_t t_amp, float32_t t_freq, short t_type) {
-        amplitude(t_amp);
-        frequency(t_freq);
-        begin(t_type);
-    }
-
-    void pitchModAmount(float32_t amount) {
-      _PitchModAmt = amount;
-    }
-
-    void oscillatorMode(int mode) {
-      _OscillatorMode = (OscillatorMode)mode;
-    }
-		void modMode(int mode) {
-			_ModMode = (ModMode)mode;
-			if (_ModMode == MOD_MODE_PER_HZ) _PitchModAmt = 1.0;
+		void amplitude(float32_t n) {
+			if (n < 0.0f) n = 0.0f;
+			_magnitude = n;
 		}
 
-    void portamentoTime(float32_t slidetime) {
-      _PortamentoTime = slidetime;
-      _PortamentoSamples = floorf(slidetime * sample_rate_Hz);
-    }
+		void begin(short t_type) {
+			_Phase = 0.0f;
+			oscillatorMode(t_type);
+		}
 
-    //is this needed?
-    void onNoteOn() {
-      _NotesPlaying++;
-    }
+		void begin(float32_t t_amp, float32_t t_freq, short t_type) {
+			amplitude(t_amp);
+			frequency(t_freq);
+			begin(t_type);
+		}
+
+		void pitchModAmount(float32_t amount) {
+			_PitchModAmt = amount;
+		}
+
+		void oscillatorMode(int mode) {
+			_OscillatorMode = (OscillatorMode)mode;
+		}
+			void modMode(int mode) {
+				_ModMode = (ModMode)mode;
+				if (_ModMode == MOD_MODE_PER_HZ) _PitchModAmt = 1.0;
+			}
+
+		void portamentoTime(float32_t slidetime) {
+			_PortamentoTime = slidetime;
+			_PortamentoSamples = floorf(slidetime * sample_rate_Hz);
+		}
 
 		//is this needed?
-    void onNoteOff() {
-      if (_NotesPlaying > 0) {
-        _NotesPlaying--;
-      }
-    }
+		void onNoteOn() {
+			_NotesPlaying++;
+		}
 
-    void update(void) override;   //override the version in AudioStream_F32 -> AudioStream
+			//is this needed?
+		void onNoteOff() {
+			if (_NotesPlaying > 0) {
+			_NotesPlaying--;
+			}
+		}
+
+		void update(void) override;   //override the version in AudioStream_F32 -> AudioStream
 		virtual int processAudioBlock(audio_block_f32_t *lfo_block, audio_block_f32_t *block_new);
 		
 		void setSampleRate(const float32_t fs_Hz)
@@ -160,31 +160,33 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 		float setFrequency_Hz(float _freq_Hz) { frequency(_freq_Hz); return getFrequency_Hz(); }
 		float getAmplitude(void) { return _magnitude; }
 		float setAmplitude(float amp) { amplitude(amp); return getAmplitude(); }
-		
-	
-  protected:
-    inline float32_t applyMod(uint32_t sample, audio_block_f32_t *lfo);
-    const float32_t _PI;
-    float32_t twoPI;
+			
+
+	protected:
+		//inline float32_t applyMod(uint32_t sample, audio_block_f32_t *lfo);
+		const float32_t _PI;
+		float32_t twoPI;
 		float32_t sample_rate_Hz;
 		int audio_block_samples=AUDIO_BLOCK_SAMPLES;
 			
-    OscillatorMode _OscillatorMode;
+		OscillatorMode _OscillatorMode;
 		ModMode _ModMode;
-    float32_t _Frequency;
-    float32_t _Phase;
-    volatile float32_t _PhaseIncrement;
-    volatile float32_t _magnitude;
-    float32_t _PitchModAmt;
-    float32_t _PortamentoTime;
-    float32_t _PortamentoIncrement;
+		float32_t _Frequency;
+		float32_t _Phase;
+		volatile float32_t _PhaseIncrement;
+		volatile float32_t _magnitude;
+		float32_t _PitchModAmt;
+		float32_t _PortamentoTime;
+		float32_t _PortamentoIncrement;
 
-    uint64_t _PortamentoSamples;
-    uint64_t _CurrentPortamentoSample;
-    uint8_t _NotesPlaying;
+		uint64_t _PortamentoSamples;
+		uint64_t _CurrentPortamentoSample;
+		uint8_t _NotesPlaying;
 
-    audio_block_f32_t *inputQueueArray_f32[1];
+		audio_block_f32_t *inputQueueArray_f32[1];
 		unsigned int block_counter=0;
+
+		float calc_modulation(audio_block_f32_t *lfo_block, int length, audio_block_f32_t *dphase_rad_block); // returns final frequency (Hz)
 };
 
 class AudioSynthWaveformQuadrature_F32 : public AudioSynthWaveform_F32 
