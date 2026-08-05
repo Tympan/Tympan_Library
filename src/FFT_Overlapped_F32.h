@@ -66,7 +66,7 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
       if (N_BUFF_BLOCKS > 0) {
         for (int i = 0; i < N_BUFF_BLOCKS; i++) {
           //if (buff_blocks[i] != NULL) AudioStream_F32::release(buff_blocks[i]);
-		  if (buff_blocks[i] != NULL) delete buff_blocks[i];
+		      if (buff_blocks[i] != NULL) delete buff_blocks[i];
         }
       }
     }
@@ -76,8 +76,8 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
       
       ///choose valid _N_FFT
       if (!FFT_F32::is_valid_N_FFT(_N_FFT)) {
-          Serial.println(F("FFT_Overlapped_Base_F32: *** ERROR ***"));
-          Serial.println(F("  : N_FFT ") + String(_N_FFT) + F(" is not allowed.  Try a power of 2 between 16 and 2048"));
+          print_ptr->println(F("FFT_Overlapped_Base_F32: *** ERROR ***"));
+          print_ptr->println(F("  : N_FFT ") + String(_N_FFT) + F(" is not allowed.  Try a power of 2 between 16 and 2048"));
           N_FFT = -1;
           return N_FFT;
       }
@@ -92,34 +92,36 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
       
       //initialize the blocks for holding the previous data
       for (int i = 0; i < N_BUFF_BLOCKS; i++) {
-		  //audio_block_f32_t *block = AudioStream_F32::allocate_f32();
-		  //if (block == NULL) {
-			//  Serial.println("FFT_Overlapped: setup(): *** ERROR ***: failed to allocate audio memory!");
-		  //} else {
-			//buff_blocks[i] = block;
-			//Serial.println("FFT_Overlapped: setup: creating buff_block, length = " + String(audio_block_samples));
-			buff_blocks[i] = new float32_t[audio_block_samples];
-			clear_audio_block(buff_blocks[i]);
-		  //}
+        //audio_block_f32_t *block = AudioStream_F32::allocate_f32();
+        //if (block == NULL) {
+        //  print_ptr->println("FFT_Overlapped: setup(): *** ERROR ***: failed to allocate audio memory!");
+        //} else {
+        //buff_blocks[i] = block;
+        //print_ptr->println("FFT_Overlapped: setup: creating buff_block, length = " + String(audio_block_samples));
+        buff_blocks[i] = new float32_t[audio_block_samples];
+        clear_audio_block(buff_blocks[i]);
+        //}
       } 
       return N_FFT;
     }
     virtual int getNFFT(void) = 0;
     virtual int getNBuffBlocks(void) { return N_BUFF_BLOCKS; }
 
+    Print *print_ptr = &Serial;
+
   protected:
     int N_BUFF_BLOCKS = 0;
     int audio_block_samples;
     
     //audio_block_f32_t *buff_blocks[MAX_N_BUFF_BLOCKS];
-	float32_t *buff_blocks[MAX_N_BUFF_BLOCKS];
+    float32_t *buff_blocks[MAX_N_BUFF_BLOCKS];
     //void clear_audio_block(audio_block_f32_t *block) {
-	//  if (block == NULL) return;
-	//	for (int i = 0; i < block->length; i++) block->data[i] = 0.f;
-	//
-	void clear_audio_block(float32_t *block) {
-		if (block == NULL) return;
-		for (int i = 0; i < audio_block_samples; i++) block[i] = 0.f;
+    //  if (block == NULL) return;
+    //	for (int i = 0; i < block->length; i++) block->data[i] = 0.f;
+    //
+    void clear_audio_block(float32_t *block) {
+      if (block == NULL) return;
+      for (int i = 0; i < audio_block_samples; i++) block[i] = 0.f;
     }  
 };
 
