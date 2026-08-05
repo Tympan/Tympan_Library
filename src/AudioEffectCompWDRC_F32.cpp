@@ -89,9 +89,9 @@ void AudioEffectCompWDRC_F32::update(void) {
 	if (block == NULL) return;
 
 	if (is_bypassed) {
-			AudioStream_F32::transmit(block); // send the output
-			AudioStream_F32::release(block);
-			return;
+		AudioStream_F32::transmit(block); // send the output
+		AudioStream_F32::release(block);
+		return;
 	}
 
 	//allocate memory for the output of our algorithm

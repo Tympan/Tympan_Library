@@ -28,7 +28,7 @@ void FFT_Overlapped_F32::execute(audio_block_f32_t *block, float *complex_2N_buf
     for (int j = 0; j < audio_block_samples; j++) {
       //complex_2N_buffer[2*targ_ind] = buff_blocks[i]->data[j];  //real
       complex_2N_buffer[2*targ_ind] = buff_blocks[i][j];  //real
-	  complex_2N_buffer[2*targ_ind+1] = 0.0f;  //imaginary
+	    complex_2N_buffer[2*targ_ind+1] = 0.0f;  //imaginary
       targ_ind++;
     }
   }

@@ -74,19 +74,19 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 {
 //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
 //GUI: shortName: CompressWDRC
-  public:
-    AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+	public:
+		AudioEffectCompWDRC_F32(void): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
 			setInstanceName();
-      setSampleRate_Hz(AUDIO_SAMPLE_RATE);  //use the default sample rate from the Teensy Audio library
-      setDefaultValues();
-    }
+			setSampleRate_Hz(AUDIO_SAMPLE_RATE);  //use the default sample rate from the Teensy Audio library
+			setDefaultValues();
+		}
 
-    AudioEffectCompWDRC_F32(const AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
-      setInstanceName();
-      setSampleRate_Hz(settings.sample_rate_Hz);
-      setDefaultValues();
-    }
-		
+		AudioEffectCompWDRC_F32(const AudioSettings_F32 settings): AudioStream_F32(1,inputQueueArray) { //need to modify this for user to set sample rate
+			setInstanceName();
+			setSampleRate_Hz(settings.sample_rate_Hz);
+			setDefaultValues();
+		}
+			
 		void setInstanceName(void) { 
 			instanceName = "AudioEffectCompWDRC_F32"; 
 			calcEnvelope.instanceName = instanceName + "_Envelope";
@@ -102,8 +102,8 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 	
 		// ////////////////////////// These are the methods where the audio processing work gets done
 
-    //here is the method that is called automatically by the audio library
-    void update(void) override;
+		//here is the method that is called automatically by the audio library
+		void update(void) override;
 
 		//here is a standard method for executing the guts of the algorithm without having to call update()
 		//This is the access point used by the compressor bank class, for example, since the compressor bank
@@ -113,43 +113,43 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 		//"processAudioBlock()" methods that are used in many other of my audio-processing classes
 		virtual int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *out_block);
 
-    //Here is the function that actually does all the work
+		//Here is the function that actually does all the work
 		//This method uses simply float arrays as the inptus and outputs, so that this is maximally compatible
 		//with other ways of using this class.
-    virtual void compress(float *x, float *y, int n);
+		virtual void compress(float *x, float *y, int n);
 
 		//You can bypass this algorithm (it'll pass the input directly to the output)
 		//As a way to save CPU if you don't actually want any compression or level monitoring.
 		//You can also use "setActive(false)" (from AudioStream_F32) which will stop the algorithm
 		//so hard that it doesn't even pass the input audio.
 		virtual bool bypass(bool _bypass = true) { return is_bypassed = _bypass; }
-    virtual bool get_is_bypassed(void)       { return is_bypassed;}
+		virtual bool get_is_bypassed(void)       { return is_bypassed;}
 
 		// ///////////////////////// These are the methods used to configure or otherwise interact with this class
 
-    virtual float setSampleRate_Hz(const float _fs_Hz) {return calcEnvelope.setSampleRate_Hz(_fs_Hz); }
+		virtual float setSampleRate_Hz(const float _fs_Hz) {return calcEnvelope.setSampleRate_Hz(_fs_Hz); }
 		virtual float getSampleRate_Hz(void) { return calcEnvelope.getSampleRate_Hz(); }
 
-    //set all of the parameters for the compressor using the CHA_WDRC "GHA" structure
+   		//set all of the parameters for the compressor using the CHA_WDRC "GHA" structure
 		virtual void configureFromGHA(float fs_Hz, const BTNRH_WDRC::CHA_WDRC &gha) { setSampleRate_Hz(fs_Hz);  setParams_from_CHA_WDRC(&gha); }
 		virtual void configureFromGHA(const BTNRH_WDRC::CHA_WDRC &gha) { setParams_from_CHA_WDRC(&gha); }  //assumes that the sample rate has already been set!!!
 		virtual void setParams_from_CHA_WDRC(const BTNRH_WDRC::CHA_WDRC *gha);
 		virtual void collectParams_into_CHA_WDRC(BTNRH_WDRC::CHA_WDRC *gha);
 	
-    //set all of the user parameters for the compressor...assuming no expansion regime
-    //assumes that the sample rate has already been set!!!
+		//set all of the user parameters for the compressor...assuming no expansion regime
+		//assumes that the sample rate has already been set!!!
 		virtual void setParams(float attack_ms, float release_ms, float maxdB, float tkgain, float comp_ratio, float tk, float bolt);
 
-    //set all of the user parameters for the compressor...assumes that there is an expansion regime
-    //assumes that the sample rate has already been set!!!
-    virtual void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt);
+		//set all of the user parameters for the compressor...assumes that there is an expansion regime
+		//assumes that the sample rate has already been set!!!
+		virtual void setParams(float attack_ms, float release_ms, float maxdB, float exp_cr, float exp_end_knee, float tkgain, float comp_ratio, float tk, float bolt);
 
 
-    //set, increment, or get the linear gain of the system
-    virtual float setGain_dB(float linear_gain_dB) { return calcGain.setGain_dB(linear_gain_dB); }
-    virtual float getGain_dB(void) { return calcGain.getGain_dB(); }
+		//set, increment, or get the linear gain of the system
+		virtual float setGain_dB(float linear_gain_dB) { return calcGain.setGain_dB(linear_gain_dB); }
+		virtual float getGain_dB(void) { return calcGain.getGain_dB(); }
 		virtual float getCurrentGain_dB(void) { return calcGain.getCurrentGain_dB(); }
-    virtual float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
+		virtual float getCurrentLevel_dB(void) { return AudioCalcGainWDRC_F32::db2(calcEnvelope.getCurrentLevel()); }  //this is 20*log10(abs(signal)) after the envelope smoothing
 	
 		//set or get the other parameters
 		virtual void setAttackRelease_msec(float32_t attack_ms, float32_t release_ms) {
@@ -185,14 +185,14 @@ class AudioEffectCompWDRC_F32 : public AudioStream_F32
 
 		
 		// /////////////////////////////////////////////////  Here are the public data members
-    AudioCalcEnvelope_F32 calcEnvelope;
-    AudioCalcGainWDRC_F32 calcGain;
+		AudioCalcEnvelope_F32 calcEnvelope;
+		AudioCalcGainWDRC_F32 calcGain;
 		AudioCompWDRCState state;
 		
 			
-  private:
-    audio_block_f32_t *inputQueueArray[1];
-    bool is_bypassed = false;   //this turns off the aglorithm but has it pass the input data to the output
+	private:
+		audio_block_f32_t *inputQueueArray[1];
+		bool is_bypassed = false;   //this turns off the aglorithm but has it pass the input data to the output
 };
 
 

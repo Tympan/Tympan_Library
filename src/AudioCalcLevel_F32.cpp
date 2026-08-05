@@ -18,7 +18,7 @@ void AudioCalcLevel_F32::update(void)
   if (!block) return;
 
   if (is_bypassed) {
-    for (size_t i=0; i < block->length; i++) block->data[i] = 0.0f;  //zero out the data
+    for (int i=0; i < block->length; i++) block->data[i] = 0.0f;  //zero out the data
     AudioStream_F32::transmit(block); // send the IIR output
     AudioStream_F32::release(block);
     return;
