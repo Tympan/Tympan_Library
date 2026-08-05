@@ -1,22 +1,36 @@
 
 #include "AudioEffectFreqShift_FD_F32.h"
 
-int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT) {
-	sample_rate_Hz = settings.sample_rate_Hz;
+int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT, const int _N_IFFT) {
+	if (_N_IFFT > _N_FFT) {
+		print_ptr->println(F("AudioEffectFreqShift_FD_F32: setup: *** ERROR ***: N_IFFT cannot be larger than N_FFT."));
+		print_ptr->println(F("    : returning"));
+		return -1;
+	}
+	sample_rate_Hz = settings.sample_rate_Hz;  //sample rate for in-coming data
 
 	//setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
 	int prev_N_FFT = N_FFT;
 	if (prev_N_FFT != _N_FFT) {
 		N_FFT = myFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
 		if (N_FFT < 1) {
-			if (flag_printDebug) print_ptr->println("AudioEffectFreqShift_FD_F32: FAILED setting up myFFT for N_FFT = " + String(_N_FFT) + "...");
+			if (flag_printDebug) print_ptr->println(F("AudioEffectFreqShift_FD_F32: FAILED setting up myFFT for N_FFT = ") + String(_N_FFT) + "...");
 			return N_FFT;
 		}
-		N_FFT = myIFFT.setup(settings, _N_FFT); //hopefully, we got the same N_FFT that we asked for
-		if (N_FFT < 1) {
-			if (flag_printDebug) print_ptr->println("AudioEffectFreqShift_FD_F32: FAILED setting up myIFFT for N_FFT = " + String(_N_FFT) + "...");
-			return N_FFT;
+	}
+	int prev_N_IFFT = N_IFFT;
+	if (prev_N_IFFT != _N_IFFT) {
+		float32_t ratio_IFFT_to_FFT = static_cast<float32_t>(_N_IFFT)/static_cast<float32_t>(_N_FFT);
+		AudioSettings_F32 out_settings = settings;
+		out_settings.sample_rate_Hz = settings.sample_rate_Hz * ratio_IFFT_to_FFT;
+		out_settings.audio_block_samples = static_cast<int>(settings.audio_block_samples * ratio_IFFT_to_FFT + 0.5f); // the +0.5f is to make the cast become a rounding
+		N_IFFT = myIFFT.setup(out_settings, _N_IFFT); //hopefully, we got the same N_IFFT that we asked for
+		if (N_IFFT < 1) {
+			if (flag_printDebug) print_ptr->println("AudioEffectFreqShift_FD_F32: FAILED setting up myIFFT for N_IFFT = " + String(_N_IFFT) + "...");
+			return N_IFFT;
 		}
+		sample_rate_out_Hz = out_settings.sample_rate_Hz;
+		audio_block_out_samples = out_settings.audio_block_samples;
 	}
 
 	//decide windowing
@@ -49,8 +63,8 @@ int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const 
 	if (flag_printDebug) {
 		//print info about setup
 		print_ptr->println("AudioEffectFreqShift_FD_F32: FFT parameters...");
-		print_ptr->print("    : Requested N_FFT = "); print_ptr->println(_N_FFT);
-		print_ptr->print("    : Actual N_FFT = "); print_ptr->println(N_FFT);
+		print_ptr->print("    : N_FFT Requested = "); print_ptr->print(_N_FFT); print_ptr->print(", Actual = "); print_ptr->println(N_FFT);
+		print_ptr->print("    : N_IFFT Requested = "); print_ptr->print(_N_IFFT); print_ptr->print(", Actual = "); print_ptr->println(N_IFFT);
 		print_ptr->print("    : audio_block_samples = "); print_ptr->println(settings.audio_block_samples);
 		print_ptr->print("    : FFT N_BUFF_BLOCKS = "); print_ptr->println(myFFT.getNBuffBlocks());
 		print_ptr->print("    : IFFT N_BUFF_BLOCKS = "); print_ptr->println(myIFFT.getNBuffBlocks());
@@ -224,6 +238,8 @@ void AudioEffectFreqShift_FD_F32::update(void)
 	
 	//update the block number to match the incoming one
 	out_audio_block->id = incoming_id;
+	out_audio_block->fs_Hz = sample_rate_out_Hz;
+	out_audio_block->length = audio_block_out_samples;
 
 	//send the output
 	AudioStream_F32::transmit(out_audio_block);

@@ -48,6 +48,7 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
       AudioStream_F32(1, inputQueueArray_f32) {
 			setInstanceName();
       sample_rate_Hz = settings.sample_rate_Hz;
+      sample_rate_out_Hz = sample_rate_Hz;
     }
     AudioEffectFreqShift_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT) :
       AudioStream_F32(1, inputQueueArray_f32) {
@@ -61,7 +62,10 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
       if (complex_2N_buffer != NULL) delete complex_2N_buffer;
     }
 
-    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT);
+    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
+      return setup(settings, _N_FFT, _N_FFT);
+    }
+    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT, const int _N_IFFT);
 
     int setShift_bins(int _shift_bins) {
       return shift_bins = _shift_bins;
@@ -93,8 +97,6 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
 		//So, choose which behavior you want and enjoy!
 		bool enable(bool state = true) { enabled = state; return enabled;}
 		
-
-
 		FFT_Overlapped_F32* getFFTobj(void) { return &myFFT; }
 		IFFT_Overlapped_F32* getIFFTobj(void) { return &myIFFT; }
 
@@ -106,8 +108,11 @@ class AudioEffectFreqShift_FD_F32 : public AudioStream_F32
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
-    float sample_rate_Hz = AUDIO_SAMPLE_RATE;
-		int N_FFT = -1;
+    float sample_rate_Hz = AUDIO_SAMPLE_RATE; //incoming data
+    float sample_rate_out_Hz = AUDIO_SAMPLE_RATE;  //outgoing data
+    int audio_block_out_samples = 128;  //default, gets overwritten in setup
+    int N_FFT = -1;
+    int N_IFFT = -1;
 		enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to THREE_QUARTERS
 		int overlap_amount = NONE;
 		int overlap_block_counter = 0;
