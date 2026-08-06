@@ -19,11 +19,11 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
 			setSampleRate_Hz(settings.sample_rate_Hz);
 			audio_block_input_samples = settings.audio_block_samples;
       audio_block_output_samples = settings.audio_block_samples;
-	}
+	  }
     AudioFreqDomainBase_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT) : 
         AudioStream_F32(1, inputQueueArray_f32) {
 			setup(settings,_N_FFT);   //this also sets sample_rate_Hz and audio_block_samples
-	}
+	  }
 
     //destructor...release all of the memory that has been allocated
     ~AudioFreqDomainBase_FD_F32(void) { if (complex_2N_buffer != NULL) delete complex_2N_buffer; }
