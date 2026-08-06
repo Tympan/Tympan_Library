@@ -17,7 +17,8 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
     AudioFreqDomainBase_FD_F32(const AudioSettings_F32 &settings) :
         AudioStream_F32(1, inputQueueArray_f32) {  
 			setSampleRate_Hz(settings.sample_rate_Hz);
-			audio_block_samples = settings.audio_block_samples;
+			audio_block_input_samples = settings.audio_block_samples;
+      audio_block_output_samples = settings.audio_block_samples;
 	}
     AudioFreqDomainBase_FD_F32(const AudioSettings_F32 &settings, const int _N_FFT) : 
         AudioStream_F32(1, inputQueueArray_f32) {
@@ -27,9 +28,9 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
     //destructor...release all of the memory that has been allocated
     ~AudioFreqDomainBase_FD_F32(void) { if (complex_2N_buffer != NULL) delete complex_2N_buffer; }
      
-    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT);
+    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) { return setup(settings, _N_FFT, _N_FFT); }
+    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT, const int _N_IFFT);
     virtual void update(void);   
-	bool enable(bool state = true) { enabled = state; return enabled;}
 
     //Here is the method for you to override with your own algorithm!
     //  * The first argument that you will receive is the float32_t *, which is an array that is allocated in
@@ -39,18 +40,38 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
     //Note that you only need to touch the bins associated with zero through Nyquist.  The update() method
     //  above will reconstruct the bins above Nyquist for you.  It does this by taking the complex conjugate
     //  of the bins below Nyquist.  Easy for you!
-    virtual void processAudioFD(float32_t *complex_data, const int nfft);   //definitely override this in your own algorithm!
+    virtual void processAudioFD(float32_t *complex_data, const int nfft) { processAudioFD(complex_data); }  // for historical compatibility
+    virtual void processAudioFD(float32_t *complex_data);   //definitely override this in your own algorithm!
 
-	virtual int getNFFT(void) { return myFFT.getNFFT();}
-	virtual int getBlockLength_samples(void) { return audio_block_samples; }
-	virtual float setSampleRate_Hz(const float val_Hz) { sample_rate_Hz = val_Hz; return getSampleRate_Hz();}
-	virtual float getSampleRate_Hz(void) { return sample_rate_Hz; }
+    virtual int getNFFT(void) { return myFFT.getNFFT();}
+    virtual int getNIFFT(void) { return myIFFT.getNFFT();}
+
+    //these methods affect the input only
+    virtual int getBlockLength_samples(void) { return audio_block_input_samples; }
+    virtual float setSampleRate_Hz(const float val_Hz);
+    virtual float getSampleRate_Hz(void) const { return sample_rate_input_Hz; }
 	
-	//the rate at which overlapped FFTs are computed is the same (per how we set up these FFT
-	//routines here for Tympan) as the rate at which new audio blocks arrive.  Since the FFTs
-	// are overlapping, we are computing an FFT after every audio_block_samples, which is 
-	//faster than computing an FFT after every NFFT
-	virtual float getOverlappedFFTRate_Hz(void) { return (sample_rate_Hz/((float)audio_block_samples));}
+    //the rate at which overlapped FFTs are computed is the same (per how we set up these FFT
+    //routines here for Tympan) as the rate at which new audio blocks arrive.  Since the FFTs
+    // are overlapping, we are computing an FFT after every audio_block_samples, which is 
+    //faster than computing an FFT after every NFFT
+    //
+    //This rate should be the same for both the input and the output
+    virtual float getOverlappedFFTRate_Hz(void) { return (sample_rate_input_Hz/((float)audio_block_input_samples));}
+
+		//To save CPU when not using this algorithm, you can enable/disable the algorithm
+		//using the method below.  Using this enable() method, the processing will be bypassed
+		//but the input audio will be copied over to the output.
+		//
+		//In contrast, you could use "setActive(false)" universally part of AudioStream_F32
+		//which will prevent the processing from being called.  In the case of setActive(),
+		//however, the algorithm won't even pass the input to the output; it'll have no output,
+		//which will naturally stop all processing by subsequent audio processing classes, too.
+		//
+		//So, choose which behavior you want and enjoy!
+		virtual bool enable(const bool state = true) { enabled = state; return enabled;}
+
+  bool flag_printDebug = false;
 
   protected:
     int enabled=0;
@@ -58,9 +79,13 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
-    float sample_rate_Hz = AUDIO_SAMPLE_RATE;
-	  int audio_block_samples = 128;
-		int N_FFT;
+    float sample_rate_input_Hz = AUDIO_SAMPLE_RATE;
+    float sample_rate_output_Hz = AUDIO_SAMPLE_RATE;
+    float sample_rate_Hz = AUDIO_SAMPLE_RATE;  //historical compatibility only! (will try to keep same as sample_rate_input_Hz).  Don't use!
+	  int audio_block_input_samples = 128;
+	  int audio_block_output_samples = 128;
+		int N_FFT=-1;
+    int N_IFFT=-1;
     
 };
 

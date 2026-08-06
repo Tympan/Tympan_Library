@@ -174,6 +174,8 @@ class IFFT_Overlapped_F32: public FFT_Overlapped_Base_F32
     virtual void execute(float *complex_2N_buffer, audio_block_f32_t *out_block); //output is via out_block (out_block must be allocated and writable!)
     virtual int getNFFT(void) { return myIFFT.getNFFT(); };
     IFFT_F32* getIFFTObject(void) { return &myIFFT; };
+    virtual void rebuildNegativeFrequencySpace(float *complex_2N_buffer) { myIFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); }
+ 
   private:
     IFFT_F32 myIFFT;
 };
