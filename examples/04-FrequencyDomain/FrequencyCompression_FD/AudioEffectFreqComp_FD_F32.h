@@ -43,7 +43,7 @@ class AudioEffectFreqComp_FD_F32 : public AudioFreqDomainBase_FD_F32
       if (scale_fac < 0.00001) scale_fac = 0.00001; //limit the minimum scale factor
       return shift_scale_fac = scale_fac;
     }
-    float getScaleFactor(void) {  return shift_scale_fac; }
+    float getScaleFactor(void) const {  return shift_scale_fac; }
     
     float setStartFreq_Hz(float freq_Hz) {
       freq_Hz = max(0.0f, freq_Hz); //prevent negative start frequencies
@@ -52,9 +52,9 @@ class AudioEffectFreqComp_FD_F32 : public AudioFreqDomainBase_FD_F32
       int start_bin = round(freq_Hz / Hz_per_bin);
       return start_freq_Hz = Hz_per_bin * (float)start_bin; 
     }
-    float getStartFreq_Hz(void) { return start_freq_Hz; }
+    float getStartFreq_Hz(void) const { return start_freq_Hz; }
     
-    float setShift_Hz(float freq_Hz) { //only allow setting to an amount equal to one FFT bin
+    float setShift_Hz(const float freq_Hz) { //only allow setting to an amount equal to one FFT bin
       //Serial.print("AudioEffectFreqLowering: setShift_Hz: input = "); Serial.print(freq_Hz);
       int N_FFT = myFFT.getNFFT();
       float Hz_per_bin = sample_rate_Hz / ((float)N_FFT);
@@ -62,9 +62,9 @@ class AudioEffectFreqComp_FD_F32 : public AudioFreqDomainBase_FD_F32
       //Serial.print(", output = "); Serial.println(Hz_per_bin * (float)shift_bins);
       return shift_Hz = Hz_per_bin * (float)shift_bins;
     }
-    float getShift_Hz(void) { return shift_Hz; };
+    float getShift_Hz(void) const { return shift_Hz; };
 
-    int setShift_bins(int shift_bins) {
+    int setShift_bins(const int shift_bins) {
       int N_FFT = myFFT.getNFFT();
       float Hz_per_bin = sample_rate_Hz / ((float)N_FFT);
       setShift_Hz(Hz_per_bin * (float)shift_bins);
@@ -75,24 +75,23 @@ class AudioEffectFreqComp_FD_F32 : public AudioFreqDomainBase_FD_F32
       float Hz_per_bin = sample_rate_Hz / ((float)N_FFT);  
       return round(getShift_Hz() / Hz_per_bin);    
     }
-    float setFreqCompRatio(float val) {  //1.0 is no compression.  Values larger than 1.0 squeeze the frequency range (so, a scale factor less than 1.0).
+    float setFreqCompRatio(const float val) {  //1.0 is no compression.  Values larger than 1.0 squeeze the frequency range (so, a scale factor less than 1.0).
       setScaleFactor(1.0f / val);
       return getFreqCompRatio(); 
     }
-    float getFreqCompRatio(void) { return (1.0f/shift_scale_fac); }
+    float getFreqCompRatio(void) const { return (1.0f/shift_scale_fac); }
     
-    bool setShiftOnlyTheMagnitude(bool _val) { return shiftOnlyTheMagnitude = _val; }; //if true, it's a vocoder.  Otherwise, it's a frequency shifter.
-    bool getShiftOnlyTheMagnitude(void) { return shiftOnlyTheMagnitude; }; //if true, it's a vocoder.  Otherwise, it's a frequency shifter.
+    bool setShiftOnlyTheMagnitude(const bool _val) { return shiftOnlyTheMagnitude = _val; }; //if true, it's a vocoder.  Otherwise, it's a frequency shifter.
+    bool getShiftOnlyTheMagnitude(void) const { return shiftOnlyTheMagnitude; }; //if true, it's a vocoder.  Otherwise, it's a frequency shifter.
 
     //this is the method from AudioFreqDomainBase that we are overriding where we will
     //put our own code for manipulating the frequency data.  This is called by update()
     //from the AudioFreqDomainBase_FD_F32.  The update() method is itself called by the
     //Tympan (Teensy) audio system, as with every other Audio processing class.
-    virtual void processAudioFD(float32_t *complex_2N_buffer, const int NFFT); 
+    virtual void processAudioFD(float32_t *complex_2N_buffer); 
 
     //here are additional methods where we are going to put some details of the processing
-    virtual void processAudioFD_NL_vocode(float *audio, int N_FFT);
-    //virtual void processAudioFD_pitchShift(float *audio, int N_FFT);
+    virtual void processAudioFD_NL_vocode(float *audio);
 
   private:
     //create some data members specific to our processing
@@ -103,23 +102,23 @@ class AudioEffectFreqComp_FD_F32 : public AudioFreqDomainBase_FD_F32
 };
 
 
-void AudioEffectFreqComp_FD_F32::processAudioFD(float32_t *complex_2N_buffer, const int NFFT)
+void AudioEffectFreqComp_FD_F32::processAudioFD(float32_t *complex_2N_buffer)
 {
-
   //if (shiftOnlyTheMagnitude) {
-    processAudioFD_NL_vocode(complex_2N_buffer, NFFT);
+    processAudioFD_NL_vocode(complex_2N_buffer);
   //} else {
-  //  processAudioFD_pitchShift(complex_2N_buffer, NFFT);
+  //  processAudioFD_pitchShift(complex_2N_buffer);
   //}
 
 }
  
 
 //shift the audio by vocoding, which is the shifting of the FFT amplitudes but leaving the FFT phases in place
-void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_buffer, int fftSize) { //define some variables
-  int N_2 = fftSize / 2 + 1;
-  float Hz_per_bin = sample_rate_Hz / fftSize;
-  float inv_shift_scale_fac = 1.0f / shift_scale_fac;
+void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_buffer) { //define some variables
+	const int NFFT = getNFFT(); //from parent class
+  const int N_2 = fftSize / 2 + 1;
+  const float Hz_per_bin = sample_rate_Hz / fftSize;
+  const float inv_shift_scale_fac = 1.0f / shift_scale_fac;
   int source_ind; // neg_dest_ind;
   float dest_freq_Hz, source_freq_Hz, interp_fac;
   float new_mag, scale;
@@ -127,9 +126,9 @@ void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_
  
   #if 0
     float max_source_Hz = 10000.0; //highest frequency to use as source data
-    int max_source_ind = min(int(max_source_Hz / sample_rate_Hz * fftSize + 0.5),N_2);
+    const int max_source_ind = min(int(max_source_Hz / sample_rate_Hz * fftSize + 0.5),N_2);
   #else
-    int max_source_ind = N_2;  //this line causes this feature to be defeated
+    const int max_source_ind = N_2;  //this line causes this feature to be defeated
   #endif
   
   //get the magnitude for each FFT bin and store somewhere safe
