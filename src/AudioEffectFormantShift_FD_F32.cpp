@@ -121,7 +121,7 @@ void AudioEffectFormantShift_FD_F32::update(void)
 	}
 
 	//rebuild the negative frequency space
-	myFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); //set the negative frequency space based on the positive
+	myIFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); //set the negative frequency space based on the positive
 
 
 	// ///////////// End do your processing here
