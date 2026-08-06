@@ -20,10 +20,10 @@ class AudioEffectLowpass_FD_F32 : public AudioStream_F32
     ~AudioEffectLowpass_FD_F32(void) {  if (complex_2N_buffer != NULL) delete complex_2N_buffer;  }
        
     int setup(const AudioSettings_F32 &settings, const int _N_FFT);
-    void update(void); //this is what gets called by the Tympan (Teensy) audio subsystem
-    void processAudioFD(float32_t *complex_data, const int nfft);   //This is where our algorithm lives
+    void update(void) override; //this is what gets called by the Tympan (Teensy) audio subsystem
+    void processAudioFD(float32_t *complex_data);   //This is where our algorithm lives
     
-    void setCutoff_Hz(float freq_Hz) { cutoff_Hz = freq_Hz;  }
+    void setCutoff_Hz(float freq_Hz) { cutoff_Hz = min(freq_Hz, 0.95f*(sample_rate_Hz/2.0f));  }
     float getCutoff_Hz(void) {   return cutoff_Hz; }
     
   private:
@@ -66,6 +66,7 @@ int AudioEffectLowpass_FD_F32::setup(const AudioSettings_F32 &settings, const in
 
   //allocate memory to hold frequency domain data
   complex_2N_buffer = new float32_t[2*N_FFT];
+  if (complex_2N_buffer == nullptr) Serial.println("AudioEffectLowpassFD_F32: setup: *** ERROR ***: failed to allocated complex_2N_buffer (2*N = " + String(2*N_FFT) + ")");
 
   //we're done.  return!
   enabled=1;
@@ -88,7 +89,7 @@ void AudioEffectLowpass_FD_F32::update(void)
   // ////////////// Do your processing here!!!
 
   //here's where all of our lowpass filtering happens!
-  processAudioFD(complex_2N_buffer,myFFT.getNFFT()); 
+  processAudioFD(complex_2N_buffer); 
 
   //now, rebuild the frequency space above nyquist
   myFFT.rebuildNegativeFrequencySpace(complex_2N_buffer);
@@ -96,19 +97,22 @@ void AudioEffectLowpass_FD_F32::update(void)
   // ///////////// End do your processing here
 
   //call the IFFT
-  audio_block_f32_t *out_audio_block = NULL;
+  audio_block_f32_t *out_audio_block = AudioStream_F32::allocate_f32();
+  if (out_audio_block == nullptr) return;  //are we out of memory?
   myIFFT.execute(complex_2N_buffer, out_audio_block); //out_block is pre-allocated in here.
 
-  //send the returned audio block.  Don't issue the release command here because myIFFT will re-use it
-  AudioStream_F32::transmit(out_audio_block); //don't release this buffer because myIFFT re-uses it within its own code
+  //send the returned audio block.
+  AudioStream_F32::transmit(out_audio_block); 
+  AudioStream_F32::release(out_audio_block);
   return;
 };
 
 // Here is the function that actually does the lowpass filtering.
 // It loops through the frequency bins and attenuates those bins that are above the cutoff frequency.
-void AudioEffectLowpass_FD_F32::processAudioFD(float32_t *complex_2N_buffer, const int NFFT) {
-  int nyquist_bin = NFFT/2 + 1;
-  float bin_width_Hz = sample_rate_Hz / ((float)NFFT);
+void AudioEffectLowpass_FD_F32::processAudioFD(float32_t *complex_2N_buffer) {
+	const int NFFT = myFFT.getNFFT();
+  const int nyquist_bin = NFFT/2 + 1;
+  const float bin_width_Hz = sample_rate_Hz / ((float)NFFT);
   
   int cutoff_bin = (int)(cutoff_Hz / bin_width_Hz + 0.5f); //the 0.5 is so that it rounds instead of truncates
   if (cutoff_bin >= nyquist_bin) return; 

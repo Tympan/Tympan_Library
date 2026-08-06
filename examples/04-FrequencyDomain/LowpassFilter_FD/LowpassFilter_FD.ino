@@ -48,7 +48,7 @@ void setup() {
   AudioMemory_F32(20, audio_settings);
 
   // Configure the frequency-domain algorithm
-  int N_FFT = 128;
+  int N_FFT = 2*audio_block_samples;  //only do 1, 2, or 4x the audio block size
   audioEffectLowpassFD.setup(audio_settings,N_FFT); //do after AudioMemory_F32();
   audioEffectLowpassFD.setCutoff_Hz(1000.0f);
 
@@ -108,12 +108,12 @@ void servicePotentiometer(unsigned long curTime_millis, unsigned long updatePeri
         //use the potentiometer as a volume knob
         const float min_val = 0, max_val = 40.0; //set desired range
         float new_value = min_val + (max_val - min_val)*val;
-        input_gain_dB = new_value;
+        float input_gain_dB = new_value;
         myTympan.setInputGain_dB(input_gain_dB); // set input volume, 0-47.5dB in 0.5dB setps
         Serial.print("servicePotentiometer: Input Gain (dB) = "); Serial.println(new_value); //print text to Serial port for debugging
       #else
         //use the potentiometer to set the freq-domain low-pass filter
-        const float min_val = logf(200.f), max_val = logf(12000.f); //set desired range
+        const float min_val = logf(200.f), max_val = logf(min(12000.f,0.9*sample_rate_Hz/2.0f)); //set desired range
         float lowpass_Hz = expf(min_val + (max_val - min_val)*val);
         audioEffectLowpassFD.setCutoff_Hz(lowpass_Hz);
         Serial.print("servicePotentiometer: Lowpass (Hz) = "); Serial.println(lowpass_Hz); //print text to Serial port for debugging
