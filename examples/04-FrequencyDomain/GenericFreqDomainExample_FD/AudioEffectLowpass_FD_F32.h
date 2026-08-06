@@ -19,23 +19,40 @@ class AudioEffectLowpass_FD_F32 : public AudioFreqDomainBase_FD_F32   //AudioFre
   public:
     //constructor
     AudioEffectLowpass_FD_F32(const AudioSettings_F32 &settings) : AudioFreqDomainBase_FD_F32(settings) {};
-        
+
+    // ///////////////////////////// setup
+    // Call setup() to set the number of FFT bins (and sample rate and block size)
+    // we don't need to define a new one because the one in the parent class is
+    // fine for this example (and probably for most use cases!)
+    // int setup(const AudioSettings_F32 &settings, const int _N_FFT) override;  //override if you need to do something complicated
+
+    // ///////////////////////////// update
+    // Normally, when making your own algorithm, you'd override update() and put your own
+    // processing into your own new update().  But, for these frequency-domain algorithms
+    // it's probably best to let your class rely upon the update() method that's already
+    // defined in the parent (AudioFreqDomainBase_FD_F32).  This parent update() converts
+    // the audio in and out of the frequency domain for you.  Instead of defining your
+    // own update(), you should simply override the method processAudioFD(), as discussed below.
+    //void update() override;  //override if you need to do something complicated
+
+    // ///////////////////////////// process
+    // This is the method from AudioFreqDomainBase that we are overriding where we will
+    // put our own code for manipulating the frequency data.  This is called by update()
+    // from the AudioFreqDomainBase_FD_F32.  The update() method is itself called by the
+    // Tympan (Teensy) audio system, as with every other Audio processing class.
+    void processAudioFD(float32_t *complex_2N_buffer) override;   //we're overriding this with our own processing!
+
     // get/set methods specific to this particular frequency-domain algorithm
     float setCutoff_Hz(const float freq_Hz) { return cutoff_Hz = freq_Hz;  }
     float getCutoff_Hz(void) {   return cutoff_Hz; }
     float setHighFreqGain_dB(const float gain_dB) {   gain = sqrtf(powf(10.0f, 0.1*gain_dB));  return getHighFreqGain_dB();    }
     float getHighFreqGain_dB(void) {  return 10.0f*log10f(gain*gain);  }
 
-    //this is the method from AudioFreqDomainBase that we are overriding where we will
-    //put our own code for manipulating the frequency data.  This is called by update()
-    //from the AudioFreqDomainBase_FD_F32.  The update() method is itself called by the
-    //Tympan (Teensy) audio system, as with every other Audio processing class.
-    virtual void processAudioFD(float32_t *complex_2N_buffer, const int NFFT); 
 
   private:
     //create some data members specific to our processing
-    float cutoff_Hz = 1000.f; //default cutoff frequency
-    float gain = 0.1;               //default attenuation amount
+    float cutoff_Hz = 1000.f;   //default cutoff frequency
+    float gain = 0.1;           //default attenuation amount
    
 };
 
@@ -44,14 +61,16 @@ class AudioEffectLowpass_FD_F32 : public AudioFreqDomainBase_FD_F32   //AudioFre
 //  Argument 1: complex_2N_buffer is the float32_t array that holds the FFT results that we are going to
 //     manipulate.  It is 2*NFFT in length because it contains the real and imaginary data values
 //     for each FFT bin.  Real and imaginary are interleaved.  We only need to worry about the bins
-//     up to Nyquist because AudioFreqDomainBase will reconstruct the freuqency bins above Nyquist for us.
-//  Argument 2: NFFT, the number of FFT bins
+//     up to Nyquist because AudioFreqDomainBase-FD_F32::update() will reconstruct the freuqency bins 
+//     above Nyquist for us.
 //
 //  We get our data from complex_2N_buffer and we put our results back into complex_2N_buffer
-void AudioEffectLowpass_FD_F32::processAudioFD(float32_t *complex_2N_buffer, const int NFFT) {
+void AudioEffectLowpass_FD_F32::processAudioFD(float32_t *complex_2N_buffer) {
 
-  int N_2 = NFFT / 2 + 1;
-  float Hz_per_bin = sample_rate_Hz /((float)NFFT); //sample_rate_Hz is from the base class AudioFreqDomainBase_FD_F32
+  // get some sizes and scale factors for our frequency-domain data
+  const int NFFT = getNFFT();
+  const int N_2 = NFFT / 2 + 1;
+  const float Hz_per_bin = getSampleRate_Hz() /((float)NFFT); //getSampleRate_Hz() is from the base class AudioFreqDomainBase_FD_F32
 
   /*
   //In some other example, this might be a useful operation...getting the magnitude and phase of the bins.
@@ -72,7 +91,7 @@ void AudioEffectLowpass_FD_F32::processAudioFD(float32_t *complex_2N_buffer, con
   */
 
   //Loop over each bin and attenuate those above the cutoff
-  int cutoff_bin = (int)(cutoff_Hz / Hz_per_bin + 0.5f); //the 0.5 is so that it rounds instead of truncates
+  const int cutoff_bin = static_cast<int>(cutoff_Hz / Hz_per_bin + 0.5f); //the 0.5 is so that it rounds instead of truncates
   for (int ind = 0; ind < N_2; ind++) { //only process up to Nyquist...the class will automatically rebuild the frequencies above Nyquist
     if (ind >= cutoff_bin) {  //are we at or above the cutoff frequency?
       //attenuate both the real and imaginary comoponents
