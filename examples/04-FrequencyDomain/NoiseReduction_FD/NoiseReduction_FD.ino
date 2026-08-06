@@ -144,8 +144,8 @@ void loop() {
   //respond to BLE
   #if USE_BLE
     if (ble.available() > 0) {
-      String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
-      for (int i = 0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]); //ends up in serialManager.processCharacter()
+      String msgFromBle; ble.recvBLE(&msgFromBle);
+      for (int i = 0; i < msgFromBle.length(); i++) serialManager.respondToByte(msgFromBle[i]); //ends up in serialManager.processCharacter()
     }
   
     //If there is no BLE connection, make sure that we keep advertising

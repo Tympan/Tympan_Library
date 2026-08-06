@@ -48,7 +48,7 @@ class AudioEffectNoiseReduction_FD_F32_local : public AudioFreqDomainBase_FD_F32
     }
 
     //setup...extend the setup that is part of AudioFreqDomainBase_FD_F32
-    int setup(const AudioSettings_F32 &settings, const int target_N_FFT);
+    int setup(const AudioSettings_F32 &settings, const int target_N_FFT) override;
    
     // get/set methods specific to this particular frequency-domain algorithm
     float32_t getAveSpectrumN(void) { return myFFT.getNFFT(); }; //myFFT is part of AudioFreqDomainBase_FD_F32
@@ -110,7 +110,7 @@ class AudioEffectNoiseReduction_FD_F32_local : public AudioFreqDomainBase_FD_F32
     //put our own code for manipulating the frequency data.  This is called by update()
     //from the AudioFreqDomainBase_FD_F32.  The update() method is itself called by the
     //Tympan (Teensy) audio system, as with every other Audio processing class.
-    virtual void processAudioFD(float32_t *complex_2N_buffer, const int NFFT); 
+    void processAudioFD(float32_t *complex_2N_buffer) override; 
 
   protected:
     //create some data members specific to our processing
@@ -128,7 +128,7 @@ class AudioEffectNoiseReduction_FD_F32_local : public AudioFreqDomainBase_FD_F32
 };
 
 int AudioEffectNoiseReduction_FD_F32_local::setup(const AudioSettings_F32 &settings, const int target_N_FFT) {
-  int actual_N_FFT = AudioFreqDomainBase_FD_F32::setup(settings, target_N_FFT);
+  const int actual_N_FFT = AudioFreqDomainBase_FD_F32::setup(settings, target_N_FFT);
   ave_spectrum_N = actual_N_FFT / 2 + 1;  // zero bin through Nyquist bin
   ave_spectrum = new float32_t[ave_spectrum_N];
   gains = new float32_t[ave_spectrum_N];
@@ -141,8 +141,8 @@ int AudioEffectNoiseReduction_FD_F32_local::setup(const AudioSettings_F32 &setti
 }
 
 void AudioEffectNoiseReduction_FD_F32_local::updateAveSpectrum(float32_t *current_pow) {
-    float32_t att_1 = 0.99999f*(1.0f - attack_coeff), att = attack_coeff;
-    float32_t rel_1 = 0.99999f*(1.0f - release_coeff), rel = release_coeff;
+    const float32_t att_1 = 0.99999f*(1.0f - attack_coeff), att = attack_coeff;
+    const float32_t rel_1 = 0.99999f*(1.0f - release_coeff), rel = release_coeff;
 
     //loop over each bin to update the average for that bin
     for (int ind=0; ind < ave_spectrum_N; ind++) {
@@ -226,7 +226,7 @@ void AudioEffectNoiseReduction_FD_F32_local::smoothGainsInFrequency(void) {
 
 //smooth gain values in time with simple first-order filter
 void AudioEffectNoiseReduction_FD_F32_local::smoothGainsInTime(void) {
-  float32_t coeff_1 = 0.9999f*(1.0f-smooth_coeff);
+  const float32_t coeff_1 = 0.9999f*(1.0f-smooth_coeff);
   for (int ind = 0; ind < ave_spectrum_N; ind++) {
     gains[ind] = prev_gains[ind] = coeff_1 * prev_gains[ind] + smooth_coeff*gains[ind];
   }
@@ -241,10 +241,11 @@ void AudioEffectNoiseReduction_FD_F32_local::smoothGainsInTime(void) {
 //  Argument 2: NFFT, the number of FFT bins
 //
 //  We get our data from complex_2N_buffer and we put our results back into complex_2N_buffer
-void AudioEffectNoiseReduction_FD_F32_local::processAudioFD(float32_t *complex_2N_buffer, const int NFFT) {
-  if (ave_spectrum == NULL) return; //if the memory for the average has yet to be initialized, return early
-  if (gains == NULL) return;  //if the memory for the gain has yet to be initialized, return early
-  int N_2 = NFFT / 2 + 1;
+void AudioEffectNoiseReduction_FD_F32_local::processAudioFD(float32_t *complex_2N_buffer) {
+  if (ave_spectrum == NULL) return; // if the memory for the average has yet to be initialized, return early
+  if (gains == NULL) return;        // if the memory for the gain has yet to be initialized, return early
+  const int NFFT = getNFFT();       // from parent class
+  const int N_2 = NFFT / 2 + 1;
   //float Hz_per_bin = sample_rate_Hz /((float)NFFT); //sample_rate_Hz is from the base class AudioFreqDomainBase_FD_F32
   
   //compute the magnitude^2 of each FFT bin (up to Nyquist)
