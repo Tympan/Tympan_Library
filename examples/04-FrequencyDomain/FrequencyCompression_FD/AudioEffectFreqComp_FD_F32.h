@@ -116,8 +116,8 @@ void AudioEffectFreqComp_FD_F32::processAudioFD(float32_t *complex_2N_buffer)
 //shift the audio by vocoding, which is the shifting of the FFT amplitudes but leaving the FFT phases in place
 void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_buffer) { //define some variables
 	const int NFFT = getNFFT(); //from parent class
-  const int N_2 = fftSize / 2 + 1;
-  const float Hz_per_bin = sample_rate_Hz / fftSize;
+  const int N_2 = NFFT / 2 + 1;
+  const float Hz_per_bin = sample_rate_Hz / NFFT;
   const float inv_shift_scale_fac = 1.0f / shift_scale_fac;
   int source_ind; // neg_dest_ind;
   float dest_freq_Hz, source_freq_Hz, interp_fac;
@@ -126,7 +126,7 @@ void AudioEffectFreqComp_FD_F32::processAudioFD_NL_vocode(float32_t *comples_2N_
  
   #if 0
     float max_source_Hz = 10000.0; //highest frequency to use as source data
-    const int max_source_ind = min(int(max_source_Hz / sample_rate_Hz * fftSize + 0.5),N_2);
+    const int max_source_ind = min(int(max_source_Hz / sample_rate_Hz * NFFT + 0.5),N_2);
   #else
     const int max_source_ind = N_2;  //this line causes this feature to be defeated
   #endif

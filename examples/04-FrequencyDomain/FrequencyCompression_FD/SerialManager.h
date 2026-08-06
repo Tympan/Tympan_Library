@@ -8,6 +8,7 @@
 
 //extern objects
 extern State myState;
+extern const bool flag_useBLE;
 
 //functions in the main sketch that I want to call from here
 extern void incrementDigitalGain(float);
@@ -181,9 +182,13 @@ void SerialManager::createTympanRemoteLayout(void) {
 
 
 void SerialManager::printTympanRemoteLayout(void) {
+  if (flag_useBLE) {
     String s = myGUI.asString();
     Serial.println(s);
     ble->sendMessage(s); //ble is held by SerialManagerBase
+  } else {
+    Serial.println("SerialManager: printTympanRemoteLayout: BLE was been disabled in the main *.ino file.");
+  }
 }
 
 void SerialManager::setFullGUIState(bool activeButtonsOnly) {
@@ -194,22 +199,24 @@ void SerialManager::setFullGUIState(bool activeButtonsOnly) {
   setNLFreqParams(activeButtonsOnly);
 }
 void SerialManager::setInputGainButtons(bool activeButtonsOnly) {
-   setButtonText("inGain", String(myState.input_gain_dB)); 
+   if (flag_useBLE) setButtonText("inGain", String(myState.input_gain_dB)); 
 };
 void SerialManager::setGainButtons(bool activeButtonsOnly) {
-  setButtonText("digGain", String(myState.digital_gain_dB));
+  if (flag_useBLE) setButtonText("digGain", String(myState.digital_gain_dB));
 }
 void SerialManager::setOutputGainButtons(bool activeButtonsOnly) {
-  setButtonText("outGain", String(myState.output_gain_dB));
+  if (flag_useBLE) setButtonText("outGain", String(myState.output_gain_dB));
 }
 void SerialManager::setNLFreqParams(bool activeButtonsOnly) {
-  setButtonText("freqKnee", String(myState.freq_knee_Hz,0));
-  setButtonText("freqCR",   String(myState.freq_CR,2));
-  setButtonText("freqShift",String(myState.freq_shift_Hz,0));
+  if (flag_useBLE) {
+    setButtonText("freqKnee", String(myState.freq_knee_Hz,0));
+    setButtonText("freqCR",   String(myState.freq_CR,2));
+    setButtonText("freqShift",String(myState.freq_shift_Hz,0));
+  }
 }
 
 void SerialManager::setButtonText(String s1, String s2) {
-  SerialManagerBase::setButtonText(s1,s2);
+  if (flag_useBLE) SerialManagerBase::setButtonText(s1,s2);
 }
 
 

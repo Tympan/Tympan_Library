@@ -88,6 +88,7 @@ AudioConnection_F32       patchCord41(gain_R, 0, i2s_out, 1);      //connect to 
 
 //Create BLE
 BLE& ble = myTympan.getBLE();   //myTympan owns the ble object, but we have a reference to it here
+const bool flag_useBLE = false;
 
 //control display and serial interaction
 SerialManager serialManager(&ble);
@@ -179,20 +180,22 @@ void loop() {
   while (Serial.available()) serialManager.respondToByte((char)Serial.read());   //USB Serial
 
   //respond to BLE
-  if (ble.available() > 0) {
-    String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
-    for (int i = 0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]); //ends up in serialManager.processCharacter()
-  }
+  if (flag_useBLE) {
+    if (ble.available() > 0) {
+      String msgFromBle; int msgLen = ble.recvBLE(&msgFromBle);
+      for (int i = 0; i < msgLen; i++) serialManager.respondToByte(msgFromBle[i]); //ends up in serialManager.processCharacter()
+    }
 
-  //If there is no BLE connection, make sure that we keep advertising
-  ble.updateAdvertising(millis(), 5000); //check every 5000 msec
+    //If there is no BLE connection, make sure that we keep advertising
+    ble.updateAdvertising(millis(), 5000); //check every 5000 msec
+  }
 
   //check the potentiometer
   servicePotentiometer(millis(), 100); //service the potentiometer every 100 msec
 
   //periodically print the CPU and Memory Usage
   if (myState.flag_printCPUandMemory) myState.printCPUandMemory(millis(), 3000); //print every 3000 msec
-  if (myState.flag_printCPUandMemory) myState.printCPUtoGUI(millis(), 3000);
+  if (flag_useBLE) { if (myState.flag_printCPUandMemory) myState.printCPUtoGUI(millis(), 3000); }
 
 } //end loop();
 
