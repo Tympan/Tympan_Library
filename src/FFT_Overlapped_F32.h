@@ -72,7 +72,7 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
     }
 
     virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
-      int N_FFT;
+			int N_FFT;
       
       ///choose valid _N_FFT
       if (!FFT_F32::is_valid_N_FFT(_N_FFT)) {
@@ -104,8 +104,10 @@ class FFT_Overlapped_Base_F32 {  //handles all the data structures for the overl
       } 
       return N_FFT;
     }
-    virtual int getNFFT(void) = 0;
-    virtual int getNBuffBlocks(void) { return N_BUFF_BLOCKS; }
+    virtual int getNFFT(void) const = 0;
+    virtual int getNBuffBlocks(void) const { return N_BUFF_BLOCKS; }
+
+		virtual void rebuildNegativeFrequencySpace(float *complex_2N_buffer) = 0;
 
     Print *print_ptr = &Serial;
 
@@ -135,7 +137,7 @@ class FFT_Overlapped_F32: public FFT_Overlapped_Base_F32
       setup(settings,_N_FFT);
     }
        
-    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
+    int setup(const AudioSettings_F32 &settings, const int _N_FFT) override {
       int N_FFT = FFT_Overlapped_Base_F32::setup(settings, _N_FFT);
      
       //setup the FFT routines
@@ -144,9 +146,9 @@ class FFT_Overlapped_F32: public FFT_Overlapped_Base_F32
     }
     
     virtual void execute(audio_block_f32_t *block, float *complex_2N_buffer); //output is via complex_2N_buffer (complex_2N_buffer must already be fully allocated!)
-    virtual int getNFFT(void) { return myFFT.getNFFT(); };
+    int getNFFT(void) const override { return myFFT.getNFFT(); };
     FFT_F32* getFFTObject(void) { return &myFFT; };
-    virtual void rebuildNegativeFrequencySpace(float *complex_2N_buffer) { myFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); }
+    void rebuildNegativeFrequencySpace(float *complex_2N_buffer) override { myFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); }
     
   private:
     FFT_F32 myFFT;
@@ -163,7 +165,7 @@ class IFFT_Overlapped_F32: public FFT_Overlapped_Base_F32
       setup(settings,_N_FFT);
     }
        
-    virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) {
+    int setup(const AudioSettings_F32 &settings, const int _N_FFT) override {
       int N_FFT = FFT_Overlapped_Base_F32::setup(settings, _N_FFT);
      
       //setup the FFT routines
@@ -172,9 +174,9 @@ class IFFT_Overlapped_F32: public FFT_Overlapped_Base_F32
     }
     
     virtual void execute(float *complex_2N_buffer, audio_block_f32_t *out_block); //output is via out_block (out_block must be allocated and writable!)
-    virtual int getNFFT(void) { return myIFFT.getNFFT(); };
+    int getNFFT(void) const override { return myIFFT.getNFFT(); };
     IFFT_F32* getIFFTObject(void) { return &myIFFT; };
-    virtual void rebuildNegativeFrequencySpace(float *complex_2N_buffer) { myIFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); }
+    void rebuildNegativeFrequencySpace(float *complex_2N_buffer) override { myIFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); }
  
   private:
     IFFT_F32 myIFFT;
