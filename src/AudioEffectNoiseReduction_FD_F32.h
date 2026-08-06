@@ -110,7 +110,7 @@ class AudioEffectNoiseReduction_FD_F32 : public AudioFreqDomainBase_FD_F32   //A
     //put our own code for manipulating the frequency data.  This is called by update()
     //from the AudioFreqDomainBase_FD_F32.  The update() method is itself called by the
     //Tympan (Teensy) audio system, as with every other Audio processing class.
-    void processAudioFD(float32_t *complex_2N_buffer, const int NFFT) override; 
+    void processAudioFD(float32_t *complex_2N_buffer) override; 
 
   protected:
     //create some data members specific to our processing

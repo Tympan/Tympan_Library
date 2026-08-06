@@ -115,10 +115,10 @@ void AudioEffectNoiseReduction_FD_F32::smoothGainsInTime(void) {
 //     manipulate.  It is 2*NFFT in length because it contains the real and imaginary data values
 //     for each FFT bin.  Real and imaginary are interleaved.  We only need to worry about the bins
 //     up to Nyquist because AudioFreqDomainBase will reconstruct the freuqency bins above Nyquist for us.
-//  Argument 2: NFFT, the number of FFT bins
 //
 //  We get our data from complex_2N_buffer and we put our results back into complex_2N_buffer
-void AudioEffectNoiseReduction_FD_F32::processAudioFD(float32_t *complex_2N_buffer, const int NFFT) {
+void AudioEffectNoiseReduction_FD_F32::processAudioFD(float32_t *complex_2N_buffer) {
+	const int NFFT = getNFFT(); //from parent class
   if (ave_spectrum == NULL) return; //if the memory for the average has yet to be initialized, return early
   if (gains == NULL) return;  //if the memory for the gain has yet to be initialized, return early
   int N_2 = NFFT / 2 + 1;
