@@ -185,6 +185,7 @@ void AudioInputI2SHex_F32::update_1chan(int chan, unsigned long counter, audio_b
 	
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_block->id = counter;
+	out_block->id = sample_rate_Hz;
 	out_block->length = audio_block_samples;
 
 	// then transmit and release the DMA's former blocks
