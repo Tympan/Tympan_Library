@@ -47,9 +47,12 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
     virtual int getNIFFT(void) { return myIFFT.getNFFT();}
 
     //these methods affect the input only
-    virtual int getBlockLength_samples(void) { return audio_block_input_samples; }
-    virtual float setSampleRate_Hz(const float val_Hz);
-    virtual float getSampleRate_Hz(void) const { return sample_rate_input_Hz; }
+    virtual int getBlockLength_samples(void) { return audio_block_input_samples; }  // input block size
+    virtual int getBlockLength_output_samples(void) const { return audio_block_output_samples; }
+    virtual float setSampleRate_Hz(const float val_Hz);  // input sample rate
+    virtual float getSampleRate_Hz(void) const { return sample_rate_input_Hz; } //input_sample rate
+    virtual float getSampleRate_output_Hz(void) const { return sample_rate_output_Hz; }
+
 	
     //the rate at which overlapped FFTs are computed is the same (per how we set up these FFT
     //routines here for Tympan) as the rate at which new audio blocks arrive.  Since the FFTs

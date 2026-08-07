@@ -81,6 +81,7 @@ class AudioPlayMemoryI16_F32 : public AudioStream_F32
       setSampleRate_Hz(settings.sample_rate_Hz);  
 	  setDataSampleRate_Hz(settings.sample_rate_Hz); 
 	  setInstanceName(); 
+	  audio_block_samples = settings.audio_block_samples;
     }
 
 	virtual void setInstanceName(void) { instanceName = "AudioPlayMemoryI16"; } //set default name
@@ -134,6 +135,7 @@ class AudioPlayMemoryI16_F32 : public AudioStream_F32
       uint32_t data_len = 0;
       float32_t data_sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
       float sample_rate_Hz = ((float)AUDIO_SAMPLE_RATE_EXACT);
+	  int audio_block_samples = AUDIO_BLOCK_SAMPLES;
 	  
 	  //related to the queue of audio samples
 	  AudioPlayMemoryQueue playQueue;

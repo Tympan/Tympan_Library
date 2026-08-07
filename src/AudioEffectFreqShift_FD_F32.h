@@ -64,6 +64,7 @@ class AudioEffectFreqShift_FD_F32 : public AudioFreqDomainBase_FD_F32
 		float getShift_Hz(void) const                { return getFrequencyOfBin(shift_bins);	}
 		float getFrequencyOfBin(const int bin) const { return sample_rate_input_Hz * ((float)bin) / ((float) N_FFT); } //"bin" should be zero to (N_FFT-1)
 		
+   
   protected:
 		enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to THREE_QUARTERS
 		int overlap_amount = NONE;
