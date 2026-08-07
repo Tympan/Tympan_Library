@@ -5,6 +5,10 @@
 #include <Arduino.h>
 #include "AudioStream_F32.h"
 
+// This class converts between audio_block used by Teensy Audio library and the Tympan_Library.
+// The Teensy Audio library uses audio blocks where the audio samples are int16 data type.
+// The Tympan_Library uses audio blocks where the audio samples are float32 data type
+
 class AudioConvert_I16toF32 : public AudioStream_F32 //receive Int and transmits Float
 {
   //GUI: inputs:1, outputs:1  //this line used for automatic generation of GUI node
