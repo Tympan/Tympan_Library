@@ -26,7 +26,7 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
 	  }
 
     //destructor...release all of the memory that has been allocated
-    ~AudioFreqDomainBase_FD_F32(void) { if (complex_2N_buffer != NULL) delete complex_2N_buffer; }
+    ~AudioFreqDomainBase_FD_F32(void) { if (complex_2N_buffer != NULL) delete[] complex_2N_buffer; }
      
     virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) { return setup(settings, _N_FFT, _N_FFT); }
     virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT, const int _N_IFFT);
@@ -75,7 +75,7 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
 
   protected:
     int enabled=0;
-    float32_t *complex_2N_buffer;
+    float32_t *complex_2N_buffer = nullptr;
     size_t len_complex_2N_buffer=0;
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;

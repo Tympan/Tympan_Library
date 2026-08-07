@@ -3,7 +3,7 @@
 //#include <arm_math.h>
 
 int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &in_settings, const int _N_FFT, const int _N_IFFT) {
-  sample_rate_input_Hz = in_settings.sample_rate_Hz;  //sample rate for in-coming data
+	sample_rate_input_Hz = in_settings.sample_rate_Hz;  //sample rate for in-coming data
 	bool flag_reallocate_complex_buffer = false;
 
 	//setup the FFT and IFFT.  If they return a negative FFT, it wasn't an allowed FFT size.
@@ -16,6 +16,8 @@ int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &in_settings, cons
 		}
 		flag_reallocate_complex_buffer = true;
 	}
+	
+
 	int prev_N_IFFT = N_IFFT;
 	if (prev_N_IFFT != _N_IFFT) {
 		float32_t ratio_IFFT_to_FFT = static_cast<float32_t>(_N_IFFT)/static_cast<float32_t>(_N_FFT);
@@ -31,14 +33,14 @@ int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &in_settings, cons
 		audio_block_output_samples = out_settings.audio_block_samples;
 		flag_reallocate_complex_buffer = true;
 	}
-
+	
 	//decide windowing
 	(myFFT.getFFTObject())->useHanningWindow(); //applied prior to FFT
 	#if 1
 		if (myIFFT.getNBuffBlocks() > 3) (myIFFT.getIFFTObject())->useHanningWindow(); //window again after IFFT
 	#endif
 
-  if (flag_printDebug) {
+ 	if (flag_printDebug) {
 		//print info about setup
 		print_ptr->println(F("AudioEffectFreqShift_FD_F32: FFT parameters..."));
 		print_ptr->print("    : N_FFT Requested = "); print_ptr->print(_N_FFT); print_ptr->print(", Actual = "); print_ptr->println(N_FFT);
@@ -49,12 +51,12 @@ int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &in_settings, cons
 		print_ptr->print("    : FFT use window = "); print_ptr->println(myFFT.getFFTObject()->get_flagUseWindow());
 		print_ptr->print("    : IFFT use window = "); print_ptr->println((myIFFT.getIFFTObject())->get_flagUseWindow());
 		delay(30);  //give time for the print_ptr to spool out on slower systems
-  }
+	}
 
 	//allocate memory to hold frequency domain data
 	if (flag_reallocate_complex_buffer) {
 		if (complex_2N_buffer != nullptr) {
-			delete[] complex_2N_buffer;
+			delete[] complex_2N_buffer;	
 			len_complex_2N_buffer = 0; //...this is a data member of this class
 		}
 		const int max_N_FFT = max(N_FFT, N_IFFT);    //how many bins of data should we be prepared to handle
@@ -116,7 +118,7 @@ void AudioFreqDomainBase_FD_F32::update(void)
 
 	//zero out the remaining complex_2N_buffer, if needed
 	size_t ind = static_cast<size_t>(2*N_FFT_input);
-	while (ind < len_complex_2N_buffer) complex_2N_buffer[ind++] = 0.0f;  //zero out the rest of the buffer
+	while (ind < len_complex_2N_buffer) { complex_2N_buffer[ind++] = 0.0f; } //zero out the rest of the buffer
 
 	//get other info about the audio_block and then release it
 	unsigned long incoming_id = in_audio_block->id;
@@ -125,11 +127,11 @@ void AudioFreqDomainBase_FD_F32::update(void)
 	AudioStream_F32::release(in_audio_block);  //We just passed ownership of in_audio_block to myFFT, so we can release it here as we won't use it here again.
 
 
-  // ////////////// Do your processing here!!!
+	// ////////////// Do your processing here!!!
 
 
-  // define some variables
-  processAudioFD(complex_2N_buffer);  //in your derived class, override processAudioFD() with your own code!!
+	// define some variables
+	processAudioFD(complex_2N_buffer);  //in your derived class, override processAudioFD() with your own code!!
 
 	// if upsampling iva the upcoming IFFT, lets zero out the "negative" fft bins of the existing
 	// FFT representation in the complex2N buffer so that those values don't mess up the
@@ -138,11 +140,11 @@ void AudioFreqDomainBase_FD_F32::update(void)
 	const int N_FFT_future = N_FFT_output;
 	if (N_FFT_future > N_FFT_currently) removeNegativeFrequencies(complex_2N_buffer, N_FFT_currently, N_FFT_future);
 	
-  // rebuild the negative frequency space for the output IFFT
-  myIFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); //set the negative frequency space based on the positive
+	// rebuild the negative frequency space for the output IFFT
+	myIFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); //set the negative frequency space based on the positive
 
 
-  // ///////////// End do your processing here
+	// ///////////// End do your processing here
 
 	//call the IFFT
 	//const int N_FFT_output = myIFFT.getNFFT();

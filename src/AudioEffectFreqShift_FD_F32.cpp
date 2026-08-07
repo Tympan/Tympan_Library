@@ -2,7 +2,9 @@
 #include "AudioEffectFreqShift_FD_F32.h"
 
 int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT, const int _N_IFFT) {
+	//print_ptr->println("AudioEffectFreqShift_FD_F32: setup: _N_FFT, _N_IFFT: " + String(_N_FFT) + " , " + String(_N_IFFT));
 	int ret_val = AudioFreqDomainBase_FD_F32::setup(settings, _N_FFT, _N_IFFT);
+	//print_ptr->println("AudioEffectFreqShift_FD_F32: setup: return from AudioFreqDomainBase_FD_F32::setup = " + String(ret_val));
 	if (ret_val < 0) return ret_val; //it failed, so simply return now
 	
 	//decide how much overlap is happening
