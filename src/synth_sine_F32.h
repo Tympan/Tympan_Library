@@ -61,6 +61,7 @@ public:
 	AudioSynthWaveformSine_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) {
 		setDefaultValues();
 		setSampleRate_Hz(settings.sample_rate_Hz);
+		audio_block_samples = settings.audio_block_samples;
 	}
 	virtual void frequency(float freq) {
 		if (freq < 0.0) freq = 0.0;
@@ -110,6 +111,7 @@ protected:
 	uint32_t phase_increment = 0;
 	int32_t magnitude = 0;
 	float sample_rate_Hz = AUDIO_SAMPLE_RATE;
+	int audio_block_samples=MAX_AUDIO_BLOCK_SAMPLES_F32;
 	volatile bool enabled = true;
 	float32_t frequency_Hz;
 	const float magnitude_scale_factor = 65536.0f;

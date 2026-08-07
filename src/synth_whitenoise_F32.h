@@ -47,7 +47,10 @@ class AudioSynthNoiseWhite_F32 : public AudioStream_F32
 //GUI: shortName:whitenoise  //this line used for automatic generation of GUI node
 public:
 	AudioSynthNoiseWhite_F32() : AudioStream_F32(0, NULL) { setDefaultValues(); }
-	AudioSynthNoiseWhite_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { setDefaultValues(); }
+	AudioSynthNoiseWhite_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0, NULL) { setDefaultValues(); 
+		sample_rate_Hz = settings.sample_rate_Hz;
+		audio_block_samples = settings.audio_block_samples;
+	}
 	
 	void setDefaultValues(void) {
 		level = 0;
@@ -63,7 +66,10 @@ private:
 	int32_t  level; // 0=off, 65536=max
 	uint32_t seed;  // must start at 1
 	static uint16_t instance_count;
-	int16_t block_data[AUDIO_BLOCK_SAMPLES]; //working memory for use by the legacy int16 code for generating the noise
+	int16_t block_data[MAX_AUDIO_BLOCK_SAMPLES_F32]; //working memory for use by the legacy int16 code for generating the noise
+	float32_t sample_rate_Hz = AUDIO_SAMPLE_RATE;
+	int audio_block_samples=MAX_AUDIO_BLOCK_SAMPLES_F32;
+	unsigned long update_counter = 0;
 };
 
 #endif

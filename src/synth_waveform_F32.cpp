@@ -12,13 +12,16 @@ void AudioSynthWaveform_F32::update(void) {
 		//get output block
 		audio_block_f32_t *block_new = allocate_f32();
 		if (!block_new) { AudioStream_F32::release(lfo_block); return; } //could not allocate block.  So, release memory and return.
+
+		//update the counter on the new block
+		block_new->id = block_counter;
+		block_new->fs_Hz = sample_rate_Hz;
+		block_new->length = audio_block_samples;
 		
 		//process the audio to fill the output block with data samples
 		processAudioBlock(lfo_block, block_new);
 		
-		//updat ethe counter on the new block
-		block_new->id = block_counter;
-
+		//transmit
 		AudioStream_F32::transmit(block_new);
 		AudioStream_F32::release(block_new);
 		AudioStream_F32::release(lfo_block);

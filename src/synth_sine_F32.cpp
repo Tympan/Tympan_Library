@@ -51,16 +51,18 @@ void AudioSynthWaveformSine_F32::update(void)
 	audio_block_f32_t *block;
 	uint32_t i, ph, inc, index, scale;
 	int32_t val1, val2;
-	static uint32_t block_length = 0;
-	
+	//static uint32_t block_length = 0;
+	const uint32_t fill_len = static_cast<uint32_t>(audio_block_samples);
+		
 	if (enabled) {
+		block_counter++;
 		if (magnitude) {
 			block = allocate_f32();
 			if (block) {
-				block_length = (uint32_t)block->length;
+				//block_length = (uint32_t)block->length;
 				ph = phase_accumulator;
 				inc = phase_increment;
-				for (i=0; i < block_length; i++) {
+				for (i=0; i < fill_len; i++) {
 					index = ph >> 24;
 					val1 = AudioWaveformSine_tympan[index];
 					val2 = AudioWaveformSine_tympan[index+1];
@@ -78,15 +80,17 @@ void AudioSynthWaveformSine_F32::update(void)
 				}
 				phase_accumulator = ph;
 				
-				block_counter++;
+				//set block metadata
 				block->id = block_counter;
+				block->fs_Hz = sample_rate_Hz;
+				block->length = static_cast<int>(fill_len);
 				
 				AudioStream_F32::transmit(block);
 				AudioStream_F32::release(block);
 				return;
 			}
 		}
-		phase_accumulator += phase_increment * block_length;
+		phase_accumulator += phase_increment * fill_len;
 	}
 }
 

@@ -42,38 +42,43 @@
 class AudioSynthToneSweep_F32 : public AudioStream_F32
 {
   public:
-	AudioSynthToneSweep_F32(void) : AudioStream_F32(0,NULL), sweep_busy(0) { 
-		fs_Hz = (float)AUDIO_SAMPLE_RATE_EXACT;
-	}
-	AudioSynthToneSweep_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0,NULL), sweep_busy(0) { 
-		fs_Hz = settings.sample_rate_Hz;
-	}
+		AudioSynthToneSweep_F32(void) : AudioStream_F32(0,NULL), sweep_busy(0) { 
+			fs_Hz = (float)AUDIO_SAMPLE_RATE_EXACT;
 
-	virtual boolean play(float t_amp,float t_lo,float t_hi,float t_time);
-	virtual boolean play(float t_amp,float t_lo,float t_hi,float t_time, float fs_Hz);
-	virtual void update(void);
-	unsigned char isPlaying(void);
-	float read(void) {
-		__disable_irq();
-		uint64_t freq = tone_freq;
-		unsigned char busy = sweep_busy;
-		__enable_irq();
-		if (!busy) return 0.0f;
-		return (float)(freq >> 32);
-	}
+		}
+		AudioSynthToneSweep_F32(const AudioSettings_F32 &settings) : AudioStream_F32(0,NULL), sweep_busy(0) { 
+			fs_Hz = settings.sample_rate_Hz;
+			audio_block_samples = settings.audio_block_samples;
+		}
+
+		virtual boolean play(float t_amp,float t_lo,float t_hi,float t_time);
+		virtual boolean play(float t_amp,float t_lo,float t_hi,float t_time, float fs_Hz);
+		virtual void update(void);
+		unsigned char isPlaying(void);
+		float read(void) {
+			__disable_irq();
+			uint64_t freq = tone_freq;
+			unsigned char busy = sweep_busy;
+			__enable_irq();
+			if (!busy) return 0.0f;
+			return (float)(freq >> 32);
+		}
 
 
   protected:
   	float tone_amp;
-	float tone_lo;
-	float tone_hi;
-	float tone_freq;
-	float fs_Hz = (float)AUDIO_SAMPLE_RATE_EXACT;
-	float tone_phase;
-	float tone_incr;
-	int tone_sign;
-	unsigned char sweep_busy;
-	void update_silence(void);
+		float tone_lo;
+		float tone_hi;
+		float tone_freq;
+		float fs_Hz = (float)AUDIO_SAMPLE_RATE;
+		float tone_phase;
+		float tone_incr;
+		int tone_sign;
+		unsigned char sweep_busy;
+		void update_silence(void);
+		//float32_t sample_rate_Hz = AUDIO_SAMPLE_RATE;
+		int audio_block_samples=MAX_AUDIO_BLOCK_SAMPLES_F32;
+		unsigned int block_counter=0;
 };
 
 // Exponential sweep, added by Chip Audette, OpenAudio, Feb 2024

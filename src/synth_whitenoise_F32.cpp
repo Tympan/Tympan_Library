@@ -59,6 +59,14 @@ void AudioSynthNoiseWhite_F32::update(void)
 		//Serial.println(": NULL block. returning.");
 		return;
 	}
+	
+	// set metadata
+	update_counter++;
+	block_f32->id = update_counter;
+	block_f32->fs_Hz = sample_rate_Hz;
+	block_f32->length = audio_block_samples;
+	
+	// set start and end
 	//p = (uint32_t *)(block->data);
 	p = (uint32_t *)(block_data);
 	//end = p + AUDIO_BLOCK_SAMPLES/2;

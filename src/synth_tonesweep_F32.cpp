@@ -118,8 +118,15 @@ void AudioSynthToneSweep_F32::update_silence(void) {
 	block = allocate_f32();
 	if(block) {
 		bp = block->data;
-		for(i = 0;i < block->length;i++) bp[i] = 0.0f;
+		const int fill_len = audio_block_samples;
+		for(i = 0;i < fill_len;i++) bp[i] = 0.0f;
 		
+		//set the block's metadata
+		block->id = block_counter;
+		block->fs_Hz = fs_Hz;
+		block->length = fill_len;
+		
+		//transmit and release!
 		AudioStream_F32::transmit(block);
 		AudioStream_F32::release(block);
 	}	
@@ -127,11 +134,8 @@ void AudioSynthToneSweep_F32::update_silence(void) {
 
 void AudioSynthToneSweep_F32::update(void)
 {
-  
-  if(!sweep_busy) {
-	  update_silence();
-	  return;
-  }
+  block_counter++;
+  if(!sweep_busy) { update_silence(); return; }
 
   audio_block_f32_t *block;
   float *bp;
@@ -139,20 +143,23 @@ void AudioSynthToneSweep_F32::update(void)
 
   //          L E F T  C H A N N E L  O N L Y
   block = allocate_f32();
-  if(block) {
-	float two_pi = 2.0*PI;  //PI is in CMSIS DSP library for ARM
+  if (block) {
+		float two_pi = 2.0*PI;  //PI is in CMSIS DSP library for ARM
     bp = block->data;
     //uint32_t tmp  = tone_freq >> 32; 
     //uint64_t tone_tmp = (0x400000000000LL * (int)(tmp&0x7fffffff)) / (int) AUDIO_SAMPLE_RATE_EXACT;
-	//float tone_tmp = tone_freq / fs_Hz;
-	const float two_pi_div_fs_Hz = two_pi / fs_Hz;
-    // Generate the sweep
-    for(i = 0;i < block->length;i++) {
+		//float tone_tmp = tone_freq / fs_Hz;
+		const float two_pi_div_fs_Hz = two_pi / fs_Hz;
+    //
+		// Generate the sweep
+		//const int fill_len = block->length;
+		const int fill_len = audio_block_samples;
+    for(i = 0;i < fill_len;i++) {
       //*bp++ = (short)(( (short)(arm_sin_q31((uint32_t)((tone_phase >> 15)&0x7fffffff))>>16) *tone_amp) >> 15);
-	  *bp++  = arm_sin_f32(tone_phase) * tone_amp;
+			*bp++  = arm_sin_f32(tone_phase) * tone_amp;
 	  
       //tone_phase +=  tone_tmp;
-	  //if(tone_phase & 0x800000000000LL)tone_phase &= 0x7fffffffffffLL;
+			//if(tone_phase & 0x800000000000LL)tone_phase &= 0x7fffffffffffLL;
 
       if(tone_sign > 0) {
         if(tone_freq > tone_hi) {
@@ -160,27 +167,32 @@ void AudioSynthToneSweep_F32::update(void)
           break;
         }
         tone_freq += tone_incr;
-		tone_phase += (tone_freq * two_pi_div_fs_Hz);
+				tone_phase += (tone_freq * two_pi_div_fs_Hz);
       } else {
         if(tone_freq < tone_hi || tone_freq < tone_incr) {
           sweep_busy = 0;
-
           break;
         }
         tone_freq -= tone_incr;  
-		tone_phase += (tone_freq * two_pi_div_fs_Hz);		
+				tone_phase += (tone_freq * two_pi_div_fs_Hz);		
       }
-	  if (tone_phase > two_pi) tone_phase -= two_pi;
+			if (tone_phase > two_pi) tone_phase -= two_pi;
     }
-    while(i < block->length) {
+    while(i < fill_len) {
       *bp++ = 0;
       i++;
-    }    
+    } 
+
+		//set metadata
+		block->id = block_counter;
+		block->fs_Hz = fs_Hz;
+		block->length = fill_len;
+		
     // send the samples to the left channel
     //transmit(block,0);
     //release(block);
-	AudioStream_F32::transmit(block);
-	AudioStream_F32::release(block);	
+		AudioStream_F32::transmit(block);
+		AudioStream_F32::release(block);	
   }
 }
 

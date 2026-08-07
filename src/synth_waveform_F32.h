@@ -166,8 +166,8 @@ class AudioSynthWaveform_F32 : public AudioStream_F32
 		//inline float32_t applyMod(uint32_t sample, audio_block_f32_t *lfo);
 		const float32_t _PI;
 		float32_t twoPI;
-		float32_t sample_rate_Hz;
-		int audio_block_samples=AUDIO_BLOCK_SAMPLES;
+		float32_t sample_rate_Hz = AUDIO_SAMPLE_RATE;
+		int audio_block_samples=MAX_AUDIO_BLOCK_SAMPLES_F32;
 			
 		OscillatorMode _OscillatorMode;
 		ModMode _ModMode;
