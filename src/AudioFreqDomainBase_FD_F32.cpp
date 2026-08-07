@@ -53,12 +53,16 @@ int AudioFreqDomainBase_FD_F32::setup(const AudioSettings_F32 &in_settings, cons
 
 	//allocate memory to hold frequency domain data
 	if (flag_reallocate_complex_buffer) {
-		if (complex_2N_buffer != nullptr) delete[] complex_2N_buffer;
+		if (complex_2N_buffer != nullptr) {
+			delete[] complex_2N_buffer;
+			len_complex_2N_buffer = 0; //...this is a data member of this class
+		}
 		const int max_N_FFT = max(N_FFT, N_IFFT);    //how many bins of data should we be prepared to handle
-		const int N_complex_buffer = 2 * max_N_FFT;  //need both real and complex values for each bin
-		complex_2N_buffer = new float32_t[N_complex_buffer];  //attempt to allocate the array
+		len_complex_2N_buffer = 2 * max_N_FFT;  //need both real and complex values for each bin...this is a data member of this class
+		complex_2N_buffer = new float32_t[len_complex_2N_buffer];  //attempt to allocate the array
 		if (complex_2N_buffer == nullptr) {  // if unsuccessful, the buffer will appear to still be a nullptr
 			if (flag_printDebug) print_ptr->println(F("AudioEffectFreqShift_FD_F32: ...failed to allocate complex_2N_buffer."));
+			len_complex_2N_buffer = 0;  //...this is a data member of this class
 			return -1;
 		}
 	}
@@ -82,6 +86,13 @@ float AudioFreqDomainBase_FD_F32::setSampleRate_Hz(const float val_Hz) {
   return getSampleRate_Hz();
 }
 
+void AudioFreqDomainBase_FD_F32::removeNegativeFrequencies(float32_t *complex_data, const int N_FFT_current, const int N_FFT_future) {
+	//complex_data is 2N long, interleaved real and complex
+	size_t ind = N_FFT_current/2+1;
+	size_t end_ind = N_FFT_future/2+1;
+	while (ind < end_ind) complex_data[ind++] = 0.0;
+}
+
 void AudioFreqDomainBase_FD_F32::update(void)
 {
 	//get a pointer to the latest data
@@ -97,11 +108,15 @@ void AudioFreqDomainBase_FD_F32::update(void)
 
 	//Be aware that size of the FFT for the input and of the IFFT for the output could be different
 	//from each other if we're also using this FFT/IFFT process for resampling.  
-	//int N_FFT_input = myFFT.getNFFT(); int N_2_input = N_FFT_input / 2 + 1;
-	//int N_FFT_output = myIFFT.getNFFT(); int N_2_output = N_FFT_output/ 2 + 1;
+	const int N_FFT_input = myFFT.getNFFT();
+	const int N_FFT_output = myIFFT.getNFFT();
 
 	//convert to frequency domain (myFFT already knows its N_FFT size)
 	myFFT.execute(in_audio_block, complex_2N_buffer); //FFT is in complex_2N_buffer, interleaved real, imaginary, real, imaginary, etc
+
+	//zero out the remaining complex_2N_buffer, if needed
+	size_t ind = static_cast<size_t>(2*N_FFT_input);
+	while (ind < len_complex_2N_buffer) complex_2N_buffer[ind++] = 0.0f;  //zero out the rest of the buffer
 
 	//get other info about the audio_block and then release it
 	unsigned long incoming_id = in_audio_block->id;
@@ -113,17 +128,24 @@ void AudioFreqDomainBase_FD_F32::update(void)
   // ////////////// Do your processing here!!!
 
 
-  //define some variables
+  // define some variables
   processAudioFD(complex_2N_buffer);  //in your derived class, override processAudioFD() with your own code!!
 
-  //rebuild the negative frequency space
+	// if upsampling iva the upcoming IFFT, lets zero out the "negative" fft bins of the existing
+	// FFT representation in the complex2N buffer so that those values don't mess up the
+	// reconstruction of the negative fft bins (that will happen below) for the new IFFT size
+	const int N_FFT_currently = N_FFT_input;
+	const int N_FFT_future = N_FFT_output;
+	if (N_FFT_future > N_FFT_currently) removeNegativeFrequencies(complex_2N_buffer, N_FFT_currently, N_FFT_future);
+	
+  // rebuild the negative frequency space for the output IFFT
   myIFFT.rebuildNegativeFrequencySpace(complex_2N_buffer); //set the negative frequency space based on the positive
-  
+
 
   // ///////////// End do your processing here
 
-
 	//call the IFFT
+	//const int N_FFT_output = myIFFT.getNFFT();
 	audio_block_f32_t *out_audio_block = AudioStream_F32::allocate_f32();
 	if (out_audio_block == NULL) {AudioStream_F32::release(out_audio_block); return; }//out of memory!
 	myIFFT.execute(complex_2N_buffer, out_audio_block); //output is via out_audio_block

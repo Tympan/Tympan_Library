@@ -71,11 +71,12 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
 		//So, choose which behavior you want and enjoy!
 		virtual bool enable(const bool state = true) { enabled = state; return enabled;}
 
-  bool flag_printDebug = false;
+		bool flag_printDebug = false;
 
   protected:
     int enabled=0;
     float32_t *complex_2N_buffer;
+    size_t len_complex_2N_buffer=0;
     audio_block_f32_t *inputQueueArray_f32[1];
     FFT_Overlapped_F32 myFFT;
     IFFT_Overlapped_F32 myIFFT;
@@ -86,6 +87,8 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
 	  int audio_block_output_samples = 128;
 		int N_FFT=-1;
     int N_IFFT=-1;
+		
+		virtual void removeNegativeFrequencies(float32_t *complex_data, const int N_FFT_current, const int N_FFT_future);
     
 };
 
