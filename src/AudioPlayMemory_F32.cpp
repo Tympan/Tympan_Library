@@ -46,23 +46,27 @@ int AudioPlayMemoryI16_F32::setCurrentSampleFromQueue(int ind) {
 #define I16_TO_F32_NORM_FACTOR (1.0f/32768.0f)
 #define CONVERT_I16_TO_F32(x) ( ((float)x) * ((float)I16_TO_F32_NORM_FACTOR) )
 void AudioPlayMemoryI16_F32::update(void) {
-  if (state != PLAYING) return;
+	if (state != PLAYING) return;
 
-  //get memory for the output
-  audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
-  if (out_block == NULL) return; //no memory available.
+	//get memory for the output
+	audio_block_f32_t *out_block = AudioStream_F32::allocate_f32();
+	if (out_block == NULL) return; //no memory available.
 
-  //fill the out_block with audio
+	//fill the out_block with audio
 	//unsigned long start_micros = micros();
-  for (uint32_t dest_ind = 0; dest_ind < ((uint32_t)out_block->length); dest_ind++) {
-	 out_block->data[dest_ind] = getNextAudioValue(); //in this method, it will also alter the play/stop state
-  }
+	for (uint32_t dest_ind = 0; dest_ind < audio_block_samples; dest_ind++) {
+		out_block->data[dest_ind] = getNextAudioValue(); //in this method, it will also alter the play/stop state
+	}
 	//unsigned long total_micros = micros() - start_micros;
 	//if (total_micros > 5) { Serial.print("AudioPlayMemory: update: dT (micros) =");	Serial.println(total_micros);	}
 
-  //transmit and release
-  AudioStream_F32::transmit(out_block);
-  AudioStream_F32::release(out_block);
+	//set metadata
+	out_block->fs_Hz = sample_rate_Hz;
+	out_block->length = audio_block_samples;
+
+	//transmit and release
+	AudioStream_F32::transmit(out_block);
+	AudioStream_F32::release(out_block);
 }
 
 float32_t AudioPlayMemoryI16_F32::getNextAudioValue(void) {

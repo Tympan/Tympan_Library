@@ -23,11 +23,16 @@
 #define MIXER_N_CHAN_MAX (16U)
 class AudioMixerBase_F32 : public AudioStream_F32  {
 	public:
-		AudioMixerBase_F32(unsigned int _N_CHAN) : AudioStream_F32(MIXER_N_CHAN_MAX, inputQueueArray), N_CHAN(_N_CHAN) {
+		AudioMixerBase_F32(const unsigned int _N_CHAN) : AudioStream_F32(MIXER_N_CHAN_MAX, inputQueueArray), N_CHAN(_N_CHAN) {
 			N_CHAN = max(1U, min(_N_CHAN, MIXER_N_CHAN_MAX));
 			setDefaultInstanceName(); 
 			setDefaultValues();
 		}
+		AudioMixerBase_F32(const unsigned int _N_CHAN, const AudioSettings_F32 &settings) : AudioMixerBase_F32(_N_CHAN) {
+			sample_rate_Hz = settings.sample_rate_Hz;
+			audio_block_samples = settings.audio_block_samples;
+		}
+		
 
 		virtual void setDefaultInstanceName(void) { 
 			instanceName = "AudioMixer" + String(N_CHAN) + "_F32";  //instanceName is part of AudioStream_F32
@@ -73,6 +78,8 @@ class AudioMixerBase_F32 : public AudioStream_F32  {
 		unsigned int N_CHAN;
 		audio_block_f32_t *inputQueueArray[MIXER_N_CHAN_MAX];
 	    float32_t multiplier[MIXER_N_CHAN_MAX];
+		float sample_rate_Hz = AUDIO_SAMPLE_RATE;
+		int audio_block_samples = AUDIO_BLOCK_SAMPLES;
 
 };
 
@@ -82,7 +89,7 @@ class AudioMixer4_F32 : public AudioMixerBase_F32 {
 	//GUI: shortName:Mixer4
 	public:
     	AudioMixer4_F32() : AudioMixerBase_F32(4) { }    //see constructor for AudioMixerBase for its default actions
-		AudioMixer4_F32(const AudioSettings_F32 &settings) : AudioMixerBase_F32(4) { } //see constructor for MixerBase for its default actions
+		AudioMixer4_F32(const AudioSettings_F32 &settings) : AudioMixerBase_F32(4, settings) { } //see constructor for MixerBase for its default actions
 	
 		//virtual void update(void);
 		//virtual int processData(audio_block_f32_t *audio_in[4], audio_block_f32_t *audio_out); //audio_in can be read-only as no calculations are in-place
@@ -94,7 +101,7 @@ class AudioMixer8_F32 : public AudioMixerBase_F32 {
 	//GUI: shortName:Mixer8
 	public:
 		AudioMixer8_F32() : AudioMixerBase_F32(8) { }  //see constructor for MixerBase for its default actions
-		AudioMixer8_F32(const AudioSettings_F32 &settings) : AudioMixerBase_F32(8) { } //see constructor for MixerBase for its default actions
+		AudioMixer8_F32(const AudioSettings_F32 &settings) : AudioMixerBase_F32(8, settings) { } //see constructor for MixerBase for its default actions
 		
 		//void update(void) override;
 
@@ -106,7 +113,7 @@ class AudioMixer16_F32 : public AudioMixerBase_F32 {
 	//GUI: shortName:Mixer16
 	public:
 		AudioMixer16_F32() : AudioMixerBase_F32(16) { }  //see constructor for MixerBase for its default actions
-		AudioMixer16_F32(const AudioSettings_F32 &settings) : AudioMixerBase_F32(16) { } //see constructor for MixerBase for its default actions
+		AudioMixer16_F32(const AudioSettings_F32 &settings) : AudioMixerBase_F32(16, settings) { } //see constructor for MixerBase for its default actions
 		
 		//void update(void) override;
 };

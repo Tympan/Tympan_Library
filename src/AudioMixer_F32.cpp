@@ -12,7 +12,7 @@ void AudioMixerBase_F32::update(void) {
 	  channel++;
   }
   if (!out) return;  //there was no data available.  so exit.
-  arm_scale_f32(out->data, multiplier[channel], out->data, out->length);  //there was data, so scale it per the mier
+  arm_scale_f32(out->data, multiplier[channel], out->data, audio_block_samples);  //there was data, so scale it per the mier
   
   //add in the remaining channels, as available
   channel++;
@@ -21,8 +21,8 @@ void AudioMixerBase_F32::update(void) {
     if (in) {
 		audio_block_f32_t *tmp = allocate_f32();
 
-		arm_scale_f32(in->data, multiplier[channel], tmp->data, tmp->length);
-		arm_add_f32(out->data, tmp->data, out->data, tmp->length);
+		arm_scale_f32(in->data, multiplier[channel], tmp->data, audio_block_samples);
+		arm_add_f32(out->data, tmp->data, out->data, audio_block_samples);
 
 		AudioStream_F32::release(tmp);
 		AudioStream_F32::release(in);
@@ -33,6 +33,8 @@ void AudioMixerBase_F32::update(void) {
   }
 
   if (out) {
+	out->fs_Hz = sample_rate_Hz;
+	out->length = audio_block_samples;
     AudioStream_F32::transmit(out);
     AudioStream_F32::release(out);
   }
@@ -77,14 +79,15 @@ int AudioMixerBase_F32::processData(audio_block_f32_t *audio_in[], audio_block_f
 			if (firstValidAudio) {
 				//this is the first audio, so simply scale and have the scaling operation copy directly to audio_out
 				firstValidAudio = false;
-				arm_scale_f32(audio_in[channel]->data, multiplier[channel], audio_out->data, audio_in[channel]->length);
+				arm_scale_f32(audio_in[channel]->data, multiplier[channel], audio_out->data, audio_block_samples);
 				audio_out->id = audio_in[channel]->id;
-				audio_out->length = audio_in[channel]->length;
+				audio_out->length = audio_block_samples;
+				audio_out->fs_Hz = sample_rate_Hz;
 
 			} else {
 				//scale the input data (holding in tmp) and then add tmp to the existing audio_out
-				arm_scale_f32(audio_in[channel]->data, multiplier[channel], tmp->data, audio_in[channel]->length);
-				arm_add_f32(audio_out->data, tmp->data, audio_out->data, audio_out->length);
+				arm_scale_f32(audio_in[channel]->data, multiplier[channel], tmp->data, audio_block_samples);
+				arm_add_f32(audio_out->data, tmp->data, audio_out->data, audio_block_samples);
 			}
 			num_channels_mixed++;
 		}
