@@ -102,6 +102,8 @@ setScaleFac_semitones	KEYWORD2
 getScaleFac_semitones	KEYWORD2
 MultiAudioBlocks_F32	KEYWORD1
 
+AudioEffectResample_FD_F32	KEYWORD1
+
 AudioFeedbackCancelNLMS_F32	KEYWORD1
 AudioFeedbackCancelNFXLMS_F32	KEYWORD1
 settings_AFC_NFXLMS	KEYWORD1
