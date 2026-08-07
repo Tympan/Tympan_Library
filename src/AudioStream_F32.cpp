@@ -211,8 +211,14 @@ audio_block_f32_t * AudioStream_F32::receiveWritable_f32(unsigned int index)
   if (in && in->ref_count > 1) {
     p = allocate_f32();
     //if (p) memcpy(p->data, in->data, sizeof(p->data));
-	if (p) memcpy(p->data, in->data, (p->full_length)*sizeof(p->data[0])); //revised 9/27/2023 as p->data is now allocated at runtime
-	p->id = in->id; //copy over ID so that the new one is the same as the one on the original block.  added 1/13/2020
+		if (p) memcpy(p->data, in->data, (p->full_length)*sizeof(p->data[0])); //revised 9/27/2023 as p->data is now allocated at runtime
+		
+		//copy over the metadata
+		p->id = in->id; //copy over ID so that the new one is the same as the one on the original block.  added 1/13/2020
+		p->fs_Hz = in->fs_Hz;
+		p->length = in->length;
+
+		//finish the accouting
     in->ref_count--;
     in = p;
   }
