@@ -78,7 +78,7 @@ class AudioEffectFreqShift_FD_F32 : public AudioFreqDomainBase_FD_F32
 		
    
   protected:
-		enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to THREE_QUARTERS
+		enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to other overlap factors
 		int overlap_amount = NONE;
 		int overlap_block_counter = 0;
 		
