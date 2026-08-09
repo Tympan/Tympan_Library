@@ -24,6 +24,18 @@
  *     it maintains the harmonic relationships and can sound more natural.  Be aware, however, that
  *     pitch shifting is much more difficult from a signal processing perspective; so it will have
  *     its own audio processing artifacts that might be objectionable.
+ * 
+ * RESAMPLING: As of Aug 2026, this class can also be used to change the sample rate of th audio
+ *     as part of the frequency shifting.  If upshifting the frequencies, you can have this class
+ *     increase the sample rate to provide space for your upshifted signal.  Or, if downshifting
+ *     the frequencies, you can have this class cut the sample rate to save CPU for subsequent
+ *     processing steps.  As this class operates in the frequency domain, and as the underlying 
+ *     FFT/IFFT routines only handle sizes that are a power of 2, you can only use this class to
+ *     change the sample rate by a factor of 2 (ie, 1, 2, 4, 8).  When NOT resampling, you use the
+ *     begin() method to tell this class to use the same size for the FFT and for the IFFT.  When
+ *     you do want to resample, you use the begin() method to tell it to use one size for the FFT
+ *     and another size for the IFFT.  A smaller IFFT size results in downsampling; a larger IFFT
+ *     size will result in upsampling.
  *          
  * MIT License.  use at your own risk.
 */

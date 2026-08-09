@@ -164,8 +164,10 @@ void AudioEffectFreqShift_FD_F32::processAudioFD(float32_t *complex_data) {
 	const int N_FFT_input = getNFFT(); 
 	const int N_FFT_output = getNIFFT();
 
-	// do any preprocessing of the freq-domain data (this may do nothing)
-	preprocessFreqDomainData(complex_2N_buffer, N_FFT_input);
+	// do any preprocessing of the freq-domain data (right now, this does nothing...
+	// but if you derive your own class from this class, you could override this function
+	// to insert your own pre-processing here.)
+	preprocessFreqDomainData(complex_2N_buffer, N_FFT_input); 
 
 	//shift the frequency bins around as desired
 	shiftTheBins(complex_2N_buffer, N_FFT_input, N_FFT_output, shift_bins);
