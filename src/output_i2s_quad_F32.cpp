@@ -322,6 +322,8 @@ void AudioOutputI2SQuad_F32::update_1chan(const int chan,  //this is not changed
 		
 		//scale the F32 data (+/- 1.0) to fit within Int16 (+/- 32767.0), though we're still float32 data type
 		AudioOutputI2S_F32::scale_f32_to_i16(block_f32->data, block_f32_scaled->data, audio_block_samples);
+		
+		//set the metadaa
 		block_f32_scaled->length = block_f32->length;
 		block_f32_scaled->id = block_f32->id;
 		block_f32_scaled->fs_Hz  = block_f32->fs_Hz;

@@ -671,16 +671,25 @@ void AudioOutputI2S_F32::sub_begin_i32(void) {
  */
 #define F32_TO_I16_NORM_FACTOR (32767)   //which is 2^15-1
 void AudioOutputI2S_F32::scale_f32_to_i16(float32_t *p_f32, float32_t *p_i16, int len) {
-	for (int i=0; i<len; i++) { *p_i16++ = max(-F32_TO_I16_NORM_FACTOR,min(F32_TO_I16_NORM_FACTOR,(*p_f32++) * F32_TO_I16_NORM_FACTOR)); }
+	#if 0
+		// include our own saturation (min/max) for oversized values	
+		for (int i=0; i<len; i++) { *p_i16++ = max(-F32_TO_I16_NORM_FACTOR,min(F32_TO_I16_NORM_FACTOR,(*p_f32++) * F32_TO_I16_NORM_FACTOR)); }
+	#else
+		// use the hardware's automatic saturation...supposedly both ARM M4 (Teensy 3.6) and ARM M7 (Teensy 4.1) do this in the hardware
+		arm_scale_f32(p_f32, F32_TO_I16_NORM_FACTOR, p_i16, len);  // we just need to scale the data
+	#endif
 }
 #define F32_TO_I24_NORM_FACTOR (8388607)   //which is 2^23-1
 void AudioOutputI2S_F32::scale_f32_to_i24( float32_t *p_f32, float32_t *p_i24, int len) {
-	for (int i=0; i<len; i++) { *p_i24++ = max(-F32_TO_I24_NORM_FACTOR,min(F32_TO_I24_NORM_FACTOR,(*p_f32++) * F32_TO_I24_NORM_FACTOR)); }
+	//for (int i=0; i<len; i++) { *p_i24++ = max(-F32_TO_I24_NORM_FACTOR,min(F32_TO_I24_NORM_FACTOR,(*p_f32++) * F32_TO_I24_NORM_FACTOR)); }
+	// use the hardware's automatic saturation...supposedly both ARM M4 (Teensy 3.6) and ARM M7 (Teensy 4.1) do this in the hardware
+	arm_scale_f32(p_f32, F32_TO_I24_NORM_FACTOR, p_i24, len);  // we just need to scale the data
 }
 #define F32_TO_I32_NORM_FACTOR (2147483647)   //which is 2^31-1
 void AudioOutputI2S_F32::scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) {
-	for (int i=0; i<len; i++) { *p_i32++ = max(-F32_TO_I32_NORM_FACTOR,min(F32_TO_I32_NORM_FACTOR,(*p_f32++) * F32_TO_I32_NORM_FACTOR)); }
-	//for (int i=0; i<len; i++) { *p_i32++ = (*p_f32++) * F32_TO_I32_NORM_FACTOR + 512.f*8388607.f; }
+	//for (int i=0; i<len; i++) { *p_i32++ = max(-F32_TO_I32_NORM_FACTOR,min(F32_TO_I32_NORM_FACTOR,(*p_f32++) * F32_TO_I32_NORM_FACTOR)); }
+	// use the hardware's automatic saturation...supposedly both ARM M4 (Teensy 3.6) and ARM M7 (Teensy 4.1) do this in the hardware
+	arm_scale_f32(p_f32, F32_TO_I32_NORM_FACTOR, p_i32, len);  // we just need to scale the data	
 }
 
 //update has to be carefully coded so that, if audio_blocks are not available, the code exits

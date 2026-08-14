@@ -72,7 +72,7 @@ public:
 	
 	void setInstanceName(void) { instanceName = "AudioOutputI2SQuad_F32"; }
 		
-	virtual void update(void);
+	void update(void) override;
 	void begin(void);
 	friend class AudioInputI2SBase_F32;
 	friend class AudioInputI2S_F32;
