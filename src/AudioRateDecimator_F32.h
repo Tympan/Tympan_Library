@@ -45,7 +45,7 @@ class AudioRateDecimator_F32 : public AudioStream_F32 {
 		bool begin(const float32_t *cp, const uint16_t _n_coeffs, const uint8_t _dec_fac, const int _in_block_size);   //or, you can provide it with the block size
 		void end(void) {  coeff_p = NULL; enable(false); }
 		
-		void update(void);
+		void update(void) override;
 		int processAudioBlock(audio_block_f32_t *block, audio_block_f32_t *block_new); //called by update(); returns zero if OK
 
 		bool enable(bool enable = true) { 

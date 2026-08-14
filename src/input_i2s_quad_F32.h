@@ -64,7 +64,7 @@ public:
 		setInstanceName();
 		begin(); 
 	} 
-	virtual void update(void);
+	void update(void) override;
 	void begin(void);
 	static uint32_t *i2s_rx_buffer; 
 

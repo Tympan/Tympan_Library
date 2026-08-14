@@ -391,15 +391,18 @@ void AudioInputI2S_F32::isr(void)
 
 #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
 void AudioInputI2S_F32::scale_i16_to_f32( float32_t *p_i16, float32_t *p_f32, int len) {
-	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i16++) * I16_TO_F32_NORM_FACTOR); }
+	//for (int i=0; i<len; i++) { *p_f32++ = ((*p_i16++) * I16_TO_F32_NORM_FACTOR); }
+	arm_scale_f32(p_i16, I16_TO_F32_NORM_FACTOR, p_f32, len); //use the ARM CMSIS DSP function
 }
 #define I24_TO_F32_NORM_FACTOR (1.192093037616377e-07)   //which is 1/(2^23 - 1)
 void AudioInputI2S_F32::scale_i24_to_f32( float32_t *p_i24, float32_t *p_f32, int len) {
-	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i24++) * I24_TO_F32_NORM_FACTOR); }
+	//for (int i=0; i<len; i++) { *p_f32++ = ((*p_i24++) * I24_TO_F32_NORM_FACTOR); }
+	arm_scale_f32(p_i24, I24_TO_F32_NORM_FACTOR, p_f32, len); //use the ARM CMSIS DSP function
 }
 #define I32_TO_F32_NORM_FACTOR (4.656612875245797e-10)   //which is 1/(2^31 - 1)
 void AudioInputI2S_F32::scale_i32_to_f32( float32_t *p_i32, float32_t *p_f32, int len) {
-	for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
+	//for (int i=0; i<len; i++) { *p_f32++ = ((*p_i32++) * I32_TO_F32_NORM_FACTOR); }
+	arm_scale_f32(p_i32, I32_TO_F32_NORM_FACTOR, p_f32, len); //use the ARM CMSIS DSP function
 }
 
 
