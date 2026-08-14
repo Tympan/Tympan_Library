@@ -1,6 +1,8 @@
 
 #include "AudioEffectFreqShift_FD_F32.h"
 
+#include <arm_math.h>
+
 int AudioEffectFreqShift_FD_F32::setup(const AudioSettings_F32 &settings, const int _N_FFT, const int _N_IFFT) {
 	//print_ptr->println("AudioEffectFreqShift_FD_F32: setup: _N_FFT, _N_IFFT: " + String(_N_FFT) + " , " + String(_N_IFFT));
 	int ret_val = AudioFreqDomainBase_FD_F32::setup(settings, _N_FFT, _N_IFFT);
@@ -36,16 +38,29 @@ void AudioEffectFreqShift_FD_F32::shiftTheBins(float32_t *complex_2N_buffer, con
 	int source_ind;
 	
 	if (shift_bins < 0) {
-		for (int dest_ind = 0; dest_ind < N_2_output; dest_ind++) {
-		  source_ind = dest_ind - shift_bins;  //shift_bins is negative, so source_ind is always positive
-		  if (source_ind < N_2_input) {
-			complex_2N_buffer[2 * dest_ind] = complex_2N_buffer[2 * source_ind]; //real
-			complex_2N_buffer[(2 * dest_ind) + 1] = complex_2N_buffer[(2 * source_ind) + 1]; //imaginary
-		  } else {
-			complex_2N_buffer[2 * dest_ind] = 0.0;
-			complex_2N_buffer[(2 * dest_ind) + 1] = 0.0;
-		  }
-		}
+		#if 1
+			//original...hopefully easier to read
+			for (int dest_ind = 0; dest_ind < N_2_output; dest_ind++) {
+				source_ind = dest_ind - shift_bins;  //shift_bins is negative, so source_ind is always positive
+				if (source_ind < N_2_input) {
+					complex_2N_buffer[2 * dest_ind] = complex_2N_buffer[2 * source_ind]; //real
+					complex_2N_buffer[(2 * dest_ind) + 1] = complex_2N_buffer[(2 * source_ind) + 1]; //imaginary
+				} else {
+					complex_2N_buffer[2 * dest_ind] = 0.0;
+					complex_2N_buffer[(2 * dest_ind) + 1] = 0.0;
+				}
+			}
+		#else
+			//faster?  It does not appear to be any faster
+			int dest_ind = 0;
+			float32_t *p_dst = &complex_2N_buffer[2*dest_ind];
+			int n_copied = 0;
+			int source_ind = dest_ind - shift_bins;
+			float32_t *p_src = &complex_2N_buffer[2*source_ind]; //shift_bins is negative, so source_ind is always positive
+			const int n_elements_to_copy = N_2_input - (-shift_bins); // shift_bins is negative, so -shift is positive.
+			while (n_copied++ < 2*n_elements_to_copy) *p_dst++ = *p_src++;  //2x because of real and complex
+			while (n_copied++ < 2*N_2_output) *p_dst++ = 0.0f;  //zero out the rest.  2x because of real and complex
+		#endif
 	} else if (shift_bins > 0) {
 		//do reverse order because, otherwise, we'd overwrite our source indices with zeros!
 		for (int dest_ind = (N_2_output-1); dest_ind >= 0; dest_ind--) {
@@ -82,12 +97,14 @@ void rotate_90deg(float32_t *complex_2N_buffer, const int N_2) {
 		complex_2N_buffer[2*i] = -foo;  //put the imaginary value into the real and flip sign
 	}
 }
+
 void rotate_180deg(float32_t *complex_2N_buffer, const int N_2) {
 	//Adding 180 is the same as flipping the sign of both the real and imaginary components
-	for (int i=0; i < N_2; i++) {
-		complex_2N_buffer[2*i] = -complex_2N_buffer[2*i];
-		complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i+1];
-	}
+	//for (int i=0; i < N_2; i++) {
+	//	complex_2N_buffer[2*i] = -complex_2N_buffer[2*i];
+	//	complex_2N_buffer[2*i+1] = -complex_2N_buffer[2*i+1];
+	//}
+	arm_negate_f32(complex_2N_buffer, complex_2N_buffer, N_2*2);  //is this any faster than doing it manually above?
 }
 void rotate_270deg(float32_t *complex_2N_buffer, const int N_2) {
 	//270 deg rotation (swap the real and imaginary and flip the sign when moving the real to the imaginary)

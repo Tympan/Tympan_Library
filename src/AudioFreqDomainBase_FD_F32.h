@@ -30,7 +30,7 @@ class AudioFreqDomainBase_FD_F32 : public AudioStream_F32
      
     virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT) { return setup(settings, _N_FFT, _N_FFT); }
     virtual int setup(const AudioSettings_F32 &settings, const int _N_FFT, const int _N_IFFT);
-    virtual void update(void);   
+    void update(void) override;   
 
     //Here is the method for you to override with your own algorithm!
     //  * The first argument that you will receive is the float32_t *, which is an array that is allocated in

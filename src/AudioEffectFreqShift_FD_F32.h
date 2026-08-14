@@ -44,7 +44,6 @@
 #define _AudioEffectFreqShift_FD_F32_h
 
 #include "AudioStream_F32.h"
-#include <arm_math.h>
 #include "AudioFreqDomainBase_FD_F32.h"
 //include "FFT_Overlapped_F32.h"
 #include <Arduino.h>
