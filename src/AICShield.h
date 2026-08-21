@@ -169,12 +169,18 @@ class AICShieldPins {
 
 class AICShieldBase : public AudioControlAIC3206
 {
+	protected:  //move these earlier to ensure they are created and usable by the constructors
+		AICShieldPins pins;
+		AudioSettings_F32 audio_settings;
+
 	public:
-		AICShieldBase(void) :
-			AudioControlAIC3206(pins.resetAIC, pins.i2cBus) {
+		AICShieldBase(void) : AudioControlAIC3206()
+		{
+			setResetPin(pins.resetAIC); setI2Cbus(pins.i2cBus);
 		}
-		AICShieldBase(bool _debugToSerial) :
-			AudioControlAIC3206(pins.resetAIC, pins.i2cBus,_debugToSerial) {
+		AICShieldBase(bool _debugToSerial) : AudioControlAIC3206(_debugToSerial) 
+		{
+			setResetPin(pins.resetAIC); setI2Cbus(pins.i2cBus);			
 		}
 		AICShieldBase(const AICShieldPins &_pins) :
 			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus) {
@@ -184,8 +190,8 @@ class AICShieldBase : public AudioControlAIC3206
 			AudioControlAIC3206(_pins.resetAIC,_pins.i2cBus,_debugToSerial) {
 			setupPins(_pins);
 		}
-		AICShieldBase(const AudioSettings_F32 &_as) :
-			AudioControlAIC3206(pins.resetAIC, pins.i2cBus) {
+		AICShieldBase(const AudioSettings_F32 &_as) : AudioControlAIC3206() {
+			setResetPin(pins.resetAIC); setI2Cbus(pins.i2cBus);
 			setAudioSettings(_as);
 		}
 		AICShieldBase(const AICShieldPins &_pins, const AudioSettings_F32 &_as) :
@@ -228,9 +234,7 @@ class AICShieldBase : public AudioControlAIC3206
 		AICShieldRev getAICRev(void) { return pins.AICRev; }
 
 
-	protected:
-		AICShieldPins pins;
-		AudioSettings_F32 audio_settings;
+
 
 
 };
