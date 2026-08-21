@@ -84,7 +84,7 @@ class SdFileTransfer {
 		virtual uint64_t sendFile_interactive(void);  //automates the transfer process by sending requests and receiving requests over serial
 		virtual uint64_t sendFile(void);              //sends in blocks.  returns the number of bytes sent.  Uses sendOneBlock()
 		unsigned int sendOneBlock(void);              //returns the number of bytes sent.  Uses readBytesFromSD()
-		unsigned int readBytesFromSD(uint8_t* buffer, const unsigned int n_bytes_to_read); //returns the number of bytes read.  Closes file if it runs out of data
+		int readBytesFromSD(uint8_t* buffer, const size_t n_bytes_to_read); //returns the number of bytes read.  Closes file if it runs out of data
  
 		unsigned int setBlockDelay_msec(unsigned int foo_msec) { return block_delay_msec = foo_msec; }
 		unsigned int getBlockDelay_msec(void)                  { return block_delay_msec; }
@@ -108,13 +108,13 @@ class SdFileTransfer {
 
   private:
     SdFs *sd_ptr = nullptr;
-		Stream *serial_ptr = nullptr;
-		SdFile file;
+	Stream *serial_ptr = nullptr;
+	SdFile file;
 
     //data members that are common
     uint64_t total_file_length; //bytes to be transfered over Serial and eventually written
-		static constexpr unsigned int transfer_block_size = 1024;  //default value
-		uint8_t state; //state of the SD
+	static constexpr unsigned int transfer_block_size = 1024;  //default value
+	uint8_t state; //state of the SD
     String cur_filename = String(""); //current filename
 	  
     //data members for reading off the SD and pushing to serial

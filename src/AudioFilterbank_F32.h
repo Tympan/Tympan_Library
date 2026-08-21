@@ -121,11 +121,11 @@ class AudioFilterbankFIR_F32 : public AudioFilterbankBase_F32 {
 
 		virtual void init(void) { filter_type_str = String("FIR"); }
 
-		virtual void update(void);
-		virtual int set_n_filters(int val);
-		virtual int set_max_n_filters(int val);
-		virtual int designFilters(int n_chan, int n_fir, float sample_rate_Hz, int block_len, float *crossover_freq);
-		virtual AudioFilterBase_F32 *getFilter(int Ichan) { 
+		void update(void) override;
+		int set_n_filters(int val) override;
+		int set_max_n_filters(int val) override;
+		int designFilters(int n_chan, int n_fir, float sample_rate_Hz, int block_len, float *crossover_freq) override;
+		AudioFilterBase_F32 *getFilter(int Ichan) override { 
 			if ((Ichan < 0) || (Ichan >= get_max_n_filters())) { 
 				return NULL; 
 			} else { 
@@ -157,11 +157,11 @@ class AudioFilterbankBiquad_F32 : public AudioFilterbankBase_F32 {
 		
 		virtual void init(void) { filter_type_str = String("Biquad"); }
 
-		virtual void update(void);
-		virtual int set_n_filters(int val);
-		virtual int set_max_n_filters(int val);
-		virtual int designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq);
-		virtual AudioFilterBase_F32 *getFilter(int Ichan) { 
+		void update(void) override;
+		int set_n_filters(int val) override;
+		int set_max_n_filters(int val) override;
+		int designFilters(int n_chan, int n_iir, float sample_rate_Hz, int block_len, float *crossover_freq) override;
+		AudioFilterBase_F32 *getFilter(int Ichan) override { 
 			if ((Ichan < 0) || (Ichan >= get_max_n_filters())) { 
 				return NULL; 
 			} else { 

@@ -74,7 +74,7 @@ size_t SDWriter::write(uint8_t foo)  {
 
 //write Byte buffer...the lowest-level call upon which the others are built.
 //writing 512 is most efficient (ie 256 int16 or 128 float32
-size_t SDWriter::write(const uint8_t *buff, int nbytes) {
+size_t SDWriter::write(const uint8_t *buff, size_t nbytes) {
 	size_t return_val = 0;
 	if (file.isOpen()) {
 		if (flagPrintElapsedWriteTime) { usec = 0; }

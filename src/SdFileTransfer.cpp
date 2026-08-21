@@ -6,6 +6,8 @@
 // MIT License
 
 #include "SDFileTransfer.h"
+#include <new>
+#include <memory>
 
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
 
@@ -125,21 +127,22 @@ uint64_t SdFileTransfer::sendFile(void) {  //sends the file that is currently op
 
 unsigned int SdFileTransfer::sendOneBlock(void) {  //returns number of bytes sent
   if (serial_ptr == nullptr) return 0;  //if no serial has been specified, return
-  uint8_t buffer[transfer_block_size];            //create buffer
+  //uint8_t* buffer = new(std::nothrow) uint8_t[transfer_block_size];
+  std::unique_ptr<uint8_t[]> buffer(new(std::nothrow) uint8_t[transfer_block_size]);
   if (buffer == nullptr) return 0;       //if could not create buffer, return
-  unsigned int bytes_read = readBytesFromSD(buffer, transfer_block_size); //read the bytes from the SD
+  int bytes_read = readBytesFromSD(buffer.get(), transfer_block_size); //read the bytes from the SD
   if (bytes_read > 0) {
-    return serial_ptr->write(buffer, bytes_read);
+    return serial_ptr->write(buffer.get(), static_cast<size_t>(bytes_read));
   }
   return 0;
 };
 
-unsigned int SdFileTransfer::readBytesFromSD(uint8_t* buffer, const unsigned int n_bytes_to_read) {
+int SdFileTransfer::readBytesFromSD(uint8_t* buffer, const size_t n_bytes_to_read) {
   if (isFileOpen() == false) return 0;
-  unsigned int bytes_read = file.read(buffer, n_bytes_to_read);
+  int bytes_read = file.read(buffer, n_bytes_to_read);
 
   //did the file run out of data?
-  if (n_bytes_to_read != bytes_read){
+  if (static_cast<int>(n_bytes_to_read) != bytes_read){
     file.close();
     state_read = READ_STATE_FILE_EMPTY;
   }

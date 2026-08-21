@@ -10,6 +10,8 @@
 
 
 #include <AudioFilterbank_F32.h>
+#include <new>
+#include <memory>
 
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,14 +148,15 @@ int AudioFilterbankBase_F32::increment_crossover_freq(int Ichan, float freq_incr
 	int n_freq_changed = 0;
 	
 	//check validity of inputs
-	const int n_filters = get_n_filters();
+	const int n_filters = get_n_filters(); 
 	const int n_crossover = n_filters - 1;     //n_crossover is always n_filters-1
 	if ((Ichan < 0) || (Ichan >= n_crossover) || (n_filters <= 0)) return -1;  // -1 is "error"
 
 	//get a copy of the crossover frequencies
-	float freqs_Hz[n_filters];  						 //allocate an array that is big
-	if (freqs_Hz == NULL) return -1;  					 //did it allocate the memory?
-	state.get_crossover_freq_Hz(freqs_Hz, n_crossover);  //copies cross-over frequencies into freqs_Hz	
+	//float freqs_Hz[n_filters];  						 //allocate an array that is big
+	std::unique_ptr<float32_t[]> freqs_Hz(new(std::nothrow) float32_t[n_filters]);  //allocate an array that is big
+	if (freqs_Hz == nullptr) return -1;  				 //did it allocate the memory?  compiler says this will never happen...because it's a stack allocation
+	state.get_crossover_freq_Hz(freqs_Hz.get(), n_crossover);  //copies cross-over frequencies into freqs_Hz	
 		
 	//increment the target frequency
 	freqs_Hz[Ichan] = freqs_Hz[Ichan] *  freq_increment_fac;
@@ -162,10 +165,10 @@ int AudioFilterbankBase_F32::increment_crossover_freq(int Ichan, float freq_incr
 	//Ensure proper frequency spacing (don't let them be too close together)
 	int direction = 1;  //baseline assumption is that we're reqeusting an upward move 
 	if (freq_increment_fac < 1.0f) direction = -1;  //oh!  we're actually requesting a downward move.  OK.
-	n_freq_changed += enforce_minimum_spacing_of_crossover_freqs(freqs_Hz, n_crossover, min_freq_seperation_fac, direction);
+	n_freq_changed += enforce_minimum_spacing_of_crossover_freqs(freqs_Hz.get(), n_crossover, min_freq_seperation_fac, direction);
 	
 	//redesign the filters using the new crossover frequencies
-	designFilters(n_filters, state.filter_order, state.sample_rate_Hz, state.audio_block_len, freqs_Hz);
+	designFilters(n_filters, state.filter_order, state.sample_rate_Hz, state.audio_block_len, freqs_Hz.get());
 	
 	return n_freq_changed;
 }
@@ -306,12 +309,13 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	n_chan = set_n_filters(n_chan);
 	
 	//sort and enforce minimum seperation of the crossover frequencies
-	float freqs_Hz[n_chan];  //we really only need n_chan-1 for the n_crossover, but let's leave it as n_chan)
-	if (freqs_Hz == NULL) { enable(false); return -1; }  //failed to allocate memory
+	//float freqs_Hz[n_chan];  //we really only need n_chan-1 for the n_crossover, but let's leave it as n_chan)
+	std::unique_ptr<float32_t[]> freqs_Hz(new(std::nothrow) float32_t[n_chan]);  //we really only need n_chan-1 for the n_crossover, but let's leave it as n_chan)
+	if (freqs_Hz == nullptr) { enable(false); return -1; }  //failed to allocate memory
 	int n_crossover = n_chan - 1;
 	for (int i=0; i<n_crossover;i++) { freqs_Hz[i] = crossover_freq[i]; } //copy to known-writable memory
-	sortFrequencies(freqs_Hz, n_crossover);	  //sort the frequencies from smallest to highest
-	enforce_minimum_spacing_of_crossover_freqs(freqs_Hz, n_crossover, min_freq_seperation_fac);  //nudge the frequencies if they are too close (does this protect against going over nyquist?)
+	sortFrequencies(freqs_Hz.get(), n_crossover);	  //sort the frequencies from smallest to highest
+	enforce_minimum_spacing_of_crossover_freqs(freqs_Hz.get(), n_crossover, min_freq_seperation_fac);  //nudge the frequencies if they are too close (does this protect against going over nyquist?)
 
 	//Serial.print("AudioFilterbankFIR_F32: designFilters: sorted/nudged: freqs (Hz): ");
 	//for (int i=0; i < n_crossover; i++) { Serial.print(crossover_freq[i]); Serial.print(", "); } Serial.println();
@@ -327,7 +331,7 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	
 	//call the designer...only for N_FIR up to 1024...but will it really work if it is that big??  64, 96, 128 are more normal
 	//Serial.println("AudioFilterbankFIR_F32: designFilters: creating coefficients...");
-	int ret_val = filterbankDesigner.createFilterCoeff(n_chan, n_fir, sample_rate_Hz, freqs_Hz, (float *)filter_coeff);
+	int ret_val = filterbankDesigner.createFilterCoeff(n_chan, n_fir, sample_rate_Hz, freqs_Hz.get(), (float *)filter_coeff);
 	if (ret_val < 0) { 
 		Serial.println(F("AudioFilterbankFIR_F32: designFilters: createFilterCoeff failed with code ") + String(ret_val));
 		enable(false); 
@@ -340,7 +344,7 @@ int AudioFilterbankFIR_F32::designFilters(int n_chan, int n_fir, float sample_ra
 	for (int i=0; i<n_chan; i++) filters[i].begin(&(filter_coeff[i*n_fir]), n_fir, block_len);
 			
 	//copy the crossover frequencies to the state
-	state.set_crossover_freq_Hz(freqs_Hz, n_crossover); //n_crossover is n_chan-1
+	state.set_crossover_freq_Hz(freqs_Hz.get(), n_crossover); //n_crossover is n_chan-1
 	state.filter_order = n_fir;
 	state.sample_rate_Hz = sample_rate_Hz;
 	state.audio_block_len = block_len;
@@ -470,8 +474,9 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	}  
 	
 	//sort and enforce minimum seperation of the crossover frequencies
-	float freqs_Hz[n_chan];
-	if (freqs_Hz == NULL) {   //failed to allocate memory
+	//float freqs_Hz[n_chan];
+	std::unique_ptr<float32_t[]> freqs_Hz(new(std::nothrow) float32_t[n_chan]);
+	if (freqs_Hz == nullptr) {   //failed to allocate memory
 		Serial.println("AudioFilterBankIIR_F32: designFilters: *** ERROR ***");
 		Serial.println("   : Failed to allocate memory for " + String(n_chan) + " frequency values");
 		Serial.println("   : returning without designing the filters...");
@@ -480,8 +485,8 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	}
 	int n_crossover = n_chan - 1;
 	for (int i=0; i<n_crossover;i++) { freqs_Hz[i] = crossover_freq[i]; } //copy to known-writable memory
-	sortFrequencies(freqs_Hz, n_crossover);	  //sort the frequencies from smallest to highest
-	enforce_minimum_spacing_of_crossover_freqs(freqs_Hz, n_crossover,min_freq_seperation_fac);  //nudge the frequencies if they are too close (does this protect against going over nyquist?)
+	sortFrequencies(freqs_Hz.get(), n_crossover);	  //sort the frequencies from smallest to highest
+	enforce_minimum_spacing_of_crossover_freqs(freqs_Hz.get(), n_crossover,min_freq_seperation_fac);  //nudge the frequencies if they are too close (does this protect against going over nyquist?)
 	
 	
 	//allocate memory (temporarily) for the filter coefficients
@@ -491,19 +496,22 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	//float filter_sos[n_chan][ncol];
 	int n_coeff_needed = n_chan *ncol;
 	if (n_coeff_needed > n_coeff_allocated) {
-		if (filter_coeff != NULL) delete filter_coeff;
+		if (filter_coeff != nullptr) delete filter_coeff;
 		filter_coeff = new float[n_coeff_needed];
-		if (filter_coeff == NULL) { enable(false); return -1; }  //failed to allocate memory
+		if (filter_coeff == nullptr) { enable(false); return -1; }  //failed to allocate memory
 		n_coeff_allocated = n_coeff_needed;
 	}
 	float *filter_sos = filter_coeff;
-	int filter_delay[n_chan]; //samples
-	if ((filter_sos == NULL) || (filter_delay == NULL)) { enable(false); return -1; }  //failed to allocate memory
+	if (filter_sos == nullptr) { enable(false); return -1; }  //failed to allocate memory
+
+	//int filter_delay[n_chan]; //samples
+	std::unique_ptr<int[]> filter_delay(new(std::nothrow) int[n_chan]);
+	if (filter_delay == nullptr) { enable(false); return -1; }
 	
 	
 	//call the designer
 	float td_msec = 0.000;  //assumed max delay (?) for the time-alignment process?
-	int ret_val = filterbankDesigner.createFilterCoeff_SOS(n_chan, n_iir, sample_rate_Hz, td_msec, freqs_Hz, filter_sos, filter_delay);
+	int ret_val = filterbankDesigner.createFilterCoeff_SOS(n_chan, n_iir, sample_rate_Hz, td_msec, freqs_Hz.get(), filter_sos, filter_delay.get());
 	
 	if (ret_val < 0) { enable(false); return -1; } //failed to compute coefficients
 	
@@ -511,7 +519,7 @@ int AudioFilterbankBiquad_F32::designFilters(int n_chan, int n_iir, float sample
 	for (int i=0; i< n_chan; i++) filters[i].setFilterCoeff_Matlab_sos(&(filter_sos[i*ncol]), N_BIQUAD_PER_FILT);  //sets multiple biquads.  Also calls begin().
 		
 	//copy the crossover frequencies to the state
-	state.set_crossover_freq_Hz(freqs_Hz, n_crossover);	 // n_crossover is n_chan-1
+	state.set_crossover_freq_Hz(freqs_Hz.get(), n_crossover);	 // n_crossover is n_chan-1
 	state.filter_order = n_iir;
 	state.sample_rate_Hz = sample_rate_Hz;
 	state.audio_block_len = block_len;	

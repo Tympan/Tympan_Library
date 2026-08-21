@@ -11,7 +11,7 @@
 */
 
 #ifndef _AudioMathOther_F32_h
-#define _AudioMathother_F32_h
+#define _AudioMathOther_F32_h
 
 #include <arm_math.h>
 #include "AudioStream_F32.h"

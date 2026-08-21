@@ -55,7 +55,8 @@ void AudioSynthNoiseWhite_F32::update(void)
 	}
 	//block = AudioStream::allocate();
 	block_f32 = AudioStream_F32::allocate_f32();
-	if (!block_data | !block_f32) {
+	//if (!block_data | !block_f32) {  //compiler says block_data will always exist (due to stack allocation), so let's remove it from this test
+	if (!block_f32) {
 		//Serial.println(": NULL block. returning.");
 		return;
 	}

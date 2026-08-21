@@ -99,13 +99,12 @@ class SDWriter : public Print
 			return is_success;
 		}
 
-    //This "write" is for compatibility with the Print interface.  Writing one
-    //byte at a time is EXTREMELY inefficient and shouldn't be done
-    size_t write(uint8_t foo) override;
+    // Bring all 'write' overloads from the Print class into this scope
+    using Print::write; 
 
     //write Byte buffer...the lowest-level call upon which the others are built.
     //writing 512 is most efficient (ie 256 int16 or 128 float32
-    virtual size_t write(const uint8_t *buff, int nbytes);
+    size_t write(const uint8_t *buff, size_t nbytes) override;
     virtual size_t write(const char *buff, int nchar) { return write((uint8_t *)buff,nchar);  }
     virtual size_t write(int16_t *buff, int nsamps) { return write((const uint8_t *)buff, nsamps * sizeof(buff[0]));}
 
@@ -113,6 +112,10 @@ class SDWriter : public Print
     virtual size_t write(float32_t *buff, int nsamps) {
       return write((const uint8_t *)buff, nsamps * sizeof(buff[0]));
     }
+
+    //This "write" is for compatibility with the Print interface.  Writing one
+    //byte at a time is EXTREMELY inefficient and shouldn't be done
+    size_t write(uint8_t foo) override;
 
     void setPrintElapsedWriteTime(bool flag) { flagPrintElapsedWriteTime = flag; }
     

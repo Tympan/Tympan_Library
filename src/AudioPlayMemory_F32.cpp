@@ -54,7 +54,7 @@ void AudioPlayMemoryI16_F32::update(void) {
 
 	//fill the out_block with audio
 	//unsigned long start_micros = micros();
-	for (uint32_t dest_ind = 0; dest_ind < audio_block_samples; dest_ind++) {
+	for (uint32_t dest_ind = 0; dest_ind < static_cast<uint32_t>(audio_block_samples); dest_ind++) {
 		out_block->data[dest_ind] = getNextAudioValue(); //in this method, it will also alter the play/stop state
 	}
 	//unsigned long total_micros = micros() - start_micros;

@@ -197,6 +197,8 @@ class AudioSynthWaveformQuadrature_F32 : public AudioSynthWaveform_F32
 		AudioSynthWaveformQuadrature_F32(const AudioSettings_F32 &settings) : AudioSynthWaveform_F32(settings) {};
 
 		void update(void) override;  //override the version in AudioSynthWaveform_F32
+
+		using AudioSynthWaveform_F32::processAudioBlock;  //bring the other definitions of processAudioBlock() into scope (to address the compiler warning if we lack this line)
 		virtual int processAudioBlock(audio_block_f32_t *lfo_block, audio_block_f32_t *block_new, audio_block_f32_t *block2_new); //create a new two-channel version
 	protected:
 		const float32_t PI_DIV_2 = 0.5f * _PI;
