@@ -478,22 +478,40 @@ void AudioOutputI2SQuad_F32::config_i2s(bool transferUsing32bit)
 	// configure transmitter
 	I2S0_TMR = 0;
 	I2S0_TCR1 = I2S_TCR1_TFW(1);  // watermark at half fifo size
-	I2S0_TCR2 = I2S_TCR2_SYNC(0) | I2S_TCR2_BCP | I2S_TCR2_MSEL(1)
-		| I2S_RCR2_BCD | I2S_RCR2_DIV(transferUsing32bit ? 1 : 3);
+	I2S0_TCR2 = I2S_TCR2_SYNC(0) | 
+				I2S_TCR2_BCP | 
+				I2S_TCR2_MSEL(1) | 
+				I2S_TCR2_BCD | 
+				I2S_TCR2_DIV(transferUsing32bit ? 1 : 3);
 	I2S0_TCR3 = I2S_TCR3_TCE_2CH;
-	I2S0_RCR4 = I2S_RCR4_FRSZ(1) | I2S_RCR4_SYWD(transferUsing32bit ? 31 : 15) | I2S_RCR4_MF
-		| I2S_TCR4_FSE | I2S_TCR4_FSP | I2S_TCR4_FSD;
-	I2S0_RCR5 = I2S_RCR5_WNW(transferUsing32bit ? 31 : 15) | I2S_RCR5_W0W(transferUsing32bit ? 31 : 15) | I2S_RCR5_FBT(transferUsing32bit ? 31 : 15);
+	I2S0_TCR4 = I2S_TCR4_FRSZ(1) |
+				I2S_TCR4_SYWD(transferUsing32bit ? 31 : 15) | 
+				I2S_TCR4_MF | 
+				I2S_TCR4_FSE | 
+				I2S_TCR4_FSP | 
+				I2S_TCR4_FSD;
+	I2S0_TCR5 = I2S_TCR5_WNW(transferUsing32bit ? 31 : 15) | 
+				I2S_TCR5_W0W(transferUsing32bit ? 31 : 15) | 
+				I2S_TCR5_FBT(transferUsing32bit ? 31 : 15);
 
 	// configure receiver (sync'd to transmitter clocks)
 	I2S0_RMR = 0;
 	I2S0_RCR1 = I2S_RCR1_RFW(1);
-	I2S0_RCR2 = I2S_RCR2_SYNC(1) | I2S_TCR2_BCP | I2S_RCR2_MSEL(1)
-		| I2S_RCR2_BCD | I2S_RCR2_DIV(3);
+	I2S0_RCR2 = I2S_RCR2_SYNC(1) |
+				I2S_TCR2_BCP |      //yes,using "TCR2" is what the original Teensy Audio library version does, too
+				I2S_RCR2_MSEL(1) | 
+				I2S_RCR2_BCD | 
+				I2S_RCR2_DIV(transferUsing32bit ? 1 : 3);
 	I2S0_RCR3 = I2S_RCR3_RCE_2CH;
-	I2S0_RCR4 = I2S_RCR4_FRSZ(1) | I2S_RCR4_SYWD(15) | I2S_RCR4_MF
-		| I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
-	I2S0_RCR5 = I2S_RCR5_WNW(15) | I2S_RCR5_W0W(15) | I2S_RCR5_FBT(15);
+	I2S0_RCR4 = I2S_RCR4_FRSZ(1) | 
+				I2S_RCR4_SYWD(transferUsing32bit ? 31 : 15) | 
+				I2S_RCR4_MF | 
+				I2S_RCR4_FSE | 
+				I2S_RCR4_FSP | 
+				I2S_RCR4_FSD;
+	I2S0_RCR5 = I2S_RCR5_WNW(transferUsing32bit ? 31 : 15) |
+				I2S_RCR5_W0W(transferUsing32bit ? 31 : 15) |
+				I2S_RCR5_FBT(transferUsing32bit ? 31 : 15);
 
 	// configure pin mux for 3 clock signals
 	CORE_PIN23_CONFIG = PORT_PCR_MUX(6); // pin 23, PTC2, I2S0_TX_FS (LRCLK)
