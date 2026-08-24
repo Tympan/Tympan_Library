@@ -60,6 +60,13 @@ public:
 		audio_block_samples = settings.audio_block_samples;
 		if (flag_callBegin) begin(); 	
 	}
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin, bool transferUsing32bit) : AudioStream_F32(4, inputQueueArray)
+	{
+		setInstanceName();
+		sample_rate_Hz = settings.sample_rate_Hz;
+		audio_block_samples = settings.audio_block_samples;
+		if (flag_callBegin) begin(transferUsing32bit);
+	}
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2SQuad_F32(settings, tx_buff, true) { setInstanceName(); } 
 	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray) { 
 		 setInstanceName(); 
@@ -74,6 +81,7 @@ public:
 		
 	void update(void) override;
 	void begin(void);
+	void begin(bool transferUsing32bit);
 	friend class AudioInputI2SBase_F32;
 	friend class AudioInputI2S_F32;
 	friend class AudioInputI2SQuad_F32;
@@ -83,12 +91,14 @@ public:
 	//static void scale_f32_to_i32( float32_t *p_f32, float32_t *p_i32, int len) ;
 	static uint32_t *i2s_tx_buffer;
 protected: 
-	static void config_i2s(void);
+	static void config_i2s(bool transferUsing32bit);
 	static audio_block_f32_t *block_ch1_1st;
 	static audio_block_f32_t *block_ch2_1st;
 	static audio_block_f32_t *block_ch3_1st;
 	static audio_block_f32_t *block_ch4_1st;
 	static bool update_responsibility;
+	static bool transferUsing32bit;
+	static uint32_t buffer_bytes(void);
 	static DMAChannel dma;
 	static void isr(void);
 	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);

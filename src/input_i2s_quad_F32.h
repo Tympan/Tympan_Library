@@ -57,6 +57,12 @@ public:
 		setInstanceName();
 		if (flag_callBegin) begin(); 
 	}
+	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin, bool transferUsing32bit) : AudioInputI2SBase_F32() {
+		sample_rate_Hz = settings.sample_rate_Hz;
+		audio_block_samples = settings.audio_block_samples;
+		setInstanceName();
+		if (flag_callBegin) begin(transferUsing32bit);
+	}
  	AudioInputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *rx_buff) : AudioInputI2SBase_F32() { 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
@@ -66,11 +72,14 @@ public:
 	} 
 	void update(void) override;
 	void begin(void) override;
+	void begin(bool transferUsing32bit);
 	static uint32_t *i2s_rx_buffer; 
 
 	void setInstanceName(void) override { instanceName = "AudioInputI2SQuad_F32"; } 
 protected:
 	static bool update_responsibility;
+	static bool transferUsing32bit;
+	static uint32_t buffer_bytes(void);
 	static DMAChannel dma;
 	static void isr(void);
 	virtual void update_1chan(int, unsigned long, audio_block_f32_t *&);
