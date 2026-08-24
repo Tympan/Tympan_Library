@@ -199,6 +199,7 @@ void AudioInputI2SQuad_F32::isr(void)
 			// DMA is receiving into the first half of the buffer, so process the second half.
 			// Each sample has four 32-bit channel words, so the second half starts at half of 4 * audio_block_samples.
 			src32 = (const int32_t *)&i2s_rx_buffer[(audio_block_samples * 4) / 2];
+			if (AudioInputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
 		} else {
 			// DMA is receiving into the second half of the buffer,
 			// so process the first half.
