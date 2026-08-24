@@ -65,7 +65,7 @@ public:
 		begin(); 
 	} 
 	void update(void) override;
-	void begin(void);
+	void begin(void) override;
 	static uint32_t *i2s_rx_buffer; 
 
 	void setInstanceName(void) override { instanceName = "AudioInputI2SQuad_F32"; } 

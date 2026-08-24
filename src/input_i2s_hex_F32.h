@@ -52,10 +52,10 @@ public:
 		setInstanceName(); 
 		if (flag_callBegin) begin(); 
 	}
-	virtual void update(void);
-	void begin(void);
-	int get_isOutOfMemory(void) { return flag_out_of_memory; }
-	void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }
+	void update(void) override;
+	void begin(void) override;
+	//int get_isOutOfMemory(void) { return flag_out_of_memory; }  //let the parent handle it
+	//void clear_isOutOfMemory(void) { flag_out_of_memory = 0; }  //let the parent handle it
 	static uint32_t *i2s_rx_buffer; 
 	void setInstanceName(void) override { instanceName = "AudioInputI2SHexF32"; }
 protected:
