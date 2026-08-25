@@ -170,7 +170,11 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 
 		virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type);
 		//virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_bytes=-1);
-		
+		virtual String getStringWriteDataType(void) {
+			if (buffSDWriter != nullptr) return buffSDWriter->getStringWriteDataType();
+			return String("UNKNOWN");
+		}
+			
 		void setWriteSizeBytes(const int n) {  //512Bytes is most efficient for SD
 			if (buffSDWriter) buffSDWriter->setWriteSizeBytes(n);
 		}

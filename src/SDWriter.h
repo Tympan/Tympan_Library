@@ -95,8 +95,17 @@ class SDWriter : public Print
         case WriteDataType::INT16:    return (16);
         case WriteDataType::INT24:    return (24);
         case WriteDataType::FLOAT32:  return (32);
-        default: return(32);                       // return 32-bit as default
       }
+			return (32);                       // return 32-bit as default
+    }
+		WriteDataType getWriteDataType(void) const { return writeDataType; }
+		virtual String getStringWriteDataType(void) {
+      switch (getWriteDataType()) {
+        case WriteDataType::INT16:    return String("INT16");
+        case WriteDataType::INT24:    return String("INT24");
+        case WriteDataType::FLOAT32:  return String("FLOAT32");
+      }
+			return String("UNKNOWN-")+String((int)writeDataType); // return 32-bit as default
     }
         
 		bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
@@ -359,13 +368,6 @@ class BufferedSDWriter : public SDWriter
 		int setWriteDataType(SDWriter::WriteDataType type) override { 
 			int return_val = SDWriter::setWriteDataType(type); 
 			resetBuffer(); 
-			// if (type == SDWriter::WriteDataType::INT16) {
-				// nBytesPerSample = 16/8;
-			// } else if (type == SDWriter::WriteDataType::INT24) {
-				// nBytesPerSample = 16/8;
-			// } else {
-				// nBytesPerSample = 32/8;
-			// }
 			nBytesPerSample = GetBitsPerSampType()/8;
 			return return_val;
 		}
