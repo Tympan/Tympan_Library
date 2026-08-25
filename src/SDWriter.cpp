@@ -1,5 +1,7 @@
 #include "SDWriter.h"
 
+#include <functional>  //for std::equal_to
+
 /*
 #include "SD.h"  //used for isSdCardPresent()
 int SDWriter::isSdCardPresent(void) {
@@ -693,7 +695,7 @@ bool SDWriter::SeekFileToPattern(SdFile &openFileH, const std::vector<char> &pat
 			if (bytesRead != 0) {
 				// Search for pattern
 				auto idx = std::search(buffer.begin(), buffer.begin() + bytesRead,
-					pattern.begin(), pattern.end());
+					pattern.begin(), pattern.end(), std::equal_to<char>());  //added std::equal_to for Teensyduino 1.62
 				
 				// Success if returned idx is not the last byte that was read
 				if (idx != buffer.begin() + bytesRead) {
