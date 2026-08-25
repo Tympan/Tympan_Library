@@ -34,46 +34,42 @@
 #define output_i2s_quad_f32_h_
 
 #include <Arduino.h>
-#include <arm_math.h>  //to define float32_t
-#include "AudioStream_F32.h"
-//include "AudioStream.h"
-#include "DMAChannel.h"
 #include <arm_math.h>
-#include "output_i2s_F32.h"  //for scale_f32_to_i16()
+#include <AudioStream_F32.h>   //tympan library
+#include <DMAChannel.h>
+#include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
 #include <input_i2s_F32.h>  //tympan library
 #include <input_i2s_quad_F32.h>  //tympan library
 #include <input_i2s_hex_F32.h>  //tympan library
 
-class AudioOutputI2SQuad_F32 : public AudioStream_F32
+class AudioOutputI2SQuad_F32 : public AudioOutputI2SBase_F32
 {
 public:
-	AudioOutputI2SQuad_F32(void) : AudioStream_F32(4, inputQueueArray) { 
+	AudioOutputI2SQuad_F32(void) : AudioOutputI2SBase_F32(4, inputQueueArray) { 
 		setInstanceName(); 
 		audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32; //use default
 		begin();
 	}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioOutputI2SQuad_F32(settings, true) { setInstanceName(); }
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray)
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings) : AudioOutputI2SQuad_F32(settings, true) {}
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, bool flag_callBegin) : AudioOutputI2SBase_F32(4, inputQueueArray)
 	{ 
 		setInstanceName(); 
 		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		if (flag_callBegin) begin(); 	
 	}
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2SQuad_F32(settings, tx_buff, true) { setInstanceName(); } 
-	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioStream_F32(4, inputQueueArray) { 
-		 setInstanceName(); 
-		 sample_rate_Hz = settings.sample_rate_Hz;
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff) : AudioOutputI2SQuad_F32(settings, tx_buff, true) {} 
+	AudioOutputI2SQuad_F32(const AudioSettings_F32 &settings, uint32_t *tx_buff, bool flag_callBegin) : AudioOutputI2SBase_F32(4, inputQueueArray) { 
+		setInstanceName(); 
+		sample_rate_Hz = settings.sample_rate_Hz;
 		audio_block_samples = settings.audio_block_samples;
 		i2s_tx_buffer = tx_buff;
 		zerodata = new float32_t[settings.audio_block_samples/2]{0}; //Need zeros for half an audio block, just 1 channel, init to zero
 		if (flag_callBegin) begin(); 
 	}
-	
 	void setInstanceName(void) { instanceName = "AudioOutputI2SQuad_F32"; }
-		
 	void update(void) override;
-	void begin(void);
+	void begin(void) override;
 	friend class AudioInputI2SBase_F32;
 	friend class AudioInputI2S_F32;
 	friend class AudioInputI2SQuad_F32;
@@ -93,6 +89,7 @@ protected:
 	static void isr(void);
 	static void isr_shuffleDataBlocks(audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
 	void update_1chan(const int, audio_block_f32_t *&, audio_block_f32_t *&, uint32_t &);
+
 private:
 	static audio_block_f32_t *block_ch1_2nd;
 	static audio_block_f32_t *block_ch2_2nd;

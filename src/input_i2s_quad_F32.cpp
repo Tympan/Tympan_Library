@@ -28,18 +28,41 @@
  *  Extended by Chip Audette, OpenAudio, May 2019
  *  Converted to F32 and to variable audio block length
  *	The F32 conversion is under the MIT License.  Use at your own risk.
+ *
+ *  Extended by Chris Brooks and Chip Audette, June/July 2025
+ *  Converted to 32-bit data transfers.
+ *	The F32 conversion is under the MIT License.  Use at your own risk.
  */
  
+ 
+ /* ******************************
+ * NOTE FROM CHIP:  The DMA is configured to invoke the ISR whenever every half of an audio block
+ * So, of the audio_block_size is 128 samples, the ISR gets fired every 64 samples.
+ * This does not care about the bit-length of each sample.
+ * This does not care that this is the "quad" class that's transfering 4 channels per "sample"
+ * This code needs to be written under the assumption that the ISR is being called every half of an audio_block,
+ * Then the correct number of bytes need to be transfered (audio_block_size / 2) * n_bytes_per_sample * n_channels
+ ********************************* */
 
 #include <Arduino.h>
 #include "input_i2s_quad_F32.h"
 #include "output_i2s_quad_F32.h"
 #include "output_i2s_F32.h"
 
-//DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32*2]; //Teensy Audio original
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_default_rx_buffer[MAX_AUDIO_BLOCK_SAMPLES_F32/2*4]; //Teensy Audio original
-uint32_t *AudioInputI2SQuad_F32::i2s_rx_buffer = i2s_default_rx_buffer;
-//DMAMEM static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2*4];
+#define NUM_CHAN_TRANSFER (4)         //this class is for quad (4-channel)
+#define MAX_BYTES_PER_SAMPLE (4)      //assume 32-bit transfers is the max supported by this class
+#define BIG_BUFFER_TYPE uint32_t
+#define BYTES_PER_BIG_BUFF_ELEMENT (sizeof(BIG_BUFFER_TYPE)) //assumes the rx buffer is made up of uint32_t
+#define LEN_BIG_BUFFER (MAX_AUDIO_BLOCK_SAMPLES_F32 * NUM_CHAN_TRANSFER * MAX_BYTES_PER_SAMPLE / BYTES_PER_BIG_BUFF_ELEMENT)
+DMAMEM __attribute__((aligned(32))) static BIG_BUFFER_TYPE i2s_default_rx_buffer[LEN_BIG_BUFFER];
+
+//To support 16-bit or 32-bit transfers, let's define how much of the RX buffer we're using ...remember, we're only transfering half of audio_block_samples at a time
+#define I2S_BUFFER_TO_USE_BYTES (audio_block_samples*NUM_CHAN_TRANSFER*sizeof(i2s_rx_buffer[0]) /  (transferUsing32bit ? 1 : 2)) //divide in half if transferring using 16 bits
+#define I2S_BUFFER_MID_POINT_INDEX ((audio_block_samples/2) * NUM_CHAN_TRANSFER * (transferUsing32bit ? 4 : 2) / (sizeof(i2s_rx_buffer[0])))
+
+
+// initialize static data members
+BIG_BUFFER_TYPE *AudioInputI2SQuad_F32::i2s_rx_buffer = i2s_default_rx_buffer;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch1 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch2 = NULL;
 audio_block_f32_t * AudioInputI2SQuad_F32::block_ch3 = NULL;
@@ -47,17 +70,11 @@ audio_block_f32_t * AudioInputI2SQuad_F32::block_ch4 = NULL;
 uint32_t AudioInputI2SQuad_F32::block_offset = 0;
 bool AudioInputI2SQuad_F32::update_responsibility = false;
 DMAChannel AudioInputI2SQuad_F32::dma(false);
-//int AudioInputI2SQuad_F32::flag_out_of_memory = 0;
-
-//float AudioInputI2SQuad_F32::sample_rate_Hz = AUDIO_SAMPLE_RATE;
-//int AudioInputI2SQuad_F32::audio_block_samples = MAX_AUDIO_BLOCK_SAMPLES_F32;
-
-//for 16-bit transfers?
-#define I2S_BUFFER_TO_USE_BYTES ((AudioOutputI2SQuad_F32::audio_block_samples)*4*(sizeof(i2s_rx_buffer[0])/2))
 
 
+
+//only compile this file if it is a KinetisK or IMRXT processor
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
-
 
 void AudioInputI2SQuad_F32::begin(void)
 {
@@ -66,19 +83,23 @@ void AudioInputI2SQuad_F32::begin(void)
 	AudioOutputI2SQuad_F32::sample_rate_Hz = sample_rate_Hz;  //these were given in the AudioSettings in the Contructor
 	AudioOutputI2SQuad_F32::audio_block_samples = audio_block_samples;//these were given in the AudioSettings in the Contructor
 	
-#if defined(KINETISK)
+#if defined(KINETISK)  // This part is only for Teensy3 (ie, Tympan Rev A-D)
 	// TODO: should we set & clear the I2S_RCSR_SR bit here?
-	AudioOutputI2SQuad_F32::config_i2s();
+	AudioOutputI2SQuad_F32::config_i2s();  //as of Aug 8, 2025, this is still 16-bit only
+
+	//All of the code in this KINETISK section assumes 16-bit I2S transfers, consistent with the 16-bit I2S setup from AudioOutputI2SQuad_F32::config_i2s();
+	if (AudioOutputI2SQuad_F32::transferUsing32bit == true) {
+		Serial.println("AudioInputI2SQuad_F32: begin: *** WARNING! ***: configured for 32-bit transfers when 16-bit is expected.");
+		Serial.flush();
+	}
 
 	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0
-#if defined(__MK20DX256__)
-	CORE_PIN30_CONFIG = PORT_PCR_MUX(4); // pin 30, PTC11, I2S0_RXD1
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
-	CORE_PIN38_CONFIG = PORT_PCR_MUX(4); // pin 38, PTC11, I2S0_RXD1
-#endif
+	#if defined(__MK20DX256__)
+		CORE_PIN30_CONFIG = PORT_PCR_MUX(4); // pin 30, PTC11, I2S0_RXD1
+	#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+		CORE_PIN38_CONFIG = PORT_PCR_MUX(4); // pin 38, PTC11, I2S0_RXD1
+	#endif
 
-
-#if defined(KINETISK)
 	dma.TCD->SADDR = &I2S0_RDR0;
 	dma.TCD->SOFF = 4;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_SMOD(3) | DMA_TCD_ATTR_DSIZE(1);
@@ -90,12 +111,12 @@ void AudioInputI2SQuad_F32::begin(void)
 	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer			//original quad
 	//dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 4; //original quad
 	
-	dma.TCD->CITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES/ 4; //new quad, enable diff len audio blocks
+	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
 	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;			//new quad, enable diff len audio blocks
-	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 4;//new quad, enable diff len audio blocks
+	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
 	
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-#endif
+
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_RX);
 	update_responsibility = update_setup();
 	dma.enable();
@@ -104,46 +125,64 @@ void AudioInputI2SQuad_F32::begin(void)
 	I2S0_TCSR |= I2S_TCSR_TE | I2S_TCSR_BCE; // TX clock enable, because sync'd to TX
 	dma.attachInterrupt(isr);
 
-#elif defined(__IMXRT1062__)
+#elif defined(__IMXRT1062__)  //This part is for Teensy4 (ie, Tympan Rev E/F)
+
+	//Setup the pins that control the I2S transfer for two stereo pairs.
+	//There are several sets of choices that one can select via "pinoffset"
 	const int pinoffset = 0; // TODO: make this configurable...
-	bool transferUsing32bit = false;
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit, sample_rate_Hz);
 	I2S1_RCR3 = I2S_RCR3_RCE_2CH << pinoffset;
 	switch (pinoffset) {
 	  case 0:
-		CORE_PIN8_CONFIG = 3;
-		CORE_PIN6_CONFIG = 3;
-		IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2; // GPIO_B1_00_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
-		break;
+			CORE_PIN8_CONFIG = 3;
+			CORE_PIN6_CONFIG = 3;
+			IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2; // GPIO_B1_00_ALT3, pg 873
+			IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
+			break;
 	  case 1:
-		CORE_PIN6_CONFIG = 3;
-		CORE_PIN9_CONFIG = 3;
-		IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
-		break;
+			CORE_PIN6_CONFIG = 3;
+			CORE_PIN9_CONFIG = 3;
+			IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
+			IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
+			break;
 	  case 2:
-		CORE_PIN9_CONFIG = 3;
-		CORE_PIN32_CONFIG = 3;
-		IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
-		IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
-		break;
+			CORE_PIN9_CONFIG = 3;
+			CORE_PIN32_CONFIG = 3;
+			IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
+			IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
+			break;
 	}
-	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
-	dma.TCD->SOFF = 4;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+
+	// DMA
+	//   Each minor loop copies one audio sample from each CODEC (either 2 left or 2 right)
+	//   Major loop repeats for audio_block_samples * 2 (stereo)
+	#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+	#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+	#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+	#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
+	#define I2S1_RDR                          (IMXRT_SAI1.RDR)
+	if (transferUsing32bit) {
+		// For 32-bit samples: 
+		dma.TCD->SADDR = &(I2S1_RDR[pinoffset]);
+		dma.TCD->SOFF = 4;  // This is the separation between sequential RDR registers (def works for 32-bit)
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+	} else {
+		// For 16-bit samples:
+		dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);  //The "pinoffset *4" shifts to SDR[pinoffset].  The "+ 2" shifts from start of int32 to start of upper int16
+		dma.TCD->SOFF = 4;  // This is the separation between sequential RDR registers (is this right for 16 bit?) 
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES;
+	}
 	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
-		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-8) |  // 4 samples @ 2 bytes each?
-		DMA_TCD_NBYTES_MLOFFYES_NBYTES(4);
-	dma.TCD->SLAST = -8;   //4 samples @ 2 bytes each?
+		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-(NUM_CHAN_TRANSFER/2)*4) |  // Restore SADDR after each minor loop. 2 rx registers @ 4 byte spacing
+		DMA_TCD_NBYTES_MLOFFYES_NBYTES((NUM_CHAN_TRANSFER/2)*(AudioI2SBase::transferUsing32bit ? 4 : 2));   // copy 2 samples @ 4 bytes or 2 bytes each
+		
+	dma.TCD->SLAST = -(NUM_CHAN_TRANSFER/2)*4;   // Restore SADDR after last major loop. 2 rx registers @ 4 byte spacing
 	dma.TCD->DADDR = i2s_rx_buffer;
-	dma.TCD->DOFF = 2;
-	//dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original Teensy Audio Library
-	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);  //original Teensy Audio Library
-	//dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2; //original Teensy Audio Library
-	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows variable block length
-	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;	;  //allows variable block length
-	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //allows variable block length
+	dma.TCD->DOFF = (AudioI2SBase::transferUsing32bit ? 4 : 2);  	// For 32-bit (or 16-bit) samples:
+
+	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
+	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;     //allows variable block length
+	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
 	
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_RX);
@@ -160,81 +199,85 @@ void AudioInputI2SQuad_F32::begin(void)
 
 void AudioInputI2SQuad_F32::isr(void)
 {
-	uint32_t daddr, offset;
-	const int16_t *src;  //*end;
+	uint32_t daddr;
+	const int32_t *src32=nullptr;  //*end;
+	const int16_t *src16=nullptr;  //*end;
+	uint32_t offset;
 	float32_t *dest1_f32, *dest2_f32, *dest3_f32, *dest4_f32;
 
-	//digitalWriteFast(3, HIGH);
+
+	//update the dma 
 	daddr = (uint32_t)(dma.TCD->DADDR);
 	dma.clearInterrupt();
-
-	//if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) { //orig quad
-	if (daddr < (uint32_t)i2s_rx_buffer + I2S_BUFFER_TO_USE_BYTES / 2) { //new quad, enable diff audio block lengths
-		// DMA is receiving to the first half of the buffer
-		// need to remove data from the second half
-		//src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
-		src = (int16_t *)&i2s_rx_buffer[audio_block_samples];
-		//end = (int16_t *)&i2s_rx_buffer[audio_block_samples*2];
-		if (AudioInputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
+	
+	//get pointer for the destination rx buffer
+	if (transferUsing32bit) {
+		//32-bit transfers
+		if (daddr < ((uint32_t)i2s_rx_buffer + I2S_BUFFER_MID_POINT_INDEX)) { //we're copying half an audio block times four channels. One address is already 4bytes, like our 32-bit audio sampels
+			// DMA is receiving to the first half of the buffer
+			// need to remove data from the second half
+			src32 = (int32_t *)&i2s_rx_buffer[I2S_BUFFER_MID_POINT_INDEX]; //For 32-bit transfers...we are transfering half an audio block and 4 channels each		
+			if (AudioInputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
+		} else {
+			// DMA is receiving to the second half of the buffer
+			// need to remove data from the first half
+			src32 = (int32_t *)&i2s_rx_buffer[0];  //for 32-bit transfers
+		}
+		
 	} else {
-		// DMA is receiving to the second half of the buffer
-		// need to remove data from the first half
-		src = (int16_t *)&i2s_rx_buffer[0];
-		//end = (int16_t *)&i2s_rx_buffer[audio_block_samples];
+		//16-bit transfers
+		if (daddr < ((uint32_t)i2s_rx_buffer + I2S_BUFFER_MID_POINT_INDEX)) { //we're copying half an audio block times four channels. But, one address is 4bytes whereas our data is only 2bytes, so divide by two
+			// DMA is receiving to the first half of the buffer
+			// need to remove data from the second half
+			src16 = (int16_t *)&i2s_rx_buffer[I2S_BUFFER_MID_POINT_INDEX]; //For 16-bit transfers...we are transfering half an audio block and 4 channels each...divided by two because two samples fit in each 32-bit slot
+			if (AudioInputI2SQuad_F32::update_responsibility) AudioStream_F32::update_all();
+		} else {
+			// DMA is receiving to the second half of the buffer
+			// need to remove data from the first half
+			src16 = (int16_t *)&i2s_rx_buffer[0];  //for 16bit transfers
+		}
+	} 
+
+	//
+	//De-interleave and copy to destination audio buffers.  
+	//Note the unexpected order!!! Chan 1, 3, 2, 4
+	if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
+		offset = AudioInputI2SQuad_F32::block_offset;
+		if (offset <= (uint32_t)(audio_block_samples/2)) {  //transfering half of an audio_block_samples at a time
+			//This block of code only copies the data into F32 buffers but leaves 
+			// the scaling at +/- 2^(32-1) scaling (or at +/- 2^(16-1) for 16-bit transfers)
+			//which will then be scaled in the update() method instead of here
+			AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
+			dest1_f32 = &(block_ch1->data[offset]);
+			dest2_f32 = &(block_ch2->data[offset]);
+			dest3_f32 = &(block_ch3->data[offset]);
+			dest4_f32 = &(block_ch4->data[offset]);
+			
+			//copy the data values! (32bit or 16bit, as specified)
+			if ((AudioOutputI2SQuad_F32::transferUsing32bit) && (src32 != nullptr)) {
+				//32-bits per audio sample
+				arm_dcache_delete((void*)src32, I2S_BUFFER_TO_USE_BYTES/2); //ensure cache is up-to-date
+				for (int i=0; i < audio_block_samples/2; i++) {
+					*dest1_f32++ = ((float32_t) *src32++);  //left 1
+					*dest3_f32++ = ((float32_t) *src32++);  //left 2 (note chan 3!!)
+					*dest2_f32++ = ((float32_t) *src32++);  //right 1 (note chan 2!!)
+					*dest4_f32++ = ((float32_t) *src32++);  //right 2
+				}
+			} else if ((AudioOutputI2SQuad_F32::transferUsing32bit==false) && (src16 != nullptr)) {
+				//16-bits per audio sample
+				arm_dcache_delete((void*)src16, I2S_BUFFER_TO_USE_BYTES/2); //ensure cache is up-to-date
+				for (int i=0; i < audio_block_samples/2; i++) {
+					*dest1_f32++ = ((float32_t) *src16++);  //left 1
+					*dest3_f32++ = ((float32_t) *src16++);  //left 2 (note chan 3!!)
+					*dest2_f32++ = ((float32_t) *src16++);  //right 1 (note chan 2!!)
+					*dest4_f32++ = ((float32_t) *src16++);  //right 2
+				}
+			} else {	
+				//should never be here..but let's be defensive just in case and copy in zeros
+				for (int i=0; i < audio_block_samples/2; i++) { *dest1_f32++ = 0.0f;  *dest2_f32++ = 0.0f;  *dest3_f32++ = 0.0f; *dest4_f32++ = 0.0f; }
+			}
+		}		
 	}
-	
-	#if 0
-		//data in DMA is int16 (ie, +/-32767), so this block of code will copy to f32 buffer *and* it will scale it to be +/- 1.0
-	
-		//De-interleave and copy to destination audio buffers.  
-		//Note the unexpected order!!! Chan 1, 3, 2, 4
-		const float32_t scale = 1.0f/32767.0f;
-		if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
-			offset = AudioInputI2SQuad_F32::block_offset;
-			if (offset <= (uint32_t)(audio_block_samples/2)) {
-				//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer)/2);
-				arm_dcache_delete((void*)src, I2S_BUFFER_TO_USE_BYTES/2);
-				
-				AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
-				dest1_f32 = &(block_ch1->data[offset]);
-				dest2_f32 = &(block_ch2->data[offset]);
-				dest3_f32 = &(block_ch3->data[offset]);
-				dest4_f32 = &(block_ch4->data[offset]);
-				for (int i=0; i < audio_block_samples/2; i++) {
-					*dest1_f32++ = scale*((float32_t) *src++);  //left 1
-					*dest3_f32++ = scale*((float32_t) *src++);  //left 2 (note chan 3!!)
-					*dest2_f32++ = scale*((float32_t) *src++);  //right 1 (note chan 2!!)
-					*dest4_f32++ = scale*((float32_t) *src++);  //right 2
-				}
-			}
-		} 
-	
-	#else
-		//This block of code only copies the data into F32 buffers but leaves the scaling at +/-32767.0
-		//which will then be scaled in the update() method instead of here
-	
-		//De-interleave and copy to destination audio buffers.  
-		//Note the unexpected order!!! Chan 1, 3, 2, 4
-		if (block_ch1 && block_ch2 && block_ch3 && block_ch4) {
-			offset = AudioInputI2SQuad_F32::block_offset;
-			if (offset <= (uint32_t)(audio_block_samples/2)) {
-				//arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer)/2);
-				arm_dcache_delete((void*)src, I2S_BUFFER_TO_USE_BYTES/2);
-				
-				AudioInputI2SQuad_F32::block_offset = offset + audio_block_samples/2;
-				dest1_f32 = &(block_ch1->data[offset]);
-				dest2_f32 = &(block_ch2->data[offset]);
-				dest3_f32 = &(block_ch3->data[offset]);
-				dest4_f32 = &(block_ch4->data[offset]);
-				for (int i=0; i < audio_block_samples/2; i++) {
-					*dest1_f32++ = ((float32_t) *src++);  //left 1
-					*dest3_f32++ = ((float32_t) *src++);  //left 2 (note chan 3!!)
-					*dest2_f32++ = ((float32_t) *src++);  //right 1 (note chan 2!!)
-					*dest4_f32++ = ((float32_t) *src++);  //right 2
-				}
-			}
-		} 
-	#endif
 }
 
 /* #define I16_TO_F32_NORM_FACTOR (3.051850947599719e-05)  //which is 1/32767 
@@ -255,7 +298,11 @@ void AudioInputI2SQuad_F32::update_1chan(int chan, unsigned long counter, audio_
 		
 	//incoming data is still scaled like int16 (so, +/-32767.).  Here we need to re-scale
 	//the values so that the maximum possible audio values spans the F32 stadard of +/-1.0
-	AudioInputI2S_F32::scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples);
+	if (AudioOutputI2SQuad_F32::transferUsing32bit) {
+		AudioInputI2S_F32::scale_i32_to_f32(out_block->data, out_block->data, audio_block_samples);   //for 32-bit transfers
+	} else {
+		AudioInputI2S_F32::scale_i16_to_f32(out_block->data, out_block->data, audio_block_samples); //for 16-bit transfers
+	}
 	
 	//prepare to transmit by setting the update_counter (which helps tell if data is skipped or out-of-order)
 	out_block->id = counter;

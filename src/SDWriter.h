@@ -19,24 +19,31 @@
 #ifndef _SDWriter_h
 #define _SDWriter_h
 
-
+#include "WavHeaderFmt.h"
 #include <arm_math.h>        //possibly only used for float32_t definition?
 //#include <SdFat_Gre.h>       //originally from https://github.com/greiman/SdFat  but class names have been modified to prevent collisions with Teensy Audio/SD libraries
 //#include "SD.h" // was using this but we should be using sdfat
 #include <SdFat.h>  //included in Teensy install as of Teensyduino 1.54-bete3
 #include <Print.h>
+#include <vector>
+#include <string>
 
 //set some constants
 #if defined(KINETISK)
 	//Tympan Rev A-D
-	#define defaultBufferLengthBytes 75000    //size of big memroy buffer to smooth out slow SD write operations
+	#define SDWRITER_MAX_BUFFER_LENGTH_BYTES 75000    //size of big memroy buffer to smooth out slow SD write operations
 #else
 	//Tympan Rev E-F
-	#define defaultBufferLengthBytes 150000    //size of big memroy buffer to smooth out slow SD write operations
+	#define SDWRITER_MAX_BUFFER_LENGTH_BYTES 150000    //size of big memroy buffer to smooth out slow SD write operations
 #endif	
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
 
-const int DEFAULT_SDWRITE_BYTES = 512; //target size for individual writes to the SD card.  Usually 512
+const int DEFAULT_SDWRITE_BYTES = (512); //target size for individual writes to the SD card.  Usually 512
+
+enum List_Info_Location {
+  Before_Data,
+  After_Data
+};
 
 //SDWriter:  This is a class to write blocks of bytes, chars, ints or floats to
 //  the SD card.  It will write blocks of data of whatever the size, even if it is not
@@ -64,7 +71,7 @@ class SDWriter : public Print
 			//Serial.println("SDWriter: init: std->begin(SD_CONFIG)...");
 			if (!sd->begin(SD_CONFIG)) {
 				//sd->errorHalt(serial_ptr, "SDWriter: begin failed");
-				if (serial_ptr) serial_ptr->println("SDWriter: init: *** WARNING ***: sd.begin() failed.");
+				if (serial_ptr) serial_ptr->println("SDWriter: init: *** ERROR ***: sd.begin() failed.");
 				return is_ok = false;
 			}
 			return is_ok = true;
@@ -74,13 +81,30 @@ class SDWriter : public Print
 			if (isFileOpen()) close();
 			sd->end();
 		}
+		
+		void AddMetadata(const String &comment);
+		void AddMetadata(const Info_Tags &infoTag, const std::string &infoString);
+		void ClearMetadata(void);
+    void ClearMetadata(const Info_Tags &infoTag);
+    void SetMetadataLocation(List_Info_Location metadataLoc); 
+    
+		enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
 
+    constexpr uint16_t GetBitsPerSampType (void) {
+      switch (writeDataType) {
+        case WriteDataType::INT16:    return (16);
+        case WriteDataType::INT24:    return (24);
+        case WriteDataType::FLOAT32:  return (32);
+        default: return(32);                       // return 32-bit as default
+      }
+    }
+        
 		bool openAsWAV(const char *fname, uint64_t preAllocate_bytes);
 		bool open(const char *fname, uint64_t preAllocate_bytes);
 		bool openAsWAV(const char *fname) { return openAsWAV(fname, 0ULL); }
 		bool open(const char *fname) { return open(fname, 0ULL); };
 		int close(void);
-
+    
 		bool exists(const char *fname) { return sd->exists(fname); }
 		bool remove(const char *fname) { return sd->remove(fname); }
 		
@@ -128,28 +152,58 @@ class SDWriter : public Print
     float setSampleRateWAV(float sampleRate_Hz) { return WAV_sampleRate_Hz = sampleRate_Hz; }
 		float getSampleRateWAV(void) { return WAV_sampleRate_Hz; }
 
-    //modified from Walter at https://github.com/WMXZ-EU/microSoundRecorder/blob/master/audio_logger_if.h
-    char * wavHeaderInt16(const uint32_t fsize) {
-      return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize);
+    // Create WAV header using default sample rate, channels    
+    char * wavHeaderInt16(const uint32_t fsize) {  
+      return wavHeaderInt16(WAV_sampleRate_Hz, WAV_nchan, fsize );
     }
-    char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
-    
-		SdFs * getSdPtr(void) { return sd; }
 
-		//virtual int isSdCardPresent(void);
+    // Create WAV header with no metadata    
+    char* wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize){
+      setWriteDataType(SDWriter::WriteDataType::INT16);
+      return makeWavHeader(sampleRate_Hz, nchan, fileSize);
+    }
+
+    char* makeWavHeader(const uint32_t fsize) { 
+      return makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, fsize); 
+    }
+    char* makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize);
+    
+    bool UpdateHeaderRiffChunk(SdFile &file);
+    bool UpdateHeaderDataChunk(SdFile &file);
+    bool UpdateHeaderFactChunk(SdFile &file, const uint32_t &numSamples);
+
+		SdFs * getSdPtr(void) { return sd; }
+	
+    virtual int setWriteDataType(WriteDataType type) { 
+      //Serial.println("SDWriter: setWriteDataType: type = " + String((int)type));
+      if (writeDataType != type) {
+        if (isFileOpen()) Serial.println("SDWriter: *** WARNING ***: Changing data type but WAV file is already open!");
+      }
+      return (int)(writeDataType = type); 
+    }
 
   protected:
     //SdFatSdio sd; //slower
-		SdFs * sd; //faster
+		SdFs * sd = nullptr; //faster
     SdFile file;
+    bool SeekFileToPattern( SdFile &openFileH, const std::vector<char> &pattern, const bool &fromBeginningFlag );
+    size_t GetWavHeaderDataLen (void);
+
     //bool hasSdBegun = false;
-		boolean flagPrintElapsedWriteTime = false;
+    boolean flagPrintElapsedWriteTime = false;
     elapsedMicros usec;
     Print* serial_ptr = &Serial;
     bool flag__fileIsWAV = false;
-    const int WAVheader_bytes = 44;
     float WAV_sampleRate_Hz = 44100.0;
     int WAV_nchan = 2;
+    WriteDataType writeDataType = SDWriter::WriteDataType::INT16; // default to INT16 data in WAV files
+		InfoKeyVal_t infoKeyVal; // Stores WAV header LIST<INFO> key, val map to write to header when openAsWav() is called.
+    List_Info_Location listInfoLoc = List_Info_Location::Before_Data;   // Store WAV Header metadata before or after the data chunk
+
+    std::vector<char> wavHeader; // buffer for buulding the header of a WAV file
+    char* pWavHeader = nullptr;
+    int WAVheader_bytes = 0;   //num bytes in WAV header
+    uint64_t filePosAudioData = 0; // File position at the start of the audio data (recorded when WAV file opened)
 };
 
 //BufferedSDWriter:  This is a drived class from SDWriter.  This class assumes that
@@ -177,17 +231,28 @@ class BufferedSDWriter : public SDWriter
     };
     ~BufferedSDWriter(void) { delete[] ptr_zeros; delete[] write_buffer; }
 		
-	bool sync(void);
+    /**
+     * @brief tracks how many bytes remain in the SD Write buffer after each write operation
+     */
+    struct Sd_Write_Buff_Unfilled_Bytes_s {
+      int64_t min;
+      int64_t last;
+      float32_t mean;
+      float32_t runningSum;
+      uint32_t nCounts;
+    };
 
-    //how many bytes should each write event be?  Set it here
+		bool sync(void);
+
+    //how many bytes should each write event be?  Used by `writeBufferedData()` when  `getWriteSizeBytes()` is called.
     void setWriteSizeBytes(const int _writeSizeBytes) {
-      setWriteSizeSamples(_writeSizeBytes / nBytesPerSample);
+      writeSizeBytes = max(4, 4 * int(_writeSizeBytes/4)); //ensure at least 4 bytes long
     }
     void setWriteSizeSamples(const int _writeSizeSamples) {
-      writeSizeSamples = max(2, 2 * int(_writeSizeSamples / 2));//ensure even number >= 2
+			setWriteSizeBytes(_writeSizeSamples * nBytesPerSample);
     }
-    int getWriteSizeBytes(void) { return (getWriteSizeSamples() * nBytesPerSample); }
-    int getWriteSizeSamples(void) { return writeSizeSamples;  }
+    uint getWriteSizeBytes(void) { return writeSizeBytes; }
+    uint getWriteSizeSamples(void) { return (getWriteSizeBytes() / nBytesPerSample);  }
 
     //allocate the buffer for storing all the samples between write events...returns 0 if it failed to allocate
 	int allocateBuffer(void) { 
@@ -199,21 +264,27 @@ class BufferedSDWriter : public SDWriter
 		return allocateBuffer(_nBytes, flag_shrinkIfNeeded);	
 	}				
     int allocateBuffer(const int _nBytes, bool flag_shrinkIfNeeded) {
-		//Serial.print("SDWriter: allocateBuffer(nBytes, flag_shrinkIfNeeded)..."); Serial.print(_nBytes); Serial.print(", "); Serial.println(flag_shrinkIfNeeded);
-		const int32_t min_len_samples = 4;
-		bufferLengthSamples = max(min_len_samples, _nBytes / nBytesPerSample);
 		if (write_buffer != 0) delete[] write_buffer;  //delete the old buffer
+		const int32_t min_len_bytes = 4*4;
+		bufferLengthBytes = max(min_len_bytes,_nBytes);
 		write_buffer = nullptr;
-		while ( (write_buffer == 0) && (bufferLengthSamples >= min_len_samples) ) {
-			write_buffer = new (std::nothrow) int16_t[bufferLengthSamples];
-			//Serial.print("SDWriter: allocateBuffer: tried "); Serial.print(bufferLengthSamples); Serial.print(", result = "); Serial.println((int)write_buffer);
-			if (write_buffer == 0) bufferLengthSamples /= 2;  //shrink the buffer that we're requesting fo when we loop again
+		while ( (write_buffer == nullptr) && (bufferLengthBytes >= min_len_bytes) ) {
+			write_buffer = new (std::nothrow) uint8_t[bufferLengthBytes];
+			if (write_buffer == nullptr) bufferLengthBytes /= 2;  //shrink the buffer that we're requesting fo when we loop again
 		}
-		if (write_buffer != 0) resetBuffer();
+		if (write_buffer != nullptr) resetBuffer();
 		return (int)write_buffer;
     }
     void freeBuffer(void) { delete[] write_buffer; write_buffer = nullptr; resetBuffer(); }
-    void resetBuffer(void) { bufferReadInd = 0; bufferWriteInd = 0;  }
+    
+    //reset the read and write indices to the start of the buffer
+    void resetBuffer(void) { 
+      bufferReadInd_bytes = 0;
+      bufferWriteInd_bytes = 0;
+
+      // Rest stats on SD Write buffer
+      clearSdWriteBuffStats();
+    }
  
     //here is how you send data to this class.  this doesn't write any data, it just stores data
     virtual void copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan);
@@ -221,45 +292,109 @@ class BufferedSDWriter : public SDWriter
     //write buffered data if enough has accumulated
     virtual int writeBufferedData(void);
 
-	//methods related to dithering
-	virtual float32_t generateDitherNoise(const int &Ichan, const int &method);
-	int enableDithering(bool enable) { if (enable) { return setDitheringMethod(0); } else { return setDitheringMethod(2); } }
-	int setDitheringMethod(int val) { return ditheringMethod = val; }
-	int getDitheringMethod(void) { return ditheringMethod; }
+    //methods related to dithering
+    virtual float32_t generateDitherNoise(const int &Ichan, const int &method);
+    int enableDithering(bool enable) { if (enable) { return setDitheringMethod(0); } else { return setDitheringMethod(2); } }
+    int setDitheringMethod(int val) { return ditheringMethod = val; }
+    int getDitheringMethod(void) { return ditheringMethod; }
 
-	//methods relating to decimation
-	virtual uint32_t setDecimationFactor(uint32_t dec_fac) { 
-		decimation_factor = max(1U,dec_fac); 
-		decimation_counter = 0;
-		//setSampleRateWAV(getSampleRateWAV()/decimation_factor);
-		return decimation_factor;
-	}
+    //methods relating to decimation
+    virtual uint32_t setDecimationFactor(uint32_t dec_fac) { 
+      decimation_factor = max(1U,dec_fac); 
+      decimation_counter = 0;
+      //setSampleRateWAV(getSampleRateWAV()/decimation_factor);
+      return decimation_factor;
+    }
 
-	int32_t getLengthOfBuffer(void) { return bufferLengthSamples; }
-	int32_t getNumSampsInBuffer(void) {
-		if (bufferReadInd <= bufferWriteInd) return bufferWriteInd-bufferReadInd;
-		return getLengthOfBuffer() - bufferReadInd + bufferWriteInd;
-	}
-	int32_t getNumUnfilledSamplesInBuffer(void) { return getLengthOfBuffer() - getNumSampsInBuffer(); }  //how much of the buffer is empty, in samples
-	uint32_t getNumUnfilledSamplesInBuffer_msec(void) {
-		int32_t available_buffer_samples = getNumUnfilledSamplesInBuffer();
-		float samples_per_msec = (WAV_sampleRate_Hz*WAV_nchan) / 1000.0f;  //these data memersare in the SDWriter class
-		return (uint32_t)((float)available_buffer_samples/samples_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
-	}
+    // int32_t getLengthOfBuffer(void) { return bufferLengthSamples; }
+    // int32_t getNumSampsInBuffer(void) {
+    // 	if (bufferReadInd <= bufferWriteInd) return bufferWriteInd-bufferReadInd;
+    // 	return getLengthOfBuffer() - bufferReadInd + bufferWriteInd;
+    // }
+
+    uint32_t getLengthOfBuffer_bytes(void) { return bufferLengthBytes; }
+    uint32_t getNumBytesInBuffer(void) {
+      if (bufferReadInd_bytes <= bufferWriteInd_bytes) return bufferWriteInd_bytes-bufferReadInd_bytes;
+      return getLengthOfBuffer_bytes() - bufferReadInd_bytes + bufferWriteInd_bytes;
+    }
+
+	  // int32_t getNumUnfilledSamplesInBuffer(void) { return getLengthOfBuffer() - getNumSampsInBuffer(); }  //how much of the buffer is empty, in samples
+  	uint32_t getNumUnfilledBytesInBuffer(void) { return getLengthOfBuffer_bytes() - getNumBytesInBuffer(); }  //how much of the buffer is empty, in samples
+  	bool getOverrunFlag(void) { return overrunFlag; }
+    void clearOverrunFlag(void) { overrunFlag = true; }
+
+    /**
+     * @brief Get stats on # of unfilled bytes in the SD Write buffer
+     * @return const Sd_Write_Buff_Unfilled_Bytes_s& reference to the stats structure
+     */
+    volatile Sd_Write_Buff_Unfilled_Bytes_s& getSDWriteBuffStats(void){ 
+      return sdWriteBuffUnfilled_bytes; 
+    }
+
+    /**
+     * @brief Clear the stats on # of unfilled bytes in the SD Write buffer
+     */
+    void clearSdWriteBuffStats(void) {
+      overrunFlag = false;
+      sdWriteBuffUnfilled_bytes.min = bufferLengthBytes;
+      sdWriteBuffUnfilled_bytes.last = bufferLengthBytes;
+      sdWriteBuffUnfilled_bytes.nCounts = 0;
+      sdWriteBuffUnfilled_bytes.runningSum = 0.0f;
+      sdWriteBuffUnfilled_bytes.mean = (float32_t)bufferLengthBytes;
+    }
+
+    // uint32_t getNumUnfilledSamplesInBuffer_msec(void) {
+	  // 	int32_t available_buffer_samples = getNumUnfilledSamplesInBuffer();
+	  // 	float samples_per_msec = (WAV_sampleRate_Hz*WAV_nchan) / 1000.0f;  //these data memersare in the SDWriter class
+	  // 	return (uint32_t)((float)available_buffer_samples/samples_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
+	  // }
+
+		uint32_t getNumUnfilledBytesInBuffer_msec(void) {
+			int32_t available_buffer_bytes = getNumUnfilledBytesInBuffer();
+			float bytes_per_msec = (WAV_sampleRate_Hz * WAV_nchan * nBytesPerSample) / 1000.0f;  //these data memersare in the SDWriter class
+			return (uint32_t)((float)available_buffer_bytes/bytes_per_msec + 0.5f); //the "+0.5"rounds to the nearest millisec
+		}
+
 	
+		int setWriteDataType(SDWriter::WriteDataType type) override { 
+			int return_val = SDWriter::setWriteDataType(type); 
+			resetBuffer(); 
+			if (type == SDWriter::WriteDataType::INT16) {
+				nBytesPerSample = 16/8;
+			} else {
+				nBytesPerSample = 32/8;
+			}
+			return return_val;
+		}
+		
+		uint getBytesPerSample(void) { return nBytesPerSample; }
+		
+		
   protected:
-    int writeSizeSamples = 0;
-    int16_t* write_buffer = 0;
-    int32_t bufferWriteInd = 0;
-    int32_t bufferReadInd = 0;
-    const int nBytesPerSample = 2;
-    int32_t bufferLengthSamples = defaultBufferLengthBytes / nBytesPerSample;
-    int32_t bufferEndInd = defaultBufferLengthBytes / nBytesPerSample;
+    // int writeSizeSamples = 0;
+    // int16_t* write_buffer = 0;
+    // int32_t bufferWriteInd = 0;
+    // int32_t bufferReadInd = 0;
+    // const int nBytesPerSample = 2;
+    // int32_t bufferLengthSamples = defaultBufferLengthBytes / nBytesPerSample;
+    // int32_t bufferEndInd = defaultBufferLengthBytes / nBytesPerSample;
+
+    uint32_t writeSizeBytes = DEFAULT_SDWRITE_BYTES;  //default
+    uint8_t* write_buffer = 0; //generic array of bytes
+    uint32_t bufferWriteInd_bytes = 0;
+    uint32_t bufferReadInd_bytes = 0;
+    uint32_t nBytesPerSample = 2;
+    //int32_t bufferLengthSamples = SDWRITER_MAX_BUFFER_LENGTH_BYTES / nBytesPerSample;
+    uint32_t bufferLengthBytes = 0;
+    uint32_t bufferEndInd_bytes = 0 / nBytesPerSample;
+
     float32_t *ptr_zeros = nullptr;
 		int ditheringMethod = 0;  //default 0 is off
 		uint32_t decimation_factor = 1;  // values larger then 1 result in decimation
 		uint32_t decimation_counter = 0;   // every time it reaches 0, it writes a sample
-};
+    volatile Sd_Write_Buff_Unfilled_Bytes_s sdWriteBuffUnfilled_bytes = {0}; //tracks how many bytes remain in the SD Write buffer after each write operation
+    volatile bool overrunFlag = false;  //set to true if the write buffer overruns
+  };
 
 
 #endif

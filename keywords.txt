@@ -35,6 +35,13 @@ getTimeWindow_sec	KEYWORD2
 getCurrentLevel	KEYWORD2
 getCurrentLevel_dB	KEYWORD2
 clearStates	KEYWORD2
+AudioCalcLeqCumulative_F32	KEYWORD1
+getCumLevelRms	KEYWORD2
+getCumLevelRms_dB	KEYWORD2
+getPeakLevel	KEYWORD2
+getPeakLevel_dB	KEYWORD2
+resetCumLeq	KEYWORD2
+resetPeakLvl	KEYWORD2
 AudioCalcLevel_F32	KEYWORD1
 
 AudioControlAIC3206	KEYWORD1

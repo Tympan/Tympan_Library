@@ -1,6 +1,4 @@
-
 #include "SDWriter.h"
-
 
 /*
 #include "SD.h"  //used for isSdCardPresent()
@@ -11,51 +9,265 @@ int SDWriter::isSdCardPresent(void) {
 */
 
 
+/**
+ * @brief Add a metadata comment under the LIST<INFO><ICMT> tag, to be written when startRecording() is called.
+ * \note If tag exists, appends string.  To clear, call ClearMetadata()
+ * @param comment Comment to add
+ */
+
+void SDWriter::AddMetadata(const String &comment) {
+	std::string commentStr( comment.c_str() );
+	AddMetadata(Info_Tags::ICMT, commentStr);
+}
+
+
+ /**
+ * @brief Add a metadata tagname and string, to be written when startRecording() is called.
+ * \note If tag exists, appends string.  To clear, call ClearMetadata()
+ * @param infoTag Tag to add the comment under
+ * @param infoString  Comment to add
+ */
+void SDWriter::AddMetadata(const Info_Tags &infoTag, const std::string &infoString) {
+	if( !infoString.empty() ) {
+		// If  key exists append String
+		if ( infoKeyVal.count(infoTag)>0 ) {
+			infoKeyVal[infoTag] += infoString;
+		
+		// Else insert comment as new key
+		} else {
+			infoKeyVal.insert({infoTag, infoString});
+		}
+	} else {
+		Serial.println("SDWriter::AddMetadata(): Error. infoTag not found.");
+	}
+}
+
+
+/**
+ * @brief Clear all tags from metadata buffer that startRecording uses to write metadata.
+ * 
+ */
+void SDWriter::ClearMetadata(void) {
+	infoKeyVal.clear();
+}
+
+/**
+ * @brief Clear specfic tag from the metadata buffer.
+ * 
+ */
+void SDWriter::ClearMetadata(const Info_Tags &infoTag) {
+	if ( infoKeyVal.count(infoTag)>0 ) {
+		infoKeyVal.erase(infoTag);
+	}
+}
+
+
+/**
+ * @brief Selece to write metadata before or after the audio data.
+ * \note Some WAV players have a preference to where metadata is stored, 
+ * though technically, the RIFF standard says the INFO<LIST> chunk can go
+ * anywhere after the fmt chunk * 
+ * @param metadataLoc Selects location
+ */
+void SDWriter::SetMetadataLocation(List_Info_Location metadataLoc) {
+	listInfoLoc = metadataLoc;
+}
+
+
 bool SDWriter::openAsWAV(const char *fname, uint64_t preAllocate_bytes) {
-	bool returnVal = open(fname);
-	if (isFileOpen()) { //true if file is open
-		if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
+	bool returnVal = false;
+	
+	// Open and preallocate if requested.  Note that open returns false if isOpen() fails
+	if (preAllocate_bytes > 0ULL) {
+		returnVal = open(fname, preAllocate_bytes);
+	} else {
+		returnVal = open(fname);
+	}
+
+	// If file opened successfully, write Wav header. ( Note that open checks isFileOpen() )
+	if (returnVal) {
 		flag__fileIsWAV = true;
-		file.write(wavHeaderInt16(0), WAVheader_bytes); //initialize assuming zero length
+
+		// Build WAV header buffer and update pWavHeader pointer (ignore return pointer to pWavHeader)
+		makeWavHeader(WAV_sampleRate_Hz, WAV_nchan, 0);  // Set file size to 0 to automatically calculate header length
+
+		// Check that WAV Header is valid
+		if ( pWavHeader && (WAVheader_bytes>0) ){
+			file.write(pWavHeader, WAVheader_bytes); // Write WAV header assuming no audio data
+		// Else Error
+		} else {
+			Serial.println("makeWavHeader(): ***Error*** WAV header size: " + String(WAVheader_bytes) + "bytes.");
+		}
+
+		// Mark start of data chunk to later calculate numSamples.
+		filePosAudioData = file.curPosition();
 	}
 	return returnVal;
 }
 
+/**
+ * @brief Open file on SD card.  If file already exists, delete it. 
+ * 
+ * @param fname File to open
+ * @param preAllocate_bytes bytes to pre-allocate to file on SD card (set to 0 to skip this)
+ * @return true Success
+ * @return false Failed to delete existing file, or failed to open file
+ */
 bool SDWriter::open(const char *fname, uint64_t preAllocate_bytes) {
-	//Serial.println("SDWriter::open: opening " + String(fname));
-	//Serial.println("SDWriter::open: sd->exists(fname) = " + String(sd->exists(fname)));
-	
+	bool okayFlag = true;
+
 	if (sd->exists(fname)) {  //maybe this isn't necessary when using the O_TRUNC flag below
 		// The SD library writes new data to the end of the file, so to start
 		//a new recording, the old file must be deleted before new data is written.
-		//Serial.println("SDWriter::open: removing file: " + String(fname));
-		sd->remove(fname);
+		okayFlag = sd->remove(fname);
 	}
-	__disable_irq();
-	//int foo_val = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
-	file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
-	//Serial.println("SDWriter::open: file.open() returns " + String(foo_val));
-	//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
-	__enable_irq();
-	if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
-	return isFileOpen();
+	
+	if (okayFlag) {
+		__disable_irq();
+			okayFlag = file.open(fname, O_RDWR | O_CREAT | O_TRUNC);
+			//file.createContiguous(fname, PRE_ALLOCATE_SIZE); //alternative to the line above
+		__enable_irq();
+		if (!okayFlag) {
+			Serial.println( String("Error: SDWriter.open() failed to open file: ") + String(fname) );
+		} else {
+			if (preAllocate_bytes > 0ULL) preAllocate(preAllocate_bytes);
+		}
+	} else {
+		Serial.println("Error: SDWriter.open() failed to delete existing file.");
+	}
+	return ( okayFlag && isFileOpen() );
 }
-		
+
+
+/**
+ * @brief Updates the WAV header for fields that rely on numSamples. The closes the file.
+ * 
+ * @return int: 0: Success; -1: Failure.  (Prior to Aug 2025, always returned 0)
+ */
 int SDWriter::close(void) {
-	if (flag__fileIsWAV) {
-		//re-write the header with the correct file size
-		//uint32_t fileSize = file.fileSize();//SdFat_Gre_FatLib version of size();
-		uint32_t fileSize = file.curPosition();//SdFat_Gre_FatLib version of size();
-		file.seekSet(0); //SdFat_Gre_FatLib version of seek();
-		file.write(wavHeaderInt16(fileSize), WAVheader_bytes); //write header with correct length
-		file.seekSet(fileSize);
+	file.truncate();  //truncate the file to its currently used length, in case it was pre-allocated to be larger
+	bool okayFlag = true;
+	uint32_t numTotalSamples = 0;
+
+	// Record total number of samples (samples x numChannels)
+	if (file.curPosition() > filePosAudioData) {
+		numTotalSamples = (file.curPosition() - filePosAudioData) / (uint32_t) GetBitsPerSampType();
+	} else {	// Else start of audio data was not recorded
+		okayFlag = false;
 	}
-	file.truncate();  //if it had be pre-allocated, this trims to the proper length
-	file.close();
-	flag__fileIsWAV = false;
-	return 0;
-}
+
+	// Clear wavHeader buffer
+	wavHeader.clear();
+	WAVheader_bytes = 0;
+
+	// If data chunk ends on an odd byte, then pad with 0
+	if ( file && file.isOpen()) {
+		if ( file.size()%2 != 0 ) {									// If not on word boundary, ...
+			if ( file.write( (uint8_t)0 ) != sizeof(uint8_t) ) {	// Pad with zero
+				Serial.print ("Error padding WAV header");	
+				okayFlag = false;
+			} // else success
+		} // else file ends in even byte, pass
+	}
+
+	// Write data chunk length
+	if (okayFlag) {
+		if (!UpdateHeaderDataChunk(file) ) {
+			Serial.println("Error writing WAV Header data chunk length.");
+			okayFlag = false;
+		}
+	}
+
+	// If F32 audio update "fact" chunk for # of samples
+	if (okayFlag && writeDataType==WriteDataType::FLOAT32) {
+		if( !UpdateHeaderFactChunk(file, numTotalSamples) ) {
+			Serial.println("Error updating fact chunk.");
+			okayFlag = false;
+		}
+	} 
+
+	// Write LIST<INFO> metadata chunk (if it is not empty)
+	if ( okayFlag && ( !infoKeyVal.empty() ) ) {			
+		List_Header_u listChunk;	// temporary buffer to store LIST chunk header
+
+		// Seek to end of file
+		if ( !file.seekSet( file.fileSize() ) ) {
+			okayFlag = false;
+			Serial.print("Error seeking end of file.");
+		} else {
+			// Calculate size of LIST chunk 
+			listChunk.S.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
+
+			// Add up all the info tag names and strings.  
+			for (auto &keyVal:infoKeyVal) {
+				//If string is odd length, pad with 0
+				if ( (keyVal.second).size()%2!=0 ){
+					// EYUAN 2025-1105: Use of push_back here caused Tympan crash
+					keyVal.second.resize(keyVal.second.size()+1, '\0');
+				}
+
+				// Add length of Key ID (4), Key Len (4) and len of string
+				listChunk.S.chunkLenBytes += 8 + (keyVal.second).size();	
+			} 
+
+			// Store chunk ID, len and subchunk ID, len in header buffer
+			std::copy(&listChunk.byteStream[0], &listChunk.byteStream[0] + sizeof(List_Header_u), std::back_inserter(wavHeader));
+
+			// Append info key and strings
+			for (const auto &keyVal:infoKeyVal) {
+				// Append tagname (without null terminator)
+				wavHeader.insert( 
+					wavHeader.end(), 
+					InfoTagToStr(keyVal.first).data(), 
+					InfoTagToStr(keyVal.first).data() + InfoTagToStr(keyVal.first).size() );
+				
+				// Append tag size
+				uint32_t tagLenBytes = (keyVal.second).size();	// use size of string
+				
+				wavHeader.insert( wavHeader.end(), (char*) &tagLenBytes, (char*) &tagLenBytes + sizeof(tagLenBytes) );
+
+				// Append tag string (without null terminator)
+				wavHeader.insert( wavHeader.end(), (keyVal.second).data(), (keyVal.second).data() + (keyVal.second).size() );
+			}
+
+			// Write WAV header to file
+			if ( wavHeader.size()>0 ) {
+				size_t bytesWritten = file.write( wavHeader.data(), wavHeader.size() ); // Write WAV header assuming no audio data
+
+				if ( bytesWritten != wavHeader.size() ) {
+					okayFlag = false;
+					Serial.println("Error writing WAV header LIST chunk"); 
+					Serial.println( String("Wrote ")+String(bytesWritten)+String(" bytes; Expected: ")+String(wavHeader.size())+String(" bytes") );
+				} // else success
+			} else {
+				okayFlag = false;
+				Serial.println( String("Error building WAV header LIST<INFO> chunk. numBytes = ") + String(wavHeader.size()) );
+			}
+		}
 		
+		// Clear the WAV metadata member (regardless of error)
+		infoKeyVal.clear();
+	}
+	
+	// Update RIFF chunk len
+	if (okayFlag) {
+		okayFlag = UpdateHeaderRiffChunk(file);
+	}
+
+	// Close file
+	if ( file && file.isOpen() ) {
+		file.close();
+		flag__fileIsWAV = false;
+	}
+
+	if (okayFlag) {
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+
 //This "write" is for compatibility with the Print interface.  Writing one
 //byte at a time is EXTREMELY inefficient and shouldn't be done
 size_t SDWriter::write(uint8_t foo)  {
@@ -76,41 +288,433 @@ size_t SDWriter::write(uint8_t foo)  {
 //writing 512 is most efficient (ie 256 int16 or 128 float32
 size_t SDWriter::write(const uint8_t *buff, size_t nbytes) {
 	size_t return_val = 0;
+	//static long long nbytesTotal = 0;
 	if (file.isOpen()) {
 		if (flagPrintElapsedWriteTime) { usec = 0; }
 		file.write((byte *)buff, nbytes); return_val = nbytes;
 
 		//write elapsed time only to USB serial (because only that is fast enough)
-		if (flagPrintElapsedWriteTime) { Serial.print("SD, us="); Serial.println(usec); }
+		if (flagPrintElapsedWriteTime) {
+			//float32_t writeSpd = (float32_t)usec;
+			//nbytesTotal += nbytes;
+			//float32_t writeSpd = ((float32_t)nbytes)/(float32_t)usec;
+			Serial.print("SD, us="); Serial.println(usec);
+		}
 	}
 	return return_val;
 }
 
- char* SDWriter::wavHeaderInt16(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
-	//const int fileSize = bytesWritten+44;
 
-	int fsamp = (int) sampleRate_Hz;
-	int nbits = 16;   //assumes we're writing INT16 data
-	int nbytes = nbits / 8;
-	int nsamp = (fileSize - WAVheader_bytes) / (nbytes * nchan);
+/**
+ * @brief Build char buffer with WAV header and return a pointer to the buffer
+ * 
+ * @param sampleRate_Hz Sample rate of the recording
+ * @param nchan # of audio channels
+ * @param fileSize Size of entire file.  If unknown, then set to 0 to use the calculated size of this header.
+ * @return char* pointer to the WAV header character buffer, for writing to file.
+ */
+char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, const uint32_t fileSize) {
+	//Serial.println("SDWriter: makeWavHeader: fileSize = " + String(fileSize) + ", writeDataType = " + String((int)writeDataType)); Serial.flush(); delay(100);
+	
+	// Initialize chunks (some of which may not be used)
+	Riff_Header_u riffChunk;
+	Fmt_Pcm_Header_u fmtPcm;
+	Fmt_Ieee_Header_u fmtIeee;
+	Fact_Header_u factChunk;
+	List_Header_u listChunk;
+	Data_Header_u dataChunk;
 
-	static char wheader[48]; // 44 for wav
+	uint16_t bitsPerSamp = GetBitsPerSampType();  // Set bits based on writeDataType
 
-	strcpy(wheader, "RIFF");
-	strcpy(wheader + 8, "WAVE");
-	strcpy(wheader + 12, "fmt ");
-	strcpy(wheader + 36, "data");
-	*(int32_t*)(wheader + 16) = 16; // chunk_size   //is this related to assuming INT16 data type being written to file?
-	*(int16_t*)(wheader + 20) = 1; // PCM
-	*(int16_t*)(wheader + 22) = nchan; // numChannels
-	*(int32_t*)(wheader + 24) = fsamp; // sample rate
-	*(int32_t*)(wheader + 28) = fsamp * nchan * nbytes; // byte rate (updated 10/14/2024) 
-	*(int16_t*)(wheader + 32) = nchan * nbytes; // block align
-	*(int16_t*)(wheader + 34) = nbits; // bits per sample
-	*(int32_t*)(wheader + 40) = nsamp * nchan * nbytes;
-	*(int32_t*)(wheader + 4) = 36 + nsamp * nchan * nbytes;  //what is this?  Why 36???
+	// Clear wavHeader
+	wavHeader.clear();		// Empty char vector
+	pWavHeader = nullptr; 	// Set null pointer
+	WAVheader_bytes = 0; 	// Reset num bytes in header buffer
 
-	return wheader;
+	// --- Riff chunk ---
+	riffChunk.S.chunkLenBytes = sizeof(riffChunk.S.format);
+
+	// --- fmt chunk --- 
+	// Format depends on data type
+	switch (writeDataType) {
+		// For integer data types
+		case SDWriter::WriteDataType::INT16:
+		case SDWriter::WriteDataType::INT24: {
+			fmtPcm.S.numChan 			= (uint16_t) nchan;											// # of audio channels
+			fmtPcm.S.sampleRate_Hz 		= (uint32_t) sampleRate_Hz;									// Sample Rate
+			fmtPcm.S.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtPcm.S.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
+			fmtPcm.S.bitsPerSample		= bitsPerSamp;
+
+			// update fmt chunk size
+			riffChunk.S.chunkLenBytes += fmtPcm.S.chunkLenBytes;
+			break;
+		}
+		// For Float 32 data type
+		case SDWriter::WriteDataType::FLOAT32:
+		default: {								// Default to Float32 type, though really this is ambigiuous
+			fmtIeee.S.numChan 			= (uint16_t) nchan;											// # of audio channels
+			fmtIeee.S.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;									// Sample Rate
+			fmtIeee.S.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
+			fmtIeee.S.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
+			fmtIeee.S.bitsPerSample	= bitsPerSamp;
+
+			// Update Fact Chunk
+			factChunk.S.numTotalSamp		= 0; // Update later on closing file
+
+			// update fmt chunk size
+			riffChunk.S.chunkLenBytes += fmtIeee.S.chunkLenBytes;
+			break;
+		}
+	}
+
+	// --- INFO Chunk --- If Info tag specified, build a LIST.. INFO chunk and append to WAV header. 
+	if ( !infoKeyVal.empty() && (listInfoLoc==List_Info_Location::Before_Data) ) {
+		// Calculate size of LIST chunk 
+		listChunk.S.chunkLenBytes = 4;	// Add 4 bytes for "INFO"
+
+		// Add up all the info tag names and strings
+		for (auto &keyVal:infoKeyVal) {
+			
+
+			/* For debug print statements
+			std::string_view tmpStrView = InfoTagToStr(keyVal.first);
+			std::string tmpStr(tmpStrView.data(), tmpStrView.length() );
+			Serial.print( "Key: " + String(tmpStr.c_str()) + "; NumChars: " + String(keyVal.second.length()) );
+			*/
+
+			//If string is odd length, pad with 0
+			if ( (keyVal.second).size()%2!=0 ){
+				// EYUAN 2025-1105: Use of push_back here caused Tympan crash
+				keyVal.second.resize(keyVal.second.size()+1, '\0');
+			}
+
+			// Add length of Key ID (4), Key Len (4) and len of string
+			listChunk.S.chunkLenBytes += 8 + (keyVal.second).size();	
+		} 
+
+		// update fmt chunk size
+		riffChunk.S.chunkLenBytes += listChunk.S.chunkLenBytes;
+
+	} // else no info tag, so pass
+
+
+	// --- data chunk --- 
+	// Contains no data, just the beginning chunk ID and length
+	dataChunk.S.chunkLenBytes 	= (uint32_t)( 0 * nchan * bitsPerSamp / sizeof(uint8_t) ); 	// Number of audio bytes: NumSamples * NumChannels * BitsPerSample/8
+	
+	// update fmt chunk size
+	riffChunk.S.chunkLenBytes += dataChunk.S.chunkLenBytes;
+
+	// If filesize specified, then override the calculated size of the RIFF Chunk
+	if (fileSize > 0) {
+		riffChunk.S.chunkLenBytes = std::max(fileSize, 8UL) - 8;  // File length (in bytes) - 8bytes
+	}  // else leave the fileSize as specified.
+
+
+	// --- WRITE CHUNKS TO BUFFER --- 
+	// Write RIFF chunk
+	std::copy(&riffChunk.byteStream[0], &riffChunk.byteStream[0] + sizeof(Riff_Header_u), std::back_inserter(wavHeader));
+
+	// Write fmt subchunk
+	switch (writeDataType) {
+		// For integer data types
+		case SDWriter::WriteDataType::INT16:
+		case SDWriter::WriteDataType::INT24: {
+			std::copy(&fmtPcm.byteStream[0], &fmtPcm.byteStream[0] + sizeof(Fmt_Pcm_Header_u), std::back_inserter(wavHeader));
+			break;
+		}
+		// For Float 32 data type
+		case SDWriter::WriteDataType::FLOAT32:
+		default: {								// Default to Float32 type, though really this is ambigiuous			
+			std::copy(&fmtIeee.byteStream[0], &fmtIeee.byteStream[0] + sizeof(Fmt_Ieee_Header_u), std::back_inserter(wavHeader));
+			std::copy(&factChunk.byteStream[0], &factChunk.byteStream[0] + sizeof(Fact_Header_u), std::back_inserter(wavHeader));
+			break;
+		}
+	}
+
+	// Write INFO chunk (if it is not empty and we want it before the data chunk)
+	if ( (!infoKeyVal.empty()) && (listInfoLoc==List_Info_Location::Before_Data) ) {
+		// Append chunk ID, len and subchunk ID, len
+		std::copy(&listChunk.byteStream[0], &listChunk.byteStream[0] + sizeof(List_Header_u), std::back_inserter(wavHeader));
+
+		// Append info key and strings
+		for (const auto &keyVal:infoKeyVal) {
+			// Append tagname (without null terminator)
+			wavHeader.insert( 
+				wavHeader.end(), 
+				InfoTagToStr(keyVal.first).data(), 
+				InfoTagToStr(keyVal.first).data() + InfoTagToStr(keyVal.first).size() );
+			
+			// Append tag size
+			uint32_t tagLenBytes = (keyVal.second).size();	// use size of string
+			
+			wavHeader.insert( wavHeader.end(), (char*) &tagLenBytes, (char*) &tagLenBytes + sizeof(tagLenBytes) );
+
+			// Append tag string (without null terminator)
+			wavHeader.insert( wavHeader.end(), (keyVal.second).data(), (keyVal.second).data() + (keyVal.second).size() );
+
+			// If tag string is odd # of bytes, append 0
+			if ( (tagLenBytes % 2)!=0 ) {
+				wavHeader.push_back('\0');
+			}
+		}
+
+		// Clear the INFO key so it won't be written after the data
+		infoKeyVal.clear();
+	}
+
+	// Write data chunk
+	std::copy(&dataChunk.byteStream[0], &dataChunk.byteStream[0] + sizeof(Data_Header_u), std::back_inserter(wavHeader));
+
+	// Update pointer to wavHeader and # of bytes.
+	pWavHeader = wavHeader.data();
+	WAVheader_bytes = wavHeader.size();
+
+	return pWavHeader;
+}
+
+
+/**
+ * @brief Update length of data subchunk in WAV Header
+ * Returns to file position before method was called.
+ * \note Current file pos must be at the end of the audio data subchunk
+ * @param file file handle (to open WAV file)
+ * @return true Success	
+ * @return false Error
+ */
+bool SDWriter::UpdateHeaderDataChunk(SdFile &file) {
+	size_t dataLen = 0;
+	size_t dataEndPos = 0;
+	bool okayFlag = true;
+
+	// Store current position at the end of the data subchunk; then seek to start of file
+	if ( file and file.isOpen() ) {
+		dataEndPos = file.curPosition();
+		
+		// Seek to start of file
+		if( !file.seekSet( sizeof(uint32_t) ) ) {
+			okayFlag = false;
+			Serial.println("Error seeking WAV file position.");
+		}
+	
+	// Else error with file handle
+	} else {
+		okayFlag = false;
+		Serial.print("Error: Invalid WAV file handle.");
+	}
+
+	// Seek to data chunk
+	if (okayFlag) {
+		const std::vector<char> dataPattern = {'d', 'a', 't', 'a'};	// Chunk ID 
+		
+		if ( !SeekFileToPattern(file, dataPattern, false) ){
+			// Error: "data" chunk id not found
+			Serial.println("Error: Wave Header data chunk not found.");
+			okayFlag = false;
+		} 
+	}
+
+	// Check that current position leaves room for the chunk ID and len
+	if (okayFlag) {
+		if ( dataEndPos > file.curPosition() + 8 ) {
+			// Record data len
+			dataLen = dataEndPos - file.curPosition() - 8;  // exclude 8 bytes for "data" and data len
+			
+			// Seek to after the "data" chunk ID
+			if(!file.seekCur( sizeof(uint32_t) ) ){
+				Serial.println("Error seeking WAV file position.");
+				okayFlag = false;
+			}
+	
+		// ELSE Error. Call this function at the end of writing audio data
+		} else {
+			Serial.println("Error: Before calling this method, set file to end of audio 'data' chunk");
+			Serial.println( String("\tchunk ID addr: ") + String( file.curPosition() ) );
+			Serial.println( String("\tpresumed end of chunk: ") + String(dataEndPos) );
+			okayFlag = false;
+		}
+	}
+
+	// Write "data" subchunk len
+	if ( okayFlag && file.write(&dataLen, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+		Serial.println("Error: Failed to write WAV Header RIFF Len");
+		okayFlag = false;
+	}
+
+	// Return to file pos before executing this method.
+	if ( file && file.isOpen() ) {
+		if (!file.seekSet(dataEndPos) ) {		// Don't overwrite error
+			okayFlag = false;
+			Serial.println("Error seeking WAV file position.");
+		}
+	}
+
+	return okayFlag;
+}
+
+
+/**
+ * @brief Write number of samples to Fact Chunk in WAV Header.
+ * 
+ * @param file file handle (to open WAV file)
+ * @param numSamples # of samples (across all channels)
+ * @return true Success	
+ * @return false Error
+ */
+bool SDWriter::UpdateHeaderFactChunk(SdFile &file, const uint32_t &numSamples) {
+	const std::vector<char> dataPattern = {'f', 'a', 'c', 't'};	// Chunk ID 
+	bool okayFlag = true;
+
+	// Seek to "fact" chunk ID
+	if ( SeekFileToPattern(file, dataPattern, true) ) {
+		
+		// Seek to numSampPerChan
+		if (file.seekCur( 2*sizeof(uint32_t) ) ) {
+			// Write # of samples
+			if (file.write(&numSamples, sizeof(uint32_t)) != sizeof(uint32_t) ) {
+				Serial.println("Error: Failed to write to WAV Header fact chunk");
+				okayFlag = false;
+			} // else success
+
+		} else {
+			// Error seeking file position
+			Serial.println("Error seeking WAV file position.");
+			okayFlag = false;
+		}
+	
+	// Else chunk ID "fact" not found
+	} else {
+		// Error: "fact" chunk id not found
+		Serial.println("Error: Wave Header data chunk not found.");
+		okayFlag = false;
+	}
+
+	return okayFlag;
+}
+
+
+
+
+/**
+ * @brief Writes the len of the RIFF chunk to the WAV Header
+ * Seeks to "RIFF" chunk at position-4, then write file size - 8 bytes.
+ * @param file file handle (to open WAV file)
+ * @return true Success	
+ * @return false Error 
+ */
+bool SDWriter::UpdateHeaderRiffChunk(SdFile &file) {
+	bool okayFlag = true;
+	uint32_t chunkLen = 0;
+	size_t startPos = 0;
+
+	// Store current position and get file size
+	if ( file && file.isOpen() ) {
+		startPos = file.curPosition();
+		
+		chunkLen = file.fileSize();
+
+		if( chunkLen > 8) {	// minimum 8 bytes for "RIFF" and RIFF len
+			chunkLen -= 8;
+		} else {	
+			// Error with file size
+			okayFlag = false;
+		} // else success
+
+	// Else error with file handle
+	} else {
+		okayFlag = false;
+	}
+
+	// Write RIFF len
+	if (okayFlag) {
+		// Seek to Riff chunk len, which is after the chunk ID (4 bytes)
+		if ( file.seekSet( sizeof(uint32_t) ) ) {	
+			
+			// Write RIFF len; check num bytes written
+			if ( file.write(&chunkLen, sizeof(uint32_t)) != sizeof(uint32_t) ) {		
+				// ELSE Error writing RIFF len
+				okayFlag = false;
+			}
+		
+		// Else error with file seek
+		} else {
+			okayFlag = false;
+		}
+	}
+
+	// Seek to file position when method was entered.
+	if ( file && file.isOpen() ) {
+		file.seekSet(startPos);  // Don't overwrite error
+	}
+
+	return(okayFlag);
+}
+
+
+/**
+ * @brief Seeks to start of pattern. Search begins at current file position. File must be open.
+ * 
+ * @param openFileH 
+ * @param pattern 
+ * @return bool True:pattern found
+ */
+bool SDWriter::SeekFileToPattern(SdFile &openFileH, const std::vector<char> &pattern, const bool &fromBeginningFlag ) {
+	size_t totalBytesRead = 0;					// Tracks total number of bytes read from file.
+	constexpr size_t bufferLen = 512;
+	std::vector<char> buffer(bufferLen);
+	size_t startPosFileBuffer = 0;
+	size_t bytesRead = 0;
+	bool okayFlag = true;
+	bool foundFlag = false;
+
+	// If desired, start from beginning of file
+	if( file && file.isOpen() && fromBeginningFlag && !foundFlag ) {
+		okayFlag = file.seekSet(0);
+	}
+
+	if (okayFlag) {
+		// If file open...
+		while ( file && file.isOpen()  && okayFlag && !foundFlag ){
+			// Store current file position
+			startPosFileBuffer = file.curPosition();
+
+			// Read in section of data 
+			bytesRead = file.read(buffer.data(), bufferLen);
+
+			if (bytesRead != bufferLen ) {
+				Serial.println("Error reading SD file.");
+				okayFlag = false;
+			}
+
+			// Check for EOF
+			if (bytesRead != 0) {
+				// Search for pattern
+				auto idx = std::search(buffer.begin(), buffer.begin() + bytesRead,
+					pattern.begin(), pattern.end());
+				
+				// Success if returned idx is not the last byte that was read
+				if (idx != buffer.begin() + bytesRead) {
+
+					// Seek file to start of pattern
+					if ( !file.seekSet( startPosFileBuffer + idx - buffer.begin() ) ) {
+						okayFlag = false;
+						Serial.print("Error: Unable to seek to desired WAV Header position.");
+					} else {
+						foundFlag = true;
+					}
+				}
+				// Store total # of bytes read
+				totalBytesRead += bytesRead;
+
+			// Else EOF reached.  Abort.
+			} else {
+				Serial.println(" Error: end of file reached before pattern was matched.");
+				okayFlag = false;
+			}
+		} // for loop
+	} // else existing errpr
+	return foundFlag;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,7 +731,21 @@ bool BufferedSDWriter::sync(void) {
 
 //here is how you send data to this class.  this doesn't write any data, it just stores data
 void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamps, const int numChan) {
+	uint32_t numChanU32 = 0;
+	uint32_t nSampsU32 = 0; 
+	
+	if ( (numChan>0) && (nsamps>0) ) {
+		// Convert int to u32
+		numChanU32 = static_cast<uint32_t>(numChan);
+		nSampsU32 = static_cast<uint32_t>(nsamps);
+
+	} else {
+		Serial.println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***\t: invalid input arguments.");
+		return;
+	}
+	
 	if (!write_buffer) {  //try to allocate buffer, return if it doesn't work
+		//Serial.println("BufferedSDWriter: copyToWriteBuffer: write_buffer = " + String((int)write_buffer) + " so trying to allocate default size");
 		if (!allocateBuffer()) {
 			serial_ptr->println("BufferedSDWriter: copyToWriteBuffer: *** ERROR ***");
 			serial_ptr->println("    : could not allocateBuffer()");
@@ -135,103 +753,174 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 		}
 	}
 
-	//how much data will we write?
-	int estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter)/((int)decimation_factor));
+	//how much data will we write? (cast from int to uint, assuming values are >= 0)
+	uint32_t estFinalWriteInd_bytes = bufferWriteInd_bytes + ( numChanU32 * 
+			( ( nSampsU32 + decimation_counter ) / decimation_factor ) * nBytesPerSample );
 
 	//will we pass by the read index?
 	bool flag_moveReadIndexToEndOfWrite = false;
-	if ((bufferWriteInd < bufferReadInd) && (estFinalWriteInd > bufferReadInd)) {
-		serial_ptr->println("BufferedSDWriter_I16: WARNING: writing past the read index.");
+
+	// If write index is before read index 		// If final write index passes read index, then data would be overwritten
+	if ( (bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes) ) { //exclude starting at the same index but include ending at the same index
+		Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING1: writing past the read index. Likely hiccup in WAV.");
 		flag_moveReadIndexToEndOfWrite = true;
-	}
+		overrunFlag = true;
+		sdWriteBuffUnfilled_bytes.last = bufferReadInd_bytes - estFinalWriteInd_bytes;	// Record negative amount of bytes left.
+	} // Else the write pointer is after the read pointer. Pass for now.
 
 	//is there room to put the data into the buffer or will we hit the end
-	if ( estFinalWriteInd >= bufferLengthSamples) { //is there room?
+	if ( estFinalWriteInd_bytes >= bufferLengthBytes) { //is there room?
 		//no there is not room
-		bufferEndInd = bufferWriteInd; //save the end point of the written data
-		bufferWriteInd = 0;  //reset
+		if (bufferReadInd_bytes > bufferWriteInd_bytes) {
+			Serial.println("BufferedSDWriter: copyToWriteBuffer: setting end of buffer (" + String(bufferWriteInd_bytes) + ") shorter than read index (" + String(bufferReadInd_bytes));
+		}
+		
+		// No room so have the new data start at index-0 and keep track of where the buffer should now wrap.
+		//if (bufferWriteInd_bytes != bufferEndInd_bytes) Serial.println("BufferedSDWriter: copyToWriteBuffer: setting end of buffer to " + String(bufferWriteInd_bytes) + " vs max = " + String(bufferLengthBytes));
+		bufferEndInd_bytes = bufferWriteInd_bytes; //save the end point of the written data
+		bufferWriteInd_bytes = 0;  //reset to beginning of the buffer
 
 		//recheck to see if we're going to pass by the read buffer index
-		estFinalWriteInd = bufferWriteInd + (int)(numChan * (nsamps + (int)decimation_counter)/((int)decimation_factor));
-		if ((bufferWriteInd < bufferReadInd) && (estFinalWriteInd > bufferReadInd)) {
-			serial_ptr->println("BufferedSDWriter_I16: WARNING: writing past the read index.");
+		estFinalWriteInd_bytes = bufferWriteInd_bytes + ( numChanU32 * 
+				( ( nSampsU32 + decimation_counter)/decimation_factor ) * nBytesPerSample);
+
+		if ((bufferWriteInd_bytes < bufferReadInd_bytes) && (estFinalWriteInd_bytes >= bufferReadInd_bytes)) {  //exclude starting at the same index but include ending at the same index
+			Serial.println("BufferedSDWriter: copyToWriteBuffer: WARNING2: writing past the read index. Likely hiccup in WAV.");
 			flag_moveReadIndexToEndOfWrite = true;
+			overrunFlag = true;
+			sdWriteBuffUnfilled_bytes.last = bufferReadInd_bytes - estFinalWriteInd_bytes;	// Record negative amount of bytes left.
 		}
 	}
 
+	// Update how much space is left in the buffer
+	// If buffer did not over run, update the # of unfilled bytes
+	if (sdWriteBuffUnfilled_bytes.last > 0) {
+		// if read ppointer is ahead of final write pointer
+		// wwwwwwwwwW________________Rwwwwwwww:::::::::, where ':' is currently dead space in the buffer
+		if (bufferReadInd_bytes > estFinalWriteInd_bytes) {
+			sdWriteBuffUnfilled_bytes.last = bufferReadInd_bytes - estFinalWriteInd_bytes;	// Record # bytes left between write and read indices	
+	
+		// Else the write pointer is ahead of the read pointer and needs to wrap
+		// _____RwwwwwwwwwwwW__________________________
+		} else {
+			sdWriteBuffUnfilled_bytes.last = bufferLengthBytes- estFinalWriteInd_bytes + bufferReadInd_bytes;	// Record # bytes left between write and read indices	
+		}
+	}
+
+	// Record SD Write buffer stats
+	sdWriteBuffUnfilled_bytes.min = min(sdWriteBuffUnfilled_bytes.min, sdWriteBuffUnfilled_bytes.last);
+	sdWriteBuffUnfilled_bytes.nCounts++;
+	sdWriteBuffUnfilled_bytes.runningSum += (float32_t)sdWriteBuffUnfilled_bytes.last;
+
+	if (sdWriteBuffUnfilled_bytes.nCounts > 0) {
+		sdWriteBuffUnfilled_bytes.mean = sdWriteBuffUnfilled_bytes.runningSum / 
+			(float32_t)sdWriteBuffUnfilled_bytes.nCounts;
+	} else {	// Else error.  Set mean to -999.f
+		sdWriteBuffUnfilled_bytes.mean = -999.f;
+	}
+
 	//make sure no null arrays
-	for (int Ichan=0; Ichan < numChan; Ichan++) {
+	for (uint32_t Ichan=0; Ichan < numChanU32; Ichan++) {
 		if (!(ptr_audio[Ichan])) {
-			if (ptr_zeros == NULL) { ptr_zeros = new float32_t[nsamps](); } //creates and initializes to zero
+			if (ptr_zeros == NULL) { ptr_zeros = new float32_t[nSampsU32](); } //creates and initializes to zero
 			ptr_audio[Ichan] = ptr_zeros;
 		}
 	}
 
-	//now interleave the data into the buffer
-	for (int Isamp = 0; Isamp < nsamps; Isamp++) {
-		for (int Ichan = 0; Ichan < numChan; Ichan++) {
-			//convert the F32 to Int16 and interleave
+	//now scale and interleave the data into the buffer
+	uint32_t foo_bufferWriteInd = bufferWriteInd_bytes / nBytesPerSample;
+	for (uint32_t Isamp = 0; Isamp < nSampsU32; Isamp++) {
+		for (uint32_t Ichan = 0; Ichan < numChanU32; Ichan++) {
 			float32_t val_f32 = ptr_audio[Ichan][Isamp];  //float value, scaled -1.0 to +1.0
+			if (ditheringMethod > 0) val_f32 += generateDitherNoise( (int)Ichan,ditheringMethod); //add dithering, if desired
 	
-			//add dithering, if desired
-			if (ditheringMethod > 0) val_f32 += generateDitherNoise(Ichan,ditheringMethod);
-	
-			//only keep the sample if the decimation counter says that this is the sample to keep
-			if (decimation_counter == 0UL) {
-				//convert to INT16 datatype and put in the write buffer
-				write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
-				//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
+			if (decimation_counter == 0UL) {			
+				if (writeDataType == SDWriter::WriteDataType::INT16) {
+					//convert to INT16 datatype and put in the write buffer
+					((int16_t*)write_buffer)[foo_bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
+					//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
+				} else {
+					//simply copy
+					((float32_t*)write_buffer)[foo_bufferWriteInd++] = val_f32; //copy
+				}
 			}
 		}
 					
 		//increment decimation counter and wrapped
 		decimation_counter++;	if (decimation_counter >= decimation_factor) decimation_counter = 0UL;
 	}
-
+	bufferWriteInd_bytes = foo_bufferWriteInd * nBytesPerSample; //new write index (bytes) for next time through
+	
+	//check to see if we're using more of the available buffer than previously being used
+	if (bufferWriteInd_bytes > bufferEndInd_bytes) {
+		//Serial.println("BufferedSDWriter: copyToWriteBuffer: extending end from " + String(bufferEndInd_bytes) + " to " + bufferWriteInd_bytes + " (vs max length of " + String(bufferLengthBytes) + ")");
+		bufferEndInd_bytes = max(bufferEndInd_bytes,bufferWriteInd_bytes);
+	}
+	
 	//handle the case where we just wrote past the read index.  Push the read index ahead.
-	if (flag_moveReadIndexToEndOfWrite) bufferReadInd = bufferWriteInd;
+	if (flag_moveReadIndexToEndOfWrite) bufferReadInd_bytes = bufferWriteInd_bytes;
 }
 
 //write buffered data if enough has accumulated
 int BufferedSDWriter::writeBufferedData(void) {
-	const int max_writeSizeSamples = 8*writeSizeSamples;  //was 8
+	uint32_t writeSizeBytes = getWriteSizeBytes();
+	//const uint32_t max_writeSizeBytes = 8*writeSizeBytes;  //try writing in larger sizes than the given writeSizeBytes
+	const uint32_t max_writeSizeBytes = 1*writeSizeBytes;  //no benefit to larger than 512 bytes (https://forum.pjrc.com/index.php?threads/best-teensy-for-a-datalogger.73723/#post-332766)
 	if (!write_buffer) return -1;
+
+	//static uint32_t busy_count = 0;
+	if (file.isOpen() && file.isBusy()) {  //https://forum.pjrc.com/index.php?threads/best-teensy-for-a-datalogger.73723/
+		//busy_count++;
+		//if ((busy_count % 100) == 1) {
+		//	Serial.println("BufferedSDWriter: writeBuferedData: file is busy! busy_cout = " + String(busy_count));
+		//}
+		return -2; 
+	}
+
 	int return_val = 0;
 
 	//if the write pointer has wrapped around, write the data
-	if (bufferWriteInd < bufferReadInd) { //if the buffer has wrapped around
+	// wwwwwwW________________________Rwwwwwwwww:::::
+
+	if (bufferWriteInd_bytes < bufferReadInd_bytes) { //if the buffer has wrapped around
 		//Serial.println("BuffSDI16: writing to end of buffer");
 		//return_val += write((byte *)(write_buffer+bufferReadInd),
 		//    (bufferEndInd-bufferReadInd)*sizeof(write_buffer[0]));
 		//bufferReadInd = 0;  //jump back to beginning of buffer
 
-		int samplesAvail = bufferEndInd - bufferReadInd;
-		if (samplesAvail > 0) {
-			int samplesToWrite = min(samplesAvail, max_writeSizeSamples);
-			if (samplesToWrite >= writeSizeSamples) {
-				samplesToWrite = ((int)samplesToWrite / writeSizeSamples) * writeSizeSamples; //truncate to nearest whole number
+		// How many bytes from read ptr to end of written data
+		uint32_t bytesAvail = bufferEndInd_bytes - bufferReadInd_bytes;
+
+		// If the read pointer is not at the end of the buffer, write what we can
+		if (bytesAvail > 0) {
+			uint32_t bytesToWrite = min(bytesAvail, max_writeSizeBytes);
+			if (bytesToWrite >= writeSizeBytes) {
+				bytesToWrite = ((uint32_t)bytesToWrite / writeSizeBytes) * writeSizeBytes; //truncate to nearest whole number
+				//bytesToWrite =  min(bytesToWrite, writeSizeBytes); //limit the bytes to write
 			}
-			//if (samplesToWrite == 0) {
-			//  Serial.print("SD Writer: writeBuff1: samplesAvail, to Write: ");
-			//  Serial.print(samplesAvail); Serial.print(", ");
-			//  Serial.println(samplesToWrite);
+			//if (bytesToWrite == 0) {
+			//  Serial.print("SD Writer: writeBuff1: bytesAvail, to Write: ");
+			//  Serial.print(bytesAvail); Serial.print(", ");
+			//  Serial.println(bytesToWrite);
 			//}
-			return_val += write((byte *)(write_buffer + bufferReadInd), samplesToWrite * sizeof(write_buffer[0]));
+			//return_val += write((byte *)(write_buffer + bufferReadInd), samplesToWrite * sizeof(write_buffer[0]));
+			return_val += write((byte *)(write_buffer + bufferReadInd_bytes), bytesToWrite);
 			//if (return_val == 0) {
 			//  Serial.print("SDWriter: writeBuff1: samps to write, bytes written: "); Serial.print(samplesToWrite);
 			//  Serial.print(", "); Serial.println(return_val);
 			//}
-			bufferReadInd += samplesToWrite;  //jump back to beginning of buffer
-			if (bufferReadInd == bufferEndInd) bufferReadInd = 0;
+			bufferReadInd_bytes += bytesToWrite;  //jump back to beginning of buffer
+			if (bufferReadInd_bytes == bufferEndInd_bytes) bufferReadInd_bytes = 0;
 		} else { 
 			//the read pointer is at the end of the buffer, so loop it back
-			bufferReadInd = 0; 
+			bufferReadInd_bytes = 0; 
 		}
+		
 	} else {
 		
 		//do we have enough data to write again?  If so, write the whole thing
-		int samplesAvail = bufferWriteInd - bufferReadInd;
-		if (samplesAvail >= writeSizeSamples) {
+		uint32_t bytesAvail = bufferWriteInd_bytes - bufferReadInd_bytes;
+		if (bytesAvail >= writeSizeBytes) {
 			//Serial.println("BuffSDI16: writing buffered data");
 			//return_val = write((byte *)(write_buffer+buffer, writeSizeSamples * sizeof(write_buffer[0]));
 
@@ -239,19 +928,21 @@ int BufferedSDWriter::writeBufferedData(void) {
 			//  (bufferWriteInd-bufferReadInd)*sizeof(write_buffer[0]));
 			//bufferReadInd = bufferWriteInd;  //increment to end of where it wrote
 
-			int samplesToWrite = min(samplesAvail, max_writeSizeSamples);
-			samplesToWrite = ((int)(samplesToWrite / writeSizeSamples)) * writeSizeSamples; //truncate to nearest whole number
-			if (samplesToWrite == 0) {
-				Serial.print("SD Writer: writeBuff2: samplesAvail, to Write: ");
-				Serial.print(samplesAvail); Serial.print(", ");
-				Serial.println(samplesToWrite);
+			uint32_t bytesToWrite = min(bytesAvail, max_writeSizeBytes);
+			bytesToWrite = ((uint32_t)(bytesToWrite / writeSizeBytes)) * writeSizeBytes; //truncate to nearest whole number
+			//bytesToWrite = min(bytesToWrite, writeSizeBytes); //limit the bytes to write
+			
+			if (bytesToWrite == 0) {
+				Serial.print("SD Writer: writeBuff2: bytesAvail, to Write: ");
+				Serial.print(bytesAvail); Serial.print(", ");
+				Serial.println(bytesToWrite);
 			}
-			return_val += write((byte *)(write_buffer + bufferReadInd), samplesToWrite * sizeof(write_buffer[0]));
+			return_val += write((byte *)(write_buffer + bufferReadInd_bytes), bytesToWrite);
 			if (return_val == 0) {
-				Serial.print("SDWriter: writeBuff2: samps to write, bytes written: "); Serial.print(samplesToWrite);
+				Serial.print("SDWriter: writeBuff2: bytes to write, bytes written: "); Serial.print(bytesToWrite);
 				Serial.print(", "); Serial.println(return_val);
 			}
-			bufferReadInd += samplesToWrite;  //increment to end of where it wrote
+			bufferReadInd_bytes += bytesToWrite;  //increment to end of where it wrote
 		}
 	}
 	return return_val;

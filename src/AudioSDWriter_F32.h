@@ -42,16 +42,16 @@ class AudioSDWriter {
     STATE getState(void) {
       return current_SD_state;
     };
-    enum class WriteDataType { INT16=0, INT24, FLOAT32 }; //not all of these are necessarily supported
     virtual int setNumWriteChannels(int n) {
       return numWriteChannels = max(1, min(n, AUDIOSDWRITER_MAX_CHAN));  //can be 1, 2 or 4 (3 might work but its behavior is unknown)
     }
     virtual int getNumWriteChannels(void) {
       return numWriteChannels;
     }
-		virtual String getCurrentFilename(void) { return current_filename; }
+	
+	virtual String getCurrentFilename(void) { return current_filename; }
 
-		virtual bool begin(void) { return prepareSDforRecording(); };  //begins SD card.  Returns true if OK
+	virtual bool begin(void) { return prepareSDforRecording(); };  //begins SD card.  Returns true if OK
     virtual bool prepareSDforRecording(void) = 0;  //Returns true if OK
     virtual int startRecording(void) = 0;          //Returns error code.  OK is zero.
     virtual int startRecording(const char *) = 0;  //Returns error code.  OK is zero.
@@ -61,9 +61,8 @@ class AudioSDWriter {
 		virtual int serviceSD(void) = 0;
 
   protected:
-	  SdFs * sd;
+	  SdFs * sd = nullptr;
     STATE current_SD_state = STATE::UNPREPARED;
-    WriteDataType writeDataType = WriteDataType::INT16;
     int recording_count = 0;
     int numWriteChannels = 2;
 	  String current_filename = String("Not Recording");
@@ -146,26 +145,35 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		void setInstanceName(void) { instanceName = "AudioSDWriter_F32"; }
 
 		void setup(void) {
-			setWriteDataType(WriteDataType::INT16, &Serial, DEFAULT_SDWRITE_BYTES);
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD());
+			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16); //in SDWriter.h
 		}
 		void setup(Print *_serial_ptr) {
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD(), _serial_ptr);
 			setSerial(_serial_ptr);
-			setWriteDataType(WriteDataType::INT16, _serial_ptr, DEFAULT_SDWRITE_BYTES);
+			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);  //in SDWriter.h
 		}
 		void setup(Print *_serial_ptr, const int _writeSizeBytes) {
+			buffSDWriter = new BufferedSDWriter(getOrAllocateSD(), _serial_ptr, _writeSizeBytes);
 			setSerial(_serial_ptr);
-			setWriteDataType(WriteDataType::INT16, _serial_ptr, _writeSizeBytes);
+			setWriteDataType(AudioSDWriter_F32::WriteDataType::INT16);  //in SDWriter.h
+			setWriteSizeBytes(_writeSizeBytes);      
 		}
+		SdFs* getOrAllocateSD(void) { if (sd == nullptr) { return sd = new SdFs(); } else { return sd; } }
 
 		void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
+		enum class WriteDataType { 
+			INT16=(int)SDWriter::WriteDataType::INT16, 
+			FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 
+		};
 
-		int setWriteDataType(WriteDataType type);
-		int setWriteDataType(WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_samps=-1);
-
+		virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type);
+		//virtual int setWriteDataType(AudioSDWriter_F32::WriteDataType type, Print* serial_ptr, const int writeSizeBytes, const int bufferLength_bytes=-1);
+		
 		void setWriteSizeBytes(const int n) {  //512Bytes is most efficient for SD
 			if (buffSDWriter) buffSDWriter->setWriteSizeBytes(n);
 		}
-		int getWriteSizeBytes(void) {  //512Bytes is most efficient for SD
+		uint32_t getWriteSizeBytes(void) {  //512Bytes is most efficient for SD
 			if (buffSDWriter) return buffSDWriter->getWriteSizeBytes();
 			return 0;
 		}
@@ -194,23 +202,59 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		
 		//if you want to set the audio buffer size yourself, call this method before
 		//calling startRecording().
-		int allocateBuffer(const int nBytes) {
+		int allocateBuffer(const uint32_t nBytes) {
+			stopRecording();
+			//Serial.println("AudioSDWriter_F32: buffer = " + String((int)buffSDWriter) + ", allocating buffer..." + String(nBytes));
 			if (buffSDWriter) return buffSDWriter->allocateBuffer(nBytes);
 			return -2;     
 		}
 		int allocateBuffer(void) {  // this ends up using the default buffer size
+			//Serial.println("AudioSDWriter_F32: allocateBuffer: buffer = " + String((int)buffSDWriter) + ", allocating buffer()");
 			if (buffSDWriter) return buffSDWriter->allocateBuffer(); //use default buffer size
 			return -2;
 		}
 		void freeBuffer(void) {
+			//Serial.println("AudioSDWriter_F32: buffer = " + String((int)buffSDWriter) + ", freeing buffer...");
 			if (buffSDWriter) buffSDWriter->freeBuffer(); // free memory allocated to buffer
 		}
 
 		bool prepareSDforRecording(void) override; //you can call this explicitly, or startRecording() will call it automatcally
 		void end(void) override;
+		
+		/**
+		 * @brief Add metadata to WAV header
+		 * 
+		 * @param comment Metadata comment
+		 */
+		void AddMetadata(const String &comment) { 
+			if(buffSDWriter){
+				buffSDWriter->AddMetadata(comment);
+			}
+		};
+
+				
+		/**
+		 * @brief Clear metadata buffer for writing to WAV header
+		 */
+		void ClearMetadata(void) { 
+			if(buffSDWriter){
+				buffSDWriter->ClearMetadata();
+			}
+		};
+
+
+		/**
+		 * @brief Set location of metadata (before or after the audio data)
+		 * 
+		 * @param metadataLoc 
+		 */
+		void SetMetadataLocation(List_Info_Location metadataLoc) {
+			buffSDWriter->SetMetadataLocation(metadataLoc); 
+		};
 
 		int startRecording(void) override;    //call this to start a WAV recording...automatically generates a filename
 		int startRecording(const char* fname) override; //or call this to specify your own filename.
+
 		//int startRecording_noOverwrite(void);
 		void stopRecording(void) override;    //call this to stop recording
 		int deleteAllRecordings(void);  //clears all AUDIOxxx.wav files from the SD card
@@ -245,8 +289,40 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 			if (buffSDWriter) return buffSDWriter->isFileOpen();
 			return false;
 		}
-		int32_t getNumUnfilledSamplesInBuffer(void) { if (buffSDWriter) buffSDWriter->getNumUnfilledSamplesInBuffer(); return 0; }  //how much of the buffer is empty, in samples
-		uint32_t getNumUnfilledSamplesInBuffer_msec(void) { if (buffSDWriter) return buffSDWriter->getNumUnfilledSamplesInBuffer_msec(); return 0; }  //how much of the buffer is empty, in msec
+
+		/**
+		 * @brief Get stats on # of unfilled bytes in the SD Write buffer
+		 */
+		volatile BufferedSDWriter::Sd_Write_Buff_Unfilled_Bytes_s& getSDWriteBuffStats(void) {
+      		return buffSDWriter->getSDWriteBuffStats(); 
+    	}
+
+		uint32_t getNumUnfilledSamplesInBuffer(void) { 
+			if (buffSDWriter) return (buffSDWriter->getNumUnfilledBytesInBuffer())/(buffSDWriter->getBytesPerSample());  //how much of the buffer is empty, in samples
+			return 0; 
+		}  
+
+		uint32_t getNumUnfilledSamplesInBuffer_msec(void) { 
+			if (buffSDWriter) return buffSDWriter->getNumUnfilledBytesInBuffer_msec();   //how much of the buffer is empty, in msec
+			return 0; 
+		}
+
+		/**
+		 * @brief Query whether the write buffer has overrun
+		 * @return true Overrun has occurred
+		 * @return false No overrun has occurred
+		 */
+		bool getOverrunFlag(void) { 
+			if (buffSDWriter) return buffSDWriter->getOverrunFlag();
+			return false;
+		}
+		
+		/**
+		 * @brief Clear the write buffer overrun flag
+		 */
+		void clearOverrunFlag(void) {
+			if (buffSDWriter) buffSDWriter->clearOverrunFlag();
+		}
 
 		unsigned long getStartTimeMillis(void) { return t_start_millis; };
 		unsigned long setStartTimeMillis(void) { return t_start_millis = millis(); };
@@ -273,6 +349,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		bool flag_preAllocateWavSize = false;
 		uint64_t preAllocateWavBytes = 0ULL;
 
+		// Initialize WAV File
 		bool openAsWAV(const char *fname) {
 			bool ret_val = false;
 			if (buffSDWriter) {
@@ -281,9 +358,13 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 				} else {
 					ret_val = buffSDWriter->openAsWAV(fname);
 				}
+			// Else error. buffSDWriter is null. 
+			} else {
+				Serial.print("AudioSDWriter_F32::openAsWAV::***Error*** buffSDWriter is null.");
 			}
 			return ret_val;
 		}
+
 		bool open(const char *fname) {
 			bool ret_val = false;
 			if (buffSDWriter) {

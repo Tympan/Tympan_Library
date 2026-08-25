@@ -36,10 +36,11 @@
 
 #include <Arduino.h>
 #include <arm_math.h>
-#include "AudioStream_F32.h"
-#include "AudioStream.h"   //do we really need this? (Chip 2020-10-31)
+#include <AudioStream_F32.h>
 #include "DMAChannel.h"
-#include "input_i2s_F32.h" //for scale_i16_to_f32() and for AudioInputI2SBase_F32
+#include <AudioI2SBase.h>   //tympan library, for AudioI2SBase
+#include <input_i2s_F32.h> //for scale_i16_to_f32() and for AudioInputI2SBase_F32
+
 
 class AudioInputI2SQuad_F32 : public AudioInputI2SBase_F32  //which also inherits from AudioStream_F32
 {
@@ -79,11 +80,9 @@ private:
 	static audio_block_f32_t *block_ch2;
 	static audio_block_f32_t *block_ch3;
 	static audio_block_f32_t *block_ch4;
-//	static float sample_rate_Hz;
-//	static int audio_block_samples;
+//	static float sample_rate_Hz;     //now in AudioInputI2SBase_F32
+//	static int audio_block_samples;  //now in AudioInputI2SBase_F32
 	static uint32_t block_offset;
-//	static int flag_out_of_memory;
-//	unsigned long update_counter=0;
 };
 
 

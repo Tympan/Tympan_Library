@@ -20,8 +20,10 @@
 #  define AIC_FS                                                     44100UL
 #endif
 
-#define AIC_BITS                                                        16
-//#define AIC_BITS                                                        32
+#ifndef AIC_BITS
+//#  define AIC_BITS                                                        16
+#  define AIC_BITS                                                        32
+#endif
 
 #define IS_AIC_I2S_FOLLOWER                                                     1
 #if IS_AIC_I2S_FOLLOWER
