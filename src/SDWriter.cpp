@@ -839,11 +839,11 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 			if (decimation_counter == 0UL) {			
 				if (writeDataType == SDWriter::WriteDataType::INT16) {
 					//convert to INT16 datatype and put in the write buffer
-					((int16_t*)write_buffer)[foo_bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
-					//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
+					//((int16_t*)write_buffer)[foo_bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
+					((int16_t*)write_buffer)[foo_bufferWriteInd++] = static_cast<int16_t>(val_f32*32767.0f); //truncation, with processor's auto-saturation
 				} else if (writeDataType == SDWriter::WriteDataType::INT24) {
 					//need to decide whether to increment in the write_buffer in 24-bit steps or 32-bit steps??  Change other code based on this decision, too.
-					const int32_t val_int32 = (int32_t) max(-8388608,min(8388607,static_cast<int32_t>(val_f32*8388608.0f))); //scale and saturate
+					const int32_t val_int32 = (int32_t) max(-8388608,min(8388607,static_cast<int32_t>(val_f32*8388608.0f))); //scale and manually saturate
 					size_t ind = (foo_bufferWriteInd*3);
 					((uint8_t*)write_buffer)[ind++] = (uint8_t)(val_int32 & 0xFF);         // LSB (Bits 0-7)
 					((uint8_t*)write_buffer)[ind++] = (uint8_t)((val_int32 >> 8) & 0xFF);  // Mid (Bits 8-15)
