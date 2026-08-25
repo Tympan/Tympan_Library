@@ -21,6 +21,8 @@ int AudioSDWriter_F32::setWriteDataType(AudioSDWriter_F32::WriteDataType type) {
 
 	if (type == AudioSDWriter_F32::WriteDataType::INT16) {
 		if (buffSDWriter) buffSDWriter->setWriteDataType(SDWriter::WriteDataType::INT16);
+	} else if (type == AudioSDWriter_F32::WriteDataType::INT24) {
+		if (buffSDWriter) buffSDWriter->setWriteDataType(SDWriter::WriteDataType::INT24);
 	} else if (type == AudioSDWriter_F32::WriteDataType::FLOAT32) {
 		if (buffSDWriter) buffSDWriter->setWriteDataType(SDWriter::WriteDataType::FLOAT32);
 	}

@@ -257,7 +257,7 @@ class BufferedSDWriter : public SDWriter
     //allocate the buffer for storing all the samples between write events...returns 0 if it failed to allocate
 	int allocateBuffer(void) { 
 		bool flag_shrinkIfNeeded = true;
-		return allocateBuffer(defaultBufferLengthBytes, flag_shrinkIfNeeded);
+		return allocateBuffer(SDWRITER_MAX_BUFFER_LENGTH_BYTES, flag_shrinkIfNeeded);
 	}
 	int allocateBuffer(const int _nBytes) {
 		bool flag_shrinkIfNeeded = false;
@@ -359,11 +359,14 @@ class BufferedSDWriter : public SDWriter
 		int setWriteDataType(SDWriter::WriteDataType type) override { 
 			int return_val = SDWriter::setWriteDataType(type); 
 			resetBuffer(); 
-			if (type == SDWriter::WriteDataType::INT16) {
-				nBytesPerSample = 16/8;
-			} else {
-				nBytesPerSample = 32/8;
-			}
+			// if (type == SDWriter::WriteDataType::INT16) {
+				// nBytesPerSample = 16/8;
+			// } else if (type == SDWriter::WriteDataType::INT24) {
+				// nBytesPerSample = 16/8;
+			// } else {
+				// nBytesPerSample = 32/8;
+			// }
+			nBytesPerSample = GetBitsPerSampType()/8;
 			return return_val;
 		}
 		

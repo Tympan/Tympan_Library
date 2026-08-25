@@ -164,6 +164,7 @@ class AudioSDWriter_F32 : public AudioSDWriter, public AudioStream_F32 {
 		void setSerial(Print *_serial_ptr) {  serial_ptr = _serial_ptr;  }
 		enum class WriteDataType { 
 			INT16=(int)SDWriter::WriteDataType::INT16, 
+			INT24=(int)SDWriter::WriteDataType::INT24,
 			FLOAT32=(int)SDWriter::WriteDataType::FLOAT32 
 		};
 

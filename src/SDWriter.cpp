@@ -151,7 +151,7 @@ int SDWriter::close(void) {
 
 	// Record total number of samples (samples x numChannels)
 	if (file.curPosition() > filePosAudioData) {
-		numTotalSamples = (file.curPosition() - filePosAudioData) / (uint32_t) GetBitsPerSampType();
+		numTotalSamples = (file.curPosition() - filePosAudioData) / ((uint32_t) GetBitsPerSampType()/8);
 	} else {	// Else start of audio data was not recorded
 		okayFlag = false;
 	}
@@ -343,7 +343,8 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 			fmtPcm.S.numChan 			= (uint16_t) nchan;											// # of audio channels
 			fmtPcm.S.sampleRate_Hz 		= (uint32_t) sampleRate_Hz;									// Sample Rate
 			fmtPcm.S.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
-			fmtPcm.S.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
+			//fmtPcm.S.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8...INCoRRECT. sizeof(uint8_t) is 1 not 8
+			fmtPcm.S.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / 8) );	// NumChannels * BitsPerSample/8
 			fmtPcm.S.bitsPerSample		= bitsPerSamp;
 
 			// update fmt chunk size
@@ -356,7 +357,8 @@ char* SDWriter::makeWavHeader(const float32_t sampleRate_Hz, const int nchan, co
 			fmtIeee.S.numChan 			= (uint16_t) nchan;											// # of audio channels
 			fmtIeee.S.sampleRate_Hz 	= (uint32_t) sampleRate_Hz;									// Sample Rate
 			fmtIeee.S.byteRate 			= (uint32_t) (sampleRate_Hz * nchan * (bitsPerSamp/8ul) );  // SampleRate * NumChannels * BitsPerSample/8
-			fmtIeee.S.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8
+			//fmtIeee.S.blockAlign		= (uint16_t) ( nchan * (bitsPerSamp / sizeof(uint8_t)) );	// NumChannels * BitsPerSample/8;  INCORRECT! sizeof(uint8_t) is 1 not 8
+			fmtIeee.S.blockAlign			= (uint16_t) ( nchan * (bitsPerSamp / 8) );	// NumChannels * BitsPerSample/8
 			fmtIeee.S.bitsPerSample	= bitsPerSamp;
 
 			// Update Fact Chunk
@@ -839,6 +841,14 @@ void BufferedSDWriter::copyToWriteBuffer(float32_t *ptr_audio[], const int nsamp
 					//convert to INT16 datatype and put in the write buffer
 					((int16_t*)write_buffer)[foo_bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f))); //truncation, with saturation
 					//write_buffer[bufferWriteInd++] = (int16_t) max(-32767.0,min(32767.0,(val_f32*32767.0f + 0.5f))); //round, with saturation
+				} else if (writeDataType == SDWriter::WriteDataType::INT24) {
+					//need to decide whether to increment in the write_buffer in 24-bit steps or 32-bit steps??  Change other code based on this decision, too.
+					const int32_t val_int32 = (int32_t) max(-8388608,min(8388607,static_cast<int32_t>(val_f32*8388608.0f))); //scale and saturate
+					size_t ind = (foo_bufferWriteInd*3);
+					((uint8_t*)write_buffer)[ind++] = (uint8_t)(val_int32 & 0xFF);         // LSB (Bits 0-7)
+					((uint8_t*)write_buffer)[ind++] = (uint8_t)((val_int32 >> 8) & 0xFF);  // Mid (Bits 8-15)
+					((uint8_t*)write_buffer)[ind++] = (uint8_t)((val_int32 >> 16) & 0xFF); // MSB (Bits 16-23	
+					foo_bufferWriteInd++;			
 				} else {
 					//simply copy
 					((float32_t*)write_buffer)[foo_bufferWriteInd++] = val_f32; //copy
