@@ -581,19 +581,21 @@ int AudioControlAIC3206::muteDAC(int chan) {
 //define AIC3206_HPR_VOLUME_REG 0x11  //decimal 17
 float AudioControlAIC3206::setHeadphoneGain_dB(float gain_left_dB, float gain_right_dB) {
 	unsigned int buff = 0;
-	int8_t left_dB_u8 = 0;
-	int8_t right_dB_u8 = 0;
+	// int8_t left_dB_u8 = 0;
+	// int8_t right_dB_u8 = 0;
 
 	// round to nearest dB and clamp limits
-	left_dB_u8 = (int)(gain_left_dB + 0.5); 
-	right_dB_u8 = (int)(gain_right_dB + 0.5); 
+	float left_dB_f = std::round(gain_left_dB); 
+	float right_dB_f = std::round(gain_right_dB); 
 
-	left_dB_u8 = constrain(left_dB_u8, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
-	right_dB_u8 = constrain(gain_right_dB, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
+	int8_t left_dB_i8 = (int8_t) constrain(left_dB_f, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
+	int8_t right_dB_i8 = (int8_t) constrain(right_dB_f, AIC3206_HP_VOLUME_MIN, AIC3206_HP_VOLUME_MAX);
 
-	//check to see if they want it muted
-	if (gain_left_dB < -90.0) left_dB_u8 = 0b00111001; //mute it
-	if (gain_right_dB < -90.0) right_dB_u8 = 0b00111001; //mute it
+	// convert to byte
+	uint8_t left_dB_u8 = (uint8_t) left_dB_i8;
+	uint8_t right_dB_u8 = (uint8_t) right_dB_i8;
+
+	// *** NOTE: This function does not modify the mute bit. ***
 
 	// Set Left Volume
 	//aic_goToBook(0);
@@ -608,7 +610,8 @@ float AudioControlAIC3206::setHeadphoneGain_dB(float gain_left_dB, float gain_ri
 
 	aic_writePage( TYMPAN_HP_DRIVER_GAIN_PAGE, TYMPAN_HPR_DRIVER_GAIN_REG, uint8_t(buff) );
 
-	return left_dB_u8;
+	// Return signed value
+	return left_dB_i8;
 }
 
 int AudioControlAIC3206::unmuteHeadphone(int chan) {
