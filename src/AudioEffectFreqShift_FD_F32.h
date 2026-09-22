@@ -47,7 +47,7 @@
 #include "AudioFreqDomainBase_FD_F32.h"
 //include "FFT_Overlapped_F32.h"
 #include <Arduino.h>
-
+#include <functional> // Required for std::function
 
 class AudioEffectFreqShift_FD_F32 : public AudioFreqDomainBase_FD_F32
 {
@@ -75,7 +75,10 @@ class AudioEffectFreqShift_FD_F32 : public AudioFreqDomainBase_FD_F32
 		float getShift_Hz(void) const                { return getFrequencyOfBin(shift_bins);	}
 		float getFrequencyOfBin(const int bin) const { return sample_rate_input_Hz * ((float)bin) / ((float) N_FFT); } //"bin" should be zero to (N_FFT-1)
 		
-   
+		void setPreprocessFreqDomainFunction(std::function<void(float32_t *complex_2N_bufer, const int NFFT)> myFunction) {
+			preprocessFreqDomainData = myFunction; 
+		}
+	 
   protected:
 		enum OVERLAP_OPTIONS {NONE, HALF, THREE_QUARTERS};  //evenutally extend to other overlap factors
 		int overlap_amount = NONE;
@@ -83,7 +86,8 @@ class AudioEffectFreqShift_FD_F32 : public AudioFreqDomainBase_FD_F32
 		
     int shift_bins = 0; //how much to shift the frequency
 
-    virtual void preprocessFreqDomainData(float32_t *complex_2N_buffer, const int NFFT) { return; } //default to do nothing (child class can override!)
+    //virtual void preprocessFreqDomainData(float32_t *complex_2N_buffer, const int NFFT) { return; } //default to do nothing (child class can override!)
+		std::function<void(float32_t *complex_2N_bufer, const int NFFT)> preprocessFreqDomainData;
 		virtual void shiftTheBins(float32_t *complex_2N_buffer, const int NFFT_input, const int NFFT_output, const int n_shift);
     virtual void adjustBinPhases(float32_t *complex_2N_buffer, const int N_2);
 		
