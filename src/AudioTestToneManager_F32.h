@@ -44,7 +44,7 @@ class AudioTestToneManager_F32 : public AudioStream_F32 {
       return sample_rate_Hz = fs_Hz;
     }
 
-    virtual void addToneToQueue(float32_t freq_Hz, float32_t amp, uint32_t dur_sec) { allToneParams.push_back(AudioTestTone_Params(freq_Hz, amp, dur_sec)); }
+    virtual void addToneToQueue(float32_t freq_Hz, float32_t amp, float32_t dur_sec) { allToneParams.push_back(AudioTestTone_Params(freq_Hz, amp, dur_sec)); }
     virtual void removeAllTonesFromQueue(void) { allToneParams.clear(); }
     
     virtual float setSilenceBetweenTones_sec(float dt_sec) { return silenceBetweenTones_sec = dt_sec; }
