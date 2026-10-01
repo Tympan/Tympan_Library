@@ -84,14 +84,10 @@ void AudioInputI2SQuad_F32::begin(void)
 	AudioOutputI2SQuad_F32::audio_block_samples = audio_block_samples;//these were given in the AudioSettings in the Contructor
 	
 #if defined(KINETISK)  // This part is only for Teensy3 (ie, Tympan Rev A-D)
-	// TODO: should we set & clear the I2S_RCSR_SR bit here?
-	AudioOutputI2SQuad_F32::config_i2s();  //as of Aug 8, 2025, this is still 16-bit only
-
-	//All of the code in this KINETISK section assumes 16-bit I2S transfers, consistent with the 16-bit I2S setup from AudioOutputI2SQuad_F32::config_i2s();
-	if (AudioOutputI2SQuad_F32::transferUsing32bit == true) {
-		Serial.println("AudioInputI2SQuad_F32: begin: *** WARNING! ***: configured for 32-bit transfers when 16-bit is expected.");
-		Serial.flush();
-	}
+	AudioOutputI2SQuad_F32::transferUsing32bit = true;
+	AudioOutputI2S_F32::config_i2s(AudioOutputI2SQuad_F32::transferUsing32bit, sample_rate_Hz);
+	I2S0_TCR3 = I2S_TCR3_TCE_2CH;
+	I2S0_RCR3 = I2S_RCR3_RCE_2CH;
 
 	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0
 	#if defined(__MK20DX256__)
@@ -100,24 +96,42 @@ void AudioInputI2SQuad_F32::begin(void)
 		CORE_PIN38_CONFIG = PORT_PCR_MUX(4); // pin 38, PTC11, I2S0_RXD1
 	#endif
 
-	dma.TCD->SADDR = &I2S0_RDR0;
-	dma.TCD->SOFF = 4;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_SMOD(3) | DMA_TCD_ATTR_DSIZE(1);
-	dma.TCD->NBYTES_MLNO = 4;
-	dma.TCD->SLAST = 0;
-	dma.TCD->DADDR = i2s_rx_buffer;
-	dma.TCD->DOFF = 2;
-	//dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 4; //original quad
-	//dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer			//original quad
-	//dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 4; //original quad
+	// DMA
+	//   Each minor loop copies one audio sample from each CODEC (either 2 left or 2 right)
+	//   Major loop repeats for audio_block_samples * 2 (stereo)
+	#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+	#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+	#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+	#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
+
+	if (transferUsing32bit) {
+		// For 32-bit samples: 
+		dma.TCD->SADDR = &(I2S0_RDR0);
+		dma.TCD->SOFF = 4;  // This is the separation between sequential RDR registers (def works for 32-bit)
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+	} else {
+		// For 16-bit samples:
+		dma.TCD->SADDR = (void *)((uint32_t)&I2S0_RDR0 + 2);  // The "+ 2" shifts from start of int32 to start of upper int16
+		dma.TCD->SOFF = 4;  // This is the separation between sequential RDR registers (is this right for 16 bit?) 
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES;
+	}
+	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
+		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-(NUM_CHAN_TRANSFER/2)*4) |  // Restore SADDR after each minor loop. 2 rx registers @ 4 byte spacing
+		DMA_TCD_NBYTES_MLOFFYES_NBYTES((NUM_CHAN_TRANSFER/2)*(AudioI2SBase::transferUsing32bit ? 4 : 2));   // copy 2 samples @ 4 bytes or 2 bytes each
 	
+	//dma.TCD->NBYTES_MLNO = 4; //old Teensy3 instead of NBYTES_MLOFFYES
+
+	dma.TCD->SLAST = -(NUM_CHAN_TRANSFER/2)*4;   // Restore SADDR after last major loop. 2 rx registers @ 4 byte spacing
+	dma.TCD->DADDR = i2s_rx_buffer;
+	dma.TCD->DOFF = (AudioI2SBase::transferUsing32bit ? 4 : 2);  	// For 32-bit (or 16-bit) samples:
+
 	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
-	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;			//new quad, enable diff len audio blocks
+	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;     //allows variable block length
 	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
 	
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_RX);
+
 	update_responsibility = update_setup();
 	dma.enable();
 

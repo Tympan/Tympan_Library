@@ -216,14 +216,34 @@ void AudioOutputI2S_F32::begin(void)
 	block_right_1st = NULL;
 
 #if defined(KINETISK)
-	transferUsing32bit = false;  //is this class ready for 32-bit yet?  Aug 5, 2025, I don't think it is.  So, force to false for now.
+	transferUsing32bit = true;  //Oct 1, 2026...let's try 32-bit!
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit, sample_rate_Hz);
 
 	CORE_PIN22_CONFIG = PORT_PCR_MUX(6); // pin 22, PTC1, I2S0_TXD0
 
+	// DMA
+	//   Each minor loop copies one audio sample destined for the CODEC (either 1 left or 1 right)
+	//   Major loop repeats for all samples in i2s_tx_buffer
+	//
+	// Original Teensy3 code:
+	//  dma.TCD->SADDR = i2s_tx_buffer;
+	//  dma.TCD->SOFF = 2;
+	//  dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+	#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+	#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+	#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+	#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
 	dma.TCD->SADDR = i2s_tx_buffer;
-	dma.TCD->SOFF = 2;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+	dma.TCD->SOFF = (transferUsing32bit ? 4 : 2); //4 for 32-bit, 2 for 16-bit
+	if (transferUsing32bit) {
+		// For 32-bit samples:
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+	} else {
+		// For 16-bit samples:
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES;
+	}
+
+	/* Oiginal Teensy3 code 
 	dma.TCD->NBYTES_MLNO = 2;
 	//dma.TCD->SLAST = -sizeof(i2s_tx_buffer);//orig from Teensy Audio Library 2020-10-31
 	dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES;
@@ -235,6 +255,21 @@ void AudioOutputI2S_F32::begin(void)
 	//dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 2;//orig from Teensy Audio Library 2020-10-31
 	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel. 
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+	*/
+	dma.TCD->NBYTES_MLNO = (transferUsing32bit ? 4 : 2);
+	dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES;
+	dma.TCD->DOFF = 0;     // 0 for stereo (because we're only using 1 i2s channel?).  This is the separation between sequential TDR registers
+	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //allows for variable audio block length (2 is for stereo pair)
+	dma.TCD->DLASTSGA = 0; // 0 for stereo (because we're only using 1 i2s channel?)
+	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //must be set equal to CITER_ELINKNO
+	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR; 
+
+	if (transferUsing32bit) {
+		dma.TCD->DADDR = &I2S0_TDR0;
+	}	else {
+		dma.TCD->DADDR = (void *)((uint32_t)&I2S0_TDR0 + 2);  // "+ 2" to shift to start of high 16-bits in 32-bit register
+	}
+
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_TX);
 	dma.enable();  //newer location of this line in Teensy Audio library
 
@@ -343,7 +378,7 @@ void AudioOutputI2S_F32::isr(void)
 				for (int i=0; i < audio_block_samples /2 * 2; i+=2) { *(d+i) = (int32_t) *pR++; } //interleave
 				offsetR += audio_block_samples / 2;
 			} else {
-				memset(dest32,0,audio_block_samples * 2);
+				memset(dest32,0,audio_block_samples * (transferUsing32bit ? 4 : 2));
 				return;
 			}
 			
@@ -386,7 +421,7 @@ void AudioOutputI2S_F32::isr(void)
 				offsetR += audio_block_samples / 2;
 			} else {
 				//memset(dest,0,AUDIO_BLOCK_SAMPLES * 2);
-				memset(dest16,0,audio_block_samples * 2);
+				memset(dest16,0,audio_block_samples * (transferUsing32bit ? 4 : 2));
 				return;
 			}
 			
@@ -628,25 +663,27 @@ void AudioOutputI2S_F32::config_i2s(bool _transferUsing32bit, float fs_Hz)
 	while (I2S0_MCR & I2S_MCR_DUF) ;
 	I2S0_MDR = I2S_MDR_FRACT((MCLK_MULT-1)) | I2S_MDR_DIVIDE((MCLK_DIV-1));
 
+	
 	// configure transmitter
 	I2S0_TMR = 0;
 	I2S0_TCR1 = I2S_TCR1_TFW(1);  // watermark at half fifo size
-	I2S0_TCR2 = I2S_TCR2_SYNC(0) | I2S_TCR2_BCP | I2S_TCR2_MSEL(1)
-		| I2S_TCR2_BCD | I2S_TCR2_DIV(1);
+	I2S0_TCR2 = I2S_TCR2_SYNC(0) | I2S_TCR2_BCP | I2S_TCR2_MSEL(1)  //Teensy4 has I2S_TCR2_SYNC(1), should we do that here?
+		| I2S_TCR2_BCD | I2S_TCR2_DIV(1); // use I2S_TCR2_DIV(1) for 2-chan operation (but something else for 4?)
 	I2S0_TCR3 = I2S_TCR3_TCE;
-	I2S0_TCR4 = I2S_TCR4_FRSZ(1) | I2S_TCR4_SYWD(31) | I2S_TCR4_MF
+	I2S0_TCR4 = I2S_TCR4_FRSZ((2-1)) | I2S_TCR4_SYWD((32-1)) | I2S_TCR4_MF
 		| I2S_TCR4_FSE | I2S_TCR4_FSP | I2S_TCR4_FSD;
-	I2S0_TCR5 = I2S_TCR5_WNW(31) | I2S_TCR5_W0W(31) | I2S_TCR5_FBT(31);
+	I2S0_TCR5 = I2S_TCR5_WNW((32-1)) | I2S_TCR5_W0W((32-1)) | I2S_TCR5_FBT((32-1));
 
 	// configure receiver (sync'd to transmitter clocks)
 	I2S0_RMR = 0;
 	I2S0_RCR1 = I2S_RCR1_RFW(1);
-	I2S0_RCR2 = I2S_RCR2_SYNC(1) | I2S_TCR2_BCP | I2S_RCR2_MSEL(1)
-		| I2S_RCR2_BCD | I2S_RCR2_DIV(1);
-	I2S0_RCR3 = I2S_RCR3_RCE;
-	I2S0_RCR4 = I2S_RCR4_FRSZ(1) | I2S_RCR4_SYWD(31) | I2S_RCR4_MF
+	//I2S0_RCR2 = I2S_RCR2_SYNC(1) | I2S_TCR2_BCP | I2S_RCR2_MSEL(1)  //Teensy4 has I2S_RCR2_SYNC(0), should we do the same here?
+	I2S0_RCR2 = I2S_RCR2_SYNC(1) | I2S_RCR2_BCP | I2S_RCR2_MSEL(1)  //fix typo...was I2S_TCR2_BCP instead of I2S_RCR2_BCP.  Teensy4 has I2S_RCR2_SYNC(0), should we do the same here?
+		| I2S_RCR2_BCD | I2S_RCR2_DIV(1);  // use I2S_RCR2_DIV(1) for 2-chan operation (but something else for 4?)
+	I2S0_RCR3 = I2S_RCR3_RCE;  
+	I2S0_RCR4 = I2S_RCR4_FRSZ((2-1)) | I2S_RCR4_SYWD((32-1)) | I2S_RCR4_MF
 		| I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
-	I2S0_RCR5 = I2S_RCR5_WNW(31) | I2S_RCR5_W0W(31) | I2S_RCR5_FBT(31);
+	I2S0_RCR5 = I2S_RCR5_WNW((32-1)) | I2S_RCR5_W0W((32-1)) | I2S_RCR5_FBT((32-1));
 
 	// configure pin mux for 3 clock signals
 	if (!only_bclk)

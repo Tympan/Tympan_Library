@@ -104,30 +104,61 @@ void AudioOutputI2SQuad_F32::begin(void)
 	block_ch4_1st = NULL;
 
 	#if defined(KINETISK) //this code is for Teensy 3.x, not Teensy 4
-		transferUsing32bit=false; //As it currently stands, this Teensy 3.x code only supports 16-bit transfers
+		transferUsing32bit=true; //As of Oct 1, 2026, let's see if we can make this work!
 
-		// TODO: can we call normal config_i2s, and then just enable the extra output?
-		config_i2s();  //this is the local config_i2s(), not the one in the non-quad version of output_i2s.  does it know about block size?  (sample rate is defined is set ~25 rows below here)
+		// Configure the I2S based on twochannels
+		//config_i2s();  //this is the local config_i2s(), not the one in the non-quad version of output_i2s.  does it know about block size?  (sample rate is defined is set ~25 rows below here)
+		AudioOutputI2S_F32::config_i2s(transferUsing32bit,AudioOutputI2SQuad_F32::sample_rate_Hz);
+		I2S0_TCR3 = I2S_TCR3_TCE_2CH;
+		//const int pinoffset = 0; // For Teensy3, don't choose anything else
 		CORE_PIN22_CONFIG = PORT_PCR_MUX(6); // pin 22, PTC1, I2S0_TXD0 -> ch1 & ch2
 		CORE_PIN15_CONFIG = PORT_PCR_MUX(6); // pin 15, PTC0, I2S0_TXD1 -> ch3 & ch4
 
+		/////// Based on Teensy 4 code
+
+		// DMA
+		//   Each minor loop copies one audio sample destined for each CODEC (either 2 left or 2 right)
+		//   Major loop repeats for all samples in i2s_tx_buffer
+		#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+		#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+		#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+		#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
+		//#define I2S1_TDR                (IMXRT_SAI1.TDR)
 		dma.TCD->SADDR = i2s_tx_buffer;
-		dma.TCD->SOFF = 2;
-		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1) | DMA_TCD_ATTR_DMOD(3);
-		dma.TCD->NBYTES_MLNO = 4;
-		//dma.TCD->SLAST = -sizeof(i2s_tx_buffer); //orig
-		dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
-		dma.TCD->DADDR = &I2S0_TDR0;
-		dma.TCD->DOFF = 4;
-		//dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; //orig
+		dma.TCD->SOFF = (transferUsing32bit ? 4 : 2); //4 for 32-bit, 2 for 16-bit
+		if (transferUsing32bit) {
+			// For 32-bit samples:
+			dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+			dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
+				DMA_TCD_NBYTES_MLOFFYES_MLOFF(-((NUM_CHAN_TRANSFER/2)*4)) |  // Restore DADDR after each minor loop. 2 samples @ 4 bytes each (unrelated to bit depth)
+				DMA_TCD_NBYTES_MLOFFYES_NBYTES((NUM_CHAN_TRANSFER/2)*(AudioI2SBase::transferUsing32bit ? 4 : 2));   // Minor loop is 2 samples @ 4 (or 2) bytes each
+			dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length		
+			//dma.TCD->DADDR = &(I2S1_TDR[pinoffset]); //Teensy 4
+			dma.TCD->DADDR = &I2S0_TDR0; //substitute this old value when using Teensy3?			
+		} else {
+			// For 16-bit samples:
+			dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES; //original Teensy3 included another term: "| DMCA_TC_ATTR_DMOD(3)"
+			dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
+				DMA_TCD_NBYTES_MLOFFYES_MLOFF(-((NUM_CHAN_TRANSFER/2)*4)) |  // Restore DADDR after each minor loop. 2 samples @ 4 bytes each (unrelated to bit depth)
+				DMA_TCD_NBYTES_MLOFFYES_NBYTES((NUM_CHAN_TRANSFER/2)*(AudioI2SBase::transferUsing32bit ? 4 : 2));   // Minor loop is 2 samples @ 4 (or 2) bytes each
+			dma.TCD->SLAST = -I2S_BUFFER_TO_USE_BYTES; //allows for variable audio block length
+			//dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2 + pinoffset * 4); //Teensy 4
+			dma.TCD->DADDR = &I2S0_TDR0; //substitute this old value when using Teensy3?  Should I add "+2"		
+		}
+
+		//settings that are common between 32-bit and 16-bit transfers
+		dma.TCD->DOFF = 4;  // This is the separation between sequential TDR registers
 		dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
-		dma.TCD->DLASTSGA = 0;
-		//dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; //orig
+		dma.TCD->DLASTSGA = -(NUM_CHAN_TRANSFER/2)*4;     // This was 0 in the original teensy 3 code
 		dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  (Yes, quad uses 2 I2S channels, but that isn't relevant here?)
+		
 		dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-		dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_TX);
+		//dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX);  // from Teensy4 code
+		dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_TX);   // from Teensy3 code
+		
 		update_responsibility = update_setup();
 		dma.enable();
+
 
 		I2S0_TCSR = I2S_TCSR_SR;
 		I2S0_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;

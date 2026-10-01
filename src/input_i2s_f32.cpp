@@ -80,12 +80,46 @@ void AudioInputI2S_F32::begin(void) {
 	//block_right_1st = NULL;
 
 #if defined(KINETISK)
-	transferUsing32bit = false;  //is this class ready for 32-bit transfers?  As of Aug 5, 2025, no.  It is not.  So, force to false
+	transferUsing32bit = true;  //Oct 1, 2026: Let's try for 32bit!
 
 	// TODO: should we set & clear the I2S_RCSR_SR bit here?
 	AudioOutputI2S_F32::config_i2s(transferUsing32bit);
 
 	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0
+
+	// DMA
+	//   Each minor loop copies one audio sample from the CODEC (either 1 left or 1 right)
+	//   Major loop repeats for audio_block_samples * 2 (stereo)
+	#define DMA_TCD_ATTR_SSIZE_2BYTES         DMA_TCD_ATTR_SSIZE(1)
+	#define DMA_TCD_ATTR_SSIZE_4BYTES         DMA_TCD_ATTR_SSIZE(2)
+	#define DMA_TCD_ATTR_DSIZE_2BYTES         DMA_TCD_ATTR_DSIZE(1)
+	#define DMA_TCD_ATTR_DSIZE_4BYTES         DMA_TCD_ATTR_DSIZE(2)
+
+	if (transferUsing32bit) {
+		// For 32-bit samples:
+		dma.TCD->SADDR = &I2S0_RDR0;
+		dma.TCD->SOFF = 0;    // 0 or 4 for stereo?  This is the separation between sequential RDR registers 
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_4BYTES | DMA_TCD_ATTR_DSIZE_4BYTES;
+	} else {
+		// For 16-bit samples:
+		dma.TCD->SADDR = (void *)((uint32_t)&I2S0_RDR0 + 2);  // "+ 2" to shift to start of high 16-bits in 32-bit register
+		dma.TCD->SOFF = 0;    // 0 or 4 for stereo?  This is the separation between sequential RDR registers 
+		dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE_2BYTES | DMA_TCD_ATTR_DSIZE_2BYTES;
+	}
+	dma.TCD->NBYTES_MLNO = (transferUsing32bit ? 4 : 2); //is this right for 32-bit?
+	
+	dma.TCD->SLAST = 0;   // 0 or 4 for stereo?  (N_CHAN/2) rx registers @ 4 byte spacing
+	dma.TCD->DADDR = i2s_rx_buffer;
+	dma.TCD->DOFF = (AudioI2SBase::transferUsing32bit ? 4 : 2);  	// Number of bytes per sample in i2s_rx_buffer
+	
+	dma.TCD->CITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.  
+	dma.TCD->DLASTSGA = -I2S_BUFFER_TO_USE_BYTES;     //allows variable block length
+	dma.TCD->BITER_ELINKNO = audio_block_samples * 2; //The 2 is for stereo pair...because we're getting a stereo pair per I2S channel.
+	
+	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_RX);
+
+	/* Original Teensy3 code 
 	dma.TCD->SADDR = (void *)((uint32_t)&I2S0_RDR0 + 2);  //From Teensy Audio Library...but why "+ 2"  (Chip 2020-10-31)
 	dma.TCD->SOFF = 0;
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
@@ -101,6 +135,7 @@ void AudioInputI2S_F32::begin(void) {
 	dma.TCD->BITER_ELINKNO = I2S_BUFFER_TO_USE_BYTES / 2;
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_I2S0_RX);
+	*/   // End original Teensy3 code
 
 	I2S0_RCSR |= I2S_RCSR_RE | I2S_RCSR_BCE | I2S_RCSR_FRDE | I2S_RCSR_FR;
 	I2S0_TCSR |= I2S_TCSR_TE | I2S_TCSR_BCE; // TX clock enable, because sync'd to TX
