@@ -50,7 +50,6 @@ DMAMEM __attribute__((aligned(32))) static BIG_BUFFER_TYPE i2s_default_rx_buffer
 #define I2S_BUFFER_TO_USE_BYTES (audio_block_samples*NUM_CHAN_TRANSFER*sizeof(i2s_rx_buffer[0]) / (transferUsing32bit ? 1 : 2))
 #define I2S_BUFFER_MID_POINT_INDEX ((audio_block_samples/2) * NUM_CHAN_TRANSFER * (transferUsing32bit ? 4 : 2) / (sizeof(i2s_rx_buffer[0])))
 
-
 // Initialize some static variables
 BIG_BUFFER_TYPE * AudioInputI2S_F32::i2s_rx_buffer = i2s_default_rx_buffer;
 audio_block_f32_t * AudioInputI2S_F32::block_left_f32 = NULL;
