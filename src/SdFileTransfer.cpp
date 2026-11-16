@@ -16,7 +16,7 @@ void SdFileTransfer::begin(void) {
   //initialize the SD card, if not already begun
   if (state == SD_STATE_NOT_BEGUN) {
     if (sd_ptr == nullptr) sd_ptr = new SdFs();  //creating new SdFs (because none was given)
-    if (!(sd_ptr->begin(SD_CONFIG))) { Serial.println("SdFileTransfer: *** ERROR ***: cannot open SD.");  return; }
+    if (!(sd_ptr->begin(SD_CONFIG))) { serial_ptr->println("SdFileTransfer: *** ERROR ***: cannot open SD.");  return; }
   }
   state = SD_STATE_BEGUN;
   state_write = WRITE_STATE_NONE;
@@ -81,34 +81,34 @@ uint64_t SdFileTransfer::sendFile_interactive(void) {
 	}
 
   //get file name from the user
-  Serial.println("SdFileTransfer: sendFile_interactive: send filename to read from (end with newline)");
-	Serial.setTimeout(10000);  //set timeout in milliseconds...make longer for human interaction
+  serial_ptr->println("SdFileTransfer: sendFile_interactive: send filename to read from (end with newline)");
+	serial_ptr->setTimeout(10000);  //set timeout in milliseconds...make longer for human interaction
   String fname = receiveFilename('\n'); //also sets the filename
-	Serial.setTimeout(1000);  //change the Serial timeout time back to default
+	serial_ptr->setTimeout(1000);  //change the Serial timeout time back to default
     
   //open the file
   bool isOpen = openRead(); //opens using the current filename
   if (!isOpen) {
-    Serial.println("SdFileTransfer: sendFile_interactive: *** ERROR ***: Cannot open file " + String(fname) + " for reading. Exiting.");
+    serial_ptr->println("SdFileTransfer: sendFile_interactive: *** ERROR ***: Cannot open file " + String(fname) + " for reading. Exiting.");
     return 0;
   }
 	
 	//send the file size in bytes
-	Serial.println("SdFileTransfer: sending file size in bytes (followed by newline)");
+	serial_ptr->println("SdFileTransfer: sending file size in bytes (followed by newline)");
 	uint64_t bytes_to_send = getNumBytesToReadFromSD();
 	bool success = sendNumBytesToReadFromSD();
 	if (!success) {
-		Serial.println("SdFileTransfer: sendFile_interactive: *** ERROR ***: Could not send file size. Exiting.");
+		serial_ptr->println("SdFileTransfer: sendFile_interactive: *** ERROR ***: Could not send file size. Exiting.");
     return 0;
 	}	
 	
 	//send the file itself
-	Serial.println("SdFileTransfer: sendFile_interactive: Sending the file bytes (after this newline)");	
+	serial_ptr->println("SdFileTransfer: sendFile_interactive: Sending the file bytes (after this newline)");	
 	uint64_t bytes_sent = sendFile();
   if (bytes_sent != bytes_to_send) {
-      Serial.println("SdFileTransfer: sendFile_interactive: Only sent " + String(bytes_sent) + " bytes.  File transfer has stopped.");
+      serial_ptr->println("SdFileTransfer: sendFile_interactive: Only sent " + String(bytes_sent) + " bytes.  File transfer has stopped.");
   } else {
-    Serial.println("SdFileTransfer: sendFile_interactive: Successfully sent " + String(bytes_sent) + " bytes from " + fname + ".  File transfer complete.");
+    serial_ptr->println("SdFileTransfer: sendFile_interactive: Successfully sent " + String(bytes_sent) + " bytes from " + fname + ".  File transfer complete.");
   }	
 	
 	return bytes_sent;
@@ -192,40 +192,40 @@ uint64_t SdFileTransfer::receiveFile_interactive(void) {
   serial_ptr->setTimeout(10000);  //set timeout in milliseconds
 
   //get file name from the user
-  Serial.println("SdFileTransfer: receiveFile_interactive: send filename to write to (end with newline)");
+  serial_ptr->println("SdFileTransfer: receiveFile_interactive: send filename to write to (end with newline)");
   String fname = receiveFilename('\n'); //also sets the filename
 
   //open the file
   bool isOpen = openWrite(); //opens using the current filename
   if (!isOpen) {
-    Serial.println("SdFileTransfer: receiveFile_interactive: *** ERROR ***: Cannot open file " + String(fname) + " for writing. Exiting.");
+    serial_ptr->println("SdFileTransfer: receiveFile_interactive: *** ERROR ***: Cannot open file " + String(fname) + " for writing. Exiting.");
     serial_ptr->setTimeout(1000);  //change the Serial timeout time back to default
     return 0;
   }
 
   //get the file size
-  Serial.println("SdFileTransfer: receiveFile_interactive: Opened " + fname + " for writing. Send file size in bytes (end with newline)");
+  serial_ptr->println("SdFileTransfer: receiveFile_interactive: Opened " + fname + " for writing. Send file size in bytes (end with newline)");
   uint64_t bytes_to_receive = receiveNumBytesToWriteToSD('\n');
   if (bytes_to_receive==0) {
-    Serial.println("SdFileTransfer: receiveFile_interactive: *** ERROR ***: Received invalid filesize. Exiting.");
+    serial_ptr->println("SdFileTransfer: receiveFile_interactive: *** ERROR ***: Received invalid filesize. Exiting.");
     serial_ptr->setTimeout(1000);  //change the Serial timeout time back to default
     return 0;
   }
 
   //check to see if we're ready
   if ((state_write != WRITE_STATE_READY) && isFileOpen()) {
-    Serial.println("SdFileTransfer: receiveFile_interactive: *** ERROR ***: Write state not ready. Exiting.");
+    serial_ptr->println("SdFileTransfer: receiveFile_interactive: *** ERROR ***: Write state not ready. Exiting.");
     serial_ptr->setTimeout(1000);  //change the Serial timeout time back to default
     return 0;
   }
 
   //receive the file itself
-  Serial.println("SdFileTransfer: receiveFile_interactive: Send the " + String(bytes_to_receive) + " bytes now");
+  serial_ptr->println("SdFileTransfer: receiveFile_interactive: Send the " + String(bytes_to_receive) + " bytes now");
   uint64_t n_bytes_received = receiveFile();
   if (n_bytes_received != bytes_to_receive) {
-      Serial.println("SdFileTransfer: receiveFile_interactive: Only received " + String(n_bytes_received) + " bytes.  File transfer has stopped.");
+      serial_ptr->println("SdFileTransfer: receiveFile_interactive: Only received " + String(n_bytes_received) + " bytes.  File transfer has stopped.");
   } else {
-    Serial.println("SdFileTransfer: receiveFile_interactive: Successfully received " + String(n_bytes_received) + " bytes into " + fname + ".  File transfer complete.");
+    serial_ptr->println("SdFileTransfer: receiveFile_interactive: Successfully received " + String(n_bytes_received) + " bytes into " + fname + ".  File transfer complete.");
   }
     
   //change the Serial timeout time back to original
@@ -239,7 +239,7 @@ uint64_t SdFileTransfer::receiveFile(void) {
   if (serial_ptr == nullptr) return 0;  //not ready to receive bytes from Serial
   uint64_t total_bytes_received = 0;
   unsigned int bytes_received; 
-  //Serial.setTimeout(100); //set timeout in milliseconds
+  //serial_ptr->setTimeout(100); //set timeout in milliseconds
 
   bool done = false;
   while (!done) {
